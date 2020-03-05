@@ -1,31 +1,24 @@
 import random
-import torch
+from collections import namedtuple, deque
+
+Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward', 'mask'))
 
 
-class Transition:
-    def __init__(self, state0, action0, state1, reward, done):
-        self.state0 = state0
-        self.action0 = action0
-        self.state1 = state1
-        self.reward = reward
-        self.done = done
+class ReplayBuffer(object):
+    def __init__(self, capacity):
+        self.memory = deque(maxlen=capacity)
+        self.capacity = capacity
 
-
-class ReplayBuffer:
-
-    def __init__(self, size):
-        self._size = size
-        self._buffer = []
-
-    def add(self, item):
-        if len(self._buffer) > self._size:
-            self._buffer.pop(0)
-        self._buffer.append(item)
-
-    def sample(self, sample_size):
-        if len(self._buffer) > sample_size:
-            sample = random.sample(self._buffer, k=sample_size)
+    def add(self, state, action, next_state, reward, mask):
+        if mask:
+            self.memory.append(Transition(state, action, next_state, reward, 0))
         else:
-            sample = []
+            self.memory.append(Transition(state, action, next_state, reward, 1))
 
-        return sample
+    def sample(self, batch_size):
+        transitions = random.sample(self.memory, batch_size)
+        batch = Transition(*zip(*transitions))
+        return batch
+
+    def __len__(self):
+        return len(self.memory)
