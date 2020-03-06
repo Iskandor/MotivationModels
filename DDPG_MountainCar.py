@@ -35,7 +35,7 @@ class Actor(DDPGActor):
 
         torch.nn.init.xavier_uniform_(self._hidden0.weight)
         torch.nn.init.xavier_uniform_(self._hidden1.weight)
-        torch.nn.init.uniform_(self._output.weight, -3e-3, 3e-3)
+        torch.nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
 
     def forward(self, state):
         x = torch.nn.functional.relu(self._hidden0(state))
@@ -44,18 +44,20 @@ class Actor(DDPGActor):
         return policy
 
 
-def test(env, agent):
+def test(env, agent, render=False):
     state0 = torch.tensor(env.reset(), dtype=torch.float32)
     done = False
     total_rewards = 0
 
     while not done:
-        # env.render()
+        if render:
+            env.render()
         action = agent.get_action(state0)
         next_state, reward, done, _ = env.step(action.detach().numpy())
         total_rewards += reward
         state0 = torch.tensor(next_state, dtype=torch.float32)
-    # env.render()
+    if render:
+        env.render()
     env.close()
     return total_rewards
 
@@ -64,24 +66,27 @@ def run():
     epochs = 100
     env = gym.make('MountainCarContinuous-v0')
 
-    agent = DDPG(Actor, Critic, env.observation_space.shape[0], env.action_space.shape[0], 100000, 64, 1e-4, 1e-3, 0.99, 1e-3, 1e-2)
+    agent = DDPG(Actor, Critic, env.observation_space.shape[0], env.action_space.shape[0], 10000, 64, 1e-4, 1e-3, 0.99, 1e-3)
     # exploration = GaussianExploration(0.2)
-    exploration = OUExploration(env.action_space.shape[0], 0.2)
+    exploration = OUExploration(env.action_space.shape[0], 0.2, mu=0.4)
 
     for e in range(epochs):
         state0 = torch.tensor(env.reset(), dtype=torch.float32)
         done = False
+        train_reward = 0
 
         while not done:
             action0 = exploration.explore(agent.get_action(state0))
             # env.render()
             next_state, reward, done, _ = env.step(action0.detach().numpy())
+            train_reward += reward
             state1 = torch.tensor(next_state, dtype=torch.float32)
             agent.train(state0, action0, state1, reward, done)
             state0 = state1
 
-        total_rewards = test(env, agent)
+        test_reward = test(env, agent)
         exploration.reset()
-        print('Episode ' + str(e) + ' reward ' + str(total_rewards))
+        print('Episode ' + str(e) + ' train reward ' + str(train_reward) + ' test reward ' + str(test_reward))
 
+    test(env, agent, True)
     env.close()
