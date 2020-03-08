@@ -82,3 +82,9 @@ class DDPG:
     def _hard_update(self, target, source):
         for target_param, param in zip(target.parameters(), source.parameters()):
             target_param.data.copy_(param.data)
+
+    def enable_gpu(self):
+        self._actor.cuda()
+        self._critic.cuda()
+        self._actor_target.cuda()
+        self._critic_target.cuda()

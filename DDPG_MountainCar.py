@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import gym
 import torch
 
@@ -35,7 +37,7 @@ class Actor(DDPGActor):
 
         torch.nn.init.xavier_uniform_(self._hidden0.weight)
         torch.nn.init.xavier_uniform_(self._hidden1.weight)
-        torch.nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
+        torch.nn.init.uniform_(self._output.weight, -3e-2, 3e-2)
 
     def forward(self, state):
         x = torch.nn.functional.relu(self._hidden0(state))
@@ -66,27 +68,34 @@ def run():
     epochs = 100
     env = gym.make('MountainCarContinuous-v0')
 
-    agent = DDPG(Actor, Critic, env.observation_space.shape[0], env.action_space.shape[0], 10000, 64, 1e-4, 1e-3, 0.99, 1e-3)
-    # exploration = GaussianExploration(0.2)
-    exploration = OUExploration(env.action_space.shape[0], 0.2, mu=0.4)
+    t = torch.rand(3)
+    r = t.cuda()
 
-    for e in range(epochs):
-        state0 = torch.tensor(env.reset(), dtype=torch.float32)
-        done = False
-        train_reward = 0
+    for _ in range(10):
+        log = open(str(datetime.timestamp(datetime.now())) + '.log', 'w')
+        agent = DDPG(Actor, Critic, env.observation_space.shape[0], env.action_space.shape[0], 10000, 64, 1e-4, 1e-3, 0.99, 1e-3)
+        # exploration = GaussianExploration(0.2)
+        exploration = OUExploration(env.action_space.shape[0], 0.2, mu=0.4)
 
-        while not done:
-            action0 = exploration.explore(agent.get_action(state0))
-            # env.render()
-            next_state, reward, done, _ = env.step(action0.detach().numpy())
-            train_reward += reward
-            state1 = torch.tensor(next_state, dtype=torch.float32)
-            agent.train(state0, action0, state1, reward, done)
-            state0 = state1
+        for e in range(epochs):
+            state0 = torch.tensor(env.reset(), dtype=torch.float32)
+            done = False
+            train_reward = 0
 
-        test_reward = test(env, agent)
-        exploration.reset()
-        print('Episode ' + str(e) + ' train reward ' + str(train_reward) + ' test reward ' + str(test_reward))
+            while not done:
+                action0 = exploration.explore(agent.get_action(state0))
+                # env.render()
+                next_state, reward, done, _ = env.step(action0.detach().numpy())
+                train_reward += reward
+                state1 = torch.tensor(next_state, dtype=torch.float32)
+                agent.train(state0, action0, state1, reward, done)
+                state0 = state1
+
+            test_reward = test(env, agent)
+            exploration.reset()
+            print('Episode ' + str(e) + ' train reward ' + str(train_reward) + ' test reward ' + str(test_reward))
+            log.write(str(test_reward) + '\n')
+        log.close()
 
     test(env, agent, True)
     env.close()
