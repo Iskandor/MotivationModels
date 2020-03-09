@@ -1,9 +1,9 @@
 import gym
 import torch
 
-from DQN import DQN, DQNCritic
-from DiscreteExploration import DiscreteExploration
-from QLearning import QLearning, QCritic
+from algorithms.DQN import DQN
+from exploration.DiscreteExploration import DiscreteExploration
+from algorithms.QLearning import QCritic
 
 
 class Critic(QCritic):

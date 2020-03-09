@@ -2,7 +2,7 @@ import abc
 
 import torch
 
-from ReplayBuffer import ReplayBuffer, Transition
+from algorithms.ReplayBuffer import ReplayBuffer
 
 
 class DDPGCritic(torch.nn.Module):
@@ -42,6 +42,8 @@ class DDPG:
         self._actor_optimizer = torch.optim.Adam(self._actor.parameters(), lr=actor_lr)
         self._critic_optimizer = torch.optim.Adam(self._critic.parameters(), lr=critic_lr, weight_decay=weight_decay)
 
+        self._gpu_enabled = False
+
     def get_action(self, state):
         return self._actor(state)
 
@@ -57,12 +59,17 @@ class DDPG:
             rewards = torch.Tensor(sample.reward).unsqueeze(1)
             masks = torch.Tensor(sample.mask).unsqueeze(1)
 
-            next_action_batch = self._actor_target(next_states)
-            next_state_action_values = self._critic_target(next_states, next_action_batch.detach())
-            expected_values = rewards + masks * self._gamma * next_state_action_values
+            if self._gpu_enabled:
+                states = states.cuda()
+                next_states = next_states.cuda()
+                actions = actions.cuda()
+                rewards = rewards.cuda()
+                masks = masks.cuda()
+
+            expected_values = rewards + masks * self._gamma * self._critic_target(next_states, self._actor_target(next_states)).detach()
 
             self._critic_optimizer.zero_grad()
-            value_loss = torch.nn.functional.mse_loss(self._critic(states, actions), expected_values.detach())
+            value_loss = torch.nn.functional.mse_loss(self._critic(states, actions), expected_values)
             value_loss.backward()
             self._critic_optimizer.step()
 
@@ -88,3 +95,11 @@ class DDPG:
         self._critic.cuda()
         self._actor_target.cuda()
         self._critic_target.cuda()
+        self._gpu_enabled = True
+
+    def disable_gpu(self):
+        self._actor.cpu()
+        self._critic.cpu()
+        self._actor_target.cpu()
+        self._critic_target.cpu()
+        self._gpu_enabled = False

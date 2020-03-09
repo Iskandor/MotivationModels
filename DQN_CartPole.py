@@ -1,8 +1,8 @@
 import gym
 import torch
 
-from DQN import DQN, DQNCritic
-from DiscreteExploration import DiscreteExploration
+from algorithms.DQN import DQN, DQNCritic
+from exploration.DiscreteExploration import DiscreteExploration
 
 
 class Critic(DQNCritic):

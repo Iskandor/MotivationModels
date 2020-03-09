@@ -1,7 +1,6 @@
 import abc
-import copy
 import torch
-from ReplayBuffer import ReplayBuffer
+from algorithms.ReplayBuffer import ReplayBuffer
 
 
 class DQNCritic(torch.nn.Module):
