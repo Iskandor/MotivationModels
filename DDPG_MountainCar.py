@@ -107,7 +107,7 @@ def run_baseline():
     epochs = 100
     env = gym.make('MountainCarContinuous-v0')
     log = Logger()
-    log.disable()
+    log.enable()
 
     for _ in range(1):
         log.start()

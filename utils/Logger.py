@@ -19,7 +19,7 @@ class Logger:
 
     def log(self, msg):
         if self._enabled:
-            self._file.write(msg + '\n')
+            self._file.write(msg)
 
     def enable(self):
         self._enabled = True
