@@ -26,7 +26,7 @@ class MetaLearnerMotivation:
         loss.backward()
         self._optimizer.step()
 
-        self._forward_model.train(state0, action, state1)
+        self._forward_model.train(state0, action.detach(), state1)
 
     def reward(self, state0, action, state1, eta=1.0):
         error = torch.tensor([self._forward_model.reward(state0, action, state1)], dtype=torch.float32)
