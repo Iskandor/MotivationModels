@@ -1,9 +1,5 @@
-import numpy
-
 import DDPG_MountainCar
 
-import gym  # open ai gym
-import pybulletgym
 
 if __name__ == '__main__':
     '''

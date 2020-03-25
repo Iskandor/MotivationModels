@@ -84,7 +84,7 @@ class MetaLearnerNetwork(MetaLearnerModel):
         x = torch.cat([state, action])
         x = torch.nn.functional.relu(self._hidden0(x))
         x = torch.nn.functional.relu(self._hidden1(x))
-        value = self._output(x)
+        value = torch.nn.functional.sigmoid(self._output(x))
         return value
 
 
@@ -235,16 +235,17 @@ def run_forward_model():
         for e in range(epochs):
             state0 = torch.tensor(env.reset(), dtype=torch.float32)
             done = False
-            train_reward = 0
+            train_reward_ext = 0
+            train_reward_int = 0
 
             while not done:
                 action0 = exploration.explore(agent.get_action(state0))
                 # env.render()
                 next_state, ext_reward, done, _ = env.step(action0.detach().numpy())
-                train_reward += ext_reward
+                train_reward_ext += ext_reward
                 state1 = torch.tensor(next_state, dtype=torch.float32)
                 int_reward = motivation.reward(state0, action0, state1, 1)
-                train_reward += int_reward
+                train_reward_int += int_reward
                 # agent.enable_gpu()
                 agent.train(state0, action0, state1, ext_reward + int_reward, done)
                 motivation.train(state0, action0, state1)
@@ -255,7 +256,7 @@ def run_forward_model():
             test_reward = test(env, agent)
             exploration.reset()
             #visualize_forward_model(env, agent, motivation, i * epochs + e)
-            print('Episode ' + str(e) + ' train reward ' + str(train_reward) + ' test reward ' + str(test_reward))
+            print('Episode ' + str(e) + ' train ext. reward ' + str(train_reward_ext) + ' int. reward ' + str(train_reward_int) + ' test reward ' + str(test_reward))
             log.log(str(test_reward) + '\n')
         log.close()
 
@@ -270,7 +271,7 @@ def run_metalearner_model():
     log = Logger()
     log.enable()
 
-    for i in range(7):
+    for i in range(1):
         log.start()
         agent = DDPG(Actor, Critic, env.observation_space.shape[0], env.action_space.shape[0], 10000, 64, 1e-4, 2e-4, 0.99, 1e-3)
         forward_model = ForwardModelMotivation(ForwardModelNetwork, env.observation_space.shape[0], env.action_space.shape[0], 2e-4)
@@ -282,16 +283,17 @@ def run_metalearner_model():
         for e in range(epochs):
             state0 = torch.tensor(env.reset(), dtype=torch.float32)
             done = False
-            train_reward = 0
+            train_reward_ext = 0
+            train_reward_int = 0
 
             while not done:
                 action0 = exploration.explore(agent.get_action(state0))
                 # env.render()
                 next_state, ext_reward, done, _ = env.step(action0.detach().numpy())
-                train_reward += ext_reward
+                train_reward_ext += ext_reward
                 state1 = torch.tensor(next_state, dtype=torch.float32)
                 int_reward = motivation.reward(state0, action0, state1)
-                train_reward += int_reward
+                train_reward_int += int_reward
                 # agent.enable_gpu()
                 agent.train(state0, action0, state1, ext_reward + int_reward, done)
                 motivation.train(state0, action0, state1)
@@ -302,7 +304,7 @@ def run_metalearner_model():
             test_reward = test(env, agent)
             exploration.reset()
             #visualize_metalearner_mode(env, agent, motivation, i * epochs + e)
-            print('Episode ' + str(e) + ' train reward ' + str(train_reward) + ' test reward ' + str(test_reward))
+            print('Episode ' + str(e) + ' train ext. reward ' + str(train_reward_ext) + ' int. reward ' + str(train_reward_int) + ' test reward ' + str(test_reward))
             log.log(str(test_reward) + '\n')
         log.close()
 
