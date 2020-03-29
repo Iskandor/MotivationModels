@@ -53,16 +53,16 @@ class Actor(DDPGActor):
 class ForwardModelNetwork(ForwardModel):
     def __init__(self, state_dim, action_dim):
         super(ForwardModelNetwork, self).__init__(state_dim, action_dim)
-        self._hidden0 = torch.nn.Linear(state_dim + action_dim, 100)
-        self._hidden1 = torch.nn.Linear(100, 50)
-        self._output = torch.nn.Linear(50, state_dim)
+        self._hidden0 = torch.nn.Linear(state_dim + action_dim, 400)
+        self._hidden1 = torch.nn.Linear(400, 300)
+        self._output = torch.nn.Linear(300, state_dim)
 
         torch.nn.init.xavier_uniform_(self._hidden0.weight)
         torch.nn.init.xavier_uniform_(self._hidden1.weight)
         torch.nn.init.uniform_(self._output.weight, -3e-3, 3e-3)
 
     def forward(self, state, action):
-        x = torch.cat([state, action])
+        x = torch.cat([state, action], state.ndim - 1)
         x = torch.nn.functional.relu(self._hidden0(x))
         x = torch.nn.functional.relu(self._hidden1(x))
         value = self._output(x)
@@ -72,9 +72,9 @@ class ForwardModelNetwork(ForwardModel):
 class MetaLearnerNetwork(MetaLearnerModel):
     def __init__(self, state_dim, action_dim):
         super(MetaLearnerNetwork, self).__init__(state_dim, action_dim)
-        self._hidden0 = torch.nn.Linear(state_dim + action_dim, 40)
-        self._hidden1 = torch.nn.Linear(40, 30)
-        self._output = torch.nn.Linear(30, 1)
+        self._hidden0 = torch.nn.Linear(state_dim + action_dim, 100)
+        self._hidden1 = torch.nn.Linear(100, 50)
+        self._output = torch.nn.Linear(50, 1)
 
         torch.nn.init.xavier_uniform_(self._hidden0.weight)
         torch.nn.init.xavier_uniform_(self._hidden1.weight)
@@ -227,8 +227,8 @@ def run_forward_model():
 
     for i in range(7):
         log.start()
-        agent = DDPG(Actor, Critic, env.observation_space.shape[0], env.action_space.shape[0], 10000, 64, 1e-4, 2e-4, 0.99, 1e-3)
         motivation = ForwardModelMotivation(ForwardModelNetwork, env.observation_space.shape[0], env.action_space.shape[0], 2e-4)
+        agent = DDPG(Actor, Critic, env.observation_space.shape[0], env.action_space.shape[0], 10000, 64, 1e-4, 2e-4, 0.99, 1e-3, motivation_module=motivation)
         # exploration = GaussianExploration(0.2)
         exploration = OUExploration(env.action_space.shape[0], 0.2, mu=0.4)
 
@@ -247,7 +247,7 @@ def run_forward_model():
                 int_reward = motivation.reward(state0, action0, state1, 1)
                 train_reward_int += int_reward
                 # agent.enable_gpu()
-                agent.train(state0, action0, state1, ext_reward + int_reward, done)
+                agent.train(state0, action0, state1, ext_reward, done)
                 motivation.train(state0, action0, state1)
                 # agent.disable_gpu()
                 state0 = state1
@@ -271,7 +271,7 @@ def run_metalearner_model():
     log = Logger()
     log.enable()
 
-    for i in range(1):
+    for i in range(3):
         log.start()
         agent = DDPG(Actor, Critic, env.observation_space.shape[0], env.action_space.shape[0], 10000, 64, 1e-4, 2e-4, 0.99, 1e-3)
         forward_model = ForwardModelMotivation(ForwardModelNetwork, env.observation_space.shape[0], env.action_space.shape[0], 2e-4)

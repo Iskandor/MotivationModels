@@ -26,11 +26,12 @@ class DDPGActor(torch.nn.Module):
 
 
 class DDPG:
-    def __init__(self, actor, critic, state_dim, action_dim, memory_size, sample_size, actor_lr, critic_lr, gamma, tau, weight_decay=0):
+    def __init__(self, actor, critic, state_dim, action_dim, memory_size, sample_size, actor_lr, critic_lr, gamma, tau, weight_decay=0, motivation_module=None):
         self._actor = actor(state_dim, action_dim)
         self._critic = critic(state_dim, action_dim)
         self._actor_target = actor(state_dim, action_dim)
         self._critic_target = critic(state_dim, action_dim)
+        self._motivation_module = motivation_module
         self._memory = ReplayBuffer(memory_size)
         self._sample_size = sample_size
         self._gamma = gamma
@@ -65,6 +66,10 @@ class DDPG:
                 actions = actions.cuda()
                 rewards = rewards.cuda()
                 masks = masks.cuda()
+
+            if self._motivation_module is not None:
+                int_reward = self._motivation_module.reward(states, actions, next_states)
+                rewards += int_reward
 
             expected_values = rewards + masks * self._gamma * self._critic_target(next_states, self._actor_target(next_states)).detach()
 

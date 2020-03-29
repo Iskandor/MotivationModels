@@ -1,5 +1,6 @@
-import DDPG_MountainCar
+import torch
 
+import DDPG_MountainCar
 
 if __name__ == '__main__':
     '''
@@ -18,8 +19,8 @@ if __name__ == '__main__':
     print(steps)
     '''
 
-    #DDPG_MountainCar.run_baseline()
-    #DDPG_MountainCar.run_forward_model()
-    DDPG_MountainCar.run_metalearner_model()
-    #DQN_FrozenLake.run()
-    #DQN_CartPole.run()
+    # DDPG_MountainCar.run_baseline()
+    DDPG_MountainCar.run_forward_model()
+    # DDPG_MountainCar.run_metalearner_model()
+    # DQN_FrozenLake.run()
+    # DQN_CartPole.run()

@@ -30,11 +30,11 @@ class MetaLearnerMotivation:
 
     def reward(self, state0, action, state1, eta=1.0):
         uncertainty = self._forward_model.reward(state0, action, state1)
-        surprise = self._surprise_reward(state0, action, state1, 0.1)
+        surprise = self._surprise_reward(state0, action, state1)
         #print(str(uncertainty) + ' ' + str(surprise))
         return max(uncertainty, surprise)
 
     def _surprise_reward(self, state0, action, state1, eta=1.0):
         error = torch.tensor([self._forward_model.reward(state0, action, state1)], dtype=torch.float32)
-        reward = (error / self._network(state0, action)) - 1
-        return max(reward.item(), 0)
+        reward = (error / self._network(state0, action)) + (self._network(state0, action) / error) - 2
+        return max(torch.tanh(reward).item() * eta, 0)

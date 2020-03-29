@@ -25,4 +25,13 @@ class ForwardModelMotivation:
         self._optimizer.step()
 
     def reward(self, state0, action, state1, eta=1.0):
-        return torch.nn.functional.mse_loss(self._network(state0, action), state1).item() * eta
+        reward = None
+        if state0.ndim == 1:
+            reward = torch.tanh(torch.nn.functional.mse_loss(self._network(state0, action), state1)).item()
+        if state0.ndim == 2:
+            reward = torch.zeros((state0.shape[0], 1))
+            prediction = self._network(state0, action)
+            for i in range(state0.shape[0]):
+                reward[i] = torch.tanh(torch.nn.functional.mse_loss(prediction[i], state1[i]))
+
+        return reward * eta
