@@ -81,7 +81,7 @@ class MetaLearnerNetwork(MetaLearnerModel):
         torch.nn.init.uniform_(self._output.weight, -3e-3, 3e-3)
 
     def forward(self, state, action):
-        x = torch.cat([state, action])
+        x = torch.cat([state, action], state.ndim - 1)
         x = torch.nn.functional.relu(self._hidden0(x))
         x = torch.nn.functional.relu(self._hidden1(x))
         value = torch.nn.functional.sigmoid(self._output(x))
@@ -271,11 +271,11 @@ def run_metalearner_model():
     log = Logger()
     log.enable()
 
-    for i in range(3):
+    for i in range(1):
         log.start()
-        agent = DDPG(Actor, Critic, env.observation_space.shape[0], env.action_space.shape[0], 10000, 64, 1e-4, 2e-4, 0.99, 1e-3)
         forward_model = ForwardModelMotivation(ForwardModelNetwork, env.observation_space.shape[0], env.action_space.shape[0], 2e-4)
         motivation = MetaLearnerMotivation(MetaLearnerNetwork, forward_model, env.observation_space.shape[0], env.action_space.shape[0], 2e-4)
+        agent = DDPG(Actor, Critic, env.observation_space.shape[0], env.action_space.shape[0], 10000, 64, 1e-4, 2e-4, 0.99, 1e-3, motivation_module=motivation)
 
         # exploration = GaussianExploration(0.2)
         exploration = OUExploration(env.action_space.shape[0], 0.2, mu=0.4)
@@ -295,7 +295,7 @@ def run_metalearner_model():
                 int_reward = motivation.reward(state0, action0, state1)
                 train_reward_int += int_reward
                 # agent.enable_gpu()
-                agent.train(state0, action0, state1, ext_reward + int_reward, done)
+                agent.train(state0, action0, state1, ext_reward, done)
                 motivation.train(state0, action0, state1)
                 # agent.disable_gpu()
                 state0 = state1
