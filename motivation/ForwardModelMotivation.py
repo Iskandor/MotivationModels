@@ -24,6 +24,18 @@ class ForwardModelMotivation:
         loss.backward()
         self._optimizer.step()
 
+    def error(self, state0, action, state1):
+        error = None
+        if state0.ndim == 1:
+            error = torch.nn.functional.mse_loss(self._network(state0, action), state1).detach().reshape([1])
+        if state0.ndim == 2:
+            error = torch.zeros((state0.shape[0], 1))
+            prediction = self._network(state0, action)
+            for i in range(state0.shape[0]):
+                error[i] = torch.nn.functional.mse_loss(prediction[i], state1[i]).detach().reshape([1])
+
+        return error
+
     def reward(self, state0, action, state1, eta=1.0):
         reward = None
         if state0.ndim == 1:

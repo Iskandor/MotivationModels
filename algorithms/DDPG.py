@@ -70,6 +70,7 @@ class DDPG:
             if self._motivation_module is not None:
                 int_reward = self._motivation_module.reward(states, actions, next_states)
                 rewards += int_reward
+                #self._motivation_module.train(states, actions, next_states)
 
             expected_values = rewards + masks * self._gamma * self._critic_target(next_states, self._actor_target(next_states)).detach()
 
