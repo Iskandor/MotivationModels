@@ -48,6 +48,9 @@ class DDPG:
     def get_action(self, state):
         return self._actor(state)
 
+    def get_value(self, state, action):
+        return self._critic(state, action)
+
     def train(self, state0, action0, state1, reward, done):
         self._memory.add(state0, action0, state1, reward, done)
 
@@ -68,7 +71,7 @@ class DDPG:
                 masks = masks.cuda()
 
             if self._motivation_module is not None:
-                int_reward = self._motivation_module.reward(states, actions, next_states)
+                int_reward = self._motivation_module.reward('A', states, actions, next_states)
                 rewards += int_reward
                 #self._motivation_module.train(states, actions, next_states)
 

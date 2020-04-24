@@ -11,15 +11,17 @@ from motivation.MateLearnerMotivation import MetaLearnerMotivation, MetaLearnerM
 from utils.Logger import Logger
 
 import matplotlib.pyplot as plt
+
 plt.style.use('seaborn-white')
+
 
 class Critic(DDPGCritic):
     def __init__(self, state_dim, action_dim):
         super(Critic, self).__init__(state_dim, action_dim)
 
-        self._hidden0 = torch.nn.Linear(state_dim, 400)
-        self._hidden1 = torch.nn.Linear(400 + action_dim, 300)
-        self._output = torch.nn.Linear(300, 1)
+        self._hidden0 = torch.nn.Linear(state_dim, 40)
+        self._hidden1 = torch.nn.Linear(40 + action_dim, 30)
+        self._output = torch.nn.Linear(30, 1)
 
         torch.nn.init.xavier_uniform_(self._hidden0.weight)
         torch.nn.init.xavier_uniform_(self._hidden1.weight)
@@ -37,9 +39,9 @@ class Actor(DDPGActor):
     def __init__(self, state_dim, action_dim):
         super(Actor, self).__init__(state_dim, action_dim)
 
-        self._hidden0 = torch.nn.Linear(state_dim, 400)
-        self._hidden1 = torch.nn.Linear(400, 300)
-        self._output = torch.nn.Linear(300, action_dim)
+        self._hidden0 = torch.nn.Linear(state_dim, 40)
+        self._hidden1 = torch.nn.Linear(40, 30)
+        self._output = torch.nn.Linear(30, action_dim)
 
         torch.nn.init.xavier_uniform_(self._hidden0.weight)
         torch.nn.init.xavier_uniform_(self._hidden1.weight)
@@ -120,15 +122,17 @@ def test_forward_model(env, motivation):
 
     motivation.train()
 
+
 def visualize_policy(agent, index=0):
     X, Y = numpy.meshgrid(numpy.linspace(-1.2, 0.6, 20), numpy.linspace(-0.07, 0.07, 20))
     input = torch.stack([torch.tensor(X, dtype=torch.float32).reshape(20 * 20), torch.tensor(Y, dtype=torch.float32).reshape(20 * 20)]).transpose(1, 0)
-    Z = agent.get_action(input).reshape(20,20).detach().numpy()
+    Z = agent.get_action(input).reshape(20, 20).detach().numpy()
 
     plt.pcolor(X, Y, Z, cmap='RdGy', vmin=-1, vmax=1)
     plt.colorbar()
     plt.savefig(str(index) + '.png')
     plt.clf()
+
 
 def visualize_forward_model(env, agent, motivation, index=0):
     X, Y = numpy.meshgrid(numpy.linspace(-1.2, 0.6, 20), numpy.linspace(-0.07, 0.07, 20))
@@ -142,69 +146,96 @@ def visualize_forward_model(env, agent, motivation, index=0):
         next_state, _, _, _ = env.step(action.detach().numpy())
         state1 = torch.tensor(next_state, dtype=torch.float32)
         R[i] = motivation.reward(input[i], action, state1)
-    R = R.reshape((20,20))
+    R = R.reshape((20, 20))
     Z = Z.reshape(20, 20).detach().numpy()
 
     plt.figure(figsize=(10.00, 4.80))
-    plt.subplot(1,2,1)
+    plt.subplot(1, 2, 1)
     plt.pcolor(X, Y, Z, cmap='RdGy', vmin=-1, vmax=1)
     plt.colorbar()
-    plt.subplot(1,2,2)
+    plt.subplot(1, 2, 2)
     plt.pcolor(X, Y, R, cmap='Greys', vmin=0, vmax=1)
     plt.colorbar()
     plt.savefig(str(index) + '.png')
-    #plt.show()
+    # plt.show()
     plt.close()
+
 
 def visualize_metalearner_model(episode, env, agent, forward_model, metalearner, images):
     X, Y = numpy.meshgrid(numpy.linspace(-1.2, 0.6, 20), numpy.linspace(-0.07, 0.07, 20))
-    input = torch.stack([torch.tensor(X, dtype=torch.float32).reshape(20 * 20), torch.tensor(Y, dtype=torch.float32).reshape(20 * 20)]).transpose(1, 0)
-    Z = agent.get_action(input)
+    state = torch.stack([torch.tensor(X, dtype=torch.float32).reshape(20 * 20), torch.tensor(Y, dtype=torch.float32).reshape(20 * 20)]).transpose(1, 0)
+    actions = agent.get_action(state)
+    value = agent.get_value(state, actions)
     E = numpy.zeros((400))
-    ME = metalearner.error(input, Z)
-    R = numpy.zeros((400))
+    ME = metalearner.error(state, actions)
+    reward_A = numpy.zeros((400))
+    reward_B = numpy.zeros((400))
 
-    for i in range(input.shape[0]):
-        env.set_state(input[i].numpy())
-        action = Z[i]
+    for i in range(state.shape[0]):
+        env.set_state(state[i].numpy())
+        action = actions[i]
         next_state, _, _, _ = env.step(action.detach().numpy())
         state1 = torch.tensor(next_state, dtype=torch.float32)
-        E[i] = forward_model.error(input[i], action, state1)
-        R[i] = metalearner.reward(input[i], action, state1)
-    R = R.reshape((20,20))
-    E = E.reshape((20,20))
-    Z = Z.reshape(20, 20).detach().numpy()
+        E[i] = forward_model.error(state[i], action, state1)
+        reward_A[i] = metalearner.reward('A', state[i], action, state1)
+        reward_B[i] = metalearner.reward('B', state[i], action, state1)
+    reward_A = reward_A.reshape((20, 20))
+    reward_B = reward_B.reshape((20, 20))
+    E = E.reshape((20, 20))
+    actions = actions.reshape(20, 20).detach().numpy()
+    value = value.reshape(20, 20).detach().numpy()
     ME = ME.reshape(20, 20).detach().numpy()
 
-    figure = plt.figure(figsize=(10.00, 10.00))
+    figure = plt.figure(figsize=(15.00, 10.00))
     figure.suptitle('Episode ' + str(episode))
-    plt.subplot(2,2,1, title='Policy')
-    plt.pcolor(X, Y, Z, cmap='coolwarm', vmin=-1, vmax=1)
+    plt.subplot(2, 3, 1, title='Policy')
+    plt.pcolor(X, Y, actions, cmap='coolwarm', vmin=-1, vmax=1)
     plt.colorbar()
-    plt.subplot(2,2,2, title='Reward')
-    plt.pcolor(X, Y, R, cmap='Greys', vmin=0, vmax=0.05)
+    plt.subplot(2, 3, 2, title='Reward var.Ac')
+    plt.pcolor(X, Y, reward_A, cmap='Greys', vmin=0, vmax=0.05)
     plt.colorbar()
-    plt.subplot(2,2,3, title='Forward model')
+    plt.subplot(2, 3, 3, title='Forward model')
     plt.pcolor(X, Y, E, cmap='Greys', vmin=0, vmax=0.05)
     plt.colorbar()
-    plt.subplot(2,2,4, title='Meta-learner')
+    plt.subplot(2, 3, 4, title='Q Values')
+    plt.pcolor(X, Y, value, cmap='Blues', vmin=0, vmax=100)
+    plt.colorbar()
+    plt.subplot(2, 3, 5, title='Reward var.B1')
+    plt.pcolor(X, Y, reward_B, cmap='Greys', vmin=0, vmax=0.05)
+    plt.colorbar()
+    plt.subplot(2, 3, 6, title='Meta-learner')
     plt.pcolor(X, Y, ME, cmap='Greys', vmin=0, vmax=0.05)
     plt.colorbar()
-    #plt.savefig(str(index) + '.png')
-    #plt.show()
+    # plt.savefig(str(index) + '.png')
+    # plt.show()
 
     figure.canvas.draw()
     image = numpy.frombuffer(figure.canvas.tostring_rgb(), dtype='uint8')
     images.append(image.reshape(figure.canvas.get_width_height()[::-1] + (3,)))
     plt.close()
 
+
+def plot_graph(p_data, p_title, p_filename):
+    colors = ['blue', 'red', 'green']
+
+    fig, ax = plt.subplots(1)
+    ax.set_title(p_title)
+    ax.set_xlabel('episodes')
+    ax.set_ylabel('reward')
+    ax.grid()
+    ax.plot(p_data, lw=2, label='mean reward', color=colors[0])
+    # plt.show()
+    plt.savefig(p_filename + '.png')
+
+
 def run_baseline():
-    epochs = 500
+    epochs = 1000
     env = gym.make('MountainCarContinuous-v0')
     log = Logger()
     log.enable()
 
-    for i in range(7):
+    for i in range(5):
+        rewards = []
         log.start()
         agent = DDPG(Actor, Critic, env.observation_space.shape[0], env.action_space.shape[0], 10000, 64, 1e-4, 2e-4, 0.99, 1e-3)
         # exploration = GaussianExploration(0.2)
@@ -228,13 +259,15 @@ def run_baseline():
                 # print(reward)
 
             test_reward = test(env, agent)
-            #visualize_policy(agent, i * epochs + e)
+            rewards.append(test_reward)
+            # visualize_policy(agent, i * epochs + e)
             exploration.reset()
             print('Episode ' + str(e) + ' train reward ' + str(train_reward) + ' test reward ' + str(test_reward))
             log.log(str(test_reward) + '\n')
         log.close()
 
-        test(env, agent, True)
+        #test(env, agent, True)
+        plot_graph(rewards, 'DDPG baseline trial ' + str(i), 'ddpg_baseline' + str(i))
 
     env.close()
 
@@ -275,7 +308,7 @@ def run_forward_model():
 
             test_reward = test(env, agent)
             exploration.reset()
-            #visualize_forward_model(env, agent, motivation, i * epochs + e)
+            # visualize_forward_model(env, agent, motivation, i * epochs + e)
             print('Episode ' + str(e) + ' train ext. reward ' + str(train_reward_ext) + ' int. reward ' + str(train_reward_int) + ' test reward ' + str(test_reward))
             log.log(str(test_reward) + '\n')
         log.close()
@@ -291,8 +324,10 @@ def run_metalearner_model():
     log = Logger()
     log.enable()
 
-    for i in range(9):
-        log.start()
+    for i in range(5):
+        rewards = []
+        images = []
+        log.start('ddpg_su_model' + str(i))
         forward_model = ForwardModelMotivation(ForwardModelNetwork, env.observation_space.shape[0], env.action_space.shape[0], 2e-4)
         motivation = MetaLearnerMotivation(MetaLearnerNetwork, forward_model, env.observation_space.shape[0], env.action_space.shape[0], 2e-4)
         agent = DDPG(Actor, Critic, env.observation_space.shape[0], env.action_space.shape[0], 10000, 64, 1e-4, 2e-4, 0.99, 1e-3, motivation_module=motivation)
@@ -300,9 +335,9 @@ def run_metalearner_model():
         # exploration = GaussianExploration(0.2)
         exploration = OUExploration(env.action_space.shape[0], 0.2, mu=0.4)
 
-        #env.reset()
-        #visualize_metalearner_model(env, agent, forward_model, motivation, 0)
-        images = []
+        # env.reset()
+        # visualize_metalearner_model(env, agent, forward_model, motivation, 0)
+
 
         for e in range(epochs):
             state0 = torch.tensor(env.reset(), dtype=torch.float32)
@@ -316,7 +351,7 @@ def run_metalearner_model():
                 next_state, ext_reward, done, _ = env.step(action0.detach().numpy())
                 train_reward_ext += ext_reward
                 state1 = torch.tensor(next_state, dtype=torch.float32)
-                int_reward = motivation.reward(state0, action0, state1)
+                int_reward = motivation.reward('A', state0, action0, state1)
                 train_reward_int += int_reward
                 # agent.enable_gpu()
                 agent.train(state0, action0, state1, ext_reward, done)
@@ -326,6 +361,7 @@ def run_metalearner_model():
                 # print(ext_reward + int_reward)
 
             test_reward = test(env, agent)
+            rewards.append(test_reward)
             exploration.reset()
             visualize_metalearner_model(e, env, agent, forward_model, motivation, images)
             print('Episode ' + str(e) + ' train ext. reward ' + str(train_reward_ext) + ' int. reward ' + str(train_reward_int) + ' test reward ' + str(test_reward))
@@ -333,7 +369,8 @@ def run_metalearner_model():
         log.close()
 
         imageio.mimsave('ddpg_su_model' + str(i) + '.gif', images, fps=5, loop=1)
+        plot_graph(rewards, 'DDPG SU model trial ' + str(i), 'ddpg_su_model' + str(i))
 
-        #test(env, agent, True)
+        # test(env, agent, True)
 
     env.close()

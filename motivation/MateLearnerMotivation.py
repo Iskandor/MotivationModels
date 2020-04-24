@@ -31,9 +31,9 @@ class MetaLearnerMotivation:
     def error(self, state0, action):
         return self._network(state0, action)
 
-    def reward(self, state0, action, state1, eta=1.0):
+    def reward(self, variant, state0, action, state1, eta=1.0):
         uncertainty = self._forward_model.reward(state0, action, state1)
-        surprise = self._surprise_reward(state0, action, state1)
+        surprise = self._surprise_reward(variant, state0, action, state1)
         #print(str(uncertainty) + ' ' + str(surprise))
         reward = None
         if state0.ndim == 1:
@@ -42,32 +42,35 @@ class MetaLearnerMotivation:
             reward = torch.max(uncertainty, surprise)
         return reward * eta
 
-    def _surprise_reward(self, state0, action, state1, eta=1.0):
+    def _surprise_reward(self, variant, state0, action, state1, eta=1.0):
         reward = None
         if state0.ndim == 1:
             error = self._forward_model.error(state0, action, state1)
             prediction = self._network(state0, action)
-            torch.abs(error - prediction)
-            reward = torch.exp(1 * torch.abs(error - prediction)).item() - 1
-            '''
-            if abs(error - prediction) > 0.01:
-                reward = error / self._network(state0, action) + self._network(state0, action) / error - 2
-                reward = max(torch.tanh(reward).item(), 0)
-            else:
-                reward = 0
-            '''
+
+            if variant == 'A':
+                if abs(error - prediction) > 0.01:
+                    reward = error / self._network(state0, action) + self._network(state0, action) / error - 2
+                    reward = max(torch.tanh(reward).item(), 0)
+                else:
+                    reward = 0
+
+            if variant == 'B':
+                reward = torch.exp(1 * torch.abs(error - prediction)).item() - 1
 
         if state0.ndim == 2:
             reward = torch.zeros((state0.shape[0], 1))
             error = self._forward_model.error(state0, action, state1)
             prediction = self._network(state0, action)
-            reward = torch.exp(1 * torch.abs(error - prediction)) - 1
-            '''
-            for i in range(state0.shape[0]):
-                if abs(error[i] - prediction[i]) > 0.01:
-                    reward[i] = max(torch.tanh(error[i] / prediction[i] + prediction[i] / error[i] - 2).item(), 0)
-                else:
-                    reward[i] = 0
-             '''
+
+            if variant == 'A':
+                for i in range(state0.shape[0]):
+                    if abs(error[i] - prediction[i]) > 0.01:
+                        reward[i] = max(torch.tanh(error[i] / prediction[i] + prediction[i] / error[i] - 2).item(), 0)
+                    else:
+                        reward[i] = 0
+
+            if variant == 'B':
+                reward = torch.exp(1 * torch.abs(error - prediction)) - 1
 
         return reward * eta
