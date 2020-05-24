@@ -211,7 +211,8 @@ def visualize_metalearner_model(episode, env, agent, forward_model, metalearner,
 
     figure.canvas.draw()
     image = numpy.frombuffer(figure.canvas.tostring_rgb(), dtype='uint8')
-    images.append(image.reshape(figure.canvas.get_width_height()[::-1] + (3,)))
+    # images.append(image.reshape(figure.canvas.get_width_height()[::-1] + (3,)))
+    images.append(plt.imshow(image))
     plt.close()
 
 
@@ -228,20 +229,19 @@ def plot_graph(p_data, p_title, p_filename):
     plt.savefig(p_filename + '.png')
 
 
-def run_baseline():
-    epochs = 1000
+def run_baseline(trials, episodes):
     env = gym.make('MountainCarContinuous-v0')
     log = Logger()
     log.enable()
 
-    for i in range(5):
+    for i in range(trials):
         rewards = []
         log.start()
         agent = DDPG(Actor, Critic, env.observation_space.shape[0], env.action_space.shape[0], 10000, 64, 1e-4, 2e-4, 0.99, 1e-3)
         # exploration = GaussianExploration(0.2)
         exploration = OUExploration(env.action_space.shape[0], 0.2, mu=0.4)
 
-        for e in range(epochs):
+        for e in range(episodes):
             state0 = torch.tensor(env.reset(), dtype=torch.float32)
             done = False
             train_reward = 0
@@ -267,25 +267,25 @@ def run_baseline():
         log.close()
 
         #test(env, agent, True)
-        plot_graph(rewards, 'DDPG baseline trial ' + str(i), 'ddpg_baseline' + str(i))
+        plot_graph(rewards, 'DDPG baseline trial ' + str(i+5), 'ddpg_baseline' + str(i+5))
 
     env.close()
 
 
-def run_forward_model():
-    epochs = 2000
+def run_forward_model(trials, episodes):
     env = gym.make('MountainCarContinuous-v0')
     log = Logger()
     log.enable()
 
-    for i in range(3):
+    for i in range(trials):
+        rewards = []
         log.start()
         motivation = ForwardModelMotivation(ForwardModelNetwork, env.observation_space.shape[0], env.action_space.shape[0], 2e-4)
         agent = DDPG(Actor, Critic, env.observation_space.shape[0], env.action_space.shape[0], 10000, 64, 1e-4, 2e-4, 0.99, 1e-3, motivation_module=motivation)
         # exploration = GaussianExploration(0.2)
         exploration = OUExploration(env.action_space.shape[0], 0.2, mu=0.4)
 
-        for e in range(epochs):
+        for e in range(episodes):
             state0 = torch.tensor(env.reset(), dtype=torch.float32)
             done = False
             train_reward_ext = 0
@@ -307,24 +307,25 @@ def run_forward_model():
                 # print(ext_reward + int_reward)
 
             test_reward = test(env, agent)
+            rewards.append(test_reward)
             exploration.reset()
             # visualize_forward_model(env, agent, motivation, i * epochs + e)
             print('Episode ' + str(e) + ' train ext. reward ' + str(train_reward_ext) + ' int. reward ' + str(train_reward_int) + ' test reward ' + str(test_reward))
             log.log(str(test_reward) + '\n')
         log.close()
 
-        test(env, agent, True)
+        # test(env, agent, True)
+        plot_graph(rewards, 'DDPG FM trial ' + str(i), 'ddpg_forward_model' + str(i))
 
     env.close()
 
 
-def run_metalearner_model():
-    epochs = 1000
+def run_metalearner_model(trials, episodes):
     env = gym.make('MountainCarContinuous-v0')
     log = Logger()
     log.enable()
 
-    for i in range(5):
+    for i in range(trials):
         rewards = []
         images = []
         log.start('ddpg_su_model' + str(i))
@@ -339,7 +340,7 @@ def run_metalearner_model():
         # visualize_metalearner_model(env, agent, forward_model, motivation, 0)
 
 
-        for e in range(epochs):
+        for e in range(episodes):
             state0 = torch.tensor(env.reset(), dtype=torch.float32)
             done = False
             train_reward_ext = 0
@@ -369,6 +370,9 @@ def run_metalearner_model():
         log.close()
 
         imageio.mimsave('ddpg_su_model' + str(i) + '.gif', images, fps=5, loop=1)
+        #ani = animation.ArtistAnimation(fig, ims, interval=50, blit=True, repeat_delay=1000)
+
+        # ani.save('dynamic_images.mp4')
         plot_graph(rewards, 'DDPG SU model trial ' + str(i), 'ddpg_su_model' + str(i))
 
         # test(env, agent, True)

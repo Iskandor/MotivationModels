@@ -1,26 +1,28 @@
-import torch
+import argparse
 
+import DDPG_FetchReach
 import DDPG_MountainCar
 
 if __name__ == '__main__':
-    '''
-    env = gym.make('AntPyBulletEnv-v0')
-    # env.render() # call this before env.reset, if you want a window showing the environment
-    state = env.reset()  # should return a state vector if everything worked
-    env.render('human')
-    done = False
-    steps = 0
+    parser = argparse.ArgumentParser(description='Motivation models learning platform.')
 
-    while not done:
-        action = (numpy.random.random(env.action_space.shape[0]) - 0.5) * 2
-        next_state, reward, done, info = env.step(action)
-        steps += 1
+    parser.add_argument('--env', help='[mountain_car,fetch_reach]')
+    parser.add_argument('--model', help='[baseline,fm,su]')
+    parser.add_argument('--trials', help='No. trials')
+    parser.add_argument('--episodes', help='No. episodes')
 
-    print(steps)
-    '''
+    args = parser.parse_args()
 
-    # DDPG_MountainCar.run_baseline()
-    # DDPG_MountainCar.run_forward_model()
-    DDPG_MountainCar.run_metalearner_model()
+    if args.env == 'mountain_car':
+        if args.model == 'baseline':
+            DDPG_MountainCar.run_baseline(int(args.trials), int(args.episodes))
+        if args.model == 'fm':
+            DDPG_MountainCar.run_forward_model(int(args.trials), int(args.episodes))
+        if args.model == 'su':
+            DDPG_MountainCar.run_metalearner_model(int(args.trials), int(args.episodes))
+    if args.env == 'fetch_reach':
+        if args.model == 'baseline':
+            DDPG_FetchReach.run_baseline(int(args.trials), int(args.episodes))
+
     # DQN_FrozenLake.run()
     # DQN_CartPole.run()
