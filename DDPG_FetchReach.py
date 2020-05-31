@@ -1,10 +1,16 @@
+from datetime import datetime
+
 import gym
+import numpy
 import torch
 import matplotlib.pyplot as plt
+import time
+
 
 from algorithms.DDPG import DDPG, DDPGCritic, DDPGActor
 from exploration.ContinuousExploration import GaussianExploration
 from utils.Logger import Logger
+from etaprogress.progress import ProgressBar
 
 
 class Critic(DDPGCritic):
@@ -96,11 +102,13 @@ def run_baseline(trials, episodes):
         agent = DDPG(Actor, Critic, state_dim, action_dim, 1000000, 256, 1e-3, 1e-3, 0.99, 5e-3)
         exploration = GaussianExploration(0.2)
         # exploration = OUExploration(env.action_space.shape[0], 0.2, mu=0.4)
+        bar = ProgressBar(episodes, max_width=40)
 
         for e in range(episodes):
             state0 = encode_state(env.reset())
             done = False
             train_reward = 0
+            bar.numerator = e
 
             while not done:
                 #env.render()
@@ -116,11 +124,14 @@ def run_baseline(trials, episodes):
             # visualize_policy(agent, i * epochs + e)
             # exploration.reset()
             print('Episode ' + str(e) + ' train reward ' + str(train_reward) + ' test reward ' + str(test_reward))
+            print(bar)
+
             # log.log(str(test_reward) + '\n')
         log.close()
 
         # test(env, agent, True)
-        plot_graph(rewards, 'DDPG baseline trial ' + str(i), 'ddpg_baseline' + str(i))
+        # plot_graph(rewards, 'DDPG baseline trial ' + str(i), 'ddpg_baseline' + str(i))
+        numpy.save('ddpg_baseline_' + str(i), rewards)
 
     env.close()
 
