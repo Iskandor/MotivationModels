@@ -89,17 +89,17 @@ def test(env, agent, render=False):
     return total_rewards
 
 
-def run_baseline(trials, episodes):
+def run_baseline(trials, episodes, memory_size):
     env = gym.make('FetchReach-v1')
     log = Logger()
     log.disable()
 
     for i in range(trials):
-        rewards = []
+        rewards = numpy.zeros(episodes)
         log.start()
         state_dim = env.observation_space['achieved_goal'].shape[0] + env.observation_space['desired_goal'].shape[0]
         action_dim = env.action_space.shape[0]
-        agent = DDPG(Actor, Critic, state_dim, action_dim, 1000000, 256, 1e-3, 1e-3, 0.99, 5e-3)
+        agent = DDPG(Actor, Critic, state_dim, action_dim, memory_size, 256, 1e-3, 1e-3, 0.99, 5e-3)
         exploration = GaussianExploration(0.2)
         # exploration = OUExploration(env.action_space.shape[0], 0.2, mu=0.4)
         bar = ProgressBar(episodes, max_width=40)
@@ -120,7 +120,7 @@ def run_baseline(trials, episodes):
                 state0 = state1
 
             test_reward = test(env, agent)
-            rewards.append(test_reward)
+            rewards[e] = test_reward
             # visualize_policy(agent, i * epochs + e)
             # exploration.reset()
             print('Episode ' + str(e) + ' train reward ' + str(train_reward) + ' test reward ' + str(test_reward))
