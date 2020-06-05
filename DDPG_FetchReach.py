@@ -17,13 +17,13 @@ class Critic(DDPGCritic):
     def __init__(self, state_dim, action_dim):
         super(Critic, self).__init__(state_dim, action_dim)
 
-        self._hidden0 = torch.nn.Linear(state_dim, 256)
+        self._hidden0 = torch.nn.Linear(state_dim, 200)
         self._hidden0_f = torch.nn.ReLU()
-        self._hidden1 = torch.nn.Linear(256 + action_dim, 256)
+        self._hidden1 = torch.nn.Linear(200 + action_dim, 200)
         self._hidden1_f = torch.nn.ReLU()
-        self._hidden2 = torch.nn.Linear(256, 256)
+        self._hidden2 = torch.nn.Linear(200, 300)
         self._hidden2_f = torch.nn.ReLU()
-        self._output = torch.nn.Linear(256, action_dim)
+        self._output = torch.nn.Linear(300, action_dim)
 
         torch.nn.init.xavier_uniform_(self._hidden0.weight)
         torch.nn.init.xavier_uniform_(self._hidden1.weight)
@@ -43,24 +43,20 @@ class Actor(DDPGActor):
     def __init__(self, state_dim, action_dim):
         super(Actor, self).__init__(state_dim, action_dim)
 
-        self._hidden0 = torch.nn.Linear(state_dim, 256)
+        self._hidden0 = torch.nn.Linear(state_dim, 400)
         self._hidden0_f = torch.nn.ReLU()
-        self._hidden1 = torch.nn.Linear(256, 256)
+        self._hidden1 = torch.nn.Linear(400, 300)
         self._hidden1_f = torch.nn.ReLU()
-        self._hidden2 = torch.nn.Linear(256, 256)
-        self._hidden2_f = torch.nn.ReLU()
-        self._output = torch.nn.Linear(256, action_dim)
+        self._output = torch.nn.Linear(300, action_dim)
         self._output_f = torch.nn.Tanh()
 
         torch.nn.init.xavier_uniform_(self._hidden0.weight)
         torch.nn.init.xavier_uniform_(self._hidden1.weight)
-        torch.nn.init.xavier_uniform_(self._hidden2.weight)
         torch.nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
 
     def forward(self, state):
         x = self._hidden0_f(self._hidden0(state))
         x = self._hidden1_f(self._hidden1(x))
-        x = self._hidden2_f(self._hidden2(x))
         action = self._output_f(self._output(x))
         return action
 
@@ -99,7 +95,7 @@ def run_baseline(trials, episodes, memory_size):
         log.start()
         state_dim = env.observation_space['achieved_goal'].shape[0] + env.observation_space['desired_goal'].shape[0]
         action_dim = env.action_space.shape[0]
-        agent = DDPG(Actor, Critic, state_dim, action_dim, memory_size, 256, 1e-3, 1e-3, 0.99, 5e-3)
+        agent = DDPG(Actor, Critic, state_dim, action_dim, memory_size, 128, 1e-3, 1e-3, 0.99, 5e-3)
         exploration = GaussianExploration(0.2)
         # exploration = OUExploration(env.action_space.shape[0], 0.2, mu=0.4)
         bar = ProgressBar(episodes, max_width=40)

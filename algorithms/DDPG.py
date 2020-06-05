@@ -46,10 +46,14 @@ class DDPG:
         self._gpu_enabled = False
 
     def get_action(self, state):
-        return self._actor(state)
+        with torch.no_grad():
+            action = self._actor(state)
+        return action
 
     def get_value(self, state, action):
-        return self._critic(state, action)
+        with torch.no_grad():
+            value = self._critic(state, action)
+        return value
 
     def train(self, state0, action0, state1, reward, done):
         self._memory.add(state0, action0, state1, reward, done)
