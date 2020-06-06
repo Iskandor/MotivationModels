@@ -24,6 +24,8 @@ if __name__ == '__main__':
     if args.env == 'fetch_reach':
         if args.model == 'baseline':
             DDPG_FetchReach.run_baseline(int(args.trials), int(args.episodes), int(args.memory_size))
+        if args.model == 'fm':
+            DDPG_FetchReach.run_forward_model(int(args.trials), int(args.episodes), int(args.memory_size))
 
     # DQN_FrozenLake.run()
     # DQN_CartPole.run()
