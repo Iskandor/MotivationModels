@@ -195,7 +195,7 @@ def run_forward_model(trials, episodes, memory_size):
 
         # test(env, agent, True)
         # plot_graph(rewards, 'DDPG baseline trial ' + str(i), 'ddpg_baseline' + str(i))
-        numpy.save('ddpg_baseline_' + str(i), rewards)
+        numpy.save('ddpg_fm_' + str(i), rewards)
 
     env.close()
 
