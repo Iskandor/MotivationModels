@@ -26,11 +26,12 @@ class ForwardModelMotivation:
 
     def error(self, state0, action, state1):
         error = None
+        with torch.no_grad():
+            prediction = self._network(state0, action)
         if state0.ndim == 1:
-            error = torch.nn.functional.mse_loss(self._network(state0, action), state1).detach().reshape([1])
+            error = torch.nn.functional.mse_loss(prediction, state1).detach().reshape([1])
         if state0.ndim == 2:
             error = torch.zeros((state0.shape[0], 1))
-            prediction = self._network(state0, action)
             for i in range(state0.shape[0]):
                 error[i] = torch.nn.functional.mse_loss(prediction[i], state1[i]).detach().reshape([1])
 
@@ -38,12 +39,10 @@ class ForwardModelMotivation:
 
     def reward(self, state0, action, state1, eta=1.0):
         reward = None
+        error = self.error(state0, action, state1)
         if state0.ndim == 1:
-            reward = torch.tanh(torch.nn.functional.mse_loss(self._network(state0, action), state1)).item()
+            reward = torch.tanh(error).item()
         if state0.ndim == 2:
-            reward = torch.zeros((state0.shape[0], 1))
-            prediction = self._network(state0, action)
-            for i in range(state0.shape[0]):
-                reward[i] = torch.tanh(torch.nn.functional.mse_loss(prediction[i], state1[i]))
+            reward = torch.tanh(error)
 
         return reward * eta
