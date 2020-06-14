@@ -12,9 +12,9 @@ class Critic(DDPGCritic):
     def __init__(self, state_dim, action_dim):
         super(Critic, self).__init__(state_dim, action_dim)
 
-        self._hidden0 = torch.nn.Linear(state_dim, 40)
-        self._hidden1 = torch.nn.Linear(40 + action_dim, 30)
-        self._output = torch.nn.Linear(30, 1)
+        self._hidden0 = torch.nn.Linear(state_dim, 160)
+        self._hidden1 = torch.nn.Linear(160 + action_dim, 120)
+        self._output = torch.nn.Linear(120, 1)
 
         torch.nn.init.xavier_uniform_(self._hidden0.weight)
         torch.nn.init.xavier_uniform_(self._hidden1.weight)
@@ -32,9 +32,9 @@ class Actor(DDPGActor):
     def __init__(self, state_dim, action_dim):
         super(Actor, self).__init__(state_dim, action_dim)
 
-        self._hidden0 = torch.nn.Linear(state_dim, 40)
-        self._hidden1 = torch.nn.Linear(40, 30)
-        self._output = torch.nn.Linear(30, action_dim)
+        self._hidden0 = torch.nn.Linear(state_dim, 160)
+        self._hidden1 = torch.nn.Linear(160, 120)
+        self._output = torch.nn.Linear(120, action_dim)
 
         torch.nn.init.xavier_uniform_(self._hidden0.weight)
         torch.nn.init.xavier_uniform_(self._hidden1.weight)
