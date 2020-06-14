@@ -1,12 +1,15 @@
 import argparse
 
 import DDPG_FetchReach
+import DDPG_LunarLander
 import DDPG_MountainCar
+import PPO_Chess
+import PPO_Go
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Motivation models learning platform.')
 
-    parser.add_argument('--env', help='[mountain_car,fetch_reach]')
+    parser.add_argument('--env', help='[mountain_car,fetch_reach,go]')
     parser.add_argument('--model', help='[baseline,fm,su]')
     parser.add_argument('--trials', help='No. trials')
     parser.add_argument('--episodes', help='No. episodes')
@@ -27,6 +30,12 @@ if __name__ == '__main__':
             DDPG_FetchReach.run_baseline(int(args.trials), int(args.episodes), int(args.batch_size), int(args.memory_size))
         if args.model == 'fm':
             DDPG_FetchReach.run_forward_model(int(args.trials), int(args.episodes), int(args.batch_size), int(args.memory_size))
+    if args.env == 'go':
+        PPO_Go.run_baseline(int(args.trials), int(args.episodes), int(args.batch_size), int(args.memory_size))
+    if args.env == 'chess':
+        PPO_Chess.run_baseline(int(args.trials), int(args.episodes))
+    if args.env == 'lunar_lander':
+        DDPG_LunarLander.run_baseline(int(args.trials), int(args.episodes), int(args.batch_size), int(args.memory_size))
 
     # DQN_FrozenLake.run()
     # DQN_CartPole.run()
