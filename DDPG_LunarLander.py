@@ -5,6 +5,8 @@ from etaprogress.progress import ProgressBar
 
 from algorithms.DDPG import DDPG, DDPGCritic, DDPGActor
 from exploration.ContinuousExploration import GaussianExploration
+from motivation.ForwardModelMotivation import ForwardModel, ForwardModelMotivation
+from motivation.MateLearnerMotivation import MetaLearnerModel, MetaLearnerMotivation
 from utils.Logger import Logger
 
 
@@ -45,6 +47,44 @@ class Actor(DDPGActor):
         x = torch.nn.functional.relu(self._hidden1(x))
         policy = torch.tanh(self._output(x))
         return policy
+
+
+class ForwardModelNetwork(ForwardModel):
+    def __init__(self, state_dim, action_dim):
+        super(ForwardModelNetwork, self).__init__(state_dim, action_dim)
+        self._hidden0 = torch.nn.Linear(state_dim + action_dim, 200)
+        self._hidden1 = torch.nn.Linear(200, 120)
+        self._output = torch.nn.Linear(120, state_dim)
+
+        torch.nn.init.xavier_uniform_(self._hidden0.weight)
+        torch.nn.init.xavier_uniform_(self._hidden1.weight)
+        torch.nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
+
+    def forward(self, state, action):
+        x = torch.cat([state, action], state.ndim - 1)
+        x = torch.nn.functional.relu(self._hidden0(x))
+        x = torch.nn.functional.relu(self._hidden1(x))
+        value = self._output(x)
+        return value
+
+
+class MetaLearnerNetwork(MetaLearnerModel):
+    def __init__(self, state_dim, action_dim):
+        super(MetaLearnerNetwork, self).__init__(state_dim, action_dim)
+        self._hidden0 = torch.nn.Linear(state_dim + action_dim, 200)
+        self._hidden1 = torch.nn.Linear(200, 120)
+        self._output = torch.nn.Linear(120, 1)
+
+        torch.nn.init.xavier_uniform_(self._hidden0.weight)
+        torch.nn.init.xavier_uniform_(self._hidden1.weight)
+        torch.nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
+
+    def forward(self, state, action):
+        x = torch.cat([state, action], state.ndim - 1)
+        x = torch.nn.functional.relu(self._hidden0(x))
+        x = torch.nn.functional.relu(self._hidden1(x))
+        value = self._output(x)
+        return value
 
 
 def test(env, agent, render=False):
@@ -107,5 +147,105 @@ def run_baseline(trials, episodes, batch_size, memory_size):
         # test(env, agent, True)
         # plot_graph(rewards, 'DDPG baseline trial ' + str(i), 'ddpg_baseline' + str(i))
         numpy.save('ddpg_baseline_' + str(i), rewards)
+
+    env.close()
+
+
+def run_forward_model(trials, episodes, batch_size, memory_size):
+    env = gym.make('LunarLanderContinuous-v2')
+    log = Logger()
+    log.disable()
+
+    for i in range(trials):
+        rewards = numpy.zeros(episodes)
+        log.start()
+        state_dim = env.observation_space.shape[0]
+        action_dim = env.action_space.shape[0]
+        motivation = ForwardModelMotivation(ForwardModelNetwork, state_dim, action_dim, 2e-4)
+        agent = DDPG(Actor, Critic, state_dim, action_dim, memory_size, batch_size, 1e-4, 2e-4, 0.99, 1e-3, motivation_module=motivation)
+        exploration = GaussianExploration(0.2)
+        # exploration = OUExploration(env.action_space.shape[0], 0.2, mu=0.4)
+        bar = ProgressBar(episodes, max_width=40)
+
+        for e in range(episodes):
+            state0 = torch.tensor(env.reset(), dtype=torch.float32)
+            done = False
+            train_reward = 0
+            bar.numerator = e
+
+            while not done:
+                #env.render()
+                action0 = exploration.explore(agent.get_action(state0))
+                next_state, reward, done, _ = env.step(action0.detach().numpy())
+                train_reward += reward
+                state1 = torch.tensor(next_state, dtype=torch.float32)
+                agent.train(state0, action0, state1, reward, done)
+                motivation.train(state0, action0, state1)
+                state0 = state1
+
+            test_reward = test(env, agent)
+            rewards[e] = test_reward
+            # visualize_policy(agent, i * epochs + e)
+            # exploration.reset()
+            print('Episode ' + str(e) + ' train reward ' + str(train_reward) + ' test reward ' + str(test_reward))
+            print(bar)
+
+            # log.log(str(test_reward) + '\n')
+        log.close()
+
+        # test(env, agent, True)
+        # plot_graph(rewards, 'DDPG baseline trial ' + str(i), 'ddpg_baseline' + str(i))
+        numpy.save('ddpg_fm_' + str(i), rewards)
+
+    env.close()
+
+
+def run_metalearner_model(trials, episodes, batch_size, memory_size):
+    env = gym.make('LunarLanderContinuous-v2')
+    log = Logger()
+    log.disable()
+
+    for i in range(trials):
+        rewards = numpy.zeros(episodes)
+        log.start()
+        state_dim = env.observation_space.shape[0]
+        action_dim = env.action_space.shape[0]
+        forward_model = ForwardModelMotivation(ForwardModelNetwork, state_dim, action_dim, 2e-4)
+        motivation = MetaLearnerMotivation(MetaLearnerNetwork, forward_model, state_dim, action_dim, 2e-4)
+
+        agent = DDPG(Actor, Critic, state_dim, action_dim, memory_size, batch_size, 1e-4, 2e-4, 0.99, 1e-3, motivation_module=motivation)
+        exploration = GaussianExploration(0.2)
+        # exploration = OUExploration(env.action_space.shape[0], 0.2, mu=0.4)
+        bar = ProgressBar(episodes, max_width=40)
+
+        for e in range(episodes):
+            state0 = torch.tensor(env.reset(), dtype=torch.float32)
+            done = False
+            train_reward = 0
+            bar.numerator = e
+
+            while not done:
+                #env.render()
+                action0 = exploration.explore(agent.get_action(state0))
+                next_state, reward, done, _ = env.step(action0.detach().numpy())
+                train_reward += reward
+                state1 = torch.tensor(next_state, dtype=torch.float32)
+                agent.train(state0, action0, state1, reward, done)
+                motivation.train(state0, action0, state1)
+                state0 = state1
+
+            test_reward = test(env, agent)
+            rewards[e] = test_reward
+            # visualize_policy(agent, i * epochs + e)
+            # exploration.reset()
+            print('Episode ' + str(e) + ' train reward ' + str(train_reward) + ' test reward ' + str(test_reward))
+            print(bar)
+
+            # log.log(str(test_reward) + '\n')
+        log.close()
+
+        # test(env, agent, True)
+        # plot_graph(rewards, 'DDPG baseline trial ' + str(i), 'ddpg_baseline' + str(i))
+        numpy.save('ddpg_su_' + str(i), rewards)
 
     env.close()
