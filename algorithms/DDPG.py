@@ -3,6 +3,8 @@ import abc
 import torch
 
 from algorithms.ReplayBuffer import ReplayBuffer
+from motivation.ForwardModelMotivation import ForwardModelMotivation
+from motivation.MateLearnerMotivation import MetaLearnerMotivation
 
 
 class DDPGCritic(torch.nn.Module):
@@ -74,7 +76,10 @@ class DDPG:
                 rewards = rewards.cuda()
                 masks = masks.cuda()
 
-            if self._motivation_module is not None:
+            if type(self._motivation_module) is ForwardModelMotivation:
+                int_reward = self._motivation_module.reward(states, actions, next_states)
+                rewards += int_reward
+            if type(self._motivation_module) is MetaLearnerMotivation:
                 int_reward = self._motivation_module.reward('A', states, actions, next_states)
                 rewards += int_reward
                 #self._motivation_module.train(states, actions, next_states)
