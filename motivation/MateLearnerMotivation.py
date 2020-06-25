@@ -74,3 +74,12 @@ class MetaLearnerMotivation:
                 reward = torch.exp(1 * torch.abs(error - prediction)) - 1
 
         return reward * eta
+
+    def save(self, path):
+        self._forward_model.save(path)
+        torch.save(self._network.state_dict(), path + '_mc.pth')
+
+    def load(self, path):
+        self._forward_model.load(path)
+        self._network.load_state_dict(torch.load(path + '_mc.pth'))
+

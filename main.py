@@ -3,18 +3,19 @@ import argparse
 import DDPG_FetchReach
 import DDPG_LunarLander
 import DDPG_MountainCar
-#import PPO_Chess
 #import PPO_Go
+#import PPO_Chess
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Motivation models learning platform.')
 
-    parser.add_argument('--env', help='[mountain_car,fetch_reach,go]')
-    parser.add_argument('--model', help='[baseline,fm,su]')
-    parser.add_argument('--trials', help='No. trials')
-    parser.add_argument('--episodes', help='No. episodes')
-    parser.add_argument('--batch_size', default=64, help='Minibatch size')
-    parser.add_argument('--memory_size', default=10000, help='Size of memory buffer')
+    parser.add_argument('--env', type=str, help='[mountain_car,fetch_reach,go]')
+    parser.add_argument('--model', type=str, choices=['baseline', 'fm', 'su'], help='[baseline,fm,su]')
+    parser.add_argument('--load', type=str, help='path to saved agent')
+    parser.add_argument('--trials', type=int, help='No. trials')
+    parser.add_argument('--episodes', type=int, help='No. episodes')
+    parser.add_argument('--batch_size', type=int, default=64, help='Minibatch size')
+    parser.add_argument('--memory_size', type=int, default=10000, help='Size of memory buffer')
 
     args = parser.parse_args()
 
@@ -38,11 +39,11 @@ if __name__ == '__main__':
         #PPO_Chess.run_baseline(int(args.trials), int(args.episodes))
     if args.env == 'lunar_lander':
         if args.model == 'baseline':
-            DDPG_LunarLander.run_baseline(int(args.trials), int(args.episodes), int(args.batch_size), int(args.memory_size))
+            DDPG_LunarLander.run_baseline(args)
         if args.model == 'fm':
-            DDPG_LunarLander.run_forward_model(int(args.trials), int(args.episodes), int(args.batch_size), int(args.memory_size))
+            DDPG_LunarLander.run_forward_model(args)
         if args.model == 'su':
-            DDPG_LunarLander.run_metalearner_model(int(args.trials), int(args.episodes), int(args.batch_size), int(args.memory_size))
+            DDPG_LunarLander.run_metalearner_model(args)
 
     # DQN_FrozenLake.run()
     # DQN_CartPole.run()

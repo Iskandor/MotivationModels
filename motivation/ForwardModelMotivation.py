@@ -46,3 +46,9 @@ class ForwardModelMotivation:
             reward = torch.tanh(error)
 
         return reward * eta
+
+    def save(self, path):
+        torch.save(self._network.state_dict(), path + '_fm.pth')
+
+    def load(self, path):
+        self._network.load_state_dict(torch.load(path + '_fm.pth'))

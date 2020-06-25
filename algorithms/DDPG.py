@@ -49,12 +49,12 @@ class DDPG:
 
     def get_action(self, state):
         with torch.no_grad():
-            action = self._actor(state)
+            action = self._actor(state).detach()
         return action
 
     def get_value(self, state, action):
         with torch.no_grad():
-            value = self._critic(state, action)
+            value = self._critic(state, action).detach()
         return value
 
     def train(self, state0, action0, state1, reward, done):
@@ -65,7 +65,7 @@ class DDPG:
 
             states = torch.stack(sample.state)
             next_states = torch.stack(sample.next_state)
-            actions = torch.stack(sample.action).detach()
+            actions = torch.stack(sample.action)
             rewards = torch.Tensor(sample.reward).unsqueeze(1)
             masks = torch.Tensor(sample.mask).unsqueeze(1)
 
@@ -84,7 +84,7 @@ class DDPG:
                 rewards += int_reward
                 #self._motivation_module.train(states, actions, next_states)
 
-            expected_values = rewards + masks * self._gamma * self._critic_target(next_states, self._actor_target(next_states)).detach()
+            expected_values = rewards + masks * self._gamma * self._critic_target(next_states, self._actor_target(next_states).detach()).detach()
 
             self._critic_optimizer.zero_grad()
             value_loss = torch.nn.functional.mse_loss(self._critic(states, actions), expected_values)
@@ -121,3 +121,15 @@ class DDPG:
         self._actor_target.cpu()
         self._critic_target.cpu()
         self._gpu_enabled = False
+
+    def save(self, path):
+        torch.save(self._actor.state_dict(), path + '_actor.pth')
+        torch.save(self._critic.state_dict(), path + '_critic.pth')
+        if self._motivation_module:
+            self._motivation_module.save(path)
+
+    def load(self, path):
+        self._actor.load_state_dict(torch.load(path + '_actor.pth'))
+        self._critic.load_state_dict(torch.load(path + '_critic.pth'))
+        if self._motivation_module:
+            self._motivation_module.load(path)
