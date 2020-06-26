@@ -191,6 +191,10 @@ def run_forward_model(args):
 
 def run_metalearner_model(args):
     env = gym.make('LunarLanderContinuous-v2')
+    state_dim = env.observation_space.shape[0]
+    action_dim = env.action_space.shape[0]
+
+    max_state = torch.zeros(state_dim, dtype=torch.float32)
 
     if args.load:
         state_dim = env.observation_space.shape[0]
@@ -204,8 +208,6 @@ def run_metalearner_model(args):
     else:
         for i in range(args.trials):
             rewards = numpy.zeros(args.episodes)
-            state_dim = env.observation_space.shape[0]
-            action_dim = env.action_space.shape[0]
             forward_model = ForwardModelMotivation(ForwardModelNetwork, state_dim, action_dim, 2e-4)
             motivation = MetaLearnerMotivation(MetaLearnerNetwork, forward_model, state_dim, action_dim, 2e-4)
 
@@ -221,6 +223,7 @@ def run_metalearner_model(args):
                 bar.numerator = e
 
                 while not done:
+                    max_state = torch.max(max_state, torch.abs(state0))
                     action0 = exploration.explore(agent.get_action(state0))
                     next_state, reward, done, _ = env.step(action0.detach().numpy())
                     train_reward += reward
@@ -236,5 +239,5 @@ def run_metalearner_model(args):
 
             agent.save('./models/lunar_lander_su_' + str(i))
             numpy.save('ddpg_su_' + str(i), rewards)
-
+    print(max_state)
     env.close()
