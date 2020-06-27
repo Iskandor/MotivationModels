@@ -1,4 +1,5 @@
 import abc
+import time
 
 import torch
 
@@ -66,8 +67,8 @@ class DDPG:
             states = torch.stack(sample.state)
             next_states = torch.stack(sample.next_state)
             actions = torch.stack(sample.action)
-            rewards = torch.Tensor(sample.reward).unsqueeze(1)
-            masks = torch.Tensor(sample.mask).unsqueeze(1)
+            rewards = torch.stack(sample.reward)
+            masks = torch.stack(sample.mask)
 
             if self._gpu_enabled:
                 states = states.cuda()
@@ -80,7 +81,7 @@ class DDPG:
                 int_reward = self._motivation_module.reward(states, actions, next_states)
                 rewards += int_reward
             if type(self._motivation_module) is MetaLearnerMotivation:
-                int_reward = self._motivation_module.reward('A', states, actions, next_states)
+                int_reward = self._motivation_module.reward('B', states, actions, next_states)
                 rewards += int_reward
                 #self._motivation_module.train(states, actions, next_states)
 
@@ -100,11 +101,13 @@ class DDPG:
             self._soft_update(self._actor_target, self._actor, self._tau)
             self._soft_update(self._critic_target, self._critic, self._tau)
 
-    def _soft_update(self, target, source, tau):
+    @staticmethod
+    def _soft_update(target, source, tau):
         for target_param, param in zip(target.parameters(), source.parameters()):
             target_param.data.copy_(target_param.data * (1.0 - tau) + param.data * tau)
 
-    def _hard_update(self, target, source):
+    @staticmethod
+    def _hard_update(target, source):
         for target_param, param in zip(target.parameters(), source.parameters()):
             target_param.data.copy_(param.data)
 
