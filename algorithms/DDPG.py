@@ -77,11 +77,8 @@ class DDPG:
                 rewards = rewards.cuda()
                 masks = masks.cuda()
 
-            if type(self._motivation_module) is ForwardModelMotivation:
+            if self._motivation_module:
                 int_reward = self._motivation_module.reward(states, actions, next_states)
-                rewards += int_reward
-            if type(self._motivation_module) is MetaLearnerMotivation:
-                int_reward = self._motivation_module.reward('B', states, actions, next_states)
                 rewards += int_reward
                 #self._motivation_module.train(states, actions, next_states)
 

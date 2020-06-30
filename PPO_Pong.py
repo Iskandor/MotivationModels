@@ -53,11 +53,12 @@ class ActorCritic(nn.Module):
         raise NotImplementedError
 
     def act(self, state, device):
-        state = state.reshape((1, state.shape[0], state.shape[1], state.shape[2])).to(device)
-        features = self.backbone(state)
-        action_probs = self.actor(features).flatten()
-        dist = Categorical(action_probs)
-        action = dist.sample()
+        with torch.no_grad():
+            state = state.reshape((1, state.shape[0], state.shape[1], state.shape[2])).to(device)
+            features = self.backbone(state)
+            action_probs = self.actor(features).flatten()
+            dist = Categorical(action_probs)
+            action = dist.sample()
 
         return action, dist.log_prob(action)
 
@@ -102,19 +103,22 @@ def run_baseline(args):
     lr = 0.001
     betas = (0.9, 0.999)
     gamma = 0.99  # discount factor
-    K_epochs = 50  # update policy for K epochs
-    update_timestep = 1000
-    eps_clip = 0.2
+    K_epochs = 5  # update policy for K epochs
+    update_timestep = 5000
+    eps_clip = 0.1
     device = 'cuda:0'
 
     for i in range(args.trials):
         timestep = 0
         rewards = np.zeros(args.episodes)
         state_dim = 1
-        action_dim = env.action_space.n
+        action_dim = 2
 
         memory = Memory()
         agent = PPO(ActorCritic, state_dim, action_dim, lr, betas, gamma, K_epochs, eps_clip, device)
+
+        if args.load:
+            agent.load(args.load)
 
         bar = ProgressBar(args.episodes, max_width=40)
 
@@ -125,12 +129,12 @@ def run_baseline(args):
             bar.numerator = e
 
             if e % 1000 == 0:
-                torch.save(agent.policy, './models/pong_agent_' + str(e))
+                torch.save(agent.policy, './models/pong_agent_' + str(e) + '.pth')
 
             while not done:
-                #env.render()
+                env.render()
                 action0, log_prob = agent.policy_old.act(state0.clone().detach(), device)
-                next_state, reward, done, _ = env.step(action0)
+                next_state, reward, done, _ = env.step(action0 + 2)
                 train_reward += reward
                 state1 = torch.tensor(preprocess_observations(next_state), dtype=torch.float32)
 
@@ -149,9 +153,7 @@ def run_baseline(args):
 
                 state0 = state1
 
-            test_reward = test(env, agent, device)
-            rewards[e] = test_reward
-            print('Episode ' + str(e) + ' train reward ' + str(train_reward) + ' test reward ' + str(test_reward))
+            print('Episode ' + str(e) + ' train reward ' + str(train_reward))
             print(bar)
 
         np.save('ppo_baseline_' + str(i), rewards)

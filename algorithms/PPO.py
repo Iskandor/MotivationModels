@@ -82,3 +82,7 @@ class PPO:
 
         # Copy new weights into old policy:
         self.policy_old.load_state_dict(self.policy.state_dict())
+
+    def load(self, path):
+        self.policy = torch.load(path + '.pth')
+        self.policy_old.load_state_dict(self.policy.state_dict())
