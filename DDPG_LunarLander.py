@@ -249,12 +249,13 @@ def run_metalearner_model(args):
             bar = ProgressBar(args.episodes, max_width=40)
 
             for e in range(args.episodes):
-                actions, values, fm_errors, mc_errors, rewards = su_activations(env, agent, forward_model, metacritic, states)
-                action_list.append(actions)
-                value_list.append(values)
-                fm_error_list.append(fm_errors)
-                mc_error_list.append(mc_errors)
-                reward_list.append(rewards)
+                if args.collect_stats:
+                    actions, values, fm_errors, mc_errors, rewards = su_activations(env, agent, forward_model, metacritic, states)
+                    action_list.append(actions)
+                    value_list.append(values)
+                    fm_error_list.append(fm_errors)
+                    mc_error_list.append(mc_errors)
+                    reward_list.append(rewards)
 
                 state0 = torch.tensor(env.reset(), dtype=torch.float32)
                 done = False
@@ -291,21 +292,20 @@ def run_metalearner_model(args):
             mc_error_list = torch.stack(mc_error_list)
             reward_list = torch.stack(reward_list)
 
-            numpy.save('ddpg_su_' + str(i) + '_states', states)
-            numpy.save('ddpg_su_' + str(i) + '_actions', action_list)
-            numpy.save('ddpg_su_' + str(i) + '_values', value_list)
-            numpy.save('ddpg_su_' + str(i) + '_prediction_errors', fm_error_list)
-            numpy.save('ddpg_su_' + str(i) + '_error_estimations', mc_error_list)
-            numpy.save('ddpg_su_' + str(i) + '_rewards', reward_list)
+            if args.collect_stats:
+                numpy.save('ddpg_su_' + str(i) + '_states', states)
+                numpy.save('ddpg_su_' + str(i) + '_actions', action_list)
+                numpy.save('ddpg_su_' + str(i) + '_values', value_list)
+                numpy.save('ddpg_su_' + str(i) + '_prediction_errors', fm_error_list)
+                numpy.save('ddpg_su_' + str(i) + '_error_estimations', mc_error_list)
+                numpy.save('ddpg_su_' + str(i) + '_rewards', reward_list)
 
     env.close()
 
 
 def generate_states(n, state_dim):
-    limits = torch.tensor([1, 2.5, 3.5, 3, 13, 7])
-    states = (torch.rand(n, state_dim - 2) * 2 - 1) * limits
-    legs = torch.randint(0, 2, (n, 2), dtype=torch.float32)
-    states = torch.cat((states, legs), dim=1)
+    limits = torch.tensor([1, 2.5, 3.5, 3, 13, 7, 0, 0])
+    states = (torch.rand(n, state_dim) * 2 - 1) * limits
     return states
 
 
