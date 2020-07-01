@@ -286,13 +286,13 @@ def run_metalearner_model(args):
             agent.save('./models/lunar_lander_su_' + str(i))
             numpy.save('ddpg_su_' + str(i), test_rewards)
 
-            action_list = torch.stack(action_list)
-            value_list = torch.stack(value_list)
-            fm_error_list = torch.stack(fm_error_list)
-            mc_error_list = torch.stack(mc_error_list)
-            reward_list = torch.stack(reward_list)
-
             if args.collect_stats:
+                action_list = torch.stack(action_list)
+                value_list = torch.stack(value_list)
+                fm_error_list = torch.stack(fm_error_list)
+                mc_error_list = torch.stack(mc_error_list)
+                reward_list = torch.stack(reward_list)
+
                 numpy.save('ddpg_su_' + str(i) + '_states', states)
                 numpy.save('ddpg_su_' + str(i) + '_actions', action_list)
                 numpy.save('ddpg_su_' + str(i) + '_values', value_list)
