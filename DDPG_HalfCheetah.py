@@ -219,7 +219,8 @@ def run_metalearner_model(args):
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
 
-    states = generate_states(1000, state_dim)
+    if args.collect_stats:
+        states = generate_states(1000, state_dim)
 
     if args.load:
         state_dim = env.observation_space.shape[0]

@@ -48,7 +48,7 @@ class MetaLearnerMotivation:
         if self._variant == 'B':
             reward = torch.exp(k * torch.abs(error - error_estimate)) - 1
 
-        reward = torch.max(reward, self._forward_model.reward(error))
+        reward = torch.max(reward, self._forward_model.reward(error=error))
 
         return reward * eta
 

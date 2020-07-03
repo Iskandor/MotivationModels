@@ -32,14 +32,11 @@ class ForwardModelMotivation:
 
         return error
 
-    def reward(self, state0, action, state1, eta=1.0):
-        error = self.error(state0, action, state1)
-        reward = torch.tanh(error)
-
-        return reward * eta
-
-    def reward(self, error, eta=1.0):
-        reward = torch.tanh(error)
+    def reward(self, state0=None, action=None, state1=None, error=None, eta=1.0):
+        if error is None:
+            reward = torch.tanh(self.error(state0, action, state1))
+        else:
+            reward = torch.tanh(error)
 
         return reward * eta
 
