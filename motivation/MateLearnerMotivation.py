@@ -14,11 +14,12 @@ class MetaLearnerModel(torch.nn.Module):
 
 
 class MetaLearnerMotivation:
-    def __init__(self, network, forward_model, state_dim, action_dim, lr, weight_decay=0, variant='A'):
+    def __init__(self, network, forward_model, state_dim, action_dim, lr, weight_decay=0, variant='A', eta=1.0):
         self._forward_model = forward_model
         self._network = network(state_dim, action_dim)
         self._optimizer = torch.optim.Adam(self._network.parameters(), lr=lr, weight_decay=weight_decay)
         self._variant = variant
+        self._eta = eta
 
     def train(self, state0, action, state1):
         self._optimizer.zero_grad()
@@ -34,7 +35,7 @@ class MetaLearnerMotivation:
             error = self._network(state0, action).detach().detach()
         return error
 
-    def reward(self, state0, action, state1, eta=1.0):
+    def reward(self, state0, action, state1):
         sigma = 1e-2
         k = 1
         error = self._forward_model.error(state0, action, state1)
@@ -50,7 +51,7 @@ class MetaLearnerMotivation:
 
         reward = torch.max(reward, self._forward_model.reward(error=error))
 
-        return reward * eta
+        return reward * self._eta
 
     def save(self, path):
         self._forward_model.save(path)
