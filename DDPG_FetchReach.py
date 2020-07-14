@@ -18,13 +18,13 @@ class Critic(DDPGCritic):
     def __init__(self, state_dim, action_dim):
         super(Critic, self).__init__(state_dim, action_dim)
 
-        self._hidden0 = torch.nn.Linear(state_dim, 200)
+        self._hidden0 = torch.nn.Linear(state_dim, 120)
         self._hidden0_f = torch.nn.ReLU()
-        self._hidden1 = torch.nn.Linear(200 + action_dim, 200)
+        self._hidden1 = torch.nn.Linear(120 + action_dim, 80)
         self._hidden1_f = torch.nn.ReLU()
-        self._hidden2 = torch.nn.Linear(200, 300)
+        self._hidden2 = torch.nn.Linear(80, 60)
         self._hidden2_f = torch.nn.ReLU()
-        self._output = torch.nn.Linear(300, action_dim)
+        self._output = torch.nn.Linear(60, action_dim)
 
         torch.nn.init.xavier_uniform_(self._hidden0.weight)
         torch.nn.init.xavier_uniform_(self._hidden1.weight)
@@ -44,11 +44,11 @@ class Actor(DDPGActor):
     def __init__(self, state_dim, action_dim):
         super(Actor, self).__init__(state_dim, action_dim)
 
-        self._hidden0 = torch.nn.Linear(state_dim, 400)
+        self._hidden0 = torch.nn.Linear(state_dim, 120)
         self._hidden0_f = torch.nn.ReLU()
-        self._hidden1 = torch.nn.Linear(400, 300)
+        self._hidden1 = torch.nn.Linear(120, 80)
         self._hidden1_f = torch.nn.ReLU()
-        self._output = torch.nn.Linear(300, action_dim)
+        self._output = torch.nn.Linear(80, action_dim)
         self._output_f = torch.nn.Tanh()
 
         torch.nn.init.xavier_uniform_(self._hidden0.weight)
@@ -104,29 +104,28 @@ def test(env, agent, render=False):
     return total_rewards
 
 
-def run_baseline(trials, episodes, batch_size, memory_size):
+def run_baseline(args):
     env = gym.make('FetchReach-v1')
     log = Logger()
     log.disable()
 
-    for i in range(trials):
-        rewards = numpy.zeros(episodes)
+    for i in range(args.trials):
+        rewards = numpy.zeros(args.episodes)
         log.start()
         state_dim = env.observation_space['achieved_goal'].shape[0] + env.observation_space['desired_goal'].shape[0]
         action_dim = env.action_space.shape[0]
-        agent = DDPG(Actor, Critic, state_dim, action_dim, memory_size, batch_size, 1e-3, 1e-3, 0.99, 5e-3)
+        agent = DDPG(Actor, Critic, state_dim, action_dim, args.memory_size, args.batch_size, 1e-3, 1e-3, 0.99, 5e-3)
         exploration = GaussianExploration(0.2)
         # exploration = OUExploration(env.action_space.shape[0], 0.2, mu=0.4)
-        bar = ProgressBar(episodes, max_width=40)
+        bar = ProgressBar(args.episodes, max_width=40)
 
-        for e in range(episodes):
+        for e in range(args.episodes):
             state0 = encode_state(env.reset())
             done = False
             train_reward = 0
             bar.numerator = e
 
             while not done:
-                #env.render()
                 action0 = exploration.explore(agent.get_action(state0))
                 next_state, reward, done, _ = env.step(action0.detach().numpy())
                 train_reward += reward
@@ -136,16 +135,11 @@ def run_baseline(trials, episodes, batch_size, memory_size):
 
             test_reward = test(env, agent)
             rewards[e] = test_reward
-            # visualize_policy(agent, i * epochs + e)
-            # exploration.reset()
             print('Episode ' + str(e) + ' train reward ' + str(train_reward) + ' test reward ' + str(test_reward))
             print(bar)
 
-            # log.log(str(test_reward) + '\n')
         log.close()
 
-        # test(env, agent, True)
-        # plot_graph(rewards, 'DDPG baseline trial ' + str(i), 'ddpg_baseline' + str(i))
         numpy.save('ddpg_baseline_' + str(i), rewards)
 
     env.close()

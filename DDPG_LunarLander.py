@@ -20,8 +20,8 @@ class Critic(DDPGCritic):
         super(Critic, self).__init__(state_dim, action_dim)
 
         self._hidden0 = torch.nn.Linear(state_dim, 160)
-        self._hidden1 = torch.nn.Linear(160 + action_dim, 80)
-        self._output = torch.nn.Linear(80, 1)
+        self._hidden1 = torch.nn.Linear(160 + action_dim, 120)
+        self._output = torch.nn.Linear(120, 1)
 
         torch.nn.init.xavier_uniform_(self._hidden0.weight)
         torch.nn.init.xavier_uniform_(self._hidden1.weight)
@@ -40,8 +40,8 @@ class Actor(DDPGActor):
         super(Actor, self).__init__(state_dim, action_dim)
 
         self._hidden0 = torch.nn.Linear(state_dim, 160)
-        self._hidden1 = torch.nn.Linear(160, 80)
-        self._output = torch.nn.Linear(80, action_dim)
+        self._hidden1 = torch.nn.Linear(160, 120)
+        self._output = torch.nn.Linear(120, action_dim)
 
         torch.nn.init.xavier_uniform_(self._hidden0.weight)
         torch.nn.init.xavier_uniform_(self._hidden1.weight)
@@ -58,8 +58,8 @@ class ForwardModelNetwork(ForwardModel):
     def __init__(self, state_dim, action_dim):
         super(ForwardModelNetwork, self).__init__(state_dim, action_dim)
         self._hidden0 = torch.nn.Linear(state_dim + action_dim, 200)
-        self._hidden1 = torch.nn.Linear(200, 160)
-        self._output = torch.nn.Linear(160, state_dim)
+        self._hidden1 = torch.nn.Linear(200, 120)
+        self._output = torch.nn.Linear(120, state_dim)
 
         torch.nn.init.xavier_uniform_(self._hidden0.weight)
         torch.nn.init.xavier_uniform_(self._hidden1.weight)
@@ -77,8 +77,8 @@ class MetaLearnerNetwork(MetaLearnerModel):
     def __init__(self, state_dim, action_dim):
         super(MetaLearnerNetwork, self).__init__(state_dim, action_dim)
         self._hidden0 = torch.nn.Linear(state_dim + action_dim, 200)
-        self._hidden1 = torch.nn.Linear(200, 100)
-        self._output = torch.nn.Linear(100, 1)
+        self._hidden1 = torch.nn.Linear(200, 120)
+        self._output = torch.nn.Linear(120, 1)
 
         torch.nn.init.xavier_uniform_(self._hidden0.weight)
         torch.nn.init.xavier_uniform_(self._hidden1.weight)

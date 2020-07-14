@@ -32,7 +32,7 @@ if __name__ == '__main__':
             DDPG_MountainCar.run_metalearner_model(int(args.trials), int(args.episodes))
     if args.env == 'fetch_reach':
         if args.model == 'baseline':
-            DDPG_FetchReach.run_baseline(int(args.trials), int(args.episodes), int(args.batch_size), int(args.memory_size))
+            DDPG_FetchReach.run_baseline(args)
         if args.model == 'fm':
             DDPG_FetchReach.run_forward_model(int(args.trials), int(args.episodes), int(args.batch_size), int(args.memory_size))
     if args.env == 'go':
