@@ -88,7 +88,7 @@ class MetaLearnerNetwork(MetaLearnerModel):
         x = torch.cat([state, action], state.ndim - 1)
         x = torch.nn.functional.relu(self._hidden0(x))
         x = torch.nn.functional.relu(self._hidden1(x))
-        value = torch.sigmoid(self._output(x))
+        value = self._output(x)
         return value
 
 
