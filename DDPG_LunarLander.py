@@ -12,7 +12,7 @@ from algorithms.DDPG import DDPG, DDPGCritic, DDPGActor
 from exploration.ContinuousExploration import GaussianExploration
 from motivation.ForwardModelMotivation import ForwardModel, ForwardModelMotivation
 from motivation.MateLearnerMotivation import MetaLearnerModel, MetaLearnerMotivation
-from utils.Logger import Logger
+from sklearn.cluster import KMeans
 
 
 class Critic(DDPGCritic):
@@ -92,12 +92,14 @@ class MetaLearnerNetwork(MetaLearnerModel):
         return value
 
 
-def test(env, agent, motivation=None, render=False, video=False):
+def test(env, agent, metacritic=None, forward_model=None, render=False, video=False):
     state0 = torch.tensor(env.reset(), dtype=torch.float32)
     done = False
     ext_rewards = 0
     int_rewards = 0
     steps = 0
+    fm_error = []
+    mc_error = []
 
     video_recorder = None
     if video:
@@ -117,8 +119,10 @@ def test(env, agent, motivation=None, render=False, video=False):
         next_state = torch.tensor(next_state, dtype=torch.float32)
 
         ext_rewards += reward
-        if motivation is not None:
-            int_rewards += motivation.reward(state0, action, next_state).item()
+        if metacritic is not None:
+            int_rewards += metacritic.reward(state0, action, next_state).item()
+            fm_error.append(forward_model.error(state0, action, next_state).item())
+            mc_error.append(metacritic.error(state0, action).item())
 
         state0 = next_state
     if render:
@@ -127,7 +131,7 @@ def test(env, agent, motivation=None, render=False, video=False):
         video_recorder.close()
         video_recorder.enabled = False
 
-    return ext_rewards, int_rewards, steps
+    return ext_rewards, int_rewards, steps, fm_error, mc_error
 
 
 def run_baseline(args):
@@ -230,7 +234,7 @@ def run_metalearner_model(args):
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
 
-    states = generate_states(1000, state_dim)
+    states = []  # generate_states(1000, state_dim)
 
     if args.load:
         state_dim = env.observation_space.shape[0]
@@ -247,11 +251,14 @@ def run_metalearner_model(args):
         mc_error_list = []
         reward_list = []
 
+        fm_train_errors = []
+        mc_train_errors = []
+
         for i in range(args.trials):
             test_ext_rewards = numpy.zeros(args.episodes)
             test_int_rewards = numpy.zeros(args.episodes)
             forward_model = ForwardModelMotivation(ForwardModelNetwork, state_dim, action_dim, 2e-4)
-            metacritic = MetaLearnerMotivation(MetaLearnerNetwork, forward_model, state_dim, action_dim, 2e-4, variant='A', eta=10)
+            metacritic = MetaLearnerMotivation(MetaLearnerNetwork, forward_model, state_dim, action_dim, 2e-4, variant='A', eta=1)
 
             agent = DDPG(Actor, Critic, state_dim, action_dim, args.memory_size, args.batch_size, 1e-4, 2e-4, 0.99, 1e-3, motivation_module=metacritic)
             exploration = GaussianExploration(0.2)
@@ -277,6 +284,7 @@ def run_metalearner_model(args):
                 t0 = time.perf_counter()
                 while not done:
                     train_steps += 1
+                    states.append(state0.numpy())
                     action0 = exploration.explore(agent.get_action(state0))
                     next_state, reward, done, _ = env.step(action0.numpy())
                     train_ext_reward += reward
@@ -291,7 +299,9 @@ def run_metalearner_model(args):
                 t1 = time.perf_counter()
                 print('Training ' + str(t1 - t0))
                 t0 = time.perf_counter()
-                test_ext_reward, test_int_reward, test_steps = test(env, agent, motivation=metacritic)
+                test_ext_reward, test_int_reward, test_steps, fm_error, mc_error = test(env, agent, metacritic=metacritic, forward_model=forward_model)
+                fm_train_errors.append(fm_error)
+                mc_train_errors.append(mc_error)
                 t1 = time.perf_counter()
                 print('Testing ' + str(t1 - t0))
                 test_ext_rewards[e] = test_ext_reward
@@ -302,6 +312,20 @@ def run_metalearner_model(args):
             agent.save('./models/lunar_lander_su_{0:d}'.format(i))
             numpy.save('ddpg_su_{0:d}_re'.format(i), test_ext_rewards)
             numpy.save('ddpg_su_{0:d}_ri'.format(i), test_int_rewards)
+
+            # kmeans = KMeans(n_clusters=2000, random_state=0).fit(states)
+            # states = numpy.stack(kmeans.cluster_centers_)
+            # states[:, 6] = numpy.round(states[:, 6])
+            # states[:, 7] = numpy.round(states[:, 7])
+            # numpy.save('ddpg_su_states', states)
+
+            fm_train_errors = [item for sublist in fm_train_errors for item in sublist]
+            fm_train_errors = numpy.stack(fm_train_errors)
+            mc_train_errors = [item for sublist in mc_train_errors for item in sublist]
+            mc_train_errors = numpy.stack(mc_train_errors)
+            numpy.save('ddpg_su_{0:d}_fme'.format(i), fm_train_errors)
+            numpy.save('ddpg_su_{0:d}_mce'.format(i), mc_train_errors)
+
 
             if args.collect_stats:
                 action_list = torch.stack(action_list)
