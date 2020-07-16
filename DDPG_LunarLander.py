@@ -313,11 +313,11 @@ def run_metalearner_model(args):
             numpy.save('ddpg_su_{0:d}_re'.format(i), test_ext_rewards)
             numpy.save('ddpg_su_{0:d}_ri'.format(i), test_int_rewards)
 
-            # kmeans = KMeans(n_clusters=2000, random_state=0).fit(states)
-            # states = numpy.stack(kmeans.cluster_centers_)
-            # states[:, 6] = numpy.round(states[:, 6])
-            # states[:, 7] = numpy.round(states[:, 7])
-            # numpy.save('ddpg_su_states', states)
+            kmeans = KMeans(n_clusters=2000, random_state=0).fit(states)
+            states = numpy.stack(kmeans.cluster_centers_)
+            states[:, 6] = numpy.round(states[:, 6])
+            states[:, 7] = numpy.round(states[:, 7])
+            numpy.save('ddpg_su_states', states)
 
             fm_train_errors = [item for sublist in fm_train_errors for item in sublist]
             fm_train_errors = numpy.stack(fm_train_errors)
