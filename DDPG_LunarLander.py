@@ -234,7 +234,10 @@ def run_metalearner_model(args):
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
 
-    states = []  # generate_states(1000, state_dim)
+    if args.generate_states:
+        states = []
+    if args.collect_stats:
+        states = torch.tensor(numpy.load('./ddpg_su_states.npy'), dtype=torch.float32)
 
     if args.load:
         state_dim = env.observation_space.shape[0]
@@ -258,7 +261,7 @@ def run_metalearner_model(args):
             test_ext_rewards = numpy.zeros(args.episodes)
             test_int_rewards = numpy.zeros(args.episodes)
             forward_model = ForwardModelMotivation(ForwardModelNetwork, state_dim, action_dim, 2e-4)
-            metacritic = MetaLearnerMotivation(MetaLearnerNetwork, forward_model, state_dim, action_dim, 2e-4, variant='A', eta=1)
+            metacritic = MetaLearnerMotivation(MetaLearnerNetwork, forward_model, state_dim, action_dim, 2e-3, variant='A', eta=1)
 
             agent = DDPG(Actor, Critic, state_dim, action_dim, args.memory_size, args.batch_size, 1e-4, 2e-4, 0.99, 1e-3, motivation_module=metacritic)
             exploration = GaussianExploration(0.2)
@@ -284,11 +287,12 @@ def run_metalearner_model(args):
                 t0 = time.perf_counter()
                 while not done:
                     train_steps += 1
-                    states.append(state0.numpy())
+                    if args.generate_states:
+                        states.append(state0.numpy())
                     action0 = exploration.explore(agent.get_action(state0))
                     next_state, reward, done, _ = env.step(action0.numpy())
                     train_ext_reward += reward
-                    #if not done and random.random() < 0.9:
+                    # if not done and random.random() < 0.9:
                     #    reward = 0
                     state1 = torch.tensor(next_state, dtype=torch.float32)
                     agent.train(state0, action0, state1, reward, done)
@@ -306,18 +310,21 @@ def run_metalearner_model(args):
                 print('Testing ' + str(t1 - t0))
                 test_ext_rewards[e] = test_ext_reward
                 test_int_rewards[e] = test_int_reward
-                print('Episode {0:d} training [ext. reward {1:f} int. reward {2:f} steps {3:d}] testing [ext. reward {4:f} int. reward {5:f} steps {6:d}]'.format(e, train_ext_reward, train_int_reward, train_steps, test_ext_reward, test_int_reward, test_steps))
+                print(
+                    'Episode {0:d} training [ext. reward {1:f} int. reward {2:f} steps {3:d}] testing [ext. reward {4:f} int. reward {5:f} steps {6:d}]'.format(
+                        e, train_ext_reward, train_int_reward, train_steps, test_ext_reward, test_int_reward, test_steps))
                 print(bar)
 
             agent.save('./models/lunar_lander_su_{0:d}'.format(i))
             numpy.save('ddpg_su_{0:d}_re'.format(i), test_ext_rewards)
             numpy.save('ddpg_su_{0:d}_ri'.format(i), test_int_rewards)
 
-            kmeans = KMeans(n_clusters=2000, random_state=0).fit(states)
-            states = numpy.stack(kmeans.cluster_centers_)
-            states[:, 6] = numpy.round(states[:, 6])
-            states[:, 7] = numpy.round(states[:, 7])
-            numpy.save('ddpg_su_states', states)
+            if args.generate_states:
+                kmeans = KMeans(n_clusters=2000, random_state=0).fit(states)
+                states = numpy.stack(kmeans.cluster_centers_)
+                states[:, 6] = numpy.round(states[:, 6])
+                states[:, 7] = numpy.round(states[:, 7])
+                numpy.save('ddpg_su_states', states)
 
             fm_train_errors = [item for sublist in fm_train_errors for item in sublist]
             fm_train_errors = numpy.stack(fm_train_errors)
@@ -325,7 +332,6 @@ def run_metalearner_model(args):
             mc_train_errors = numpy.stack(mc_train_errors)
             numpy.save('ddpg_su_{0:d}_fme'.format(i), fm_train_errors)
             numpy.save('ddpg_su_{0:d}_mce'.format(i), mc_train_errors)
-
 
             if args.collect_stats:
                 action_list = torch.stack(action_list)

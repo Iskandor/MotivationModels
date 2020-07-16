@@ -20,6 +20,7 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=64, help='Minibatch size')
     parser.add_argument('--memory_size', type=int, default=10000, help='Size of memory buffer')
     parser.add_argument('--collect_stats', action='store_const', const=True, help='Collect data for videos')
+    parser.add_argument('--generate_states', action='store_const', const=True, help='Collect states for videos')
 
     args = parser.parse_args()
 
