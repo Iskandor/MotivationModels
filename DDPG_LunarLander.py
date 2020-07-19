@@ -123,6 +123,9 @@ def test(env, agent, metacritic=None, forward_model=None, render=False, video=Fa
             int_rewards += metacritic.reward(state0, action, next_state).item()
             fm_error.append(forward_model.error(state0, action, next_state).item())
             mc_error.append(metacritic.error(state0, action).item())
+        elif forward_model is not None:
+            int_rewards += forward_model.reward(state0, action, next_state).item()
+            fm_error.append(forward_model.error(state0, action, next_state).item())
 
         state0 = next_state
     if render:
@@ -138,93 +141,198 @@ def run_baseline(args):
     env = gym.make('LunarLanderContinuous-v2')
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
-    max_state = torch.zeros(state_dim, dtype=torch.float32)
 
-    if args.load:
-        agent = DDPG(Actor, Critic, state_dim, action_dim, args.memory_size, args.batch_size, 1e-4, 2e-4, 0.99, 1e-3)
-        agent.load(args.load)
-
-        for i in range(1):
-            test(env, agent, True, True)
-    else:
-        for i in range(args.trials):
-            rewards = numpy.zeros(args.episodes)
-            agent = DDPG(Actor, Critic, state_dim, action_dim, args.memory_size, args.batch_size, 1e-4, 2e-4, 0.99, 1e-3)
-            exploration = GaussianExploration(0.2)
-            # exploration = OUExploration(env.action_space.shape[0], 0.2, mu=0.4)
-            bar = ProgressBar(args.episodes, max_width=40)
-
-            for e in range(args.episodes):
-                state0 = torch.tensor(env.reset(), dtype=torch.float32)
-                done = False
-                train_reward = 0
-                bar.numerator = e
-
-                while not done:
-                    max_state = torch.max(max_state, torch.abs(state0))
-                    action0 = exploration.explore(agent.get_action(state0))
-                    next_state, reward, done, _ = env.step(action0.detach().numpy())
-                    train_reward += reward
-                    state1 = torch.tensor(next_state, dtype=torch.float32)
-                    agent.train(state0, action0, state1, reward, done)
-                    state0 = state1
-
-                test_reward = test(env, agent)
-                rewards[e] = test_reward
-                print('Episode ' + str(e) + ' train reward ' + str(train_reward) + ' test reward ' + str(test_reward))
-                print(bar)
-
-            agent.save('./models/lunar_lander_baseline_' + str(i))
-            numpy.save('ddpg_baseline_' + str(i), rewards)
-    print(max_state)
-    env.close()
-
-
-def run_forward_model(args):
-    env = gym.make('LunarLanderContinuous-v2')
+    states = None
+    if args.generate_states:
+        states = []
+    if args.collect_stats:
+        states = torch.tensor(numpy.load('./lunar_lander_states.npy'), dtype=torch.float32)
 
     if args.load:
         state_dim = env.observation_space.shape[0]
         action_dim = env.action_space.shape[0]
-        motivation = ForwardModelMotivation(ForwardModelNetwork, state_dim, action_dim, 2e-4)
-        agent = DDPG(Actor, Critic, state_dim, action_dim, args.memory_size, args.batch_size, 1e-4, 2e-4, 0.99, 1e-3, motivation_module=motivation)
+        agent = DDPG(Actor, Critic, state_dim, action_dim, args.memory_size, args.batch_size, 1e-4, 2e-4, 0.99, 1e-3)
         agent.load(args.load)
 
         for i in range(5):
             test(env, agent, True, False)
     else:
+        action_list = []
+        value_list = []
+
         for i in range(args.trials):
-            rewards = numpy.zeros(args.episodes)
-            state_dim = env.observation_space.shape[0]
-            action_dim = env.action_space.shape[0]
-            motivation = ForwardModelMotivation(ForwardModelNetwork, state_dim, action_dim, 2e-4)
-            agent = DDPG(Actor, Critic, state_dim, action_dim, args.memory_size, args.batch_size, 1e-4, 2e-4, 0.99, 1e-3, motivation_module=motivation)
+            test_ext_rewards = numpy.zeros(args.episodes)
+            test_int_rewards = numpy.zeros(args.episodes)
+            agent = DDPG(Actor, Critic, state_dim, action_dim, args.memory_size, args.batch_size, 1e-4, 2e-4, 0.99, 1e-3, motivation_module=None)
             exploration = GaussianExploration(0.2)
             # exploration = OUExploration(env.action_space.shape[0], 0.2, mu=0.4)
             bar = ProgressBar(args.episodes, max_width=40)
 
             for e in range(args.episodes):
+                if args.collect_stats:
+                    actions, values = baseline_activations(agent, states)
+                    action_list.append(actions)
+                    value_list.append(values)
+
                 state0 = torch.tensor(env.reset(), dtype=torch.float32)
                 done = False
-                train_reward = 0
+                train_ext_reward = 0
                 bar.numerator = e
+                train_steps = 0
 
+                t0 = time.perf_counter()
                 while not done:
+                    train_steps += 1
+                    if args.generate_states:
+                        states.append(state0.numpy())
                     action0 = exploration.explore(agent.get_action(state0))
                     next_state, reward, done, _ = env.step(action0.numpy())
-                    train_reward += reward
+                    train_ext_reward += reward
+                    # if not done and random.random() < 0.9:
+                    #    reward = 0
                     state1 = torch.tensor(next_state, dtype=torch.float32)
                     agent.train(state0, action0, state1, reward, done)
-                    motivation.train(state0, action0, state1)
+                    # print("external reward {0:f}, internal reward {1:f}".format(reward, ri.item()))
                     state0 = state1
-
-                test_reward = test(env, agent)
-                rewards[e] = test_reward
-                print('Episode ' + str(e) + ' train reward ' + str(train_reward) + ' test reward ' + str(test_reward))
+                t1 = time.perf_counter()
+                print('Training ' + str(t1 - t0))
+                t0 = time.perf_counter()
+                test_ext_reward, _, test_steps, _, _ = test(env, agent, metacritic=None, forward_model=None)
+                t1 = time.perf_counter()
+                print('Testing ' + str(t1 - t0))
+                test_ext_rewards[e] = test_ext_reward
+                print(
+                    'Episode {0:d} training [ext. reward {1:f} steps {2:d}] testing [ext. reward {3:f} steps {4:d}]'.format(
+                        e, train_ext_reward, train_steps, test_ext_reward, test_steps))
                 print(bar)
 
-            agent.save('./models/lunar_lander_fm_' + str(i))
-            numpy.save('ddpg_fm_' + str(i), rewards)
+            agent.save('./models/lunar_lander_baseline_{0:d}'.format(i))
+            numpy.save('ddpg_baseline_{0:d}_re'.format(i), test_ext_rewards)
+
+            if args.generate_states:
+                kmeans = KMeans(n_clusters=2000, random_state=0).fit(states)
+                states = numpy.stack(kmeans.cluster_centers_)
+                states[:, 6] = numpy.round(states[:, 6])
+                states[:, 7] = numpy.round(states[:, 7])
+                numpy.save('lunar_lander_states', states)
+
+            if args.collect_stats:
+                action_list = torch.stack(action_list)
+                value_list = torch.stack(value_list)
+
+                numpy.save('ddpg_baseline_' + str(i) + '_actions', action_list)
+                numpy.save('ddpg_baseline_' + str(i) + '_values', value_list)
+
+    env.close()
+
+
+def run_forward_model(args):
+    env = gym.make('LunarLanderContinuous-v2')
+    state_dim = env.observation_space.shape[0]
+    action_dim = env.action_space.shape[0]
+
+    states = None
+    if args.generate_states:
+        states = []
+    if args.collect_stats:
+        states = torch.tensor(numpy.load('./lunar_lander_states.npy'), dtype=torch.float32)
+
+    if args.load:
+        state_dim = env.observation_space.shape[0]
+        action_dim = env.action_space.shape[0]
+        agent = DDPG(Actor, Critic, state_dim, action_dim, args.memory_size, args.batch_size, 1e-4, 2e-4, 0.99, 1e-3)
+        agent.load(args.load)
+
+        for i in range(5):
+            test(env, agent, True, False)
+    else:
+        action_list = []
+        value_list = []
+        fm_error_list = []
+        reward_list = []
+
+        fm_train_errors = []
+
+        for i in range(args.trials):
+            test_ext_rewards = numpy.zeros(args.episodes)
+            test_int_rewards = numpy.zeros(args.episodes)
+            forward_model = ForwardModelMotivation(ForwardModelNetwork, state_dim, action_dim, 2e-4)
+
+            agent = DDPG(Actor, Critic, state_dim, action_dim, args.memory_size, args.batch_size, 1e-4, 2e-4, 0.99, 1e-3, motivation_module=forward_model)
+            exploration = GaussianExploration(0.2)
+            # exploration = OUExploration(env.action_space.shape[0], 0.2, mu=0.4)
+            bar = ProgressBar(args.episodes, max_width=40)
+
+            for e in range(args.episodes):
+                if args.collect_stats:
+                    actions, values, fm_errors, rewards = fm_activations(env, agent, forward_model, states)
+                    action_list.append(actions)
+                    value_list.append(values)
+                    fm_error_list.append(fm_errors)
+                    reward_list.append(rewards)
+
+                state0 = torch.tensor(env.reset(), dtype=torch.float32)
+                done = False
+                train_ext_reward = 0
+                train_int_reward = 0
+                bar.numerator = e
+                train_steps = 0
+
+                t0 = time.perf_counter()
+                while not done:
+                    train_steps += 1
+                    if args.generate_states:
+                        states.append(state0.numpy())
+                    action0 = exploration.explore(agent.get_action(state0))
+                    next_state, reward, done, _ = env.step(action0.numpy())
+                    train_ext_reward += reward
+                    # if not done and random.random() < 0.9:
+                    #    reward = 0
+                    state1 = torch.tensor(next_state, dtype=torch.float32)
+                    agent.train(state0, action0, state1, reward, done)
+                    forward_model.train(state0, action0, state1)
+                    train_int_reward += forward_model.reward(state0, action0, state1).item()
+                    # print("external reward {0:f}, internal reward {1:f}".format(reward, ri.item()))
+                    state0 = state1
+                t1 = time.perf_counter()
+                print('Training ' + str(t1 - t0))
+                t0 = time.perf_counter()
+                test_ext_reward, test_int_reward, test_steps, fm_error, _ = test(env, agent, metacritic=None, forward_model=forward_model)
+                fm_train_errors.append(fm_error)
+                t1 = time.perf_counter()
+                print('Testing ' + str(t1 - t0))
+                test_ext_rewards[e] = test_ext_reward
+                test_int_rewards[e] = test_int_reward
+                print(
+                    'Episode {0:d} training [ext. reward {1:f} int. reward {2:f} steps {3:d}] testing [ext. reward {4:f} int. reward {5:f} steps {6:d}]'.format(
+                        e, train_ext_reward, train_int_reward, train_steps, test_ext_reward, test_int_reward, test_steps))
+                print(bar)
+
+            agent.save('./models/lunar_lander_fm_{0:d}'.format(i))
+            numpy.save('ddpg_fm_{0:d}_re'.format(i), test_ext_rewards)
+            numpy.save('ddpg_fm_{0:d}_ri'.format(i), test_int_rewards)
+
+            if args.generate_states:
+                kmeans = KMeans(n_clusters=2000, random_state=0).fit(states)
+                states = numpy.stack(kmeans.cluster_centers_)
+                states[:, 6] = numpy.round(states[:, 6])
+                states[:, 7] = numpy.round(states[:, 7])
+                numpy.save('lunar_lander_states', states)
+
+            fm_train_errors = [item for sublist in fm_train_errors for item in sublist]
+            fm_train_errors = numpy.stack(fm_train_errors)
+            numpy.save('ddpg_fm_{0:d}_fme'.format(i), fm_train_errors)
+
+            if args.collect_stats:
+                action_list = torch.stack(action_list)
+                value_list = torch.stack(value_list)
+                fm_error_list = torch.stack(fm_error_list)
+                reward_list = torch.stack(reward_list)
+
+                numpy.save('ddpg_fm_' + str(i) + '_actions', action_list)
+                numpy.save('ddpg_fm_' + str(i) + '_values', value_list)
+                numpy.save('ddpg_fm_' + str(i) + '_prediction_errors', fm_error_list)
+                numpy.save('ddpg_fm_' + str(i) + '_rewards', reward_list)
 
     env.close()
 
@@ -234,10 +342,11 @@ def run_metalearner_model(args):
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
 
+    states = None
     if args.generate_states:
         states = []
     if args.collect_stats:
-        states = torch.tensor(numpy.load('./ddpg_su_states.npy'), dtype=torch.float32)
+        states = torch.tensor(numpy.load('./lunar_lander_states.npy'), dtype=torch.float32)
 
     if args.load:
         state_dim = env.observation_space.shape[0]
@@ -324,7 +433,7 @@ def run_metalearner_model(args):
                 states = numpy.stack(kmeans.cluster_centers_)
                 states[:, 6] = numpy.round(states[:, 6])
                 states[:, 7] = numpy.round(states[:, 7])
-                numpy.save('ddpg_su_states', states)
+                numpy.save('lunar_lander_states', states)
 
             fm_train_errors = [item for sublist in fm_train_errors for item in sublist]
             fm_train_errors = numpy.stack(fm_train_errors)
@@ -340,7 +449,6 @@ def run_metalearner_model(args):
                 mc_error_list = torch.stack(mc_error_list)
                 reward_list = torch.stack(reward_list)
 
-                numpy.save('ddpg_su_' + str(i) + '_states', states)
                 numpy.save('ddpg_su_' + str(i) + '_actions', action_list)
                 numpy.save('ddpg_su_' + str(i) + '_values', value_list)
                 numpy.save('ddpg_su_' + str(i) + '_prediction_errors', fm_error_list)
