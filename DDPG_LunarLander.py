@@ -357,21 +357,21 @@ def run_metalearner_model(args):
         for i in range(5):
             test(env, agent, True, False)
     else:
-        action_list = []
-        value_list = []
-        fm_error_list = []
-        mc_error_list = []
-        reward_list = []
-
-        fm_train_errors = []
-        mc_train_errors = []
-
         for i in range(args.trials):
+            action_list = []
+            value_list = []
+            fm_error_list = []
+            mc_error_list = []
+            reward_list = []
+
+            fm_train_errors = []
+            mc_train_errors = []
+
             test_ext_rewards = numpy.zeros(args.episodes)
             test_int_rewards = numpy.zeros(args.episodes)
+
             forward_model = ForwardModelMotivation(ForwardModelNetwork, state_dim, action_dim, 2e-4)
             metacritic = MetaLearnerMotivation(MetaLearnerNetwork, forward_model, state_dim, action_dim, 2e-3, variant='A', eta=1)
-
             agent = DDPG(Actor, Critic, state_dim, action_dim, args.memory_size, args.batch_size, 1e-4, 2e-4, 0.99, 1e-3, motivation_module=metacritic)
             exploration = GaussianExploration(0.2)
             # exploration = OUExploration(env.action_space.shape[0], 0.2, mu=0.4)
