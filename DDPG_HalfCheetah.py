@@ -10,8 +10,8 @@ class Critic(DDPGCritic):
     def __init__(self, state_dim, action_dim):
         super(Critic, self).__init__(state_dim, action_dim)
 
-        self._hidden0 = torch.nn.Linear(state_dim, 170)
-        self._hidden1 = torch.nn.Linear(170 + action_dim, 120)
+        self._hidden0 = torch.nn.Linear(state_dim, 340)
+        self._hidden1 = torch.nn.Linear(340 + action_dim, 120)
         self._output = torch.nn.Linear(120, 1)
 
         torch.nn.init.xavier_uniform_(self._hidden0.weight)
@@ -30,8 +30,8 @@ class Actor(DDPGActor):
     def __init__(self, state_dim, action_dim):
         super(Actor, self).__init__(state_dim, action_dim)
 
-        self._hidden0 = torch.nn.Linear(state_dim, 170)
-        self._hidden1 = torch.nn.Linear(170, 120)
+        self._hidden0 = torch.nn.Linear(state_dim, 340)
+        self._hidden1 = torch.nn.Linear(340, 120)
         self._output = torch.nn.Linear(120, action_dim)
 
         torch.nn.init.xavier_uniform_(self._hidden0.weight)
@@ -48,9 +48,9 @@ class Actor(DDPGActor):
 class ForwardModelNetwork(ForwardModel):
     def __init__(self, state_dim, action_dim):
         super(ForwardModelNetwork, self).__init__(state_dim, action_dim)
-        self._hidden0 = torch.nn.Linear(state_dim + action_dim, 170)
-        self._hidden1 = torch.nn.Linear(170, 80)
-        self._output = torch.nn.Linear(80, state_dim)
+        self._hidden0 = torch.nn.Linear(state_dim + action_dim, 340)
+        self._hidden1 = torch.nn.Linear(340, 170)
+        self._output = torch.nn.Linear(170, state_dim)
 
         torch.nn.init.xavier_uniform_(self._hidden0.weight)
         torch.nn.init.xavier_uniform_(self._hidden1.weight)
@@ -67,9 +67,9 @@ class ForwardModelNetwork(ForwardModel):
 class MetaLearnerNetwork(MetaLearnerModel):
     def __init__(self, state_dim, action_dim):
         super(MetaLearnerNetwork, self).__init__(state_dim, action_dim)
-        self._hidden0 = torch.nn.Linear(state_dim + action_dim, 170)
-        self._hidden1 = torch.nn.Linear(170, 80)
-        self._output = torch.nn.Linear(80, 1)
+        self._hidden0 = torch.nn.Linear(state_dim + action_dim, 340)
+        self._hidden1 = torch.nn.Linear(340, 170)
+        self._output = torch.nn.Linear(170, 1)
 
         torch.nn.init.xavier_uniform_(self._hidden0.weight)
         torch.nn.init.xavier_uniform_(self._hidden1.weight)
