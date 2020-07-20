@@ -14,9 +14,10 @@ class ForwardModel(torch.nn.Module):
 
 
 class ForwardModelMotivation:
-    def __init__(self, network, state_dim, action_dim, lr, weight_decay=0):
+    def __init__(self, network, state_dim, action_dim, lr, weight_decay=0, eta=1):
         self._network = network(state_dim, action_dim)
         self._optimizer = torch.optim.Adam(self._network.parameters(), lr=lr, weight_decay=weight_decay)
+        self._eta = eta
 
     def train(self, state0, action, state1):
         self._optimizer.zero_grad()
@@ -32,13 +33,13 @@ class ForwardModelMotivation:
 
         return error
 
-    def reward(self, state0=None, action=None, state1=None, error=None, eta=1.0):
+    def reward(self, state0=None, action=None, state1=None, error=None):
         if error is None:
             reward = torch.tanh(self.error(state0, action, state1))
         else:
             reward = torch.tanh(error)
 
-        return reward * eta
+        return reward * self._eta
 
     def save(self, path):
         torch.save(self._network.state_dict(), path + '_fm.pth')
