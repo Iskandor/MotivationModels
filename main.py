@@ -13,7 +13,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--env', type=str, choices=['half_cheetah', 'mountain_car', 'lunar_lander', 'fetch_reach', 'go', 'chess', 'pong'],
                         help='[half_cheetah,mountain_car,lunar_lander,fetch_reach,go,chess, pong]')
-    parser.add_argument('--model', type=str, choices=['baseline', 'fm', 'su'], help='[baseline,fm,su]')
+    parser.add_argument('--model', type=str, choices=['baseline', 'fm', 's', 'su'], help='[baseline,fm,s,su]')
     parser.add_argument('--load', type=str, help='path to saved agent')
     parser.add_argument('--trials', type=int, help='No. trials')
     parser.add_argument('--episodes', type=int, help='No. episodes')
@@ -47,6 +47,8 @@ if __name__ == '__main__':
             DDPG_LunarLander.run_baseline(args)
         if args.model == 'fm':
             DDPG_LunarLander.run_forward_model(args)
+        if args.model == 's':
+            DDPG_LunarLander.run_surprise_model(args)
         if args.model == 'su':
             DDPG_LunarLander.run_metalearner_model(args)
     if args.env == 'pong':

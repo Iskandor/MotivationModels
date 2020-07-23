@@ -104,6 +104,18 @@ def run_forward_model(args):
     experiment = ExperimentDDPG('LunarLanderContinuous-v2', Actor, Critic, ForwardModelNetwork, MetaLearnerNetwork)
     experiment.run_forward_model(args)
 
+def run_surprise_model(args):
+    args.actor_lr = 1e-4
+    args.critic_lr = 2e-4
+    args.gamma = 0.99
+    args.tau = 1e-3
+    args.forward_model_lr = 2e-4
+    args.metacritic_lr = 2e-3
+    args.eta = 1
+    args.metacritic_variant = 'C'
+
+    experiment = ExperimentDDPG('LunarLanderContinuous-v2', Actor, Critic, ForwardModelNetwork, MetaLearnerNetwork)
+    experiment.run_metalearner_model(args)
 
 def run_metalearner_model(args):
     args.actor_lr = 1e-4
@@ -113,6 +125,7 @@ def run_metalearner_model(args):
     args.forward_model_lr = 2e-4
     args.metacritic_lr = 2e-3
     args.eta = 1
+    args.metacritic_variant = 'A'
 
     experiment = ExperimentDDPG('LunarLanderContinuous-v2', Actor, Critic, ForwardModelNetwork, MetaLearnerNetwork)
     experiment.run_metalearner_model(args)

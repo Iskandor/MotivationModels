@@ -113,6 +113,7 @@ def run_metalearner_model(args):
     args.forward_model_lr = 2e-4
     args.metacritic_lr = 2e-3
     args.eta = 1
+    args.metacritic_variant = 'A'
 
     experiment = ExperimentDDPG('HalfCheetah-v2', Actor, Critic, ForwardModelNetwork, MetaLearnerNetwork)
     experiment.run_metalearner_model(args)

@@ -45,11 +45,15 @@ class MetaLearnerMotivation:
         if self._variant == 'A':
             mask = torch.gt(torch.abs(error - error_estimate), torch.ones_like(error) * sigma).type(torch.float32)
             reward = torch.tanh(error / error_estimate + error_estimate / error - 2) * mask
+            reward = torch.max(reward, self._forward_model.reward(error=error))
 
         if self._variant == 'B':
             reward = torch.exp(k * torch.abs(error - error_estimate)) - 1
+            reward = torch.max(reward, self._forward_model.reward(error=error))
 
-        reward = torch.max(reward, self._forward_model.reward(error=error))
+        if self._variant == 'C':
+            mask = torch.gt(torch.abs(error - error_estimate), torch.ones_like(error) * sigma).type(torch.float32)
+            reward = torch.tanh(error / error_estimate + error_estimate / error - 2) * mask
 
         return reward * self._eta
 

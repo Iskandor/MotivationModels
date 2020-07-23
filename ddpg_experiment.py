@@ -280,7 +280,7 @@ class ExperimentDDPG:
                 test_int_rewards = numpy.zeros(args.episodes)
 
                 forward_model = ForwardModelMotivation(self._forward_model, state_dim, action_dim, args.forward_model_lr)
-                metacritic = MetaLearnerMotivation(self._metacritic, forward_model, state_dim, action_dim, args.metacritic_lr, variant='A', eta=args.eta)
+                metacritic = MetaLearnerMotivation(self._metacritic, forward_model, state_dim, action_dim, args.metacritic_lr, variant=args.metacritic_variant, eta=args.eta)
                 agent = DDPG(self._actor, self._critic, state_dim, action_dim, args.memory_size, args.batch_size, args.actor_lr, args.critic_lr, args.gamma,
                              args.tau, motivation_module=metacritic)
                 exploration = GaussianExploration(0.2)
@@ -333,7 +333,7 @@ class ExperimentDDPG:
                             e, train_ext_reward, train_int_reward, train_steps, test_ext_reward, test_int_reward, test_steps))
                     print(bar)
 
-                agent.save('./models/lunar_lander_su_{0:d}'.format(i))
+                agent.save('./models/{0:s}_su_{1:d}'.format(self._env_name, i))
                 numpy.save('ddpg_su_{0:d}_re'.format(i), test_ext_rewards)
                 numpy.save('ddpg_su_{0:d}_ri'.format(i), test_int_rewards)
                 fm_train_errors = [item for sublist in fm_train_errors for item in sublist]
@@ -398,10 +398,9 @@ class ExperimentDDPG:
 
         return actions, values, fm_errors, mc_errors, rewards
 
-    @staticmethod
-    def generate_states(states):
+    def generate_states(self, states):
         kmeans = KMeans(n_clusters=2000, random_state=0).fit(states)
         states = numpy.stack(kmeans.cluster_centers_)
         states[:, 6] = numpy.round(states[:, 6])
         states[:, 7] = numpy.round(states[:, 7])
-        numpy.save('lunar_lander_states', states)
+        numpy.save('{0:s}_states'.format(self._env_name), states)
