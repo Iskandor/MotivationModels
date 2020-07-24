@@ -59,6 +59,8 @@ if __name__ == '__main__':
             DDPG_HalfCheetah.run_baseline(args)
         if args.model == 'fm':
             DDPG_HalfCheetah.run_forward_model(args)
+        if args.model == 's':
+            DDPG_HalfCheetah.run_surprise_model(args)
         if args.model == 'su':
             DDPG_HalfCheetah.run_metalearner_model(args)
 

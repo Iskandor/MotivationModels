@@ -1,6 +1,7 @@
 import time
 
 import gym
+import pybulletgym
 import numpy
 import torch
 from etaprogress.progress import ProgressBar
