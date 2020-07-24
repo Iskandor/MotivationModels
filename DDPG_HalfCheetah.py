@@ -49,8 +49,8 @@ class ForwardModelNetwork(ForwardModel):
     def __init__(self, state_dim, action_dim):
         super(ForwardModelNetwork, self).__init__(state_dim, action_dim)
         self._hidden0 = torch.nn.Linear(state_dim + action_dim, 340)
-        self._hidden1 = torch.nn.Linear(340, 170)
-        self._output = torch.nn.Linear(170, state_dim)
+        self._hidden1 = torch.nn.Linear(340, 340)
+        self._output = torch.nn.Linear(340, state_dim)
 
         torch.nn.init.xavier_uniform_(self._hidden0.weight)
         torch.nn.init.xavier_uniform_(self._hidden1.weight)
