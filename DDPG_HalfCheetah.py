@@ -11,8 +11,8 @@ class Critic(DDPGCritic):
         super(Critic, self).__init__(state_dim, action_dim)
 
         self._hidden0 = torch.nn.Linear(state_dim, 340)
-        self._hidden1 = torch.nn.Linear(340 + action_dim, 120)
-        self._output = torch.nn.Linear(120, 1)
+        self._hidden1 = torch.nn.Linear(340 + action_dim, 220)
+        self._output = torch.nn.Linear(220, 1)
 
         torch.nn.init.xavier_uniform_(self._hidden0.weight)
         torch.nn.init.xavier_uniform_(self._hidden1.weight)
@@ -31,8 +31,8 @@ class Actor(DDPGActor):
         super(Actor, self).__init__(state_dim, action_dim)
 
         self._hidden0 = torch.nn.Linear(state_dim, 340)
-        self._hidden1 = torch.nn.Linear(340, 120)
-        self._output = torch.nn.Linear(120, action_dim)
+        self._hidden1 = torch.nn.Linear(340, 220)
+        self._output = torch.nn.Linear(220, action_dim)
 
         torch.nn.init.xavier_uniform_(self._hidden0.weight)
         torch.nn.init.xavier_uniform_(self._hidden1.weight)
@@ -98,7 +98,7 @@ def run_forward_model(args):
     args.critic_lr = 2e-4
     args.gamma = 0.99
     args.tau = 1e-3
-    args.forward_model_lr = 1e-4
+    args.forward_model_lr = 1e-3
     args.eta = 1
 
     experiment = ExperimentDDPG('HalfCheetahPyBulletEnv-v0', Actor, Critic, ForwardModelNetwork, MetaLearnerNetwork)
@@ -122,7 +122,7 @@ def run_metalearner_model(args):
     args.critic_lr = 2e-4
     args.gamma = 0.99
     args.tau = 1e-3
-    args.forward_model_lr = 2e-4
+    args.forward_model_lr = 1e-3
     args.metacritic_lr = 2e-3
     args.eta = 1
     args.metacritic_variant = 'A'
