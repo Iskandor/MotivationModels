@@ -82,7 +82,7 @@ class ExperimentDDPG:
             agent.load(args.load)
 
             for i in range(5):
-                self.test(env, agent, True, False)
+                self.test(env, agent, render=False, video=False)
         else:
             action_list = []
             value_list = []
@@ -162,7 +162,7 @@ class ExperimentDDPG:
             agent.load(args.load)
 
             for i in range(5):
-                self.test(env, agent, True, False)
+                self.test(env, agent, render=False, video=False)
         else:
             action_list = []
             value_list = []
@@ -174,7 +174,7 @@ class ExperimentDDPG:
             for i in range(args.trials):
                 test_ext_rewards = numpy.zeros(args.episodes)
                 test_int_rewards = numpy.zeros(args.episodes)
-                forward_model = ForwardModelMotivation(self._forward_model, state_dim, action_dim, args.forward_model_lr, eta=args.eta)
+                forward_model = ForwardModelMotivation(self._forward_model, state_dim, action_dim, args.forward_model_lr, args.memory_size, args.batch_size, eta=args.eta)
                 agent = DDPG(self._actor, self._critic, state_dim, action_dim, args.memory_size, args.batch_size, args.actor_lr, args.critic_lr, args.gamma,
                              args.tau, motivation_module=forward_model)
 
@@ -250,6 +250,7 @@ class ExperimentDDPG:
 
     def run_metalearner_model(self, args):
         env = gym.make(self._env_name)
+        #env.render()
         state_dim = env.observation_space.shape[0]
         action_dim = env.action_space.shape[0]
 
@@ -265,7 +266,7 @@ class ExperimentDDPG:
             agent.load(args.load)
 
             for i in range(5):
-                self.test(env, agent, True, False)
+                self.test(env, agent, render=False, video=False)
         else:
             for i in range(args.trials):
                 action_list = []
@@ -280,8 +281,8 @@ class ExperimentDDPG:
                 test_ext_rewards = numpy.zeros(args.episodes)
                 test_int_rewards = numpy.zeros(args.episodes)
 
-                forward_model = ForwardModelMotivation(self._forward_model, state_dim, action_dim, args.forward_model_lr)
-                metacritic = MetaLearnerMotivation(self._metacritic, forward_model, state_dim, action_dim, args.metacritic_lr, variant=args.metacritic_variant, eta=args.eta)
+                forward_model = ForwardModelMotivation(self._forward_model, state_dim, action_dim, args.forward_model_lr, args.memory_size, args.batch_size)
+                metacritic = MetaLearnerMotivation(self._metacritic, forward_model, state_dim, action_dim, args.metacritic_lr, args.memory_size, args.batch_size, variant=args.metacritic_variant, eta=args.eta)
                 agent = DDPG(self._actor, self._critic, state_dim, action_dim, args.memory_size, args.batch_size, args.actor_lr, args.critic_lr, args.gamma,
                              args.tau, motivation_module=metacritic)
                 exploration = GaussianExploration(0.2)

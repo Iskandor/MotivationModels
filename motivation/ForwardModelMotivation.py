@@ -1,6 +1,6 @@
 import abc
-
 import torch
+from algorithms.ReplayBuffer import ModelReplayBuffer
 
 
 class ForwardModel(torch.nn.Module):
@@ -14,16 +14,27 @@ class ForwardModel(torch.nn.Module):
 
 
 class ForwardModelMotivation:
-    def __init__(self, network, state_dim, action_dim, lr, weight_decay=0, eta=1):
+    def __init__(self, network, state_dim, action_dim, lr, memory_size, sample_size, weight_decay=0, eta=1):
         self._network = network(state_dim, action_dim)
         self._optimizer = torch.optim.Adam(self._network.parameters(), lr=lr, weight_decay=weight_decay)
+        self._memory = ModelReplayBuffer(memory_size)
+        self._sample_size = sample_size
         self._eta = eta
 
     def train(self, state0, action, state1):
-        self._optimizer.zero_grad()
-        loss = torch.nn.functional.mse_loss(self._network(state0, action), state1)
-        loss.backward()
-        self._optimizer.step()
+        self._memory.add(state0, action, state1)
+
+        if len(self._memory) > self._sample_size:
+            sample = self._memory.sample(self._sample_size)
+
+            states = torch.stack(sample.state)
+            next_states = torch.stack(sample.next_state)
+            actions = torch.stack(sample.action)
+
+            self._optimizer.zero_grad()
+            loss = torch.nn.functional.mse_loss(self._network(states, actions), next_states)
+            loss.backward()
+            self._optimizer.step()
 
     def error(self, state0, action, state1):
         with torch.no_grad():

@@ -2,6 +2,8 @@ import abc
 
 import torch
 
+from algorithms.ReplayBuffer import ModelReplayBuffer
+
 
 class MetaLearnerModel(torch.nn.Module):
     @abc.abstractmethod
@@ -14,21 +16,31 @@ class MetaLearnerModel(torch.nn.Module):
 
 
 class MetaLearnerMotivation:
-    def __init__(self, network, forward_model, state_dim, action_dim, lr, weight_decay=0, variant='A', eta=1.0):
+    def __init__(self, network, forward_model, state_dim, action_dim, lr, memory_size, sample_size, weight_decay=0, variant='A', eta=1.0):
         self._forward_model = forward_model
         self._network = network(state_dim, action_dim)
         self._optimizer = torch.optim.Adam(self._network.parameters(), lr=lr, weight_decay=weight_decay)
+        self._memory = ModelReplayBuffer(memory_size)
+        self._sample_size = sample_size
         self._variant = variant
         self._eta = eta
 
     def train(self, state0, action, state1):
-        self._optimizer.zero_grad()
-        error = self._forward_model.error(state0, action, state1)
-        loss = torch.nn.functional.mse_loss(self._network(state0, action), error)
-        loss.backward()
-        self._optimizer.step()
-
         self._forward_model.train(state0, action, state1)
+        self._memory.add(state0, action, state1)
+
+        if len(self._memory) > self._sample_size:
+            sample = self._memory.sample(self._sample_size)
+
+            states = torch.stack(sample.state)
+            next_states = torch.stack(sample.next_state)
+            actions = torch.stack(sample.action)
+
+            self._optimizer.zero_grad()
+            error = self._forward_model.error(states, actions, next_states)
+            loss = torch.nn.functional.mse_loss(self._network(states, actions), error)
+            loss.backward()
+            self._optimizer.step()
 
     def error(self, state0, action):
         with torch.no_grad():
@@ -64,4 +76,3 @@ class MetaLearnerMotivation:
     def load(self, path):
         self._forward_model.load(path)
         self._network.load_state_dict(torch.load(path + '_mc.pth'))
-

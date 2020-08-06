@@ -1,11 +1,7 @@
 import abc
-import time
-
 import torch
 
-from algorithms.ReplayBuffer import ReplayBuffer
-from motivation.ForwardModelMotivation import ForwardModelMotivation
-from motivation.MateLearnerMotivation import MetaLearnerMotivation
+from algorithms.ReplayBuffer import ExperienceReplayBuffer
 
 
 class DDPGCritic(torch.nn.Module):
@@ -35,7 +31,7 @@ class DDPG:
         self._actor_target = actor(state_dim, action_dim)
         self._critic_target = critic(state_dim, action_dim)
         self._motivation_module = motivation_module
-        self._memory = ReplayBuffer(memory_size)
+        self._memory = ExperienceReplayBuffer(memory_size)
         self._sample_size = sample_size
         self._gamma = gamma
         self._tau = tau
@@ -80,7 +76,6 @@ class DDPG:
             if self._motivation_module:
                 int_reward = self._motivation_module.reward(states, actions, next_states)
                 rewards += int_reward
-                # self._motivation_module.train(states, actions, next_states)
 
             expected_values = rewards + masks * self._gamma * self._critic_target(next_states, self._actor_target(next_states).detach()).detach()
 

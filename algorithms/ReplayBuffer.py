@@ -3,7 +3,8 @@ from collections import namedtuple, deque
 
 import torch
 
-Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward', 'mask'))
+MDP_Transition = namedtuple('MDP_Transition', ('state', 'action', 'next_state', 'reward', 'mask'))
+Model_Transition = namedtuple('Model_Transition', ('state', 'action', 'next_state'))
 
 
 class ReplayBuffer(object):
@@ -11,16 +12,28 @@ class ReplayBuffer(object):
         self.memory = deque(maxlen=capacity)
         self.capacity = capacity
 
+    def __len__(self):
+        return len(self.memory)
+
+
+class ExperienceReplayBuffer(ReplayBuffer):
     def add(self, state, action, next_state, reward, mask):
         if mask:
-            self.memory.append(Transition(state, action, next_state, torch.tensor([reward], dtype=torch.float32), torch.tensor([0], dtype=torch.float32)))
+            self.memory.append(MDP_Transition(state, action, next_state, torch.tensor([reward], dtype=torch.float32), torch.tensor([0], dtype=torch.float32)))
         else:
-            self.memory.append(Transition(state, action, next_state, torch.tensor([reward], dtype=torch.float32), torch.tensor([1], dtype=torch.float32)))
+            self.memory.append(MDP_Transition(state, action, next_state, torch.tensor([reward], dtype=torch.float32), torch.tensor([1], dtype=torch.float32)))
 
     def sample(self, batch_size):
         transitions = random.sample(self.memory, batch_size)
-        batch = Transition(*zip(*transitions))
+        batch = MDP_Transition(*zip(*transitions))
         return batch
 
-    def __len__(self):
-        return len(self.memory)
+
+class ModelReplayBuffer(ReplayBuffer):
+    def add(self, state, action, next_state):
+        self.memory.append(Model_Transition(state, action, next_state))
+
+    def sample(self, batch_size):
+        transitions = random.sample(self.memory, batch_size)
+        batch = Model_Transition(*zip(*transitions))
+        return batch
