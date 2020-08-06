@@ -10,9 +10,9 @@ class Critic(DDPGCritic):
     def __init__(self, state_dim, action_dim):
         super(Critic, self).__init__(state_dim, action_dim)
 
-        self._hidden0 = torch.nn.Linear(state_dim, 340)
-        self._hidden1 = torch.nn.Linear(340 + action_dim, 220)
-        self._output = torch.nn.Linear(220, 1)
+        self._hidden0 = torch.nn.Linear(state_dim, 128)
+        self._hidden1 = torch.nn.Linear(128 + action_dim, 64)
+        self._output = torch.nn.Linear(64, 1)
 
         torch.nn.init.xavier_uniform_(self._hidden0.weight)
         torch.nn.init.xavier_uniform_(self._hidden1.weight)
@@ -30,9 +30,9 @@ class Actor(DDPGActor):
     def __init__(self, state_dim, action_dim):
         super(Actor, self).__init__(state_dim, action_dim)
 
-        self._hidden0 = torch.nn.Linear(state_dim, 340)
-        self._hidden1 = torch.nn.Linear(340, 220)
-        self._output = torch.nn.Linear(220, action_dim)
+        self._hidden0 = torch.nn.Linear(state_dim, 128)
+        self._hidden1 = torch.nn.Linear(128, 64)
+        self._output = torch.nn.Linear(64, action_dim)
 
         torch.nn.init.xavier_uniform_(self._hidden0.weight)
         torch.nn.init.xavier_uniform_(self._hidden1.weight)
@@ -48,9 +48,9 @@ class Actor(DDPGActor):
 class ForwardModelNetwork(ForwardModel):
     def __init__(self, state_dim, action_dim):
         super(ForwardModelNetwork, self).__init__(state_dim, action_dim)
-        self._hidden0 = torch.nn.Linear(state_dim + action_dim, 340)
-        self._hidden1 = torch.nn.Linear(340, 340)
-        self._output = torch.nn.Linear(340, state_dim)
+        self._hidden0 = torch.nn.Linear(state_dim + action_dim, 128)
+        self._hidden1 = torch.nn.Linear(128, 128)
+        self._output = torch.nn.Linear(128, state_dim)
 
         torch.nn.init.xavier_uniform_(self._hidden0.weight)
         torch.nn.init.xavier_uniform_(self._hidden1.weight)
@@ -67,9 +67,9 @@ class ForwardModelNetwork(ForwardModel):
 class MetaLearnerNetwork(MetaLearnerModel):
     def __init__(self, state_dim, action_dim):
         super(MetaLearnerNetwork, self).__init__(state_dim, action_dim)
-        self._hidden0 = torch.nn.Linear(state_dim + action_dim, 340)
-        self._hidden1 = torch.nn.Linear(340, 170)
-        self._output = torch.nn.Linear(170, 1)
+        self._hidden0 = torch.nn.Linear(state_dim + action_dim, 128)
+        self._hidden1 = torch.nn.Linear(128, 64)
+        self._output = torch.nn.Linear(64, 1)
 
         torch.nn.init.xavier_uniform_(self._hidden0.weight)
         torch.nn.init.xavier_uniform_(self._hidden1.weight)
@@ -104,6 +104,7 @@ def run_forward_model(args):
     experiment = ExperimentDDPG('HalfCheetahPyBulletEnv-v0', Actor, Critic, ForwardModelNetwork, MetaLearnerNetwork)
     experiment.run_forward_model(args)
 
+
 def run_surprise_model(args):
     args.actor_lr = 1e-4
     args.critic_lr = 2e-4
@@ -116,6 +117,7 @@ def run_surprise_model(args):
 
     experiment = ExperimentDDPG('HalfCheetahPyBulletEnv-v0', Actor, Critic, ForwardModelNetwork, MetaLearnerNetwork)
     experiment.run_metalearner_model(args)
+
 
 def run_metalearner_model(args):
     args.actor_lr = 1e-4
