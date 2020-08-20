@@ -164,16 +164,16 @@ class ExperimentDDPG:
             for i in range(5):
                 self.test(env, agent, render=False, video=False)
         else:
-            action_list = []
-            value_list = []
-            fm_error_list = []
-            reward_list = []
-
-            fm_train_errors = []
-
             for i in range(args.trials):
+                action_list = []
+                value_list = []
+                fm_error_list = []
+                reward_list = []
+
+                fm_train_errors = []
                 test_ext_rewards = numpy.zeros(args.episodes)
                 test_int_rewards = numpy.zeros(args.episodes)
+
                 forward_model = ForwardModelMotivation(self._forward_model, state_dim, action_dim, args.forward_model_lr, args.memory_size, args.batch_size, eta=args.eta)
                 agent = DDPG(self._actor, self._critic, state_dim, action_dim, args.memory_size, args.batch_size, args.actor_lr, args.critic_lr, args.gamma,
                              args.tau, motivation_module=forward_model)

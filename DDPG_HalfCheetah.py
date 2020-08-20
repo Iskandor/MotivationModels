@@ -110,7 +110,7 @@ def run_surprise_model(args):
     args.critic_lr = 2e-4
     args.gamma = 0.99
     args.tau = 1e-3
-    args.forward_model_lr = 2e-4
+    args.forward_model_lr = 1e-3
     args.metacritic_lr = 2e-3
     args.eta = 1
     args.metacritic_variant = 'C'
