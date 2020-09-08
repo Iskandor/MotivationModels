@@ -1,3 +1,4 @@
+import gym
 import torch
 
 from algorithms.DDPG import DDPGCritic, DDPGActor
@@ -7,16 +8,14 @@ from motivation.MateLearnerMotivation import MetaLearnerModel
 
 
 class Critic(DDPGCritic):
-    def __init__(self, state_dim, action_dim):
+    def __init__(self, state_dim, action_dim, config):
         super(Critic, self).__init__(state_dim, action_dim)
 
-        self._hidden0 = torch.nn.Linear(state_dim, 128)
-        self._hidden1 = torch.nn.Linear(128 + action_dim, 64)
-        self._output = torch.nn.Linear(64, 1)
+        self._hidden0 = torch.nn.Linear(state_dim, config.critic.h1)
+        self._hidden1 = torch.nn.Linear(config.critic.h1 + action_dim, config.critic.h2)
+        self._output = torch.nn.Linear(config.critic.h2, 1)
 
-        torch.nn.init.xavier_uniform_(self._hidden0.weight)
-        torch.nn.init.xavier_uniform_(self._hidden1.weight)
-        torch.nn.init.uniform_(self._output.weight, -3e-3, 3e-3)
+        self.init()
 
     def forward(self, state, action):
         x = torch.nn.functional.relu(self._hidden0(state))
@@ -25,24 +24,32 @@ class Critic(DDPGCritic):
         value = self._output(x)
         return value
 
-
-class Actor(DDPGActor):
-    def __init__(self, state_dim, action_dim):
-        super(Actor, self).__init__(state_dim, action_dim)
-
-        self._hidden0 = torch.nn.Linear(state_dim, 128)
-        self._hidden1 = torch.nn.Linear(128, 64)
-        self._output = torch.nn.Linear(64, action_dim)
-
+    def init(self):
         torch.nn.init.xavier_uniform_(self._hidden0.weight)
         torch.nn.init.xavier_uniform_(self._hidden1.weight)
-        torch.nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
+        torch.nn.init.uniform_(self._output.weight, -3e-3, 3e-3)
+
+
+class Actor(DDPGActor):
+    def __init__(self, state_dim, action_dim, config):
+        super(Actor, self).__init__(state_dim, action_dim)
+
+        self._hidden0 = torch.nn.Linear(state_dim, config.actor.h1)
+        self._hidden1 = torch.nn.Linear(config.actor.h1, config.actor.h2)
+        self._output = torch.nn.Linear(config.actor.h2, action_dim)
+
+        self.init()
 
     def forward(self, state):
         x = torch.nn.functional.relu(self._hidden0(state))
         x = torch.nn.functional.relu(self._hidden1(x))
         policy = torch.tanh(self._output(x))
         return policy
+
+    def init(self):
+        torch.nn.init.xavier_uniform_(self._hidden0.weight)
+        torch.nn.init.xavier_uniform_(self._hidden1.weight)
+        torch.nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
 
 
 class ForwardModelNetwork(ForwardModel):
@@ -51,10 +58,7 @@ class ForwardModelNetwork(ForwardModel):
         self._hidden0 = torch.nn.Linear(state_dim + action_dim, 128)
         self._hidden1 = torch.nn.Linear(128, 128)
         self._output = torch.nn.Linear(128, state_dim)
-
-        torch.nn.init.xavier_uniform_(self._hidden0.weight)
-        torch.nn.init.xavier_uniform_(self._hidden1.weight)
-        torch.nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
+        self.init()
 
     def forward(self, state, action):
         x = torch.cat([state, action], state.ndim - 1)
@@ -62,6 +66,11 @@ class ForwardModelNetwork(ForwardModel):
         x = torch.nn.functional.relu(self._hidden1(x))
         value = self._output(x)
         return value
+
+    def init(self):
+        torch.nn.init.xavier_uniform_(self._hidden0.weight)
+        torch.nn.init.xavier_uniform_(self._hidden1.weight)
+        torch.nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
 
 
 class MetaLearnerNetwork(MetaLearnerModel):
@@ -71,9 +80,7 @@ class MetaLearnerNetwork(MetaLearnerModel):
         self._hidden1 = torch.nn.Linear(128, 64)
         self._output = torch.nn.Linear(64, 1)
 
-        torch.nn.init.xavier_uniform_(self._hidden0.weight)
-        torch.nn.init.xavier_uniform_(self._hidden1.weight)
-        torch.nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
+        self.init()
 
     def forward(self, state, action):
         x = torch.cat([state, action], state.ndim - 1)
@@ -82,15 +89,22 @@ class MetaLearnerNetwork(MetaLearnerModel):
         value = self._output(x)
         return value
 
+    def init(self):
+        torch.nn.init.xavier_uniform_(self._hidden0.weight)
+        torch.nn.init.xavier_uniform_(self._hidden1.weight)
+        torch.nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
 
-def run_baseline(args):
-    args.actor_lr = 1e-4
-    args.critic_lr = 2e-4
-    args.gamma = 0.99
-    args.tau = 1e-3
 
-    experiment = ExperimentDDPG('HalfCheetahPyBulletEnv-v0', Actor, Critic, ForwardModelNetwork, MetaLearnerNetwork)
-    experiment.run_baseline(args)
+def run_baseline(config):
+    env = gym.make('HalfCheetahPyBulletEnv-v0')
+    state_dim = env.observation_space.shape[0]
+    action_dim = env.action_space.shape[0]
+
+    actor = Actor(state_dim, action_dim, config)
+    critic = Critic(state_dim, action_dim, config)
+
+    experiment = ExperimentDDPG('HalfCheetahPyBulletEnv-v0', env, config, actor, critic)
+    experiment.run_baseline()
 
 
 def run_forward_model(args):

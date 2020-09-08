@@ -1,4 +1,6 @@
 import abc
+import copy
+
 import torch
 
 from algorithms.ReplayBuffer import ExperienceReplayBuffer
@@ -25,11 +27,11 @@ class DDPGActor(torch.nn.Module):
 
 
 class DDPG:
-    def __init__(self, actor, critic, state_dim, action_dim, memory_size, sample_size, actor_lr, critic_lr, gamma, tau, weight_decay=0, motivation_module=None):
-        self._actor = actor(state_dim, action_dim)
-        self._critic = critic(state_dim, action_dim)
-        self._actor_target = actor(state_dim, action_dim)
-        self._critic_target = critic(state_dim, action_dim)
+    def __init__(self, actor, critic, memory_size, sample_size, actor_lr, critic_lr, gamma, tau, weight_decay=0, motivation_module=None):
+        self._actor = actor
+        self._critic = critic
+        self._actor_target = copy.deepcopy(actor)
+        self._critic_target = copy.deepcopy(critic)
         self._motivation_module = motivation_module
         self._memory = ExperienceReplayBuffer(memory_size)
         self._sample_size = sample_size

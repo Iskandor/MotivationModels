@@ -7,22 +7,18 @@ import DDPG_MountainCar
 #import PPO_Go
 #import PPO_Chess
 import PPO_Pong
+from utils.Config import Config
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Motivation models learning platform.')
 
     parser.add_argument('--env', type=str, choices=['half_cheetah', 'mountain_car', 'lunar_lander', 'fetch_reach', 'go', 'chess', 'pong'],
                         help='[half_cheetah,mountain_car,lunar_lander,fetch_reach,go,chess, pong]')
-    parser.add_argument('--model', type=str, choices=['baseline', 'fm', 's', 'su'], help='[baseline,fm,s,su]')
-    parser.add_argument('--load', type=str, help='path to saved agent')
-    parser.add_argument('--trials', type=int, help='No. trials')
-    parser.add_argument('--episodes', type=int, help='No. episodes')
-    parser.add_argument('--batch_size', type=int, default=64, help='Minibatch size')
-    parser.add_argument('--memory_size', type=int, default=10000, help='Size of memory buffer')
-    parser.add_argument('--collect_stats', action='store_const', const=True, help='Collect data for videos')
-    parser.add_argument('--generate_states', action='store_const', const=True, help='Collect states for videos')
+    parser.add_argument('--config', type=str, help='path to config file')
 
     args = parser.parse_args()
+
+    config = Config.parse_config(args.config)
 
     if args.env == 'mountain_car':
         if args.model == 'baseline':
@@ -55,13 +51,13 @@ if __name__ == '__main__':
         if args.model == 'baseline':
             PPO_Pong.run_baseline(args)
     if args.env == 'half_cheetah':
-        if args.model == 'baseline':
-            DDPG_HalfCheetah.run_baseline(args)
-        if args.model == 'fm':
+        if config.model == 'baseline':
+            DDPG_HalfCheetah.run_baseline(config)
+        if config.model == 'fm':
             DDPG_HalfCheetah.run_forward_model(args)
-        if args.model == 's':
+        if config.model == 's':
             DDPG_HalfCheetah.run_surprise_model(args)
-        if args.model == 'su':
+        if config.model == 'su':
             DDPG_HalfCheetah.run_metalearner_model(args)
 
     # DQN_FrozenLake.run()
