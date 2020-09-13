@@ -1,7 +1,7 @@
 import gym
 import torch
 
-from algorithms.DDPG import DDPGCritic, DDPGActor
+from algorithms.DDPG import DDPGCritic, DDPGActor, DDPG
 from ddpg_experiment import ExperimentDDPG
 from motivation.ForwardModelMotivation import ForwardModel
 from motivation.MateLearnerMotivation import MetaLearnerModel
@@ -18,9 +18,10 @@ class Critic(DDPGCritic):
         self.init()
 
     def forward(self, state, action):
-        x = torch.nn.functional.relu(self._hidden0(state))
+        x = state
+        x = torch.relu(self._hidden0(x))
         x = torch.cat([x, action], 1)
-        x = torch.nn.functional.relu(self._hidden1(x))
+        x = torch.relu(self._hidden1(x))
         value = self._output(x)
         return value
 
@@ -41,8 +42,9 @@ class Actor(DDPGActor):
         self.init()
 
     def forward(self, state):
-        x = torch.nn.functional.relu(self._hidden0(state))
-        x = torch.nn.functional.relu(self._hidden1(x))
+        x = state
+        x = torch.relu(self._hidden0(x))
+        x = torch.relu(self._hidden1(x))
         policy = torch.tanh(self._output(x))
         return policy
 
@@ -62,8 +64,8 @@ class ForwardModelNetwork(ForwardModel):
 
     def forward(self, state, action):
         x = torch.cat([state, action], state.ndim - 1)
-        x = torch.nn.functional.relu(self._hidden0(x))
-        x = torch.nn.functional.relu(self._hidden1(x))
+        x = torch.relu(self._hidden0(x))
+        x = torch.relu(self._hidden1(x))
         value = self._output(x)
         return value
 
@@ -100,11 +102,13 @@ def run_baseline(config):
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
 
-    actor = Actor(state_dim, action_dim, config)
-    critic = Critic(state_dim, action_dim, config)
+    experiment = ExperimentDDPG('HalfCheetahPyBulletEnv-v0', env, config)
 
-    experiment = ExperimentDDPG('HalfCheetahPyBulletEnv-v0', env, config, actor, critic)
-    experiment.run_baseline()
+    for i in range(config.trials):
+        actor = Actor(state_dim, action_dim, config)
+        critic = Critic(state_dim, action_dim, config)
+        agent = DDPG(actor, critic, config.memory_size, config.batch_size, config.actor.lr, config.critic.lr, config.gamma, config.tau)
+        experiment.run_baseline(agent, i)
 
 
 def run_forward_model(args):
