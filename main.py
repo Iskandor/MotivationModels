@@ -54,7 +54,7 @@ if __name__ == '__main__':
         if config.model == 'baseline':
             DDPG_HalfCheetah.run_baseline(config)
         if config.model == 'fm':
-            DDPG_HalfCheetah.run_forward_model(args)
+            DDPG_HalfCheetah.run_forward_model(config)
         if config.model == 's':
             DDPG_HalfCheetah.run_surprise_model(args)
         if config.model == 'su':

@@ -1,6 +1,5 @@
 import abc
 import torch
-from algorithms.ReplayBuffer import ModelReplayBuffer
 
 
 class ForwardModel(torch.nn.Module):
@@ -14,25 +13,31 @@ class ForwardModel(torch.nn.Module):
 
 
 class ForwardModelMotivation:
-    def __init__(self, network, state_dim, action_dim, lr, memory_size, sample_size, weight_decay=0, eta=1):
-        self._network = network(state_dim, action_dim)
-        self._optimizer = torch.optim.Adam(self._network.parameters(), lr=lr, weight_decay=weight_decay)
-        self._memory = ModelReplayBuffer(memory_size)
+    def __init__(self, network, lr, eta=1, memory_buffer=None, sample_size=0):
+        self._network = network
+        self._optimizer = torch.optim.Adam(self._network.parameters(), lr=lr)
+        self._memory = memory_buffer
         self._sample_size = sample_size
         self._eta = eta
 
     def train(self, state0, action, state1):
-        self._memory.add(state0, action, state1)
+        if self._memory is not None:
+            self._memory.add(state0, action, state1)
 
-        if len(self._memory) > self._sample_size:
-            sample = self._memory.sample(self._sample_size)
+            if len(self._memory) > self._sample_size:
+                sample = self._memory.sample(self._sample_size)
 
-            states = torch.stack(sample.state)
-            next_states = torch.stack(sample.next_state)
-            actions = torch.stack(sample.action)
+                states = torch.stack(sample.state)
+                next_states = torch.stack(sample.next_state)
+                actions = torch.stack(sample.action)
 
+                self._optimizer.zero_grad()
+                loss = torch.nn.functional.mse_loss(self._network(states, actions), next_states)
+                loss.backward()
+                self._optimizer.step()
+        else:
             self._optimizer.zero_grad()
-            loss = torch.nn.functional.mse_loss(self._network(states, actions), next_states)
+            loss = torch.nn.functional.mse_loss(self._network(state0, action), state1)
             loss.backward()
             self._optimizer.step()
 

@@ -3,8 +3,6 @@ import copy
 
 import torch
 
-from algorithms.ReplayBuffer import ExperienceReplayBuffer
-
 
 class DDPGCritic(torch.nn.Module):
     @abc.abstractmethod
@@ -27,13 +25,13 @@ class DDPGActor(torch.nn.Module):
 
 
 class DDPG:
-    def __init__(self, actor, critic, memory_size, sample_size, actor_lr, critic_lr, gamma, tau, weight_decay=0, motivation_module=None):
+    def __init__(self, actor, critic, actor_lr, critic_lr, gamma, tau, memory_buffer, sample_size):
         self._actor = actor
         self._critic = critic
         self._actor_target = copy.deepcopy(actor)
         self._critic_target = copy.deepcopy(critic)
-        self._motivation_module = motivation_module
-        self._memory = ExperienceReplayBuffer(memory_size)
+        self._motivation_module = None
+        self._memory = memory_buffer
         self._sample_size = sample_size
         self._gamma = gamma
         self._tau = tau
@@ -42,9 +40,15 @@ class DDPG:
         self._hard_update(self._critic_target, self._critic)
 
         self._actor_optimizer = torch.optim.Adam(self._actor.parameters(), lr=actor_lr)
-        self._critic_optimizer = torch.optim.Adam(self._critic.parameters(), lr=critic_lr, weight_decay=weight_decay)
+        self._critic_optimizer = torch.optim.Adam(self._critic.parameters(), lr=critic_lr)
 
         self._gpu_enabled = False
+
+    def add_motivation_module(self, motivation_module):
+        self._motivation_module = motivation_module
+
+    def get_motivation_module(self):
+        return self._motivation_module
 
     def get_action(self, state):
         with torch.no_grad():

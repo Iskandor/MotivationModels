@@ -2,8 +2,6 @@ import abc
 
 import torch
 
-from algorithms.ReplayBuffer import ModelReplayBuffer
-
 
 class MetaLearnerModel(torch.nn.Module):
     @abc.abstractmethod
@@ -20,7 +18,7 @@ class MetaLearnerMotivation:
         self._forward_model = forward_model
         self._network = network(state_dim, action_dim)
         self._optimizer = torch.optim.Adam(self._network.parameters(), lr=lr, weight_decay=weight_decay)
-        self._memory = ModelReplayBuffer(memory_size)
+        self._memory = None
         self._sample_size = sample_size
         self._variant = variant
         self._eta = eta
