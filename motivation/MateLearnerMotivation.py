@@ -44,7 +44,7 @@ class MetaLearnerMotivation:
 
     def error(self, state0, action):
         with torch.no_grad():
-            error = self._network(state0, action).detach().detach()
+            error = self._network(state0, action)
         return error
 
     def reward(self, state0, action, state1):
