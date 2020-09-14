@@ -140,8 +140,6 @@ class ExperimentDDPG:
                 numpy.save('ddpg_{0}_{1}_{2:d}_actions'.format(config.name, config.model, trial), action_list)
                 numpy.save('ddpg_{0}_{1}_{2:d}_values'.format(config.name, config.model, trial), value_list)
 
-        self._env.close()
-
     def run_forward_model(self, args):
         env = gym.make(self._env_name)
 

@@ -110,6 +110,8 @@ def run_baseline(config):
         agent = DDPG(actor, critic, config.memory_size, config.batch_size, config.actor.lr, config.critic.lr, config.gamma, config.tau)
         experiment.run_baseline(agent, i)
 
+    env.close()
+
 
 def run_forward_model(args):
     args.actor_lr = 1e-4
