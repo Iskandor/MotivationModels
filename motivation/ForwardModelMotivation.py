@@ -4,7 +4,7 @@ import torch
 
 class ForwardModel(torch.nn.Module):
     @abc.abstractmethod
-    def __init__(self, state_dim, action_dim):
+    def __init__(self, state_dim, action_dim, config):
         super(ForwardModel, self).__init__()
 
     @abc.abstractmethod

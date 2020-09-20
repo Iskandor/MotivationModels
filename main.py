@@ -58,7 +58,7 @@ if __name__ == '__main__':
         if config.model == 's':
             DDPG_HalfCheetah.run_surprise_model(args)
         if config.model == 'su':
-            DDPG_HalfCheetah.run_metalearner_model(args)
+            DDPG_HalfCheetah.run_metalearner_model(config)
 
     # DQN_FrozenLake.run()
     # DQN_CartPole.run()

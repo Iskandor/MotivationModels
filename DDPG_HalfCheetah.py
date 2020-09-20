@@ -5,7 +5,7 @@ from algorithms.DDPG import DDPGCritic, DDPGActor, DDPG
 from algorithms.ReplayBuffer import ExperienceReplayBuffer
 from ddpg_experiment import ExperimentDDPG
 from motivation.ForwardModelMotivation import ForwardModel, ForwardModelMotivation
-from motivation.MateLearnerMotivation import MetaLearnerModel
+from motivation.MateLearnerMotivation import MetaLearnerModel, MetaLearnerMotivation
 
 
 class Critic(DDPGCritic):
@@ -57,7 +57,7 @@ class Actor(DDPGActor):
 
 class ForwardModelNetwork(ForwardModel):
     def __init__(self, state_dim, action_dim, config):
-        super(ForwardModelNetwork, self).__init__(state_dim, action_dim)
+        super(ForwardModelNetwork, self).__init__(state_dim, action_dim, config)
         self._hidden0 = torch.nn.Linear(state_dim + action_dim, config.forward_model.h1)
         self._hidden1 = torch.nn.Linear(config.forward_model.h1, config.forward_model.h2)
         self._output = torch.nn.Linear(config.forward_model.h2, state_dim)
@@ -77,11 +77,11 @@ class ForwardModelNetwork(ForwardModel):
 
 
 class MetaLearnerNetwork(MetaLearnerModel):
-    def __init__(self, state_dim, action_dim):
-        super(MetaLearnerNetwork, self).__init__(state_dim, action_dim)
-        self._hidden0 = torch.nn.Linear(state_dim + action_dim, 128)
-        self._hidden1 = torch.nn.Linear(128, 64)
-        self._output = torch.nn.Linear(64, 1)
+    def __init__(self, state_dim, action_dim, config):
+        super(MetaLearnerNetwork, self).__init__(state_dim, action_dim, config)
+        self._hidden0 = torch.nn.Linear(state_dim + action_dim, config.metacritic.h1)
+        self._hidden1 = torch.nn.Linear(config.metacritic.h1, config.metacritic.h2)
+        self._output = torch.nn.Linear(config.metacritic.h2, 1)
 
         self.init()
 
@@ -126,10 +126,9 @@ def run_forward_model(config):
         actor = Actor(state_dim, action_dim, config)
         critic = Critic(state_dim, action_dim, config)
         memory = ExperienceReplayBuffer(config.memory_size)
-        forward_model = ForwardModelNetwork(state_dim, action_dim, config)
-        motivation = ForwardModelMotivation(forward_model, config.forward_model.lr, config.forward_model.eta)
+        forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model.lr, config.forward_model.eta)
         agent = DDPG(actor, critic, config.actor.lr, config.critic.lr, config.gamma, config.tau, memory, config.batch_size)
-        agent.add_motivation_module(motivation)
+        agent.add_motivation_module(forward_model)
         experiment.run_forward_model(agent, i)
 
     env.close()
@@ -148,15 +147,21 @@ def run_surprise_model(args):
     experiment.run_metalearner_model(args)
 
 
-def run_metalearner_model(args):
-    args.actor_lr = 1e-4
-    args.critic_lr = 2e-4
-    args.gamma = 0.99
-    args.tau = 1e-3
-    args.forward_model_lr = 1e-3
-    args.metacritic_lr = 2e-3
-    args.eta = 1
-    args.metacritic_variant = 'A'
+def run_metalearner_model(config):
+    env = gym.make('HalfCheetahPyBulletEnv-v0')
+    state_dim = env.observation_space.shape[0]
+    action_dim = env.action_space.shape[0]
 
-    experiment = ExperimentDDPG('HalfCheetahPyBulletEnv-v0', Actor, Critic, ForwardModelNetwork, MetaLearnerNetwork)
-    experiment.run_metalearner_model(args)
+    experiment = ExperimentDDPG('HalfCheetahPyBulletEnv-v0', env, config)
+
+    for i in range(config.trials):
+        actor = Actor(state_dim, action_dim, config)
+        critic = Critic(state_dim, action_dim, config)
+        memory = ExperienceReplayBuffer(config.memory_size)
+        forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model.lr, config.forward_model.eta)
+        metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic.lr, config.metacritic.variant, config.metacritic.eta)
+        agent = DDPG(actor, critic, config.actor.lr, config.critic.lr, config.gamma, config.tau, memory, config.batch_size)
+        agent.add_motivation_module(metacritic)
+        experiment.run_metalearner_model(agent, i)
+
+    env.close()
