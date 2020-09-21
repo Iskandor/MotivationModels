@@ -27,8 +27,6 @@ class MetaLearnerMotivation:
         self._forward_model.train(state0, action, state1)
 
         if self._memory is not None:
-            self._memory.add(state0, action, state1)
-
             if len(self._memory) > self._sample_size:
                 sample = self._memory.sample(self._sample_size)
 

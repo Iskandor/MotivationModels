@@ -126,12 +126,20 @@ def run_forward_model(config):
         actor = Actor(state_dim, action_dim, config)
         critic = Critic(state_dim, action_dim, config)
         memory = ExperienceReplayBuffer(config.memory_size)
-        forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model.lr, config.forward_model.eta)
+
         agent = DDPG(actor, critic, config.actor.lr, config.critic.lr, config.gamma, config.tau, memory, config.batch_size)
+
+        if config.forward_model.get('batch_size') is not None:
+            forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model.lr, config.forward_model.eta, memory, config.forward_model.batch_size)
+        else:
+            forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model.lr, config.forward_model.eta)
+
         agent.add_motivation_module(forward_model)
+
         experiment.run_forward_model(agent, i)
 
     env.close()
+
 
 def run_surprise_model(args):
     args.actor_lr = 1e-4
@@ -143,7 +151,7 @@ def run_surprise_model(args):
     args.eta = 1
     args.metacritic_variant = 'C'
 
-    experiment = ExperimentDDPG('HalfCheetahPyBulletEnv-v0', Actor, Critic, ForwardModelNetwork, MetaLearnerNetwork)
+    experiment = ExperimentDDPG('HalfCheetahPyBulletEnv-v0', Actor, Critic)
     experiment.run_metalearner_model(args)
 
 
@@ -158,10 +166,21 @@ def run_metalearner_model(config):
         actor = Actor(state_dim, action_dim, config)
         critic = Critic(state_dim, action_dim, config)
         memory = ExperienceReplayBuffer(config.memory_size)
-        forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model.lr, config.forward_model.eta)
-        metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic.lr, config.metacritic.variant, config.metacritic.eta)
+
         agent = DDPG(actor, critic, config.actor.lr, config.critic.lr, config.gamma, config.tau, memory, config.batch_size)
+
+        if config.forward_model.get('batch_size') is not None:
+            forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model.lr, config.forward_model.eta, memory, config.forward_model.batch_size)
+        else:
+            forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model.lr, config.forward_model.eta)
+
+        if config.forward_model.get('batch_size') is not None:
+            metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic.lr, config.metacritic.variant, config.metacritic.eta, memory, config.metacritic.batch_size)
+        else:
+            metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic.lr, config.metacritic.variant, config.metacritic.eta)
+
         agent.add_motivation_module(metacritic)
+
         experiment.run_metalearner_model(agent, i)
 
     env.close()

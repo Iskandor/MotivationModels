@@ -8,21 +8,16 @@ from etaprogress.progress import ProgressBar
 from gym.wrappers.monitoring.video_recorder import VideoRecorder
 from sklearn.cluster import KMeans
 
-from algorithms.DDPG import DDPG
 from exploration.ContinuousExploration import GaussianExploration
-from motivation.ForwardModelMotivation import ForwardModelMotivation
-from motivation.MateLearnerMotivation import MetaLearnerMotivation
 
 
 class ExperimentDDPG:
-    def __init__(self, env_name, env, config, forward_model=None, metacritic=None):
+    def __init__(self, env_name, env, config):
         self._env_name = env_name
         self._env = env
         self._config = config
         self._actor = None
         self._critic = None
-        self._forward_model = forward_model
-        self._metacritic = metacritic
 
     def test(self, env, agent, metacritic=None, forward_model=None, render=False, video=False):
         state0 = torch.tensor(env.reset(), dtype=torch.float32)

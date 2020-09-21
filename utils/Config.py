@@ -12,6 +12,17 @@ class Config(object):
             else:
                 self.__dict__[key] = value
 
+    def get(self, key):
+        result = None
+        for k in self.__dict__:
+            if self.__dict__[k] is Config:
+                result = self.__dict__[k].get(key)
+            else:
+                if k == key:
+                    result = self.__dict__[k]
+
+        return result
+
     @staticmethod
     def parse_config(filename):
         with open(filename + '.json') as config_file:
