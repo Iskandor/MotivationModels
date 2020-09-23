@@ -9,7 +9,7 @@ class M3Critic(torch.nn.Module):
         super(M3Critic, self).__init__()
 
     @abc.abstractmethod
-    def forward(self, state, error, error_estimate):
+    def forward(self, state, error_estimate):
         raise NotImplementedError
 
 
@@ -19,8 +19,9 @@ class M3Gate(torch.nn.Module):
         super(M3Gate, self).__init__()
 
     @abc.abstractmethod
-    def forward(self, state, error, error_estimate):
+    def forward(self, state, error_estimate):
         raise NotImplementedError
+
 
 class M3Motivation:
     def __init__(self, gate, critic, gate_lr, critic_lr, gamma, forward_model, meta_critic):
@@ -49,4 +50,22 @@ class M3Motivation:
     def reward(self, state0, action, state1):
         error = self._forward_model.error(state0, action, state1)
         error_estimate = self._meta_critic.error(state0, action)
+        gate = self._gate(state0, error_estimate).detach()
 
+        rewards = [self._curious_reward(error, error_estimate), self._familiar_reward(error, error_estimate), self._surprise_reward(error, error_estimate), self._predictive_penalty(error, error_estimate)]
+        rewards = torch.stack(rewards)
+        rewards *= gate
+
+    def _curious_reward(self, error, error_estimate):
+        return torch.tanh(error)
+
+    def _familiar_reward(self, error, error_estimate):
+        return torch.tanh(1 / error)
+
+    def _surprise_reward(self, error, error_estimate):
+        sigma = 1e-2
+        mask = torch.gt(torch.abs(error - error_estimate), torch.ones_like(error) * sigma).type(torch.float32)
+        return torch.tanh(error / error_estimate + error_estimate / error - 2) * mask
+
+    def _predictive_penalty(self, error, error_estimate):
+        return torch.tanh(error_estimate - error)

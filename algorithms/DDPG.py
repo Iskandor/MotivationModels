@@ -44,6 +44,8 @@ class DDPG:
 
         self._gpu_enabled = False
 
+        self.int_reward_filtered = 0.0
+
     def add_motivation_module(self, motivation_module):
         self._motivation_module = motivation_module
 
@@ -80,10 +82,16 @@ class DDPG:
                 masks = masks.cuda()
 
             if self._motivation_module:
-                int_reward = self._motivation_module.reward(states, actions, next_states)
-                rewards += int_reward
+                rewards += self._motivation_module.reward(states, actions, next_states)
+                # int_reward = self._motivation_module.reward(states, actions, next_states)
+                # k = 0.1
+                # self.int_reward_filtered = (1 - k)*self.int_reward_filtered + k*int_reward
+                # rewards += self.int_reward_filtered
+                # if done:
+                #     self.int_reward_filtered = 0.0
 
             expected_values = rewards + masks * self._gamma * self._critic_target(next_states, self._actor_target(next_states).detach()).detach()
+
 
             self._critic_optimizer.zero_grad()
             value_loss = torch.nn.functional.mse_loss(self._critic(states, actions), expected_values)
