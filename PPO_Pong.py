@@ -1,9 +1,6 @@
 from skimage import transform
-import random
-import cv2
 import numpy as np
 import gym
-import matplotlib.pyplot as plt
 import torch
 from etaprogress.progress import ProgressBar
 from torch import nn
