@@ -1,6 +1,6 @@
 import abc
 import torch
-from algorithms.ReplayBuffer import ReplayBuffer
+from algorithms.ReplayBuffer import ExperienceReplayBuffer
 
 
 class DQNCritic(torch.nn.Module):
@@ -19,7 +19,7 @@ class DQN:
         self._action_dim = action_dim
         self._critic = critic_class(state_dim, action_dim)
         self._critic_target = critic_class(state_dim, action_dim)
-        self._memory = ReplayBuffer(memory_size)
+        self._memory = ExperienceReplayBuffer(memory_size)
         self._sample_size = sample_size
         self._gamma = gamma
         self._update_step = 0
@@ -28,7 +28,6 @@ class DQN:
         self._critic_optimizer = torch.optim.Adam(self._critic.parameters(), lr=critic_lr, weight_decay=weight_decay)
 
     def get_action(self, state):
-        o = self.activate(state)
         return self.activate(state).argmax(0).item()
 
     def train(self, state0, action0, state1, reward, done):

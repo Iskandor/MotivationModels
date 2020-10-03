@@ -8,7 +8,7 @@ from exploration.DiscreteExploration import DiscreteExploration
 class Critic(DQNCritic):
     def __init__(self, state_dim, action_dim):
         super(Critic, self).__init__(state_dim, action_dim)
-        hidden = 64
+        hidden = 256
         limit = 0.001
 
         self._hidden0 = torch.nn.Linear(state_dim, hidden)
@@ -43,11 +43,11 @@ def test(env, agent):
 
 
 def run():
-    epochs = 1500
+    epochs = 10000
 
     env = gym.make('CartPole-v0')
 
-    agent = DQN(Critic, env.observation_space.shape[0], env.action_space.n, 10000, 64, 1e-3, 0.99, 1e-2)
+    agent = DQN(Critic, env.observation_space.shape[0], env.action_space.n, 10000, 64, 2e-4, 0.99)
     exploration = DiscreteExploration(0.3)
 
     rewards = torch.zeros(100, dtype=torch.float32)
