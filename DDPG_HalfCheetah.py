@@ -5,6 +5,7 @@ from algorithms.DDPG import DDPGCritic, DDPGActor, DDPG
 from algorithms.ReplayBuffer import ExperienceReplayBuffer
 from ddpg_experiment import ExperimentDDPG
 from motivation.ForwardModelMotivation import ForwardModel, ForwardModelMotivation
+from motivation.M3Motivation import M3Motivation
 from motivation.MateLearnerMotivation import MetaLearnerModel, MetaLearnerMotivation
 
 
@@ -98,6 +99,27 @@ class MetaLearnerNetwork(MetaLearnerModel):
         torch.nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
 
 
+class M3Network(torch.nn.Module):
+    def __init__(self, state_dim, im_dim, config):
+        super(M3Network, self).__init__()
+
+        self.gate = torch.nn.Sequential(
+            torch.nn.Linear(state_dim, config.m3gate.h1),
+            torch.nn.ReLU(),
+            torch.nn.Linear(config.m3gate.h1, config.m3gate.h2),
+            torch.nn.ReLU(),
+            torch.nn.Linear(config.m3gate.h2, im_dim)
+        )
+
+        self.critic = torch.nn.Sequential(
+            torch.nn.Linear(state_dim, config.m3critic.h1),
+            torch.nn.ReLU(),
+            torch.nn.Linear(config.m3critic.h1, config.m3critic.h2),
+            torch.nn.ReLU(),
+            torch.nn.Linear(config.m3critic.h2, 1)
+        )
+
+
 def run_baseline(config):
     env = gym.make('HalfCheetahPyBulletEnv-v0')
     state_dim = env.observation_space.shape[0]
@@ -174,7 +196,7 @@ def run_metalearner_model(config):
         else:
             forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model.lr, config.forward_model.eta)
 
-        if config.forward_model.get('batch_size') is not None:
+        if config.metacritic.get('batch_size') is not None:
             metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic.lr, config.metacritic.variant, config.metacritic.eta, memory, config.metacritic.batch_size)
         else:
             metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic.lr, config.metacritic.variant, config.metacritic.eta)
@@ -182,5 +204,38 @@ def run_metalearner_model(config):
         agent.add_motivation_module(metacritic)
 
         experiment.run_metalearner_model(agent, i)
+
+    env.close()
+
+
+def run_m3_model(config):
+    env = gym.make('HalfCheetahPyBulletEnv-v0')
+    state_dim = env.observation_space.shape[0]
+    action_dim = env.action_space.shape[0]
+
+    experiment = ExperimentDDPG('HalfCheetahPyBulletEnv-v0', env, config)
+
+    for i in range(config.trials):
+        actor = Actor(state_dim, action_dim, config)
+        critic = Critic(state_dim, action_dim, config)
+        memory = ExperienceReplayBuffer(config.memory_size)
+
+        agent = DDPG(actor, critic, config.actor.lr, config.critic.lr, config.gamma, config.tau, memory, config.batch_size)
+
+        if config.forward_model.get('batch_size') is not None:
+            forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model.lr, config.forward_model.eta, memory, config.forward_model.batch_size)
+        else:
+            forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model.lr, config.forward_model.eta)
+
+        if config.metacritic.get('batch_size') is not None:
+            metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic.lr, config.metacritic.variant, config.metacritic.eta, memory, config.metacritic.batch_size)
+        else:
+            metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic.lr, config.metacritic.variant, config.metacritic.eta)
+
+        m3network = M3Network(state_dim, 4, config)
+        m3module = M3Motivation(m3network.gate, m3network.critic, config.m3gate.lr, config.m3critic.lr, config.gamma, forward_model, metacritic)
+        agent.add_motivation_module(m3module)
+
+        experiment.run_m3_model(agent, i)
 
     env.close()

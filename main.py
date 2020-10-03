@@ -65,6 +65,8 @@ if __name__ == '__main__':
             DDPG_HalfCheetah.run_surprise_model(args)
         if config.model == 'su':
             DDPG_HalfCheetah.run_metalearner_model(config)
+        if config.model == 'm3':
+            DDPG_HalfCheetah.run_m3_model(config)
 
     # DQN_FrozenLake.run()
     # DQN_CartPole.run()
