@@ -1,0 +1,1 @@
+{"model":"baseline","trials":1,"episodes":1000,"load":false,"gamma":0.99,"actor":{"lr":0.001,"h1":128,"h2":64},"critic":{"lr":0.002,"h1":128,"h2":64},"stats":{"generate_states":false,"collect_stats":false}}

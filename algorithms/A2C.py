@@ -13,7 +13,11 @@ class A2C:
         self._trajectory = []
         self._rewards = []
 
-    def train(self, state0, reward, done):
+    def train(self, state0, log_prob, reward, done):
+        state_value = self._critic(state0)
+        self._trajectory.append((log_prob, state_value))
+        self._rewards.append(reward)
+
         if done:
             R = 0
             policy_losses = []
@@ -44,22 +48,13 @@ class A2C:
 
             del self._rewards[:]
             del self._trajectory[:]
-        else:
-            probs = torch.softmax(self._actor(state0), dim=-1)
-            state_value = self._critic(state0)
-
-            m = Categorical(probs)
-            action = m.sample()
-
-            self._trajectory.append((m.log_prob(action), state_value))
-            self._rewards.append(reward)
 
     def get_action(self, state):
         probs = torch.softmax(self._actor(state), dim=-1)
         m = Categorical(probs)
         action = m.sample()
 
-        return action.item()
+        return action.item(), m.log_prob(action)
 
     def get_probs(self, state):
         probs = torch.softmax(self._actor(state), dim=-1)
