@@ -1,6 +1,7 @@
 import argparse
 
-import AC_CartPole
+import A2C_Breakout
+import A2C_CartPole
 import DDPG_FetchReach
 import DDPG_HalfCheetah
 import DDPG_LunarLander
@@ -14,8 +15,8 @@ from utils.Config import Config
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Motivation models learning platform.')
 
-    parser.add_argument('--env', type=str, choices=['half_cheetah', 'mountain_car', 'lunar_lander', 'fetch_reach', 'go', 'chess', 'pong', 'cart_pole'],
-                        help='[half_cheetah,mountain_car,lunar_lander,fetch_reach,go,chess,pong,cart_pole]')
+    parser.add_argument('--env', type=str, choices=['half_cheetah', 'mountain_car', 'lunar_lander', 'fetch_reach', 'go', 'chess', 'pong', 'cart_pole', 'breakout'],
+                        help='[half_cheetah,mountain_car,lunar_lander,fetch_reach,go,chess,pong,cart_pole,breakout]')
     parser.add_argument('--config', type=str, help='path to config file')
 
     args = parser.parse_args()
@@ -23,8 +24,12 @@ if __name__ == '__main__':
     if args.config is not None:
         config = Config.parse_config(args.config)
 
+    if args.env == "breakout":
+        if config.model == 'baseline':
+            A2C_Breakout.run_baseline(config)
     if args.env == "cart_pole":
-        AC_CartPole.run()
+        if config.model == 'baseline':
+            A2C_CartPole.run_baseline(config)
         # DQN_CartPole.run()
     if args.env == 'mountain_car':
         if args.model == 'baseline':

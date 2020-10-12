@@ -17,6 +17,7 @@ class A2CNetwork(torch.nn.Module):
             torch.nn.ReLU(),
             torch.nn.Linear(config.critic.h2, 1)
         )
+        self.critic.apply(self.init_weights)
 
         self.actor = torch.nn.Sequential(
             torch.nn.Linear(state_dim, config.actor.h1),
@@ -25,11 +26,19 @@ class A2CNetwork(torch.nn.Module):
             torch.nn.ReLU(),
             torch.nn.Linear(config.actor.h2, action_dim)
         )
+        self.actor.apply(self.init_weights)
 
-    def forward(self, state):
-        policy = torch.softmax(self.actor(state), dim=-1)
+    def init_weights(self, module):
+        if type(module) == torch.nn.Linear:
+            torch.nn.init.xavier_uniform_(module.weight)
+
+    def action(self, state):
+        policy = self.actor(state)
+        return policy
+
+    def value(self, state):
         value = self.critic(state)
-        return policy, value
+        return value
 
 
 def run_baseline(config):
@@ -41,7 +50,7 @@ def run_baseline(config):
 
     for i in range(config.trials):
         network = A2CNetwork(state_dim, action_dim, config)
-        agent = A2C(network.actor, network.critic, config.actor.lr, config.critic.lr, config.gamma)
+        agent = A2C(network, config.lr, config.actor.loss_weight, config.critic.loss_weight, config.gamma, config.batch_size)
         experiment.run_baseline(agent, i)
 
     env.close()
