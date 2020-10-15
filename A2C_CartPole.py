@@ -50,7 +50,7 @@ def run_baseline(config):
 
     for i in range(config.trials):
         network = A2CNetwork(state_dim, action_dim, config)
-        agent = A2C(network, config.lr, config.actor.loss_weight, config.critic.loss_weight, config.gamma, config.batch_size)
+        agent = A2C(network, config.lr, config.actor.loss_weight, config.critic.loss_weight, config.beta, config.gamma, config.batch_size)
         experiment.run_baseline(agent, i)
 
     env.close()
