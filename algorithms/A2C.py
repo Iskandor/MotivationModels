@@ -3,10 +3,10 @@ from torch.distributions import Categorical
 
 
 class A2C:
-    def __init__(self, agent, lr, actor_loss_weight, critic_loss_weight, gamma, batch_size, weight_decay=0, device='cpu'):
+    def __init__(self, agent, lr, actor_loss_weight, critic_loss_weight, beta, gamma, batch_size, weight_decay=0, device='cpu'):
         self._agent = agent
         self._optimizer = torch.optim.Adam(self._agent.parameters(), lr=lr, weight_decay=weight_decay)
-        self._beta = 0.1
+        self._beta = beta
         self._gamma = gamma
         self._device = device
         self._batch_size = batch_size
