@@ -119,6 +119,8 @@ class EpisodicLifeEnv(gym.Wrapper):
         if self.was_real_done:
             obs = self.env.reset(**kwargs)
         else:
+            obs, _, _, _ = self.env.step(1)
+            obs, _, _, _ = self.env.step(2)
             obs, _, _, _ = self.env.step(0)
         self.lives = self.env.unwrapped.ale.lives()
         self.inital_lives = self.env.unwrapped.ale.lives()
