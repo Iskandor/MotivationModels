@@ -1,3 +1,5 @@
+from collections import deque
+
 import numpy
 import torch
 from etaprogress.progress import ProgressBar
@@ -50,7 +52,8 @@ class ExperimentA2C:
                     state0 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0).to(config.device)
 
                 ext_rewards[e] = total_reward
-                print('Episode {0:d} training [ext. reward {1:f} steps {2:d}]'.format(e, total_reward, train_steps))
+
+                print('Episode {0:d} training [avg. reward {1:f} steps {2:d}]'.format(e, ext_rewards.mean(), train_steps))
                 print(bar)
 
             agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
