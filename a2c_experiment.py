@@ -32,11 +32,16 @@ class ExperimentA2C:
                     state0 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0).to(config.device)
                 # video_recorder.close()
         else:
-            bar = ProgressBar(config.episodes, max_width=40)
-            ext_rewards = numpy.zeros(config.episodes)
+            bar = ProgressBar(config.steps * 1e6, max_width=40)
+            ext_rewards = []
+            rewards = numpy.zeros(100)
+            reward_index = 0
 
-            for e in range(config.episodes):
-                bar.numerator = e
+            step_limit = config.steps * 1e6
+            steps = 0
+
+            while steps < step_limit:
+                bar.numerator = steps
 
                 state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0).to(config.device)
                 done = False
@@ -51,10 +56,15 @@ class ExperimentA2C:
                     agent.train(state0, prob, log_prob, reward, done)
                     state0 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0).to(config.device)
 
-                ext_rewards[e] = total_reward
+                ext_rewards.append(total_reward)
+                rewards[reward_index] = total_reward
+                reward_index += 1
+                steps += train_steps
+                if reward_index == 100:
+                    reward_index = 0
 
-                print('Episode {0:d} training [avg. reward {1:f} steps {2:d}]'.format(e, ext_rewards.mean(), train_steps))
+                print('Step {0:d} training [avg. reward {1:f} steps {2:d}]'.format(steps, rewards.mean(), train_steps))
                 print(bar)
 
             agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
-            numpy.save('a2c_{0}_{1}_{2:d}_re'.format(config.name, config.model, trial), ext_rewards)
+            numpy.save('a2c_{0}_{1}_{2:d}_re'.format(config.name, config.model, trial), numpy.array(ext_rewards))
