@@ -10,7 +10,8 @@ import DDPG_MountainCar
 #import PPO_Go
 #import PPO_Chess
 import DQN_CartPole
-import PPO_Pong
+import PPO_CartPole
+import PPO_QBert
 from utils.Config import Config
 
 if __name__ == '__main__':
@@ -26,14 +27,16 @@ if __name__ == '__main__':
 
     if args.env == "qbert":
         if config.model == 'baseline':
-            A2C_QBert.run_baseline(config)
+            # A2C_QBert.run_baseline(config)
+            PPO_QBert.run_baseline(config)
     if args.env == "breakout":
         if config.model == 'baseline':
             A2C_Breakout.run_baseline(config)
     if args.env == "cart_pole":
         if config.model == 'baseline':
-            A2C_CartPole.run_baseline(config)
-        # DQN_CartPole.run()
+            # A2C_CartPole.run_baseline(config)
+            # DQN_CartPole.run()
+            PPO_CartPole.run_baseline(config)
     if args.env == 'mountain_car':
         if args.model == 'baseline':
             DDPG_MountainCar.run_baseline(int(args.trials), int(args.episodes))
@@ -63,7 +66,7 @@ if __name__ == '__main__':
             DDPG_LunarLander.run_metalearner_model(args)
     if args.env == 'pong':
         if args.model == 'baseline':
-            PPO_Pong.run_baseline(args)
+            pass
     if args.env == 'half_cheetah':
         if config.model == 'baseline':
             DDPG_HalfCheetah.run_baseline(config)
