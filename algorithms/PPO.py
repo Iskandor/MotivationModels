@@ -33,13 +33,16 @@ class PPO:
                 states.append(state)
                 actions.append(action)
 
-            states = torch.stack(states).squeeze(1).to(self._device)
-            actions = torch.stack(actions).to(self._device)
-            traj_adv_v, traj_ref_v = self.calc_advantage(states)
+            states = torch.stack(states).squeeze(1)
+            actions = torch.stack(actions)
+            self._agent.to('cpu')
+            traj_adv_v, traj_ref_v = self.calc_advantage(states.to('cpu'))
             traj_adv_v = (traj_adv_v - torch.mean(traj_adv_v)) / torch.std(traj_adv_v)
+            probs = torch.gather(torch.softmax(self._agent.action(states.to('cpu')), dim=-1), 1, actions.to('cpu'))
+            self._agent.to(self._device)
+            actions.to(self._device)
 
-            probs = torch.gather(torch.softmax(self._agent.action(states), dim=-1), 1, actions)
-            old_logprob = probs[:-1].log().detach()
+            old_logprob = probs[:-1].log().detach().to(self._device)
             trajectory = self._trajectory[:-1]
 
             for epoch in range(self._ppo_epochs):

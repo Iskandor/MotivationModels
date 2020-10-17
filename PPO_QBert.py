@@ -56,12 +56,12 @@ class PPONetwork(torch.nn.Module):
             torch.nn.init.xavier_uniform_(module.weight)
 
     def action(self, state):
-        features = self.feature(state).squeeze(0)
+        features = self.feature(state)
         policy = self.actor(features)
         return policy
 
     def value(self, state):
-        features = self.feature(state).squeeze(0)
+        features = self.feature(state)
         value = self.critic(features)
         return value
 
