@@ -29,6 +29,8 @@ if __name__ == '__main__':
         if config.model == 'baseline':
             # A2C_QBert.run_baseline(config)
             PPO_QBert.run_baseline(config)
+        if config.model == 'fm':
+            PPO_QBert.run_icm(config)
     if args.env == "breakout":
         if config.model == 'baseline':
             A2C_Breakout.run_baseline(config)

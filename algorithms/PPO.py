@@ -1,6 +1,3 @@
-import math
-from collections import namedtuple
-
 import torch
 from torch.distributions import Categorical
 
@@ -18,29 +15,43 @@ class PPO:
         self._trajectory_size = trajectory_size
         self._actor_loss_weight = actor_loss_weight
         self._critic_loss_weight = critic_loss_weight
-
         self._trajectory = []
-
         self._ppo_epochs = 10
+        self._motivation = None
 
-    def train(self, state0, action, reward, done):
-        self._trajectory.append((state0, action, reward, done))
+    def train(self, state0, action, state1, reward, done):
+        self._trajectory.append((state0, action, state1, reward, done))
 
         if len(self._trajectory) == self._trajectory_size:
             states = []
             actions = []
-            for state, action, _, _ in self._trajectory:
+            next_states = []
+            for state, action, next_state, _, _ in self._trajectory:
                 states.append(state)
                 actions.append(action)
+                next_states.append(next_state)
 
-            states = torch.stack(states).squeeze(1)
-            actions = torch.stack(actions)
+            states = torch.stack(states).squeeze(1).to('cpu')
+            actions = torch.stack(actions).to('cpu')
+
+            intrinsic_reward = None
+            if self._motivation:
+                self._motivation.to('cpu')
+                next_states = torch.stack(next_states).squeeze(1).to('cpu')
+                actions_code = torch.zeros((actions.shape[0], self._agent.action_dim), dtype=torch.float32)
+                actions_code = actions_code.scatter(1, actions, 1.0)
+                intrinsic_reward = self._motivation.reward(states, actions_code, next_states)
+                self._motivation.to(self._device)
+                actions_code = actions_code.to(self._device)
+                next_states = next_states.to(self._device)
+
             self._agent.to('cpu')
-            traj_adv_v, traj_ref_v = self.calc_advantage(states.to('cpu'))
+            traj_adv_v, traj_ref_v = self.calc_advantage(states, intrinsic_reward)
             traj_adv_v = (traj_adv_v - torch.mean(traj_adv_v)) / torch.std(traj_adv_v)
-            probs = torch.gather(torch.softmax(self._agent.action(states.to('cpu')), dim=-1), 1, actions.to('cpu'))
+            probs = torch.gather(torch.softmax(self._agent.action(states), dim=-1), 1, actions)
             self._agent.to(self._device)
-            actions.to(self._device)
+            actions = actions.to(self._device)
+            states = states.to(self._device)
 
             old_logprob = probs[:-1].log().detach().to(self._device)
             trajectory = self._trajectory[:-1]
@@ -67,12 +78,16 @@ class PPO:
 
                     self._optimizer.zero_grad()
                     loss = loss_value_v * self._critic_loss_weight + loss_policy_v * self._actor_loss_weight
+                    if self._motivation:
+                        next_states_v = next_states[batch_ofs:batch_l]
+                        actions_code_v = actions_code[batch_ofs:batch_l]
+                        loss += self._motivation.loss(states_v, actions_code_v, next_states_v)
                     loss.backward()
                     self._optimizer.step()
 
             del self._trajectory[:]
 
-    def calc_advantage(self, states):
+    def calc_advantage(self, states, intrinsic_reward):
         values = self._agent.value(states)
         values = values.squeeze().data.cpu().numpy()
 
@@ -80,27 +95,45 @@ class PPO:
         result_adv = []
         result_ref = []
 
-        for val, next_val, exp in zip(reversed(values[:-1]), reversed(values[1:]), reversed(self._trajectory[:-1])):
-            if exp[3]:
-                delta = exp[2] - val
-                last_gae = delta
-            else:
-                delta = exp[2] + self._gamma * next_val - val
-                last_gae = delta + self._gamma * self._lambda * last_gae
+        if intrinsic_reward is None:
+            for val, next_val, exp in zip(reversed(values[:-1]), reversed(values[1:]), reversed(self._trajectory[:-1])):
+                if exp[4]:
+                    delta = exp[3] - val
+                    last_gae = delta
+                else:
+                    delta = exp[3] + self._gamma * next_val - val
+                    last_gae = delta + self._gamma * self._lambda * last_gae
 
-            result_adv.append(last_gae)
-            result_ref.append(last_gae + val)
+                result_adv.append(last_gae)
+                result_ref.append(last_gae + val)
+        else:
+            for val, next_val, exp, ir in zip(reversed(values[:-1]), reversed(values[1:]), reversed(self._trajectory[:-1]), reversed(intrinsic_reward[:-1])):
+                if exp[4]:
+                    delta = exp[3] + ir - val
+                    last_gae = delta
+                else:
+                    delta = exp[3] + ir + self._gamma * next_val - val
+                    last_gae = delta + self._gamma * self._lambda * last_gae
+
+                result_adv.append(last_gae)
+                result_ref.append(last_gae + val)
 
         adv_v = torch.FloatTensor(list(reversed(result_adv)))
         ref_v = torch.FloatTensor(list(reversed(result_ref)))
         return adv_v.to(self._device), ref_v.to(self._device)
 
-    def get_action(self, state):
+    def get_action(self, state, deterministic=False):
         probs = torch.softmax(self._agent.action(state), dim=-1)
-        m = Categorical(probs)
-        action = m.sample()
+        if deterministic:
+            action = probs.argmax()
+        else:
+            m = Categorical(probs)
+            action = m.sample()
 
         return action
+
+    def add_motivation(self, motivation):
+        self._motivation = motivation
 
     def save(self, path):
         torch.save(self._agent.state_dict(), path + '.pth')
