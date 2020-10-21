@@ -99,25 +99,49 @@ class MetaLearnerNetwork(MetaLearnerModel):
         torch.nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
 
 
-class M3Network(torch.nn.Module):
+class M3Gate(torch.nn.Module):
     def __init__(self, state_dim, im_dim, config):
-        super(M3Network, self).__init__()
+        super(M3Gate, self).__init__()
 
-        self.gate = torch.nn.Sequential(
-            torch.nn.Linear(state_dim, config.m3gate.h1),
-            torch.nn.ReLU(),
-            torch.nn.Linear(config.m3gate.h1, config.m3gate.h2),
-            torch.nn.ReLU(),
-            torch.nn.Linear(config.m3gate.h2, im_dim)
-        )
+        self._hidden0 = torch.nn.Linear(state_dim, config.m3gate.h1)
+        self._hidden1 = torch.nn.Linear(config.m3gate.h1, config.m3gate.h2)
+        self._output = torch.nn.Linear(config.m3gate.h2, im_dim)
 
-        self.critic = torch.nn.Sequential(
-            torch.nn.Linear(state_dim, config.m3critic.h1),
-            torch.nn.ReLU(),
-            torch.nn.Linear(config.m3critic.h1, config.m3critic.h2),
-            torch.nn.ReLU(),
-            torch.nn.Linear(config.m3critic.h2, 1)
-        )
+        self.init()
+
+    def forward(self, state):
+        x = state
+        x = torch.relu(self._hidden0(x))
+        x = torch.relu(self._hidden1(x))
+        value = self._output(x)
+        return value
+
+    def init(self):
+        torch.nn.init.xavier_uniform_(self._hidden0.weight)
+        torch.nn.init.xavier_uniform_(self._hidden1.weight)
+        torch.nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
+
+
+class M3Critic(torch.nn.Module):
+    def __init__(self, state_dim, im_dim, config):
+        super(M3Critic, self).__init__()
+        self._hidden0 = torch.nn.Linear(state_dim, config.m3critic.h1)
+        self._hidden1 = torch.nn.Linear(config.m3critic.h1 + im_dim, config.m3critic.h2)
+        self._output = torch.nn.Linear(config.m3critic.h2, 1)
+        self.init()
+
+    def forward(self, state, action):
+        x = state
+        x = torch.relu(self._hidden0(x))
+        x = torch.cat([x, action], dim=-1)
+        x = torch.relu(self._hidden1(x))
+        value = self._output(x)
+        return value
+
+    def init(self):
+        torch.nn.init.xavier_uniform_(self._hidden0.weight)
+        torch.nn.init.xavier_uniform_(self._hidden1.weight)
+        torch.nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
 
 
 def run_baseline(config):
@@ -152,7 +176,8 @@ def run_forward_model(config):
         agent = DDPG(actor, critic, config.actor.lr, config.critic.lr, config.gamma, config.tau, memory, config.batch_size)
 
         if config.forward_model.get('batch_size') is not None:
-            forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model.lr, config.forward_model.eta, memory, config.forward_model.batch_size)
+            forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model.lr, config.forward_model.eta,
+                                                   memory, config.forward_model.batch_size)
         else:
             forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model.lr, config.forward_model.eta)
 
@@ -192,14 +217,17 @@ def run_metalearner_model(config):
         agent = DDPG(actor, critic, config.actor.lr, config.critic.lr, config.gamma, config.tau, memory, config.batch_size)
 
         if config.forward_model.get('batch_size') is not None:
-            forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model.lr, config.forward_model.eta, memory, config.forward_model.batch_size)
+            forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model.lr, config.forward_model.eta,
+                                                   memory, config.forward_model.batch_size)
         else:
             forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model.lr, config.forward_model.eta)
 
         if config.metacritic.get('batch_size') is not None:
-            metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic.lr, config.metacritic.variant, config.metacritic.eta, memory, config.metacritic.batch_size)
+            metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic.lr,
+                                               config.metacritic.variant, config.metacritic.eta, memory, config.metacritic.batch_size)
         else:
-            metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic.lr, config.metacritic.variant, config.metacritic.eta)
+            metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic.lr,
+                                               config.metacritic.variant, config.metacritic.eta)
 
         agent.add_motivation_module(metacritic)
 
@@ -218,22 +246,27 @@ def run_m3_model(config):
     for i in range(config.trials):
         actor = Actor(state_dim, action_dim, config)
         critic = Critic(state_dim, action_dim, config)
-        memory = ExperienceReplayBuffer(config.memory_size)
+        agent_memory = ExperienceReplayBuffer(config.memory_size)
+        m3_memory = ExperienceReplayBuffer(config.memory_size)
 
-        agent = DDPG(actor, critic, config.actor.lr, config.critic.lr, config.gamma, config.tau, memory, config.batch_size)
+        agent = DDPG(actor, critic, config.actor.lr, config.critic.lr, config.gamma, config.tau, agent_memory, config.batch_size)
 
         if config.forward_model.get('batch_size') is not None:
-            forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model.lr, config.forward_model.eta, memory, config.forward_model.batch_size)
+            forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model.lr, config.forward_model.eta,
+                                                   agent_memory, config.forward_model.batch_size)
         else:
             forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model.lr, config.forward_model.eta)
 
         if config.metacritic.get('batch_size') is not None:
-            metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic.lr, config.metacritic.variant, config.metacritic.eta, memory, config.metacritic.batch_size)
+            metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic.lr,
+                                               config.metacritic.variant, config.metacritic.eta, agent_memory, config.metacritic.batch_size)
         else:
-            metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic.lr, config.metacritic.variant, config.metacritic.eta)
+            metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic.lr,
+                                               config.metacritic.variant, config.metacritic.eta)
 
-        m3network = M3Network(state_dim, 4, config)
-        m3module = M3Motivation(m3network.gate, m3network.critic, config.m3gate.lr, config.m3critic.lr, config.gamma, forward_model, metacritic)
+        m3gate = M3Gate(state_dim * 2, 4, config)
+        m3critic = M3Critic(state_dim * 2, 4, config)
+        m3module = M3Motivation(m3gate, m3critic, config.m3gate.lr, config.m3critic.lr, config.gamma, config.tau, m3_memory, config.batch_size, forward_model, metacritic)
         agent.add_motivation_module(m3module)
 
         experiment.run_m3_model(agent, i)

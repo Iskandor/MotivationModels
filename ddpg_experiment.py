@@ -383,6 +383,7 @@ class ExperimentDDPG:
                     reward_list.append(rewards)
 
                 state0 = torch.tensor(self._env.reset(), dtype=torch.float32)
+                action0 = exploration.explore(agent.get_action(state0))
                 done = False
                 train_ext_reward = 0
                 train_int_reward = 0
@@ -394,14 +395,15 @@ class ExperimentDDPG:
                     train_steps += 1
                     if config.stats.generate_states:
                         states.append(state0.numpy())
-                    action0 = exploration.explore(agent.get_action(state0))
                     next_state, reward, done, _ = self._env.step(action0.numpy())
                     train_ext_reward += reward
                     state1 = torch.tensor(next_state, dtype=torch.float32)
+                    action1 = exploration.explore(agent.get_action(state1))
                     agent.train(state0, action0, state1, reward, done)
-                    m3module.train(state0, action0, state1, reward, done)
+                    m3module.train(state0, action0, state1, action1, reward, done)
                     train_int_reward += m3module.reward(state0, action0, state1).item()
                     state0 = state1
+                    action0 = action1
                 t1 = time.perf_counter()
                 print('Training ' + str(t1 - t0))
 
