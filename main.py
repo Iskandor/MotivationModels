@@ -58,14 +58,14 @@ if __name__ == '__main__':
         pass
         #PPO_Chess.run_baseline(int(args.trials), int(args.episodes))
     if args.env == 'lunar_lander':
-        if args.model == 'baseline':
-            DDPG_LunarLander.run_baseline(args)
-        if args.model == 'fm':
-            DDPG_LunarLander.run_forward_model(args)
-        if args.model == 's':
-            DDPG_LunarLander.run_surprise_model(args)
-        if args.model == 'su':
-            DDPG_LunarLander.run_metalearner_model(args)
+        if config.model == 'baseline':
+            DDPG_LunarLander.run_baseline(config)
+        if config.model == 'fm':
+            DDPG_LunarLander.run_forward_model(config)
+        if config.model == 's':
+            DDPG_LunarLander.run_surprise_model(config)
+        if config.model == 'su':
+            DDPG_LunarLander.run_metalearner_model(config)
     if args.env == 'pong':
         if args.model == 'baseline':
             pass
