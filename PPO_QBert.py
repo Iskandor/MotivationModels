@@ -73,8 +73,10 @@ class ICMNetwork(torch.nn.Module):
 
         self.feature_network = feature_network
 
+        self._rate = feature_dim // action_dim
+
         self.forward_model = torch.nn.Sequential(
-            torch.nn.Linear(feature_dim + action_dim, config.forward_model.h1),
+            torch.nn.Linear(feature_dim + action_dim * self._rate, config.forward_model.h1),
             torch.nn.ReLU(),
             torch.nn.Linear(config.forward_model.h1, config.forward_model.h2),
             torch.nn.ReLU(),
@@ -95,7 +97,7 @@ class ICMNetwork(torch.nn.Module):
 
     def estimate_state(self, state, action):
         features = self.feature_network(state)
-        x = torch.cat([features, action], dim=1)
+        x = torch.cat([features, action.repeat(1,self._rate)], dim=1)
         next_state = self.forward_model(x)
         return next_state
 
