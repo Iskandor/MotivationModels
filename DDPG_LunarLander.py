@@ -50,7 +50,9 @@ class Actor(DDPGActor):
 class ForwardModelNetwork(ForwardModel):
     def __init__(self, state_dim, action_dim, config):
         super(ForwardModelNetwork, self).__init__(state_dim, action_dim, config)
-        self._hidden0 = torch.nn.Linear(state_dim + action_dim, config.forward_model.h1)
+        self._rate = state_dim // action_dim
+
+        self._hidden0 = torch.nn.Linear(state_dim + action_dim * self._rate, config.forward_model.h1)
         self._hidden1 = torch.nn.Linear(config.forward_model.h1, config.forward_model.h2)
         self._output = torch.nn.Linear(config.forward_model.h2, state_dim)
 
@@ -59,6 +61,11 @@ class ForwardModelNetwork(ForwardModel):
         torch.nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
 
     def forward(self, state, action):
+        if state.ndim == 1:
+            action = action.repeat(self._rate)
+        else:
+            action = action.repeat(1, self._rate)
+
         x = torch.cat([state, action], state.ndim - 1)
         x = torch.nn.functional.relu(self._hidden0(x))
         x = torch.nn.functional.relu(self._hidden1(x))
