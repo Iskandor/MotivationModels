@@ -1,14 +1,10 @@
-from datetime import datetime
-
 import gym
 import numpy
 import torch
 import matplotlib.pyplot as plt
-import time
-
 
 from algorithms.DDPG import DDPG, DDPGCritic, DDPGActor
-from exploration.ContinuousExploration import GaussianExploration, OUExploration
+from exploration.ContinuousExploration import GaussianExploration
 from motivation.ForwardModelMotivation import ForwardModel, ForwardModelMotivation
 from utils.Logger import Logger
 from etaprogress.progress import ProgressBar

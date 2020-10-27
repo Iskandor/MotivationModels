@@ -1,15 +1,12 @@
 import argparse
 
 import A2C_Breakout
-import A2C_CartPole
-import A2C_QBert
 import DDPG_FetchReach
 import DDPG_HalfCheetah
 import DDPG_LunarLander
 import DDPG_MountainCar
 #import PPO_Go
 #import PPO_Chess
-import DQN_CartPole
 import PPO_CartPole
 import PPO_QBert
 from utils.Config import Config

@@ -3,6 +3,8 @@ import torch
 from etaprogress.progress import ProgressBar
 from gym.wrappers.monitoring.video_recorder import VideoRecorder
 
+from utils import one_hot_code
+
 
 class ExperimentPPO:
     def __init__(self, env_name, env, config):
@@ -74,12 +76,14 @@ class ExperimentPPO:
 
     def run_icm(self, agent, trial):
         config = self._config
+        motivation = agent.get_motivation()
 
         if config.load:
             self.test(agent)
         else:
             bar = ProgressBar(config.steps * 1e6, max_width=40)
             ext_rewards = []
+            int_rewards = []
             rewards = numpy.zeros(100)
             reward_index = 0
 
@@ -91,27 +95,31 @@ class ExperimentPPO:
 
                 state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0).to(config.device)
                 done = False
-                total_reward = 0
+                total_e_reward = 0
+                total_i_reward = 0
                 train_steps = 0
 
                 while not done:
                     action0 = agent.get_action(state0)
                     next_state, reward, done, info = self._env.step(action0.item())
-                    total_reward += reward
+                    total_e_reward += reward
                     train_steps += 1
                     state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0).to(config.device)
+                    total_i_reward += motivation.reward(state0, one_hot_code(action0, agent.action_dim(), config.device), state1).item()
                     agent.train(state0, action0, state1, reward, done)
                     state0 = state1
 
-                ext_rewards.append(total_reward)
-                rewards[reward_index] = total_reward
+                ext_rewards.append(total_e_reward)
+                int_rewards.append(total_i_reward)
+                rewards[reward_index] = total_e_reward
                 reward_index += 1
                 steps += train_steps
                 if reward_index == 100:
                     reward_index = 0
 
-                print('Step {0:d} training [avg. reward {1:f} steps {2:d}]'.format(steps, rewards.mean(), train_steps))
+                print('Step {0:d} training [avg. reward {1:f} steps {2:d} int. reward {3:f}]'.format(steps, rewards.mean(), train_steps, total_i_reward))
                 print(bar)
 
             agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
             numpy.save('ppo_{0}_{1}_{2:d}_re'.format(config.name, config.model, trial), numpy.array(ext_rewards))
+            numpy.save('ppo_{0}_{1}_{2:d}_ri'.format(config.name, config.model, trial), numpy.array(int_rewards))

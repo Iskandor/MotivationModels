@@ -1,6 +1,9 @@
 import torch
 from torch.distributions import Categorical
 
+from utils import *
+
+
 class PPO:
     def __init__(self, agent, lr, actor_loss_weight, critic_loss_weight, batch_size, trajectory_size, p_beta, p_gamma, p_epsilon=0.2, p_lambda=0.95,
                  weight_decay=0, device='cpu'):
@@ -19,6 +22,9 @@ class PPO:
         self._ppo_epochs = 10
         self._motivation = None
 
+    def action_dim(self):
+        return self._agent.action_dim
+
     def train(self, state0, action, state1, reward, done):
         self._trajectory.append((state0, action, state1, reward, done))
 
@@ -32,14 +38,13 @@ class PPO:
                 next_states.append(next_state)
 
             states = torch.stack(states).squeeze(1).to('cpu')
-            actions = torch.stack(actions).to('cpu')
+            actions = torch.stack(actions).squeeze(1).to('cpu')
 
             intrinsic_reward = None
             if self._motivation:
                 self._motivation.to('cpu')
                 next_states = torch.stack(next_states).squeeze(1).to('cpu')
-                actions_code = torch.zeros((actions.shape[0], self._agent.action_dim), dtype=torch.float32)
-                actions_code = actions_code.scatter(1, actions, 1.0)
+                actions_code = one_hot_code(actions, self._agent.action_dim, 'cpu')
                 intrinsic_reward = self._motivation.reward(states, actions_code, next_states)
                 self._motivation.to(self._device)
                 actions_code = actions_code.to(self._device)
@@ -130,10 +135,13 @@ class PPO:
             m = Categorical(probs)
             action = m.sample()
 
-        return action
+        return action.unsqueeze(0)
 
     def add_motivation(self, motivation):
         self._motivation = motivation
+
+    def get_motivation(self):
+        return self._motivation
 
     def save(self, path):
         torch.save(self._agent.state_dict(), path + '.pth')

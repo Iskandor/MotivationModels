@@ -2,7 +2,6 @@ import gym
 import imageio as imageio
 import numpy
 import torch
-from matplotlib import animation
 
 from exploration.ContinuousExploration import OUExploration
 from algorithms.DDPG import DDPG, DDPGCritic, DDPGActor
