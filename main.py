@@ -9,12 +9,14 @@ import DDPG_MountainCar
 #import PPO_Chess
 import PPO_CartPole
 import PPO_QBert
+import PPO_Solaris
 from utils.Config import Config
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Motivation models learning platform.')
 
-    parser.add_argument('--env', type=str, choices=['half_cheetah', 'mountain_car', 'lunar_lander', 'fetch_reach', 'go', 'chess', 'pong', 'cart_pole', 'breakout', 'qbert'])
+    parser.add_argument('--env', type=str,
+                        choices=['half_cheetah', 'mountain_car', 'lunar_lander', 'fetch_reach', 'go', 'chess', 'pong', 'cart_pole', 'breakout', 'qbert', 'solaris'])
     parser.add_argument('--config', type=str, help='path to config file')
 
     args = parser.parse_args()
@@ -23,6 +25,11 @@ if __name__ == '__main__':
         config = Config.parse_config(args.config)
 
     if args.env == "qbert":
+        if config.model == 'baseline':
+            PPO_Solaris.run_baseline(config)
+        if config.model == 'fm':
+            PPO_Solaris.run_icm(config)
+    if args.env == "solaris":
         if config.model == 'baseline':
             # A2C_QBert.run_baseline(config)
             PPO_QBert.run_baseline(config)
