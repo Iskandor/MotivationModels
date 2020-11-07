@@ -24,14 +24,14 @@ if __name__ == '__main__':
     if args.config is not None:
         config = Config.parse_config(args.config)
 
-    if args.env == "qbert":
-        if config.model == 'baseline':
-            PPO_Solaris.run_baseline(config)
-        if config.model == 'fm':
-            PPO_Solaris.run_icm(config)
     if args.env == "solaris":
         if config.model == 'baseline':
             # A2C_QBert.run_baseline(config)
+            PPO_Solaris.run_baseline(config)
+        if config.model == 'fm':
+            PPO_Solaris.run_icm(config)
+    if args.env == "qbert":
+        if config.model == 'baseline':
             PPO_QBert.run_baseline(config)
         if config.model == 'fm':
             PPO_QBert.run_icm(config)
@@ -51,10 +51,11 @@ if __name__ == '__main__':
         if args.model == 'su':
             DDPG_MountainCar.run_metalearner_model(int(args.trials), int(args.episodes))
     if args.env == 'fetch_reach':
-        if args.model == 'baseline':
-            DDPG_FetchReach.run_baseline(args)
-        if args.model == 'fm':
-            DDPG_FetchReach.run_forward_model(int(args.trials), int(args.episodes), int(args.batch_size), int(args.memory_size))
+        if config.model == 'baseline':
+            DDPG_FetchReach.run_baseline(config)
+        if config.model == 'fm':
+            pass
+            # DDPG_FetchReach.run_forward_model(int(args.trials), int(args.episodes), int(args.batch_size), int(args.memory_size))
     if args.env == 'go':
         pass
         #PPO_Go.run_baseline(int(args.trials), int(args.episodes), int(args.batch_size), int(args.memory_size))
