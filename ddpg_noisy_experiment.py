@@ -114,6 +114,8 @@ class ExperimentNoisyDDPG:
                     next_state, reward, done, _ = self._env.step(action0.numpy())
                     train_ext_reward += reward
 
+                    train_ext_rewards.append(reward)
+
                     if self._preprocess is None:
                         state1 = torch.tensor(next_state, dtype=torch.float32)
                     else:
@@ -123,7 +125,7 @@ class ExperimentNoisyDDPG:
                     state0 = state1
 
                 steps += train_steps
-                train_ext_rewards.append(train_ext_reward)
+
                 print('Step {0:d} training [ext. reward {1:f} steps {2:d}]'.format(steps, train_ext_reward, train_steps))
                 print(bar)
 
@@ -193,17 +195,18 @@ class ExperimentNoisyDDPG:
                     action0 = agent.get_action(state0)
                     next_state, reward, done, _ = self._env.step(action0.numpy())
                     train_ext_reward += reward
+
                     state1 = torch.tensor(next_state, dtype=torch.float32)
                     agent.train(state0, action0, state1, reward, done)
                     forward_model.train(state0, action0, state1)
-                    train_int_reward += forward_model.reward(state0, action0, state1).item()
-                    train_fm_error += forward_model.error(state0, action0, state1).item()
+
+                    train_ext_rewards.append(reward)
+                    train_int_rewards.append(forward_model.reward(state0, action0, state1).item())
+                    train_fm_errors.append(forward_model.error(state0, action0, state1).item())
+
                     state0 = state1
 
                 steps += train_steps
-                train_fm_errors.append(train_fm_error / train_steps)
-                train_ext_rewards.append(train_ext_reward)
-                train_int_rewards.append(train_int_reward)
 
                 print('Step {0:d} training [ext. reward {1:f} int. reward {2:f} steps {3:d}]'.format(steps, train_ext_reward, train_int_reward, train_steps))
                 print(bar)
@@ -289,17 +292,15 @@ class ExperimentNoisyDDPG:
                     state1 = torch.tensor(next_state, dtype=torch.float32)
                     agent.train(state0, action0, state1, reward, done)
                     metacritic.train(state0, action0, state1)
-                    train_int_reward += metacritic.reward(state0, action0, state1).item()
-                    train_fm_error += forward_model.error(state0, action0, state1).item()
-                    train_mc_error += metacritic.error(state0, action0).item()
+
+                    train_ext_rewards.append(reward)
+                    train_int_rewards.append(metacritic.reward(state0, action0, state1).item())
+                    train_fm_errors.append(forward_model.error(state0, action0, state1).item())
+                    train_mc_errors.append(metacritic.error(state0, action0).item())
+
                     state0 = state1
 
                 steps += train_steps
-
-                train_fm_errors.append(train_fm_error / train_steps)
-                train_mc_errors.append(train_mc_error / train_steps)
-                train_ext_rewards.append(train_ext_reward)
-                train_int_rewards.append(train_int_reward)
 
                 print('Episode {0:d} training [ext. reward {1:f} int. reward {2:f} steps {3:d}]'.format(steps, train_ext_reward, train_int_reward, train_steps))
                 print(bar)
