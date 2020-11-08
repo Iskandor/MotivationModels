@@ -1,12 +1,14 @@
 import argparse
 
 import A2C_Breakout
+import A2C_QBert
 import DDPG_FetchReach
 import DDPG_HalfCheetah
 import DDPG_LunarLander
 import DDPG_MountainCar
 #import PPO_Go
 #import PPO_Chess
+import DDPG_Noisy_HalfCheetah
 import PPO_CartPole
 import PPO_QBert
 import PPO_Solaris
@@ -26,13 +28,13 @@ if __name__ == '__main__':
 
     if args.env == "solaris":
         if config.model == 'baseline':
-            # A2C_QBert.run_baseline(config)
             PPO_Solaris.run_baseline(config)
         if config.model == 'fm':
             PPO_Solaris.run_icm(config)
     if args.env == "qbert":
         if config.model == 'baseline':
-            PPO_QBert.run_baseline(config)
+            A2C_QBert.run_baseline(config)
+            # PPO_QBert.run_baseline(config)
         if config.model == 'fm':
             PPO_QBert.run_icm(config)
     if args.env == "breakout":
@@ -76,15 +78,16 @@ if __name__ == '__main__':
             pass
     if args.env == 'half_cheetah':
         if config.model == 'baseline':
-            DDPG_HalfCheetah.run_baseline(config)
+            # DDPG_HalfCheetah.run_baseline(config)
+            DDPG_Noisy_HalfCheetah.run_baseline(config)
         if config.model == 'fm':
-            DDPG_HalfCheetah.run_forward_model(config)
+            DDPG_Noisy_HalfCheetah.run_forward_model(config)
         if config.model == 's':
-            DDPG_HalfCheetah.run_surprise_model(args)
+            DDPG_Noisy_HalfCheetah.run_surprise_model(args)
         if config.model == 'su':
-            DDPG_HalfCheetah.run_metalearner_model(config)
+            DDPG_Noisy_HalfCheetah.run_metalearner_model(config)
         if config.model == 'm3':
-            DDPG_HalfCheetah.run_m3_model(config)
+            DDPG_Noisy_HalfCheetah.run_m3_model(config)
 
     # DQN_FrozenLake.run()
     # DQN_CartPole.run()
