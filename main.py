@@ -9,6 +9,7 @@ import DDPG_MountainCar
 #import PPO_Go
 #import PPO_Chess
 import DDPG_Noisy_HalfCheetah
+import DDPG_Noisy_Reacher
 import PPO_CartPole
 import PPO_QBert
 import PPO_Solaris
@@ -17,8 +18,7 @@ from utils.Config import Config
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Motivation models learning platform.')
 
-    parser.add_argument('--env', type=str,
-                        choices=['half_cheetah', 'mountain_car', 'lunar_lander', 'fetch_reach', 'go', 'chess', 'pong', 'cart_pole', 'breakout', 'qbert', 'solaris'])
+    parser.add_argument('--env', type=str, help='environment name')
     parser.add_argument('--config', type=str, help='path to config file')
 
     args = parser.parse_args()
@@ -88,6 +88,8 @@ if __name__ == '__main__':
             DDPG_Noisy_HalfCheetah.run_metalearner_model(config)
         if config.model == 'm3':
             DDPG_Noisy_HalfCheetah.run_m3_model(config)
-
+    if args.env == 'reacher':
+        if config.model == 'baseline':
+            DDPG_Noisy_Reacher.run_baseline(config)
     # DQN_FrozenLake.run()
     # DQN_CartPole.run()
