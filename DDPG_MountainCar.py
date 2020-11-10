@@ -1,5 +1,4 @@
 import gym
-import imageio as imageio
 import numpy
 import torch
 
@@ -8,11 +7,6 @@ from algorithms.DDPG import DDPG, DDPGCritic, DDPGActor
 from motivation.ForwardModelMotivation import ForwardModel, ForwardModelMotivation
 from motivation.MateLearnerMotivation import MetaLearnerMotivation, MetaLearnerModel
 from utils.Logger import Logger
-
-import matplotlib.pyplot as plt
-
-plt.style.use('seaborn-white')
-
 
 class Critic(DDPGCritic):
     def __init__(self, state_dim, action_dim):
@@ -121,113 +115,6 @@ def test_forward_model(env, motivation):
 
     motivation.train()
 
-
-def visualize_policy(agent, index=0):
-    X, Y = numpy.meshgrid(numpy.linspace(-1.2, 0.6, 20), numpy.linspace(-0.07, 0.07, 20))
-    input = torch.stack([torch.tensor(X, dtype=torch.float32).reshape(20 * 20), torch.tensor(Y, dtype=torch.float32).reshape(20 * 20)]).transpose(1, 0)
-    Z = agent.get_action(input).reshape(20, 20).detach().numpy()
-
-    plt.pcolor(X, Y, Z, cmap='RdGy', vmin=-1, vmax=1)
-    plt.colorbar()
-    plt.savefig(str(index) + '.png')
-    plt.clf()
-
-
-def visualize_forward_model(env, agent, motivation, index=0):
-    X, Y = numpy.meshgrid(numpy.linspace(-1.2, 0.6, 20), numpy.linspace(-0.07, 0.07, 20))
-    input = torch.stack([torch.tensor(X, dtype=torch.float32).reshape(20 * 20), torch.tensor(Y, dtype=torch.float32).reshape(20 * 20)]).transpose(1, 0)
-    Z = agent.get_action(input)
-    R = numpy.zeros((400))
-
-    for i in range(input.shape[0]):
-        env.set_state(input[i].numpy())
-        action = Z[i]
-        next_state, _, _, _ = env.step(action.detach().numpy())
-        state1 = torch.tensor(next_state, dtype=torch.float32)
-        R[i] = motivation.reward(input[i], action, state1)
-    R = R.reshape((20, 20))
-    Z = Z.reshape(20, 20).detach().numpy()
-
-    plt.figure(figsize=(10.00, 4.80))
-    plt.subplot(1, 2, 1)
-    plt.pcolor(X, Y, Z, cmap='RdGy', vmin=-1, vmax=1)
-    plt.colorbar()
-    plt.subplot(1, 2, 2)
-    plt.pcolor(X, Y, R, cmap='Greys', vmin=0, vmax=1)
-    plt.colorbar()
-    plt.savefig(str(index) + '.png')
-    # plt.show()
-    plt.close()
-
-
-def visualize_metalearner_model(episode, env, agent, forward_model, metalearner, images):
-    X, Y = numpy.meshgrid(numpy.linspace(-1.2, 0.6, 20), numpy.linspace(-0.07, 0.07, 20))
-    state = torch.stack([torch.tensor(X, dtype=torch.float32).reshape(20 * 20), torch.tensor(Y, dtype=torch.float32).reshape(20 * 20)]).transpose(1, 0)
-    actions = agent.get_action(state)
-    value = agent.get_value(state, actions)
-    E = numpy.zeros((400))
-    ME = metalearner.error(state, actions)
-    reward_A = numpy.zeros((400))
-    reward_B = numpy.zeros((400))
-
-    for i in range(state.shape[0]):
-        env.set_state(state[i].numpy())
-        action = actions[i]
-        next_state, _, _, _ = env.step(action.detach().numpy())
-        state1 = torch.tensor(next_state, dtype=torch.float32)
-        E[i] = forward_model.error(state[i], action, state1)
-        reward_A[i] = metalearner.reward('A', state[i], action, state1)
-        reward_B[i] = metalearner.reward('B', state[i], action, state1)
-    reward_A = reward_A.reshape((20, 20))
-    reward_B = reward_B.reshape((20, 20))
-    E = E.reshape((20, 20))
-    actions = actions.reshape(20, 20).detach().numpy()
-    value = value.reshape(20, 20).detach().numpy()
-    ME = ME.reshape(20, 20).detach().numpy()
-
-    figure = plt.figure(figsize=(15.00, 10.00))
-    figure.suptitle('Episode ' + str(episode))
-    plt.subplot(2, 3, 1, title='Policy')
-    plt.pcolor(X, Y, actions, cmap='coolwarm', vmin=-1, vmax=1)
-    plt.colorbar()
-    plt.subplot(2, 3, 2, title='Reward var.Ac')
-    plt.pcolor(X, Y, reward_A, cmap='Greys', vmin=0, vmax=0.05)
-    plt.colorbar()
-    plt.subplot(2, 3, 3, title='Forward model')
-    plt.pcolor(X, Y, E, cmap='Greys', vmin=0, vmax=0.05)
-    plt.colorbar()
-    plt.subplot(2, 3, 4, title='Q Values')
-    plt.pcolor(X, Y, value, cmap='Blues', vmin=0, vmax=100)
-    plt.colorbar()
-    plt.subplot(2, 3, 5, title='Reward var.B1')
-    plt.pcolor(X, Y, reward_B, cmap='Greys', vmin=0, vmax=0.05)
-    plt.colorbar()
-    plt.subplot(2, 3, 6, title='Meta-learner')
-    plt.pcolor(X, Y, ME, cmap='Greys', vmin=0, vmax=0.05)
-    plt.colorbar()
-    # plt.savefig(str(index) + '.png')
-    # plt.show()
-
-    figure.canvas.draw()
-    image = numpy.frombuffer(figure.canvas.tostring_rgb(), dtype='uint8')
-    # images.append(image.reshape(figure.canvas.get_width_height()[::-1] + (3,)))
-    images.append(plt.imshow(image))
-    plt.close()
-
-
-def plot_graph(p_data, p_title, p_filename):
-    colors = ['blue', 'red', 'green']
-
-    fig, ax = plt.subplots(1)
-    ax.set_title(p_title)
-    ax.set_xlabel('episodes')
-    ax.set_ylabel('reward')
-    ax.grid()
-    ax.plot(p_data, lw=2, label='mean reward', color=colors[0])
-    # plt.show()
-    plt.savefig(p_filename + '.png')
-
-
 def run_baseline(trials, episodes):
     env = gym.make('MountainCarContinuous-v0')
     log = Logger()
@@ -266,7 +153,6 @@ def run_baseline(trials, episodes):
         log.close()
 
         #test(env, agent, True)
-        plot_graph(rewards, 'DDPG baseline trial ' + str(i+5), 'ddpg_baseline' + str(i+5))
 
     env.close()
 
@@ -314,7 +200,6 @@ def run_forward_model(trials, episodes):
         log.close()
 
         # test(env, agent, True)
-        plot_graph(rewards, 'DDPG FM trial ' + str(i), 'ddpg_forward_model' + str(i))
 
     env.close()
 
@@ -363,17 +248,8 @@ def run_metalearner_model(trials, episodes):
             test_reward = test(env, agent)
             rewards.append(test_reward)
             exploration.reset()
-            visualize_metalearner_model(e, env, agent, forward_model, motivation, images)
             print('Episode ' + str(e) + ' train ext. reward ' + str(train_reward_ext) + ' int. reward ' + str(train_reward_int) + ' test reward ' + str(test_reward))
             log.log(str(test_reward) + '\n')
         log.close()
-
-        imageio.mimsave('ddpg_su_model' + str(i) + '.gif', images, fps=5, loop=1)
-        #ani = animation.ArtistAnimation(fig, ims, interval=50, blit=True, repeat_delay=1000)
-
-        # ani.save('dynamic_images.mp4')
-        plot_graph(rewards, 'DDPG SU model trial ' + str(i), 'ddpg_su_model' + str(i))
-
-        # test(env, agent, True)
 
     env.close()
