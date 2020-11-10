@@ -114,7 +114,7 @@ class ExperimentNoisyDDPG:
                     next_state, reward, done, _ = self._env.step(action0.numpy())
                     train_ext_reward += reward
 
-                    train_ext_rewards.append(reward)
+                    train_ext_rewards.append(train_ext_reward)
 
                     if self._preprocess is None:
                         state1 = torch.tensor(next_state, dtype=torch.float32)
@@ -130,7 +130,7 @@ class ExperimentNoisyDDPG:
                 print(bar)
 
             agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
-            numpy.save('ddpg_{0}_{1}_{2:d}_re'.format(config.name, config.model, trial), numpy.array(train_ext_rewards))
+            numpy.save('ddpg_{0}_{1}_{2:d}_re'.format(config.name, config.model, trial), numpy.array(train_ext_rewards[:step_limit]))
 
             if config.stats.generate_states:
                 self.generate_states(states)
@@ -200,7 +200,7 @@ class ExperimentNoisyDDPG:
                     agent.train(state0, action0, state1, reward, done)
                     forward_model.train(state0, action0, state1)
 
-                    train_ext_rewards.append(reward)
+                    train_ext_rewards.append(train_ext_reward)
                     train_int_rewards.append(forward_model.reward(state0, action0, state1).item())
                     train_fm_errors.append(forward_model.error(state0, action0, state1).item())
 
@@ -213,9 +213,9 @@ class ExperimentNoisyDDPG:
 
             agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
 
-            numpy.save('ddpg_{0}_{1}_{2:d}_re'.format(config.name, config.model, trial), numpy.array(train_ext_rewards))
-            numpy.save('ddpg_{0}_{1}_{2:d}_ri'.format(config.name, config.model, trial), numpy.array(train_int_rewards))
-            numpy.save('ddpg_{0}_{1}_{2:d}_fme'.format(config.name, config.model, trial), numpy.array(train_fm_errors))
+            numpy.save('ddpg_{0}_{1}_{2:d}_re'.format(config.name, config.model, trial), numpy.array(train_ext_rewards[:step_limit]))
+            numpy.save('ddpg_{0}_{1}_{2:d}_ri'.format(config.name, config.model, trial), numpy.array(train_int_rewards[:step_limit]))
+            numpy.save('ddpg_{0}_{1}_{2:d}_fme'.format(config.name, config.model, trial), numpy.array(train_fm_errors[:step_limit]))
 
             if config.stats.generate_states:
                 self.generate_states(states)
@@ -293,7 +293,7 @@ class ExperimentNoisyDDPG:
                     agent.train(state0, action0, state1, reward, done)
                     metacritic.train(state0, action0, state1)
 
-                    train_ext_rewards.append(reward)
+                    train_ext_rewards.append(train_ext_reward)
                     train_int_rewards.append(metacritic.reward(state0, action0, state1).item())
                     train_fm_errors.append(forward_model.error(state0, action0, state1).item())
                     train_mc_errors.append(metacritic.error(state0, action0).item())
@@ -307,10 +307,10 @@ class ExperimentNoisyDDPG:
 
             agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
 
-            numpy.save('ddpg_{0}_{1}_{2:d}_re'.format(config.name, config.model, trial), numpy.array(train_ext_rewards))
-            numpy.save('ddpg_{0}_{1}_{2:d}_ri'.format(config.name, config.model, trial), numpy.array(train_int_rewards))
-            numpy.save('ddpg_{0}_{1}_{2:d}_fme'.format(config.name, config.model, trial), numpy.array(train_fm_errors))
-            numpy.save('ddpg_{0}_{1}_{2:d}_mce'.format(config.name, config.model, trial), numpy.array(train_mc_errors))
+            numpy.save('ddpg_{0}_{1}_{2:d}_re'.format(config.name, config.model, trial), numpy.array(train_ext_rewards[:step_limit]))
+            numpy.save('ddpg_{0}_{1}_{2:d}_ri'.format(config.name, config.model, trial), numpy.array(train_int_rewards[:step_limit]))
+            numpy.save('ddpg_{0}_{1}_{2:d}_fme'.format(config.name, config.model, trial), numpy.array(train_fm_errors[:step_limit]))
+            numpy.save('ddpg_{0}_{1}_{2:d}_mce'.format(config.name, config.model, trial), numpy.array(train_mc_errors[:step_limit]))
 
             if config.stats.generate_states:
                 self.generate_states(states)
