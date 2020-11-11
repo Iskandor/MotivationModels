@@ -69,7 +69,7 @@ class ExperimentNoisyDDPG:
 
     def run_baseline(self, agent, trial):
         config = self._config
-        step_limit = config.steps * 1e6
+        step_limit = int(config.steps * 1e6)
         steps = 0
 
         states = None
@@ -146,7 +146,7 @@ class ExperimentNoisyDDPG:
         config = self._config
         forward_model = agent.get_motivation_module()
 
-        step_limit = config.steps * 1e6
+        step_limit = int(config.steps * 1e6)
         steps = 0
 
         states = None
@@ -194,14 +194,16 @@ class ExperimentNoisyDDPG:
                         states.append(state0.numpy())
                     action0 = agent.get_action(state0)
                     next_state, reward, done, _ = self._env.step(action0.numpy())
-                    train_ext_reward += reward
-
                     state1 = torch.tensor(next_state, dtype=torch.float32)
+
+                    train_ext_reward += reward
+                    train_int_reward += forward_model.reward(state0, action0, state1).item()
+
                     agent.train(state0, action0, state1, reward, done)
                     forward_model.train(state0, action0, state1)
 
                     train_ext_rewards.append(train_ext_reward)
-                    train_int_rewards.append(forward_model.reward(state0, action0, state1).item())
+                    train_int_rewards.append(train_int_reward)
                     train_fm_errors.append(forward_model.error(state0, action0, state1).item())
 
                     state0 = state1
@@ -236,7 +238,7 @@ class ExperimentNoisyDDPG:
         metacritic = agent.get_motivation_module()
         forward_model = metacritic.get_forward_model()
 
-        step_limit = config.steps * 1e6
+        step_limit = int(config.steps * 1e6)
         steps = 0
 
         states = None
