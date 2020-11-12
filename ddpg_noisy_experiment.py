@@ -114,8 +114,6 @@ class ExperimentNoisyDDPG:
                     next_state, reward, done, _ = self._env.step(action0.numpy())
                     train_ext_reward += reward
 
-                    train_ext_rewards.append(train_ext_reward)
-
                     if self._preprocess is None:
                         state1 = torch.tensor(next_state, dtype=torch.float32)
                     else:
@@ -124,6 +122,7 @@ class ExperimentNoisyDDPG:
                     agent.train(state0, action0, state1, reward, done)
                     state0 = state1
 
+                train_ext_rewards += [train_ext_reward] * train_steps
                 steps += train_steps
 
                 print('Step {0:d} training [ext. reward {1:f} steps {2:d}]'.format(steps, train_ext_reward, train_steps))
