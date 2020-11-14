@@ -39,11 +39,11 @@ class Actor(DDPGActor):
     def __init__(self, state_dim, action_dim, config):
         super(Actor, self).__init__(state_dim, action_dim)
 
-        self._hidden0 = torch.nn.Linear(state_dim, config.actor.h1)
-        self._hidden1 = torch.nn.Linear(config.actor.h1, config.actor.h2)
+        self._hidden0 = NoisyLinear(state_dim, config.actor.h1)
+        self._hidden1 = NoisyLinear(config.actor.h1, config.actor.h2)
         self._output = NoisyLinear(config.actor.h2, action_dim)
 
-        self.init()
+        # self.init()
 
     def forward(self, state):
         x = state
