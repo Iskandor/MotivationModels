@@ -1,9 +1,9 @@
 import gym
 import torch
+from torch import nn
 
 from algorithms.DDPG import DDPGCritic, DDPGActor, DDPG
 from algorithms.ReplayBuffer import ExperienceReplayBuffer
-from ddpg_experiment import ExperimentDDPG
 from ddpg_noisy_experiment import ExperimentNoisyDDPG
 from modules.NoisyLinear import NoisyLinear
 from motivation.ForwardModelMotivation import ForwardModel, ForwardModelMotivation
@@ -15,9 +15,9 @@ class Critic(DDPGCritic):
     def __init__(self, state_dim, action_dim, config):
         super(Critic, self).__init__(state_dim, action_dim)
 
-        self._hidden0 = torch.nn.Linear(state_dim, config.critic.h1)
-        self._hidden1 = torch.nn.Linear(config.critic.h1 + action_dim, config.critic.h2)
-        self._output = torch.nn.Linear(config.critic.h2, 1)
+        self._hidden0 = nn.Linear(state_dim, config.critic.h1)
+        self._hidden1 = nn.Linear(config.critic.h1 + action_dim, config.critic.h2)
+        self._output = nn.Linear(config.critic.h2, 1)
 
         self.init()
 
@@ -30,20 +30,20 @@ class Critic(DDPGCritic):
         return value
 
     def init(self):
-        torch.nn.init.xavier_uniform_(self._hidden0.weight)
-        torch.nn.init.xavier_uniform_(self._hidden1.weight)
-        torch.nn.init.uniform_(self._output.weight, -3e-3, 3e-3)
+        nn.init.xavier_uniform_(self._hidden0.weight)
+        nn.init.xavier_uniform_(self._hidden1.weight)
+        nn.init.uniform_(self._output.weight, -3e-3, 3e-3)
 
 
 class Actor(DDPGActor):
     def __init__(self, state_dim, action_dim, config):
         super(Actor, self).__init__(state_dim, action_dim)
 
-        self._hidden0 = NoisyLinear(state_dim, config.actor.h1)
+        self._hidden0 = nn.Linear(state_dim, config.actor.h1)
         self._hidden1 = NoisyLinear(config.actor.h1, config.actor.h2)
         self._output = NoisyLinear(config.actor.h2, action_dim)
 
-        # self.init()
+        self.init()
 
     def forward(self, state):
         x = state
@@ -53,16 +53,16 @@ class Actor(DDPGActor):
         return policy
 
     def init(self):
-        torch.nn.init.xavier_uniform_(self._hidden0.weight)
-        torch.nn.init.xavier_uniform_(self._hidden1.weight)
+        nn.init.xavier_uniform_(self._hidden0.weight)
+        # nn.init.xavier_uniform_(self._hidden1.weight)
 
 
 class ForwardModelNetwork(ForwardModel):
     def __init__(self, state_dim, action_dim, config):
         super(ForwardModelNetwork, self).__init__(state_dim, action_dim, config)
-        self._hidden0 = torch.nn.Linear(state_dim + action_dim, config.forward_model.h1)
-        self._hidden1 = torch.nn.Linear(config.forward_model.h1, config.forward_model.h2)
-        self._output = torch.nn.Linear(config.forward_model.h2, state_dim)
+        self._hidden0 = nn.Linear(state_dim + action_dim, config.forward_model.h1)
+        self._hidden1 = nn.Linear(config.forward_model.h1, config.forward_model.h2)
+        self._output = nn.Linear(config.forward_model.h2, state_dim)
         self.init()
 
     def forward(self, state, action):
@@ -73,40 +73,40 @@ class ForwardModelNetwork(ForwardModel):
         return value
 
     def init(self):
-        torch.nn.init.xavier_uniform_(self._hidden0.weight)
-        torch.nn.init.xavier_uniform_(self._hidden1.weight)
-        torch.nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
+        nn.init.xavier_uniform_(self._hidden0.weight)
+        nn.init.xavier_uniform_(self._hidden1.weight)
+        nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
 
 
 class MetaLearnerNetwork(MetaLearnerModel):
     def __init__(self, state_dim, action_dim, config):
         super(MetaLearnerNetwork, self).__init__(state_dim, action_dim, config)
-        self._hidden0 = torch.nn.Linear(state_dim + action_dim, config.metacritic.h1)
-        self._hidden1 = torch.nn.Linear(config.metacritic.h1, config.metacritic.h2)
-        self._output = torch.nn.Linear(config.metacritic.h2, 1)
+        self._hidden0 = nn.Linear(state_dim + action_dim, config.metacritic.h1)
+        self._hidden1 = nn.Linear(config.metacritic.h1, config.metacritic.h2)
+        self._output = nn.Linear(config.metacritic.h2, 1)
 
         self.init()
 
     def forward(self, state, action):
         x = torch.cat([state, action], state.ndim - 1)
-        x = torch.nn.functional.relu(self._hidden0(x))
-        x = torch.nn.functional.relu(self._hidden1(x))
+        x = nn.functional.relu(self._hidden0(x))
+        x = nn.functional.relu(self._hidden1(x))
         value = self._output(x)
         return value
 
     def init(self):
-        torch.nn.init.xavier_uniform_(self._hidden0.weight)
-        torch.nn.init.xavier_uniform_(self._hidden1.weight)
-        torch.nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
+        nn.init.xavier_uniform_(self._hidden0.weight)
+        nn.init.xavier_uniform_(self._hidden1.weight)
+        nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
 
 
-class M3Gate(torch.nn.Module):
+class M3Gate(nn.Module):
     def __init__(self, state_dim, im_dim, config):
         super(M3Gate, self).__init__()
 
-        self._hidden0 = torch.nn.Linear(state_dim, config.m3gate.h1)
-        self._hidden1 = torch.nn.Linear(config.m3gate.h1, config.m3gate.h2)
-        self._output = torch.nn.Linear(config.m3gate.h2, im_dim)
+        self._hidden0 = nn.Linear(state_dim, config.m3gate.h1)
+        self._hidden1 = nn.Linear(config.m3gate.h1, config.m3gate.h2)
+        self._output = nn.Linear(config.m3gate.h2, im_dim)
 
         self.init()
 
@@ -118,17 +118,17 @@ class M3Gate(torch.nn.Module):
         return value
 
     def init(self):
-        torch.nn.init.xavier_uniform_(self._hidden0.weight)
-        torch.nn.init.xavier_uniform_(self._hidden1.weight)
-        torch.nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
+        nn.init.xavier_uniform_(self._hidden0.weight)
+        nn.init.xavier_uniform_(self._hidden1.weight)
+        nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
 
 
-class M3Critic(torch.nn.Module):
+class M3Critic(nn.Module):
     def __init__(self, state_dim, im_dim, config):
         super(M3Critic, self).__init__()
-        self._hidden0 = torch.nn.Linear(state_dim, config.m3critic.h1)
-        self._hidden1 = torch.nn.Linear(config.m3critic.h1 + im_dim, config.m3critic.h2)
-        self._output = torch.nn.Linear(config.m3critic.h2, 1)
+        self._hidden0 = nn.Linear(state_dim, config.m3critic.h1)
+        self._hidden1 = nn.Linear(config.m3critic.h1 + im_dim, config.m3critic.h2)
+        self._output = nn.Linear(config.m3critic.h2, 1)
         self.init()
 
     def forward(self, state, action):
@@ -140,9 +140,9 @@ class M3Critic(torch.nn.Module):
         return value
 
     def init(self):
-        torch.nn.init.xavier_uniform_(self._hidden0.weight)
-        torch.nn.init.xavier_uniform_(self._hidden1.weight)
-        torch.nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
+        nn.init.xavier_uniform_(self._hidden0.weight)
+        nn.init.xavier_uniform_(self._hidden1.weight)
+        nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
 
 
 def run_baseline(config):

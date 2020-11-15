@@ -1,9 +1,9 @@
 import gym
 import torch
+from torch import nn
 
 from algorithms.DDPG import DDPGCritic, DDPGActor, DDPG
 from algorithms.ReplayBuffer import ExperienceReplayBuffer
-from ddpg_experiment import ExperimentDDPG
 from ddpg_noisy_experiment import ExperimentNoisyDDPG
 from modules.NoisyLinear import NoisyLinear
 from motivation.ForwardModelMotivation import ForwardModel, ForwardModelMotivation
@@ -39,11 +39,11 @@ class Actor(DDPGActor):
     def __init__(self, state_dim, action_dim, config):
         super(Actor, self).__init__(state_dim, action_dim)
 
-        self._hidden0 = NoisyLinear(state_dim, config.actor.h1)
+        self._hidden0 = nn.Linear(state_dim, config.actor.h1)
         self._hidden1 = NoisyLinear(config.actor.h1, config.actor.h2)
         self._output = NoisyLinear(config.actor.h2, action_dim)
 
-        # self.init()
+        self.init()
 
     def forward(self, state):
         x = state
@@ -54,7 +54,7 @@ class Actor(DDPGActor):
 
     def init(self):
         torch.nn.init.xavier_uniform_(self._hidden0.weight)
-        torch.nn.init.xavier_uniform_(self._hidden1.weight)
+        # torch.nn.init.xavier_uniform_(self._hidden1.weight)
 
 
 class ForwardModelNetwork(ForwardModel):
