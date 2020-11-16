@@ -40,7 +40,7 @@ class Actor(DDPGActor):
         super(Actor, self).__init__(state_dim, action_dim)
 
         self._hidden0 = nn.Linear(state_dim, config.actor.h1)
-        self._hidden1 = NoisyLinear(config.actor.h1, config.actor.h2)
+        self._hidden1 = nn.Linear(config.actor.h1, config.actor.h2)
         self._output = NoisyLinear(config.actor.h2, action_dim)
 
         self.init()
@@ -54,7 +54,7 @@ class Actor(DDPGActor):
 
     def init(self):
         nn.init.xavier_uniform_(self._hidden0.weight)
-        # nn.init.xavier_uniform_(self._hidden1.weight)
+        nn.init.xavier_uniform_(self._hidden1.weight)
 
 
 class ForwardModelNetwork(ForwardModel):
