@@ -91,5 +91,9 @@ if __name__ == '__main__':
     if args.env == 'reacher':
         if config.model == 'baseline':
             DDPG_Noisy_Reacher.run_baseline(config)
+        if config.model == 'fm':
+            DDPG_Noisy_Reacher.run_forward_model(config)
+        if config.model == 'su':
+            DDPG_Noisy_Reacher.run_metalearner_model(config)
     # DQN_FrozenLake.run()
     # DQN_CartPole.run()
