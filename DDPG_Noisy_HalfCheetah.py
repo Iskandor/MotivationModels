@@ -1,4 +1,5 @@
 import gym
+import pybullet_envs
 import torch
 from torch import nn
 
@@ -149,11 +150,11 @@ class M3Critic(nn.Module):
 
 
 def run_baseline(config):
-    env = gym.make('HalfCheetahPyBulletEnv-v0')
+    env = gym.make('HalfCheetahBulletEnv-v0')
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
 
-    experiment = ExperimentNoisyDDPG('HalfCheetahPyBulletEnv-v0', env, config)
+    experiment = ExperimentNoisyDDPG('HalfCheetahBulletEnv-v0', env, config)
 
     for i in range(config.trials):
         actor = Actor(state_dim, action_dim, config)
@@ -166,11 +167,11 @@ def run_baseline(config):
 
 
 def run_forward_model(config):
-    env = gym.make('HalfCheetahPyBulletEnv-v0')
+    env = gym.make('HalfCheetahBulletEnv-v0')
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
 
-    experiment = ExperimentNoisyDDPG('HalfCheetahPyBulletEnv-v0', env, config)
+    experiment = ExperimentNoisyDDPG('HalfCheetahBulletEnv-v0', env, config)
 
     for i in range(config.trials):
         actor = Actor(state_dim, action_dim, config)
@@ -202,16 +203,16 @@ def run_surprise_model(args):
     args.eta = 1
     args.metacritic_variant = 'C'
 
-    experiment = ExperimentNoisyDDPG('HalfCheetahPyBulletEnv-v0', Actor, Critic)
+    experiment = ExperimentNoisyDDPG('HalfCheetahBulletEnv-v0', Actor, Critic)
     experiment.run_metalearner_model(args)
 
 
 def run_metalearner_model(config):
-    env = gym.make('HalfCheetahPyBulletEnv-v0')
+    env = gym.make('HalfCheetahBulletEnv-v0')
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
 
-    experiment = ExperimentNoisyDDPG('HalfCheetahPyBulletEnv-v0', env, config)
+    experiment = ExperimentNoisyDDPG('HalfCheetahBulletEnv-v0', env, config)
 
     for i in range(config.trials):
         actor = Actor(state_dim, action_dim, config)
@@ -241,11 +242,11 @@ def run_metalearner_model(config):
 
 
 def run_m3_model(config):
-    env = gym.make('HalfCheetahPyBulletEnv-v0')
+    env = gym.make('HalfCheetahBulletEnv-v0')
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
 
-    experiment = ExperimentNoisyDDPG('HalfCheetahPyBulletEnv-v0', env, config)
+    experiment = ExperimentNoisyDDPG('HalfCheetahBulletEnv-v0', env, config)
 
     for i in range(config.trials):
         actor = Actor(state_dim, action_dim, config)
