@@ -24,46 +24,52 @@ class ExperimentNoisyDDPG:
         self._preprocess = preprocess
 
     def test(self, env, agent, metacritic=None, forward_model=None, render=False, video=False):
-        state0 = torch.tensor(env.reset(), dtype=torch.float32)
-        done = False
-        ext_rewards = 0
-        int_rewards = 0
-        steps = 0
-        fm_error = []
-        mc_error = []
-
+        config = self._config
         video_recorder = None
-        if video:
-            video_path = './videos/{0:s}_baseline.mp4'.format(self._env_name)
-            video_recorder = VideoRecorder(env, video_path, enabled=video_path is not None)
 
-        while not done:
-            steps += 1
-            if render:
-                env.render()
+        for i in range(5):
+            state0 = torch.tensor(env.reset(), dtype=torch.float32)
+            done = False
+            ext_rewards = 0
+            int_rewards = 0
+            steps = 0
+            fm_error = []
+            mc_error = []
+
+            print("Test no.{0}".format(i))
+            bar = ProgressBar(env._max_episode_steps, max_width=40)
+            if video:
+                video_path = './videos/{0}_{1}_{2:d}.mp4'.format(config.name, config.model, i)
+                video_recorder = VideoRecorder(env, video_path, enabled=video_path is not None)
+
+            while not done:
+                steps += 1
+                if render:
+                    env.render()
                 if video:
-                    env.unwrapped.render()
+                    env.render()
                     video_recorder.capture_frame()
 
-            action = agent.get_action(state0)
-            next_state, reward, done, _ = env.step(action.detach().numpy())
-            next_state = torch.tensor(next_state, dtype=torch.float32)
+                action = agent.get_action(state0)
+                next_state, reward, done, _ = env.step(action.detach().numpy())
+                next_state = torch.tensor(next_state, dtype=torch.float32)
 
-            ext_rewards += reward
-            if metacritic is not None:
-                int_rewards += metacritic.reward(state0, action, next_state).item()
-                fm_error.append(forward_model.error(state0, action, next_state).item())
-                mc_error.append(metacritic.error(state0, action).item())
-            elif forward_model is not None:
-                int_rewards += forward_model.reward(state0, action, next_state).item()
-                fm_error.append(forward_model.error(state0, action, next_state).item())
+                ext_rewards += reward
+                if metacritic is not None:
+                    int_rewards += metacritic.reward(state0, action, next_state).item()
+                    fm_error.append(forward_model.error(state0, action, next_state).item())
+                    mc_error.append(metacritic.error(state0, action).item())
+                elif forward_model is not None:
+                    int_rewards += forward_model.reward(state0, action, next_state).item()
+                    fm_error.append(forward_model.error(state0, action, next_state).item())
 
-            state0 = next_state
-        if render:
-            env.render()
-        if video:
-            video_recorder.close()
-            video_recorder.enabled = False
+                state0 = next_state
+
+                bar.numerator = steps
+                print(bar)
+
+            if video:
+                video_recorder.close()
 
         return ext_rewards, int_rewards, steps, fm_error, mc_error
 
@@ -103,7 +109,6 @@ class ExperimentNoisyDDPG:
 
                 done = False
                 train_ext_reward = 0
-                bar.numerator = steps
                 train_steps = 0
 
                 while not done:
@@ -125,6 +130,7 @@ class ExperimentNoisyDDPG:
                 steps += train_steps
                 if steps > step_limit:
                     train_steps -= step_limit - steps
+                bar.numerator = steps
 
                 train_ext_rewards.append([train_steps, train_ext_reward])
 
@@ -187,7 +193,6 @@ class ExperimentNoisyDDPG:
                 done = False
                 train_ext_reward = 0
                 train_int_reward = 0
-                bar.numerator = steps
                 train_steps = 0
 
                 while not done:
@@ -198,13 +203,12 @@ class ExperimentNoisyDDPG:
                     next_state, reward, done, _ = self._env.step(action0.numpy())
                     state1 = torch.tensor(next_state, dtype=torch.float32)
 
-                    train_ext_reward += reward
-                    train_int_reward += forward_model.reward(state0, action0, state1).item()
-                    train_fm_error = forward_model.error(state0, action0, state1).item()
-
                     agent.train(state0, action0, state1, reward, done)
                     forward_model.train(state0, action0, state1)
 
+                    train_ext_reward += reward
+                    train_int_reward += forward_model.reward(state0, action0, state1).item()
+                    train_fm_error = forward_model.error(state0, action0, state1).item()
                     train_fm_errors.append(train_fm_error)
 
                     state0 = state1
@@ -212,6 +216,7 @@ class ExperimentNoisyDDPG:
                 steps += train_steps
                 if steps > step_limit:
                     train_steps -= step_limit - steps
+                bar.numerator = steps
 
                 train_ext_rewards.append([train_steps, train_ext_reward])
                 train_int_rewards.append([train_steps, train_int_reward])
@@ -257,7 +262,7 @@ class ExperimentNoisyDDPG:
             agent.load(config.load)
 
             for i in range(5):
-                self.test(self._env, agent, render=False, video=False)
+                self.test(self._env, agent, render=False, video=True)
         else:
             action_list = []
             value_list = []
@@ -285,7 +290,6 @@ class ExperimentNoisyDDPG:
                 done = False
                 train_ext_reward = 0
                 train_int_reward = 0
-                bar.numerator = steps
                 train_steps = 0
 
                 while not done:
@@ -312,6 +316,7 @@ class ExperimentNoisyDDPG:
                 steps += train_steps
                 if steps > step_limit:
                     train_steps -= step_limit - steps
+                bar.numerator = steps
 
                 train_ext_rewards.append([train_steps, train_ext_reward])
                 train_int_rewards.append([train_steps, train_int_reward])

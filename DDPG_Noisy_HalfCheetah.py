@@ -182,9 +182,11 @@ def run_forward_model(config):
 
         if config.forward_model.get('batch_size') is not None:
             forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model.lr, config.forward_model.eta,
+                                                   config.forward_model.variant, env._max_episode_steps,
                                                    memory, config.forward_model.batch_size)
         else:
-            forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model.lr, config.forward_model.eta)
+            forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model.lr, config.forward_model.eta,
+                                                   config.forward_model.variant, env._max_episode_steps)
 
         agent.add_motivation_module(forward_model)
 
@@ -223,9 +225,11 @@ def run_metalearner_model(config):
 
         if config.forward_model.get('batch_size') is not None:
             forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model.lr, config.forward_model.eta,
+                                                   config.forward_model.variant, env._max_episode_steps,
                                                    memory, config.forward_model.batch_size)
         else:
-            forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model.lr, config.forward_model.eta)
+            forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model.lr, config.forward_model.eta,
+                                                   config.forward_model.variant, env._max_episode_steps)
 
         if config.metacritic.get('batch_size') is not None:
             metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic.lr,
