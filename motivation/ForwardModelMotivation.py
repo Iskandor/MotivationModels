@@ -59,6 +59,9 @@ class ForwardModelMotivation:
 
         return error
 
+    def mean_error(self):
+        return self._error_buffer.mean()
+
     def reward(self, state0=None, action=None, state1=None, error=None):
         reward = 0
         if self._variant == 'A':
@@ -68,7 +71,7 @@ class ForwardModelMotivation:
                 reward = torch.tanh(error)
 
         if self._variant == 'B':
-            reward = torch.tanh(self._error_buffer.mean())
+            reward = torch.tanh(self.mean_error())
 
         return reward * self._eta
 
