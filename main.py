@@ -1,5 +1,7 @@
 import argparse
 
+import torch
+
 import A2C_Breakout
 import A2C_QBert
 import DDPG_FetchReach
@@ -16,6 +18,8 @@ import PPO_Solaris
 from utils.Config import Config
 
 if __name__ == '__main__':
+    print(torch.__config__.show())
+    print(torch.__config__.parallel_info())
     parser = argparse.ArgumentParser(description='Motivation models learning platform.')
 
     parser.add_argument('--env', type=str, help='environment name')
