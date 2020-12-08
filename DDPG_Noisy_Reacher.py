@@ -179,9 +179,11 @@ def run_forward_model(config):
 
         if config.forward_model.get('batch_size') is not None:
             forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model.lr, config.forward_model.eta,
+                                                   config.forward_model.variant, env._max_episode_steps * 10,
                                                    memory, config.forward_model.batch_size)
         else:
-            forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model.lr, config.forward_model.eta)
+            forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model.lr, config.forward_model.eta,
+                                                   config.forward_model.variant, env._max_episode_steps * 10)
 
         agent.add_motivation_module(forward_model)
 
@@ -220,16 +222,20 @@ def run_metalearner_model(config):
 
         if config.forward_model.get('batch_size') is not None:
             forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model.lr, config.forward_model.eta,
+                                                   config.forward_model.variant, env._max_episode_steps * 10,
                                                    memory, config.forward_model.batch_size)
         else:
-            forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model.lr, config.forward_model.eta)
+            forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model.lr, config.forward_model.eta,
+                                                   config.forward_model.variant, env._max_episode_steps * 10)
 
         if config.metacritic.get('batch_size') is not None:
             metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic.lr,
-                                               config.metacritic.variant, config.metacritic.eta, memory, config.metacritic.batch_size)
+                                               config.metacritic.variant, env._max_episode_steps * 10,
+                                               config.metacritic.eta, memory, config.metacritic.batch_size)
         else:
             metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic.lr,
-                                               config.metacritic.variant, config.metacritic.eta)
+                                               config.metacritic.variant, env._max_episode_steps * 10,
+                                               config.metacritic.eta)
 
         agent.add_motivation_module(metacritic)
 
