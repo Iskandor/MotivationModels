@@ -10,6 +10,7 @@ import DDPG_LunarLander
 import DDPG_MountainCar
 #import PPO_Go
 #import PPO_Chess
+import DDPG_Noisy_Ant
 import DDPG_Noisy_HalfCheetah
 import DDPG_Noisy_Reacher
 import PPO_CartPole
@@ -82,16 +83,24 @@ if __name__ == '__main__':
             pass
     if args.env == 'half_cheetah':
         if config.model == 'baseline':
-            # DDPG_HalfCheetah.run_baseline(config)
             DDPG_Noisy_HalfCheetah.run_baseline(config)
         if config.model == 'fm':
             DDPG_Noisy_HalfCheetah.run_forward_model(config)
         if config.model == 's':
-            DDPG_Noisy_HalfCheetah.run_surprise_model(args)
+            DDPG_Noisy_HalfCheetah.run_metalearner_model(config)
         if config.model == 'su':
             DDPG_Noisy_HalfCheetah.run_metalearner_model(config)
         if config.model == 'm3':
             DDPG_Noisy_HalfCheetah.run_m3_model(config)
+    if args.env == 'ant':
+        if config.model == 'baseline':
+            DDPG_Noisy_Ant.run_baseline(config)
+        if config.model == 'fm':
+            DDPG_Noisy_Ant.run_forward_model(config)
+        if config.model == 's':
+            DDPG_Noisy_Ant.run_metalearner_model(config)
+        if config.model == 'su':
+            DDPG_Noisy_Ant.run_metalearner_model(config)
     if args.env == 'reacher':
         if config.model == 'baseline':
             DDPG_Noisy_Reacher.run_baseline(config)
