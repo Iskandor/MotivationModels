@@ -62,15 +62,15 @@ class ForwardModelNetwork(ForwardModel):
     def __init__(self, state_dim, action_dim, config):
         super(ForwardModelNetwork, self).__init__(state_dim, action_dim, config)
         self._action = nn.Linear(action_dim, state_dim)
-        self._hidden0 = nn.Linear(state_dim + state_dim, config.forward_model.h1)
-        self._hidden1 = nn.Linear(config.forward_model.h1, config.forward_model.h2)
+        self._hidden0 = nn.Linear(state_dim, config.forward_model.h1)
+        self._hidden1 = nn.Linear(config.forward_model.h1 + state_dim, config.forward_model.h2)
         self._output = nn.Linear(config.forward_model.h2, state_dim)
         self.init()
 
     def forward(self, state, action):
-        x = torch.relu(self._action(action))
-        x = torch.cat([state, x], state.ndim - 1)
-        x = torch.relu(self._hidden0(x))
+        ax = torch.relu(self._action(action))
+        x = torch.relu(self._hidden0(state))
+        x = torch.cat([x, ax], state.ndim - 1)
         x = torch.relu(self._hidden1(x))
         value = self._output(x)
         return value
