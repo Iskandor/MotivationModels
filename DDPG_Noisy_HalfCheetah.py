@@ -74,7 +74,6 @@ class ForwardModelNetwork(ForwardModel):
         return value
 
     def init(self):
-        nn.init.xavier_uniform_(self._action.weight)
         nn.init.xavier_uniform_(self._hidden0.weight)
         nn.init.xavier_uniform_(self._hidden1.weight)
         nn.init.uniform_(self._output.weight, -3e-3, 3e-3)
