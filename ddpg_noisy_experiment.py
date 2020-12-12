@@ -129,7 +129,7 @@ class ExperimentNoisyDDPG:
 
                 steps += train_steps
                 if steps > step_limit:
-                    train_steps -= step_limit - steps
+                    train_steps -= steps - step_limit
                 bar.numerator = steps
 
                 train_ext_rewards.append([train_steps, train_ext_reward])
@@ -215,7 +215,7 @@ class ExperimentNoisyDDPG:
 
                 steps += train_steps
                 if steps > step_limit:
-                    train_steps -= step_limit - steps
+                    train_steps -= steps - step_limit
                 bar.numerator = steps
 
                 train_ext_rewards.append([train_steps, train_ext_reward])
@@ -315,7 +315,7 @@ class ExperimentNoisyDDPG:
 
                 steps += train_steps
                 if steps > step_limit:
-                    train_steps -= step_limit - steps
+                    train_steps -= steps - step_limit
                 bar.numerator = steps
 
                 train_ext_rewards.append([train_steps, train_ext_reward])
