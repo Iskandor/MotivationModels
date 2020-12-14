@@ -61,17 +61,15 @@ class Actor(DDPGActor):
 class ForwardModelNetwork(ForwardModel):
     def __init__(self, state_dim, action_dim, config):
         super(ForwardModelNetwork, self).__init__(state_dim, action_dim, config)
-        self._action = nn.Linear(action_dim, state_dim)
-        self._hidden0 = nn.Linear(state_dim + state_dim, config.forward_model.h1)
+        self._hidden0 = nn.Linear(state_dim + action_dim, config.forward_model.h1)
         self._hidden1 = nn.Linear(config.forward_model.h1, config.forward_model.h2)
         self._output = nn.Linear(config.forward_model.h2, state_dim)
         self.init()
 
     def forward(self, state, action):
-        x = torch.relu(self._action(action))
-        x = torch.cat([state, x], state.ndim - 1)
-        x = torch.relu(self._hidden0(x))
-        x = torch.relu(self._hidden1(x))
+        x = torch.cat([state, action], state.ndim - 1)
+        x = torch.tanh(self._hidden0(x))
+        x = torch.tanh(self._hidden1(x))
         value = self._output(x)
         return value
 
@@ -93,8 +91,8 @@ class MetaLearnerNetwork(MetaLearnerModel):
 
     def forward(self, state, action):
         x = torch.cat([state, action], state.ndim - 1)
-        x = nn.functional.relu(self._hidden0(x))
-        x = nn.functional.relu(self._hidden1(x))
+        x = torch.tanh(self._hidden0(x))
+        x = torch.tanh(self._hidden1(x))
         value = self._output(x)
         return value
 
