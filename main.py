@@ -10,6 +10,7 @@ import DDPG_LunarLander
 import DDPG_MountainCar
 #import PPO_Go
 #import PPO_Chess
+import DDPG_Noisy_AerisTargetNavigate
 import DDPG_Noisy_Ant
 import DDPG_Noisy_HalfCheetah
 import DDPG_Noisy_Reacher
@@ -108,5 +109,13 @@ if __name__ == '__main__':
             DDPG_Noisy_Reacher.run_forward_model(config)
         if config.model == 'su':
             DDPG_Noisy_Reacher.run_metalearner_model(config)
+    if args.env == 'aeris_navigate':
+        if config.model == 'baseline':
+            DDPG_Noisy_AerisTargetNavigate.run_baseline(config)
+        if config.model == 'fm':
+            DDPG_Noisy_AerisTargetNavigate.run_forward_model(config)
+        if config.model == 'su':
+            DDPG_Noisy_AerisTargetNavigate.run_metalearner_model(config)
+
     # DQN_FrozenLake.run()
     # DQN_CartPole.run()
