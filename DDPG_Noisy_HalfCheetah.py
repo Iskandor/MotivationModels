@@ -68,8 +68,8 @@ class ForwardModelNetwork(ForwardModel):
 
     def forward(self, state, action):
         x = torch.cat([state, action], state.ndim - 1)
-        x = torch.relu(self._hidden0(x))
-        x = torch.relu(self._hidden1(x))
+        x = torch.tanh(self._hidden0(x))
+        x = torch.tanh(self._hidden1(x))
         value = self._output(x)
         return value
 
@@ -90,9 +90,9 @@ class MetaLearnerNetwork(MetaLearnerModel):
 
     def forward(self, state, action):
         x = torch.cat([state, action], state.ndim - 1)
-        x = nn.functional.relu(self._hidden0(x))
-        x = nn.functional.relu(self._hidden1(x))
-        value = self._output(x)
+        x = torch.tanh(self._hidden0(x))
+        x = torch.tanh(self._hidden1(x))
+        value = torch.sigmoid(self._output(x))
         return value
 
     def init(self):
