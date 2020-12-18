@@ -92,7 +92,7 @@ class MetaLearnerNetwork(MetaLearnerModel):
         x = torch.cat([state, action], state.ndim - 1)
         x = torch.tanh(self._hidden0(x))
         x = torch.tanh(self._hidden1(x))
-        value = torch.sigmoid(self._output(x))
+        value = torch.selu(self._output(x))
         return value
 
     def init(self):
