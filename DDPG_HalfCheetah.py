@@ -223,10 +223,10 @@ def run_metalearner_model(config):
             forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model.lr, config.forward_model.eta)
 
         if config.metacritic.get('batch_size') is not None:
-            metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic.lr,
+            metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic.lr, state_dim,
                                                config.metacritic.variant, config.metacritic.eta, memory, config.metacritic.batch_size)
         else:
-            metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic.lr,
+            metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic.lr, state_dim,
                                                config.metacritic.variant, config.metacritic.eta)
 
         agent.add_motivation_module(metacritic)

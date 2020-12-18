@@ -229,11 +229,11 @@ def run_metalearner_model(config):
                                                    config.forward_model.variant, env._max_episode_steps * 10)
 
         if config.metacritic.get('batch_size') is not None:
-            metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic.lr,
+            metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic.lr, state_dim,
                                                config.metacritic.variant, env._max_episode_steps * 10,
                                                config.metacritic.eta, memory, config.metacritic.batch_size)
         else:
-            metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic.lr,
+            metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic.lr, state_dim,
                                                config.metacritic.variant, env._max_episode_steps * 10,
                                                config.metacritic.eta)
 
