@@ -14,7 +14,7 @@ class MetaLearnerModel(torch.nn.Module):
 
 
 class MetaLearnerMotivation:
-    def __init__(self, network, forward_model, lr, variant='A', window=1, eta=1.0, memory_buffer=None, sample_size=0):
+    def __init__(self, network, forward_model, lr, state_dim, variant='A', window=1, eta=1.0, memory_buffer=None, sample_size=0):
         self._forward_model = forward_model
         self._network = network
         self._optimizer = torch.optim.Adam(self._network.parameters(), lr=lr)
@@ -22,6 +22,7 @@ class MetaLearnerMotivation:
         self._sample_size = sample_size
         self._variant = variant
         self._eta = eta
+        self._sigma = state_dim * 0.005
 
         if self._variant == 'E':
             self._window = window
@@ -66,7 +67,7 @@ class MetaLearnerMotivation:
         return self._error_buffer.mean()
 
     def reward(self, state0, action, state1):
-        sigma = 1e-2
+        # sigma = 1e-2
         k = 1
 
         if self._variant == 'E':
@@ -81,8 +82,8 @@ class MetaLearnerMotivation:
 
             reward = None
             if self._variant == 'A':
-                mask = torch.gt(torch.abs(error - error_estimate), torch.ones_like(error) * sigma).type(torch.float32)
-                reward = torch.tanh(error / error_estimate + error_estimate / error - 2) * mask
+                mask = torch.gt(torch.abs(error - error_estimate), torch.ones_like(error) * self._sigma).type(torch.float32)
+                reward = torch.max(torch.tanh(error / error_estimate + error_estimate / error - 2) * mask, torch.zeros_like(error))
                 reward = torch.max(reward, self._forward_model.reward(error=error))
 
             if self._variant == 'B':
@@ -90,12 +91,12 @@ class MetaLearnerMotivation:
                 reward = torch.max(reward, self._forward_model.reward(error=error))
 
             if self._variant == 'C':
-                mask = torch.gt(torch.abs(error - error_estimate), torch.ones_like(error) * sigma).type(torch.float32)
-                reward = torch.tanh(error / error_estimate + error_estimate / error - 2) * mask
+                mask = torch.gt(torch.abs(error - error_estimate), torch.ones_like(error) * self._sigma).type(torch.float32)
+                reward = torch.max(torch.tanh(error / error_estimate + error_estimate / error - 2) * mask, torch.zeros_like(error))
 
             if self._variant == 'D':
-                mask = torch.gt(torch.abs(error - error_estimate), torch.ones_like(error) * sigma).type(torch.float32)
-                reward = torch.tanh(error / error_estimate + error_estimate / error - 2) * mask
+                mask = torch.gt(torch.abs(error - error_estimate), torch.ones_like(error) * self._sigma).type(torch.float32)
+                reward =torch.max(torch.tanh(error / error_estimate + error_estimate / error - 2) * mask, torch.zeros_like(error))
                 reward = torch.max(reward, self._forward_model.reward(error=error) - error_estimate)
 
         return reward * self._eta
