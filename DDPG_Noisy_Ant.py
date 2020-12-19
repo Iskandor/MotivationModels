@@ -2,6 +2,7 @@ import gym
 import pybullet_envs
 import torch
 from torch import nn
+from torch.nn import *
 
 from algorithms.DDPG import DDPGCritic, DDPGActor, DDPG
 from algorithms.ReplayBuffer import ExperienceReplayBuffer
@@ -61,22 +62,23 @@ class Actor(DDPGActor):
 class ForwardModelNetwork(ForwardModel):
     def __init__(self, state_dim, action_dim, config):
         super(ForwardModelNetwork, self).__init__(state_dim, action_dim, config)
-        self._hidden0 = nn.Linear(state_dim + action_dim, config.forward_model.h1)
-        self._hidden1 = nn.Linear(config.forward_model.h1, config.forward_model.h2)
-        self._output = nn.Linear(config.forward_model.h2, state_dim)
-        self.init()
+
+        self._model = Sequential(
+            Linear(in_features=state_dim + action_dim, out_features=config.forward_model.h1, bias=True),
+            Tanh(),
+            Linear(in_features=config.forward_model.h1, out_features=config.forward_model.h2, bias=True),
+            Tanh(),
+            Linear(in_features=config.forward_model.h2, out_features=config.forward_model.h2, bias=True),
+            Tanh(),
+            Linear(in_features=config.forward_model.h2, out_features=config.forward_model.h2, bias=True),
+            Tanh(),
+            Linear(in_features=config.forward_model.h2, out_features=state_dim, bias=True)
+        )
 
     def forward(self, state, action):
         x = torch.cat([state, action], state.ndim - 1)
-        x = torch.tanh(self._hidden0(x))
-        x = torch.tanh(self._hidden1(x))
-        value = self._output(x)
+        value = self._model(x)
         return value
-
-    def init(self):
-        nn.init.xavier_uniform_(self._hidden0.weight)
-        nn.init.xavier_uniform_(self._hidden1.weight)
-        nn.init.uniform_(self._output.weight, -3e-3, 3e-3)
 
 
 class MetaLearnerNetwork(MetaLearnerModel):
