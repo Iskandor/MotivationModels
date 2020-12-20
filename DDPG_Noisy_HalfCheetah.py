@@ -66,9 +66,9 @@ class ForwardModelNetwork(ForwardModel):
         self._model = Sequential(
             Linear(in_features=state_dim + action_dim, out_features=config.forward_model.h1, bias=True),
             Tanh(),
-            Linear(in_features=config.forward_model.h1, out_features=config.forward_model.h2, bias=True),
+            Linear(in_features=config.forward_model.h1, out_features=config.forward_model.h1, bias=True),
             Tanh(),
-            Linear(in_features=config.forward_model.h2, out_features=config.forward_model.h2, bias=True),
+            Linear(in_features=config.forward_model.h1, out_features=config.forward_model.h2, bias=True),
             Tanh(),
             Linear(in_features=config.forward_model.h2, out_features=config.forward_model.h2, bias=True),
             Tanh(),
@@ -80,26 +80,26 @@ class ForwardModelNetwork(ForwardModel):
         value = self._model(x)
         return value
 
+
 class MetaLearnerNetwork(MetaLearnerModel):
     def __init__(self, state_dim, action_dim, config):
         super(MetaLearnerNetwork, self).__init__(state_dim, action_dim, config)
-        self._hidden0 = nn.Linear(state_dim + action_dim, config.metacritic.h1)
-        self._hidden1 = nn.Linear(config.metacritic.h1, config.metacritic.h2)
-        self._output = nn.Linear(config.metacritic.h2, 1)
-
-        self.init()
+        self._model = Sequential(
+            Linear(in_features=state_dim + action_dim, out_features=config.forward_model.h1, bias=True),
+            Tanh(),
+            Linear(in_features=config.forward_model.h1, out_features=config.forward_model.h1, bias=True),
+            Tanh(),
+            Linear(in_features=config.forward_model.h1, out_features=config.forward_model.h2, bias=True),
+            Tanh(),
+            Linear(in_features=config.forward_model.h2, out_features=config.forward_model.h2, bias=True),
+            Tanh(),
+            Linear(in_features=config.forward_model.h2, out_features=1, bias=True)
+        )
 
     def forward(self, state, action):
         x = torch.cat([state, action], state.ndim - 1)
-        x = torch.tanh(self._hidden0(x))
-        x = torch.tanh(self._hidden1(x))
-        value = torch.selu(self._output(x))
+        value = self._model(x)
         return value
-
-    def init(self):
-        nn.init.xavier_uniform_(self._hidden0.weight)
-        nn.init.xavier_uniform_(self._hidden1.weight)
-        nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
 
 
 class M3Gate(nn.Module):
