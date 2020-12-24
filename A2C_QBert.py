@@ -30,20 +30,20 @@ class A2CNetwork(torch.nn.Module):
         self.feature.apply(self.init_weights)
 
         self.critic = torch.nn.Sequential(
-            torch.nn.Linear(self.feature_dim, config.critic.h1),
+            torch.nn.Linear(self.feature_dim, config.critic_h1),
             torch.nn.ReLU(),
-            torch.nn.Linear(config.critic.h1, config.critic.h2),
+            torch.nn.Linear(config.critic_h1, config.critic_h2),
             torch.nn.ReLU(),
-            torch.nn.Linear(config.critic.h2, 1)
+            torch.nn.Linear(config.critic_h2, 1)
         )
         self.critic.apply(self.init_weights)
 
         self.actor = torch.nn.Sequential(
-            torch.nn.Linear(self.feature_dim, config.actor.h1),
+            torch.nn.Linear(self.feature_dim, config.actor_h1),
             torch.nn.ReLU(),
-            torch.nn.Linear(config.actor.h1, config.actor.h2),
+            torch.nn.Linear(config.actor_h1, config.actor_h2),
             torch.nn.ReLU(),
-            torch.nn.Linear(config.actor.h2, action_dim)
+            torch.nn.Linear(config.actor_h2, action_dim)
         )
         self.actor.apply(self.init_weights)
 

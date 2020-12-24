@@ -33,20 +33,20 @@ class PPONetwork(torch.nn.Module):
         self.feature.apply(self.init_weights)
 
         self.critic = torch.nn.Sequential(
-            torch.nn.Linear(self.feature_dim, config.critic.h1),
+            torch.nn.Linear(self.feature_dim, config.critic_h1),
             torch.nn.ReLU(),
-            torch.nn.Linear(config.critic.h1, config.critic.h2),
+            torch.nn.Linear(config.critic_h1, config.critic_h2),
             torch.nn.ReLU(),
-            torch.nn.Linear(config.critic.h2, 1)
+            torch.nn.Linear(config.critic_h2, 1)
         )
         self.critic.apply(self.init_weights)
 
         self.actor = torch.nn.Sequential(
-            torch.nn.Linear(self.feature_dim, config.actor.h1),
+            torch.nn.Linear(self.feature_dim, config.actor_h1),
             torch.nn.ReLU(),
-            torch.nn.Linear(config.actor.h1, config.actor.h2),
+            torch.nn.Linear(config.actor_h1, config.actor_h2),
             torch.nn.ReLU(),
-            torch.nn.Linear(config.actor.h2, action_dim)
+            torch.nn.Linear(config.actor_h2, action_dim)
         )
         self.actor.apply(self.init_weights)
 
@@ -76,11 +76,11 @@ class ICMNetwork(torch.nn.Module):
         self._rate = feature_dim // action_dim
 
         self.forward_model = torch.nn.Sequential(
-            torch.nn.Linear(feature_dim + action_dim * self._rate, config.forward_model.h1),
+            torch.nn.Linear(feature_dim + action_dim * self._rate, config.forward_model_h1),
             torch.nn.ReLU(),
-            torch.nn.Linear(config.forward_model.h1, config.forward_model.h2),
+            torch.nn.Linear(config.forward_model_h1, config.forward_model_h2),
             torch.nn.ReLU(),
-            torch.nn.Linear(config.forward_model.h2, feature_dim)
+            torch.nn.Linear(config.forward_model_h2, feature_dim)
         )
 
         self.inverse_model = torch.nn.Sequential(
@@ -137,7 +137,7 @@ def run_icm(config):
         network = PPONetwork(state_dim, action_dim, config).to(config.device)
         icm_network = ICMNetwork(network.feature, network.feature_dim, action_dim, config).to(config.device)
         network.add_module('icm', icm_network)
-        icm = ICM(icm_network, config.forward_model.beta, config.forward_model.eta)
+        icm = ICM(icm_network, config.forward_model.beta, config.forward_model_eta)
         agent = PPO(network, config.lr, config.actor.loss_weight, config.critic.loss_weight, config.batch_size, config.trajectory_size, config.beta, config.gamma, device=config.device)
         agent.add_motivation(icm)
         experiment.run_icm(agent, i)

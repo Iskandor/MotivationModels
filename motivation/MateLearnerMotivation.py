@@ -101,6 +101,44 @@ class MetaLearnerMotivation:
 
         return reward * self._eta
 
+    def raw_data(self, state0, action, state1):
+        # sigma = 1e-2
+        k = 1
+
+        if self._variant == 'E':
+            pe_reward = self._forward_model.reward()
+            error = self._forward_model.mean_error() + 1e-8
+            error_estimate = self.mean_error() + 1e-8
+
+            ps_reward = torch.max(torch.tanh(error / error_estimate + error_estimate / error - 2))
+            reward = torch.max(ps_reward, pe_reward)
+        else:
+            error = self._forward_model.error(state0, action, state1)
+            pe_reward = self._forward_model.reward(error=error)
+            error_estimate = self.error(state0, action)
+
+            reward = None
+            if self._variant == 'A':
+                mask = torch.gt(torch.abs(error - error_estimate), torch.ones_like(error) * self._sigma).type(torch.float32)
+                ps_reward = torch.max(torch.tanh(error / error_estimate + error_estimate / error - 2) * mask, torch.zeros_like(error))
+                reward = torch.max(ps_reward, pe_reward)
+
+            if self._variant == 'B':
+                ps_reward = torch.exp(k * torch.abs(error - error_estimate)) - 1
+                reward = torch.max(ps_reward, pe_reward)
+
+            if self._variant == 'C':
+                mask = torch.gt(torch.abs(error - error_estimate), torch.ones_like(error) * self._sigma).type(torch.float32)
+                reward = torch.max(torch.tanh(error / error_estimate + error_estimate / error - 2) * mask, torch.zeros_like(error))
+                ps_reward = reward
+
+            if self._variant == 'D':
+                mask = torch.gt(torch.abs(error - error_estimate), torch.ones_like(error) * self._sigma).type(torch.float32)
+                ps_reward = torch.max(torch.tanh(error / error_estimate + error_estimate / error - 2) * mask, torch.zeros_like(error))
+                reward = torch.max(ps_reward, pe_reward - error_estimate)
+
+        return error, error_estimate, pe_reward, ps_reward, reward * self._eta
+
     def save(self, path):
         self._forward_model.save(path)
         torch.save(self._network.state_dict(), path + '_mc.pth')

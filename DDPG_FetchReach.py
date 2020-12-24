@@ -12,9 +12,9 @@ class Critic(DDPGCritic):
     def __init__(self, state_dim, action_dim, config):
         super(Critic, self).__init__(state_dim, action_dim)
 
-        self._hidden0 = torch.nn.Linear(state_dim, config.critic.h1)
-        self._hidden1 = torch.nn.Linear(config.critic.h1 + action_dim, config.critic.h2)
-        self._output = torch.nn.Linear(config.critic.h2, 1)
+        self._hidden0 = torch.nn.Linear(state_dim, config.critic_h1)
+        self._hidden1 = torch.nn.Linear(config.critic_h1 + action_dim, config.critic_h2)
+        self._output = torch.nn.Linear(config.critic_h2, 1)
 
         self.init()
 
@@ -36,9 +36,9 @@ class Actor(DDPGActor):
     def __init__(self, state_dim, action_dim, config):
         super(Actor, self).__init__(state_dim, action_dim)
 
-        self._hidden0 = torch.nn.Linear(state_dim, config.actor.h1)
-        self._hidden1 = torch.nn.Linear(config.actor.h1, config.actor.h2)
-        self._output = NoisyLinear(config.actor.h2, action_dim)
+        self._hidden0 = torch.nn.Linear(state_dim, config.actor_h1)
+        self._hidden1 = torch.nn.Linear(config.actor_h1, config.actor_h2)
+        self._output = NoisyLinear(config.actor_h2, action_dim)
 
         self.init()
 
@@ -72,7 +72,7 @@ def run_baseline(config):
         actor = Actor(state_dim, action_dim, config)
         critic = Critic(state_dim, action_dim, config)
         memory = ExperienceReplayBuffer(config.memory_size)
-        agent = DDPG(actor, critic, config.actor.lr, config.critic.lr, config.gamma, config.tau, memory, config.batch_size)
+        agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)
         experiment.run_baseline(agent, i)
 
     env.close()

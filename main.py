@@ -1,4 +1,5 @@
 import argparse
+import json
 
 import torch
 
@@ -25,32 +26,35 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Motivation models learning platform.')
 
     parser.add_argument('--env', type=str, help='environment name')
-    parser.add_argument('--config', type=str, help='path to config file')
+    parser.add_argument('--config', type=int, help='id of config')
 
     args = parser.parse_args()
 
-    if args.config is not None:
-        config = Config.parse_config(args.config)
+    with open('./config.json') as f:
+        config = json.load(f)
+
+    experiment = Config(config[args.env][str(args.config)], "{0}_{1}".format(args.env, str(args.config)))
 
     if args.env == "solaris":
-        if config.model == 'baseline':
-            PPO_Solaris.run_baseline(config)
-        if config.model == 'fm':
-            PPO_Solaris.run_icm(config)
+
+        if experiment.model == 'baseline':
+            PPO_Solaris.run_baseline(experiment)
+        if experiment.model == 'fm':
+            PPO_Solaris.run_icm(experiment)
     if args.env == "qbert":
-        if config.model == 'baseline':
-            A2C_QBert.run_baseline(config)
-            # PPO_QBert.run_baseline(config)
-        if config.model == 'fm':
-            PPO_QBert.run_icm(config)
+        if experiment.model == 'baseline':
+            A2C_QBert.run_baseline(experiment)
+            # PPO_QBert.run_baseline(experiment)
+        if experiment.model == 'fm':
+            PPO_QBert.run_icm(experiment)
     if args.env == "breakout":
-        if config.model == 'baseline':
-            A2C_Breakout.run_baseline(config)
+        if experiment.model == 'baseline':
+            A2C_Breakout.run_baseline(experiment)
     if args.env == "cart_pole":
-        if config.model == 'baseline':
-            # A2C_CartPole.run_baseline(config)
+        if experiment.model == 'baseline':
+            # A2C_CartPole.run_baseline(experiment)
             # DQN_CartPole.run()
-            PPO_CartPole.run_baseline(config)
+            PPO_CartPole.run_baseline(experiment)
     if args.env == 'mountain_car':
         if args.model == 'baseline':
             DDPG_MountainCar.run_baseline(int(args.trials), int(args.episodes))
@@ -59,9 +63,9 @@ if __name__ == '__main__':
         if args.model == 'su':
             DDPG_MountainCar.run_metalearner_model(int(args.trials), int(args.episodes))
     if args.env == 'fetch_reach':
-        if config.model == 'baseline':
-            DDPG_FetchReach.run_baseline(config)
-        if config.model == 'fm':
+        if experiment.model == 'baseline':
+            DDPG_FetchReach.run_baseline(experiment)
+        if experiment.model == 'fm':
             pass
             # DDPG_FetchReach.run_forward_model(int(args.trials), int(args.episodes), int(args.batch_size), int(args.memory_size))
     if args.env == 'go':
@@ -71,51 +75,51 @@ if __name__ == '__main__':
         pass
         #PPO_Chess.run_baseline(int(args.trials), int(args.episodes))
     if args.env == 'lunar_lander':
-        if config.model == 'baseline':
-            DDPG_LunarLander.run_baseline(config)
-        if config.model == 'fm':
-            DDPG_LunarLander.run_forward_model(config)
-        if config.model == 's':
-            DDPG_LunarLander.run_surprise_model(config)
-        if config.model == 'su':
-            DDPG_LunarLander.run_metalearner_model(config)
+        if experiment.model == 'baseline':
+            DDPG_LunarLander.run_baseline(experiment)
+        if experiment.model == 'fm':
+            DDPG_LunarLander.run_forward_model(experiment)
+        if experiment.model == 's':
+            DDPG_LunarLander.run_metalearner_model(experiment)
+        if experiment.model == 'su':
+            DDPG_LunarLander.run_metalearner_model(experiment)
     if args.env == 'pong':
         if args.model == 'baseline':
             pass
     if args.env == 'half_cheetah':
-        if config.model == 'baseline':
-            DDPG_Noisy_HalfCheetah.run_baseline(config)
-        if config.model == 'fm':
-            DDPG_Noisy_HalfCheetah.run_forward_model(config)
-        if config.model == 's':
-            DDPG_Noisy_HalfCheetah.run_metalearner_model(config)
-        if config.model == 'su':
-            DDPG_Noisy_HalfCheetah.run_metalearner_model(config)
-        if config.model == 'm3':
-            DDPG_Noisy_HalfCheetah.run_m3_model(config)
+        if experiment.model == 'baseline':
+            DDPG_Noisy_HalfCheetah.run_baseline(experiment)
+        if experiment.model == 'fm':
+            DDPG_Noisy_HalfCheetah.run_forward_model(experiment)
+        if experiment.model == 's':
+            DDPG_Noisy_HalfCheetah.run_metalearner_model(experiment)
+        if experiment.model == 'su':
+            DDPG_Noisy_HalfCheetah.run_metalearner_model(experiment)
+        if experiment.model == 'm3':
+            DDPG_Noisy_HalfCheetah.run_m3_model(experiment)
     if args.env == 'ant':
-        if config.model == 'baseline':
-            DDPG_Noisy_Ant.run_baseline(config)
-        if config.model == 'fm':
-            DDPG_Noisy_Ant.run_forward_model(config)
-        if config.model == 's':
-            DDPG_Noisy_Ant.run_metalearner_model(config)
-        if config.model == 'su':
-            DDPG_Noisy_Ant.run_metalearner_model(config)
+        if experiment.model == 'baseline':
+            DDPG_Noisy_Ant.run_baseline(experiment)
+        if experiment.model == 'fm':
+            DDPG_Noisy_Ant.run_forward_model(experiment)
+        if experiment.model == 's':
+            DDPG_Noisy_Ant.run_metalearner_model(experiment)
+        if experiment.model == 'su':
+            DDPG_Noisy_Ant.run_metalearner_model(experiment)
     if args.env == 'reacher':
-        if config.model == 'baseline':
-            DDPG_Noisy_Reacher.run_baseline(config)
-        if config.model == 'fm':
-            DDPG_Noisy_Reacher.run_forward_model(config)
-        if config.model == 'su':
-            DDPG_Noisy_Reacher.run_metalearner_model(config)
+        if experiment.model == 'baseline':
+            DDPG_Noisy_Reacher.run_baseline(experiment)
+        if experiment.model == 'fm':
+            DDPG_Noisy_Reacher.run_forward_model(experiment)
+        if experiment.model == 'su':
+            DDPG_Noisy_Reacher.run_metalearner_model(experiment)
     if args.env == 'aeris_navigate':
-        if config.model == 'baseline':
-            DDPG_Noisy_AerisTargetNavigate.run_baseline(config)
-        if config.model == 'fm':
-            DDPG_Noisy_AerisTargetNavigate.run_forward_model(config)
-        if config.model == 'su':
-            DDPG_Noisy_AerisTargetNavigate.run_metalearner_model(config)
+        if experiment.model == 'baseline':
+            DDPG_Noisy_AerisTargetNavigate.run_baseline(experiment)
+        if experiment.model == 'fm':
+            DDPG_Noisy_AerisTargetNavigate.run_forward_model(experiment)
+        if experiment.model == 'su':
+            DDPG_Noisy_AerisTargetNavigate.run_metalearner_model(experiment)
 
     # DQN_FrozenLake.run()
     # DQN_CartPole.run()

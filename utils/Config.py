@@ -7,10 +7,17 @@ class Config(object):
         self.name = name
         for key in data:
             value = data[key]
+            key = key.strip()
             if type(value) is dict:
                 self.__dict__[key] = Config(value)
             else:
                 self.__dict__[key] = value
+
+    def check(self, key):
+        result = False
+        if hasattr(self, key):
+            result = self.__dict__[key]
+        return result
 
     def get(self, key):
         result = None

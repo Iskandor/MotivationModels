@@ -67,9 +67,9 @@ class ExperimentDDPG:
         config = self._config
 
         states = None
-        if config.stats.generate_states:
+        if config.check('generate_states'):
             states = []
-        if config.stats.collect_stats:
+        if config.check('collect_stats'):
             states = torch.tensor(numpy.load('./{0:s}_states.npy'.format(self._env_name)), dtype=torch.float32)
 
         if config.load:
@@ -86,7 +86,7 @@ class ExperimentDDPG:
             bar = ProgressBar(config.episodes, max_width=40)
 
             for e in range(config.episodes):
-                if config.stats.collect_stats:
+                if config.check('collect_stats'):
                     actions, values = self.baseline_activations(agent, states)
                     action_list.append(actions)
                     value_list.append(values)
@@ -99,7 +99,7 @@ class ExperimentDDPG:
 
                 while not done:
                     train_steps += 1
-                    if config.stats.generate_states:
+                    if config.check('generate_states'):
                         states.append(state0.numpy())
                     action0 = exploration.explore(agent.get_action(state0))
                     next_state, reward, done, _ = self._env.step(action0.numpy())
@@ -117,10 +117,10 @@ class ExperimentDDPG:
             agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
             numpy.save('ddpg_{0}_{1}_{2:d}_re'.format(config.name, config.model, trial), test_ext_rewards)
 
-            if config.stats.generate_states:
+            if config.check('generate_states'):
                 self.generate_states(states)
 
-            if config.stats.collect_stats:
+            if config.check('collect_stats'):
                 action_list = torch.stack(action_list)
                 value_list = torch.stack(value_list)
 
@@ -132,9 +132,9 @@ class ExperimentDDPG:
         forward_model = agent.get_motivation_module()
 
         states = None
-        if config.stats.generate_states:
+        if config.check('generate_states'):
             states = []
-        if config.stats.collect_stats:
+        if config.check('collect_stats'):
             states = torch.tensor(numpy.load('./{0:s}_states.npy'.format(self._env_name)), dtype=torch.float32)
 
         if config.load:
@@ -156,7 +156,7 @@ class ExperimentDDPG:
             bar = ProgressBar(config.episodes, max_width=40)
 
             for e in range(config.episodes):
-                if config.stats.collect_stats:
+                if config.check('collect_stats'):
                     actions, values, fm_errors, rewards = self.fm_activations(self._env, agent, forward_model, states)
                     action_list.append(actions)
                     value_list.append(values)
@@ -172,7 +172,7 @@ class ExperimentDDPG:
 
                 while not done:
                     train_steps += 1
-                    if config.stats.generate_states:
+                    if config.check('generate_states'):
                         states.append(state0.numpy())
                     action0 = exploration.explore(agent.get_action(state0))
                     next_state, reward, done, _ = self._env.step(action0.numpy())
@@ -201,10 +201,10 @@ class ExperimentDDPG:
             numpy.save('ddpg_{0}_{1}_{2:d}_ri'.format(config.name, config.model, trial), test_int_rewards)
             numpy.save('ddpg_{0}_{1}_{2:d}_fme'.format(config.name, config.model, trial), fm_train_errors)
 
-            if config.stats.generate_states:
+            if config.check('generate_states'):
                 self.generate_states(states)
 
-            if config.stats.collect_stats:
+            if config.check('collect_stats'):
                 action_list = torch.stack(action_list)
                 value_list = torch.stack(value_list)
                 fm_error_list = torch.stack(fm_error_list)
@@ -221,9 +221,9 @@ class ExperimentDDPG:
         forward_model = metacritic.get_forward_model()
 
         states = None
-        if config.stats.generate_states:
+        if config.check('generate_states'):
             states = []
-        if config.stats.collect_stats:
+        if config.check('collect_stats'):
             states = torch.tensor(numpy.load('./{0:s}_states.npy'.format(self._env_name)), dtype=torch.float32)
 
         if config.load:
@@ -249,7 +249,7 @@ class ExperimentDDPG:
             bar = ProgressBar(config.episodes, max_width=40)
 
             for e in range(config.episodes):
-                if config.stats.collect_stats:
+                if config.check('collect_stats'):
                     actions, values, fm_errors, mc_errors, rewards = self.su_activations(self._env, agent, forward_model, metacritic, states)
                     action_list.append(actions)
                     value_list.append(values)
@@ -266,7 +266,7 @@ class ExperimentDDPG:
 
                 while not done:
                     train_steps += 1
-                    if config.stats.generate_states:
+                    if config.check('generate_states'):
                         states.append(state0.numpy())
                     action0 = exploration.explore(agent.get_action(state0))
                     next_state, reward, done, _ = self._env.step(action0.numpy())
@@ -303,10 +303,10 @@ class ExperimentDDPG:
             numpy.save('ddpg_{0}_{1}_{2:d}_fme'.format(config.name, config.model, trial), fm_train_errors)
             numpy.save('ddpg_{0}_{1}_{2:d}_mce'.format(config.name, config.model, trial), mc_train_errors)
 
-            if config.stats.generate_states:
+            if config.check('generate_states'):
                 self.generate_states(states)
 
-            if config.stats.collect_stats:
+            if config.check('collect_stats'):
                 action_list = torch.stack(action_list)
                 value_list = torch.stack(value_list)
                 fm_error_list = torch.stack(fm_error_list)
@@ -327,9 +327,9 @@ class ExperimentDDPG:
         #env.render()
 
         states = None
-        if config.stats.generate_states:
+        if config.check('generate_states'):
             states = []
-        if config.stats.collect_stats:
+        if config.check('collect_stats'):
             states = torch.tensor(numpy.load('./{0:s}_states.npy'.format(self._env_name)), dtype=torch.float32)
 
         if config.load:
@@ -355,7 +355,7 @@ class ExperimentDDPG:
             bar = ProgressBar(config.episodes, max_width=40)
 
             for e in range(config.episodes):
-                if config.stats.collect_stats:
+                if config.check('collect_stats'):
                     actions, values, fm_errors, mc_errors, rewards = self.su_activations(self._env, agent, forward_model, metacritic, states)
                     action_list.append(actions)
                     value_list.append(values)
@@ -374,7 +374,7 @@ class ExperimentDDPG:
                 t0 = time.perf_counter()
                 while not done:
                     train_steps += 1
-                    if config.stats.generate_states:
+                    if config.check('generate_states'):
                         states.append(state0.numpy())
                     next_state, reward, done, _ = self._env.step(action0.numpy())
                     train_ext_reward += reward
@@ -414,10 +414,10 @@ class ExperimentDDPG:
             numpy.save('ddpg_{0}_{1}_{2:d}_fme'.format(config.name, config.model, trial), fm_train_errors)
             numpy.save('ddpg_{0}_{1}_{2:d}_mce'.format(config.name, config.model, trial), mc_train_errors)
 
-            if config.stats.generate_states:
+            if config.check('generate_states'):
                 self.generate_states(states)
 
-            if config.stats.collect_stats:
+            if config.check('collect_stats'):
                 action_list = torch.stack(action_list)
                 value_list = torch.stack(value_list)
                 fm_error_list = torch.stack(fm_error_list)
