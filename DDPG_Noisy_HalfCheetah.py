@@ -25,9 +25,9 @@ class Critic(DDPGCritic):
 
     def forward(self, state, action):
         x = state
-        x = torch.relu(self._hidden0(x))
+        x = torch.tanh(self._hidden0(x))
         x = torch.cat([x, action], 1)
-        x = torch.relu(self._hidden1(x))
+        x = torch.tanh(self._hidden1(x))
         value = self._output(x)
         return value
 
@@ -49,8 +49,8 @@ class Actor(DDPGActor):
 
     def forward(self, state):
         x = state
-        x = torch.relu(self._hidden0(x))
-        x = torch.relu(self._hidden1(x))
+        x = torch.tanh(self._hidden0(x))
+        x = torch.tanh(self._hidden1(x))
         policy = torch.tanh(self._output(x))
         return policy
 
@@ -191,21 +191,6 @@ def run_forward_model(config):
         experiment.run_forward_model(agent, i)
 
     env.close()
-
-
-def run_surprise_model(args):
-    args.actor_lr = 1e-4
-    args.critic_lr = 2e-4
-    args.gamma = 0.99
-    args.tau = 1e-3
-    args.forward_model_lr = 1e-3
-    args.metacritic_lr = 2e-3
-    args.eta = 1
-    args.metacritic_variant = 'C'
-
-    experiment = ExperimentNoisyDDPG('HalfCheetahBulletEnv-v0', Actor, Critic)
-    experiment.run_metalearner_model(args)
-
 
 def run_metalearner_model(config):
     env = gym.make('HalfCheetahBulletEnv-v0')
