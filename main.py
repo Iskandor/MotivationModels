@@ -14,10 +14,13 @@ import DDPG_MountainCar
 import DDPG_Noisy_AerisTargetNavigate
 import DDPG_Noisy_Ant
 import DDPG_Noisy_HalfCheetah
+import DDPG_Noisy_Hopper
+import DDPG_Noisy_LunarLander
 import DDPG_Noisy_Reacher
 import PPO_CartPole
 import PPO_QBert
 import PPO_Solaris
+import PPO_Zelda
 from utils.Config import Config
 
 if __name__ == '__main__':
@@ -68,21 +71,15 @@ if __name__ == '__main__':
         if experiment.model == 'fm':
             pass
             # DDPG_FetchReach.run_forward_model(int(args.trials), int(args.episodes), int(args.batch_size), int(args.memory_size))
-    if args.env == 'go':
-        pass
-        #PPO_Go.run_baseline(int(args.trials), int(args.episodes), int(args.batch_size), int(args.memory_size))
-    if args.env == 'chess':
-        pass
-        #PPO_Chess.run_baseline(int(args.trials), int(args.episodes))
     if args.env == 'lunar_lander':
         if experiment.model == 'baseline':
-            DDPG_LunarLander.run_baseline(experiment)
+            DDPG_Noisy_LunarLander.run_baseline(experiment)
         if experiment.model == 'fm':
-            DDPG_LunarLander.run_forward_model(experiment)
+            DDPG_Noisy_LunarLander.run_forward_model(experiment)
         if experiment.model == 's':
-            DDPG_LunarLander.run_metalearner_model(experiment)
+            DDPG_Noisy_LunarLander.run_metalearner_model(experiment)
         if experiment.model == 'su':
-            DDPG_LunarLander.run_metalearner_model(experiment)
+            DDPG_Noisy_LunarLander.run_metalearner_model(experiment)
     if args.env == 'pong':
         if args.model == 'baseline':
             pass
@@ -97,6 +94,15 @@ if __name__ == '__main__':
             DDPG_Noisy_HalfCheetah.run_metalearner_model(experiment)
         if experiment.model == 'm3':
             DDPG_Noisy_HalfCheetah.run_m3_model(experiment)
+    if args.env == 'hopper':
+        if experiment.model == 'baseline':
+            DDPG_Noisy_Hopper.run_baseline(experiment)
+        if experiment.model == 'fm':
+            DDPG_Noisy_Hopper.run_forward_model(experiment)
+        if experiment.model == 's':
+            DDPG_Noisy_Hopper.run_metalearner_model(experiment)
+        if experiment.model == 'su':
+            DDPG_Noisy_Hopper.run_metalearner_model(experiment)
     if args.env == 'ant':
         if experiment.model == 'baseline':
             DDPG_Noisy_Ant.run_baseline(experiment)
@@ -120,6 +126,10 @@ if __name__ == '__main__':
             DDPG_Noisy_AerisTargetNavigate.run_forward_model(experiment)
         if experiment.model == 'su':
             DDPG_Noisy_AerisTargetNavigate.run_metalearner_model(experiment)
+
+    if args.env == 'zelda':
+        if experiment.model == 'baseline':
+            PPO_Zelda.run_baseline(experiment)
 
     # DQN_FrozenLake.run()
     # DQN_CartPole.run()
