@@ -62,6 +62,7 @@ class ExperimentNoisyDDPG:
 
     def run_baseline(self, agent, trial):
         config = self._config
+        trial = trial + config.shift
         step_limit = int(config.steps * 1e6)
         steps = 0
 
@@ -134,6 +135,7 @@ class ExperimentNoisyDDPG:
 
     def run_forward_model(self, agent, trial):
         config = self._config
+        trial = trial + config.shift
         forward_model = agent.get_motivation_module()
 
         step_limit = int(config.steps * 1e6)
@@ -221,6 +223,7 @@ class ExperimentNoisyDDPG:
 
     def run_metalearner_model(self, agent, trial):
         config = self._config
+        trial = trial + config.shift
         metacritic = agent.get_motivation_module()
         forward_model = metacritic.get_forward_model()
 

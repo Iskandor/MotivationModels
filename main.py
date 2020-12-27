@@ -30,6 +30,8 @@ if __name__ == '__main__':
 
     parser.add_argument('--env', type=str, help='environment name')
     parser.add_argument('--config', type=int, help='id of config')
+    parser.add_argument('--device', type=str, help='device type', default='cpu')
+    parser.add_argument('-s', '--shift', type=int, help='shift result id', default=0)
 
     args = parser.parse_args()
 
@@ -37,6 +39,8 @@ if __name__ == '__main__':
         config = json.load(f)
 
     experiment = Config(config[args.env][str(args.config)], "{0}_{1}".format(args.env, str(args.config)))
+    experiment.device = args.device
+    experiment.shift = args.shift
 
     if args.env == "solaris":
 
@@ -46,8 +50,8 @@ if __name__ == '__main__':
             PPO_Solaris.run_icm(experiment)
     if args.env == "qbert":
         if experiment.model == 'baseline':
-            A2C_QBert.run_baseline(experiment)
-            # PPO_QBert.run_baseline(experiment)
+            # A2C_QBert.run_baseline(experiment)
+            PPO_QBert.run_baseline(experiment)
         if experiment.model == 'fm':
             PPO_QBert.run_icm(experiment)
     if args.env == "breakout":

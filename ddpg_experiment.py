@@ -65,6 +65,7 @@ class ExperimentDDPG:
 
     def run_baseline(self, agent, trial):
         config = self._config
+        trial = trial + config.shift
 
         states = None
         if config.check('generate_states'):
@@ -129,6 +130,7 @@ class ExperimentDDPG:
 
     def run_forward_model(self, agent, trial):
         config = self._config
+        trial = trial + config.shift
         forward_model = agent.get_motivation_module()
 
         states = None
@@ -217,6 +219,7 @@ class ExperimentDDPG:
 
     def run_metalearner_model(self, agent, trial):
         config = self._config
+        trial = trial + config.shift
         metacritic = agent.get_motivation_module()
         forward_model = metacritic.get_forward_model()
 

@@ -49,7 +49,7 @@ def run_baseline(config):
 
     for i in range(config.trials):
         network = PPONetwork(state_dim, action_dim, config)
-        agent = PPO(network, config.lr, config.actor.loss_weight, config.critic.loss_weight, config.batch_size, config.trajectory_size, config.beta, config.gamma)
+        agent = PPO(network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size, config.beta, config.gamma)
         experiment.run_baseline(agent, i)
 
     env.close()

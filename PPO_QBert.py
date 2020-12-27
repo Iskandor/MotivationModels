@@ -109,16 +109,21 @@ class ICMNetwork(torch.nn.Module):
         return action
 
 
+def encode_state(state):
+    return torch.tensor(state, dtype=torch.float32).unsqueeze(0)
+
+
 def run_baseline(config):
     env = AtariWrapper(gym.make('Qbert-v0'))
     state_dim = 4
     action_dim = env.action_space.n
 
     experiment = ExperimentPPO('Qbert-v0', env, config)
+    experiment.add_preprocess(encode_state)
 
     for i in range(config.trials):
         network = PPONetwork(state_dim, action_dim, config).to(config.device)
-        agent = PPO(network, config.lr, config.actor.loss_weight, config.critic.loss_weight, config.batch_size, config.trajectory_size, config.beta, config.gamma, device=config.device)
+        agent = PPO(network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size, config.beta, config.gamma, device=config.device)
         experiment.run_baseline(agent, i)
 
     env.close()
@@ -132,13 +137,14 @@ def run_icm(config):
     config.action_dim = action_dim
 
     experiment = ExperimentPPO('Qbert-v0', env, config)
+    experiment.add_preprocess(encode_state)
 
     for i in range(config.trials):
         network = PPONetwork(state_dim, action_dim, config).to(config.device)
         icm_network = ICMNetwork(network.feature, network.feature_dim, action_dim, config).to(config.device)
         network.add_module('icm', icm_network)
         icm = ICM(icm_network, config.forward_model.beta, config.forward_model_eta)
-        agent = PPO(network, config.lr, config.actor.loss_weight, config.critic.loss_weight, config.batch_size, config.trajectory_size, config.beta, config.gamma, device=config.device)
+        agent = PPO(network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size, config.beta, config.gamma, device=config.device)
         agent.add_motivation(icm)
         experiment.run_icm(agent, i)
 
