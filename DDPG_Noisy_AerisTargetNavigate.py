@@ -13,49 +13,54 @@ from motivation.MateLearnerMotivation import MetaLearnerModel, MetaLearnerMotiva
 
 
 class Critic(DDPGCritic):
-    def __init__(self, state_dim, action_dim, config):
-        super(Critic, self).__init__(state_dim, action_dim)
+    def __init__(self, input_shape, action_dim, config):
+        super(Critic, self).__init__(input_shape, action_dim)
 
-        self._hidden0 = nn.Linear(state_dim, config.critic_h1)
-        self._hidden1 = nn.Linear(config.critic_h1 + action_dim, config.critic_h2)
-        self._output = nn.Linear(config.critic_h2, 1)
+        self.channels = input_shape[0]
+        self.width = input_shape[1]
 
-        self.init()
+        fc_count = config.critic_kernels_count * self.width // 4
+
+        self._network = nn.Sequential(
+            nn.Conv1d(self.channels + action_dim, config.critic_kernels_count, kernel_size=8, stride=4, padding=2),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(fc_count, config.critic_h1),
+            nn.ReLU(),
+            nn.Linear(config.critic_h1, 1))
 
     def forward(self, state, action):
-        x = state
-        x = torch.relu(self._hidden0(x))
-        x = torch.cat([x, action], 1)
-        x = torch.relu(self._hidden1(x))
-        value = self._output(x)
+        a = action.unsqueeze(2).repeat(1, 1, state.shape[2])
+        x = torch.cat([state, a], dim=1)
+        value = self._network(x)
         return value
-
-    def init(self):
-        nn.init.xavier_uniform_(self._hidden0.weight)
-        nn.init.xavier_uniform_(self._hidden1.weight)
-        nn.init.uniform_(self._output.weight, -3e-3, 3e-3)
 
 
 class Actor(DDPGActor):
-    def __init__(self, state_dim, action_dim, config):
-        super(Actor, self).__init__(state_dim, action_dim)
+    def __init__(self, input_shape, action_dim, config):
+        super(Actor, self).__init__(input_shape, action_dim)
 
-        self._hidden0 = nn.Linear(state_dim, config.actor_h1)
-        self._hidden1 = nn.Linear(config.actor_h1, config.actor_h2)
-        self._output = NoisyLinear(config.actor_h2, action_dim)
+        self.channels = input_shape[0]
+        self.width = input_shape[1]
 
-        self.init()
+        fc_count = config.actor_kernels_count * self.width // 4
+
+        self._network = nn.Sequential(
+            nn.Conv1d(self.channels, config.actor_kernels_count, kernel_size=8, stride=4, padding=2),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(fc_count, config.actor_h1),
+            nn.ReLU(),
+            NoisyLinear(config.actor_h1, action_dim),
+            nn.Tanh())
 
     def forward(self, state):
-        x = state
-        x = torch.relu(self._hidden0(x))
-        x = torch.relu(self._hidden1(x))
-        policy = torch.tanh(self._output(x))
+        if state.ndim == 2:
+            state = state.unsqueeze(0)
+            policy = self._network(state).squeeze(0)
+        else:
+            policy = self._network(state)
         return policy
-
-    def init(self):
-        nn.init.xavier_uniform_(self._hidden0.weight)
-        nn.init.xavier_uniform_(self._hidden1.weight)
 
 
 class ForwardModelNetwork(ForwardModel):
@@ -104,62 +109,12 @@ class MetaLearnerNetwork(MetaLearnerModel):
         nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
 
 
-class M3Gate(nn.Module):
-    def __init__(self, state_dim, im_dim, config):
-        super(M3Gate, self).__init__()
-
-        self._hidden0 = nn.Linear(state_dim, config.m3gate.h1)
-        self._hidden1 = nn.Linear(config.m3gate.h1, config.m3gate.h2)
-        self._output = nn.Linear(config.m3gate.h2, im_dim)
-
-        self.init()
-
-    def forward(self, state):
-        x = state
-        x = torch.relu(self._hidden0(x))
-        x = torch.relu(self._hidden1(x))
-        value = self._output(x)
-        return value
-
-    def init(self):
-        nn.init.xavier_uniform_(self._hidden0.weight)
-        nn.init.xavier_uniform_(self._hidden1.weight)
-        nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
-
-
-class M3Critic(nn.Module):
-    def __init__(self, state_dim, im_dim, config):
-        super(M3Critic, self).__init__()
-        self._hidden0 = nn.Linear(state_dim, config.m3critic_h1)
-        self._hidden1 = nn.Linear(config.m3critic_h1 + im_dim, config.m3critic_h2)
-        self._output = nn.Linear(config.m3critic_h2, 1)
-        self.init()
-
-    def forward(self, state, action):
-        x = state
-        x = torch.relu(self._hidden0(x))
-        x = torch.cat([x, action], dim=-1)
-        x = torch.relu(self._hidden1(x))
-        value = self._output(x)
-        return value
-
-    def init(self):
-        nn.init.xavier_uniform_(self._hidden0.weight)
-        nn.init.xavier_uniform_(self._hidden1.weight)
-        nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
-
-
-def encode_state(state):
-    return torch.tensor(state, dtype=torch.float32).flatten()
-
-
 def run_baseline(config):
     env = gym.make('TargetNavigate-v0')
-    state_dim = env.observation_space.shape[0] * env.observation_space.shape[1]
+    state_dim = env.observation_space.shape
     action_dim = env.action_space.shape[0]
 
     experiment = ExperimentNoisyDDPG('TargetNavigate-v0', env, config)
-    experiment.add_preprocess(encode_state)
 
     for i in range(config.trials):
         actor = Actor(state_dim, action_dim, config)
@@ -233,44 +188,5 @@ def run_metalearner_model(config):
         agent.add_motivation_module(metacritic)
 
         experiment.run_metalearner_model(agent, i)
-
-    env.close()
-
-
-def run_m3_model(config):
-    env = gym.make('TargetNavigate-v0')
-    state_dim = env.observation_space.shape[0]
-    action_dim = env.action_space.shape[0]
-
-    experiment = ExperimentNoisyDDPG('TargetNavigate-v0', env, config)
-
-    for i in range(config.trials):
-        actor = Actor(state_dim, action_dim, config)
-        critic = Critic(state_dim, action_dim, config)
-        agent_memory = ExperienceReplayBuffer(config.memory_size)
-        m3_memory = ExperienceReplayBuffer(config.memory_size)
-
-        agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, agent_memory, config.batch_size)
-
-        if hasattr(config, 'forward_model_batch_size'):
-            forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
-                                                   agent_memory, config.forward_model_batch_size)
-        else:
-            forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta)
-
-        if hasattr(config, 'metacritic_batch_size'):
-            metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic_lr,
-                                               config.metacritic_variant, config.metacritic_eta, agent_memory, config.metacritic_batch_size)
-        else:
-            metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic_lr,
-                                               config.metacritic_variant, config.metacritic_eta)
-
-        m3gate = M3Gate(state_dim * 2, 4, config)
-        m3critic = M3Critic(state_dim * 2, 4, config)
-        m3module = M3Motivation(m3gate, m3critic, config.m3gate.lr, config.m3critic_lr, config.gamma, config.tau, m3_memory, config.batch_size, forward_model,
-                                metacritic)
-        agent.add_motivation_module(m3module)
-
-        experiment.run_m3_model(agent, i)
 
     env.close()
