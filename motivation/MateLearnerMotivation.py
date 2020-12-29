@@ -22,7 +22,7 @@ class MetaLearnerMotivation:
         self._sample_size = sample_size
         self._variant = variant
         self._eta = eta
-        # self._sigma = state_dim * 0.005
+        self._sigma = state_dim * 0.005
 
         if self._variant == 'E':
             self._window = window
