@@ -92,12 +92,15 @@ if __name__ == '__main__':
             DDPG_Noisy_HalfCheetah.run_baseline(experiment)
         if experiment.model == 'fm':
             DDPG_Noisy_HalfCheetah.run_forward_model(experiment)
+        if experiment.model == 'vfm':
+            DDPG_Noisy_HalfCheetah.run_vae_forward_model(experiment)
         if experiment.model == 's':
             DDPG_Noisy_HalfCheetah.run_metalearner_model(experiment)
         if experiment.model == 'su':
             DDPG_Noisy_HalfCheetah.run_metalearner_model(experiment)
         if experiment.model == 'm3':
-            DDPG_Noisy_HalfCheetah.run_m3_model(experiment)
+            pass
+            # DDPG_Noisy_HalfCheetah.run_m3_model(experiment)
     if args.env == 'hopper':
         if experiment.model == 'baseline':
             DDPG_Noisy_Hopper.run_baseline(experiment)

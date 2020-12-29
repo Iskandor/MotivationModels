@@ -8,9 +8,11 @@ from algorithms.DDPG import DDPGCritic, DDPGActor, DDPG
 from algorithms.ReplayBuffer import ExperienceReplayBuffer
 from ddpg_noisy_experiment import ExperimentNoisyDDPG
 from modules.NoisyLinear import NoisyLinear
+from modules.VAE import VAE
 from motivation.ForwardModelMotivation import ForwardModel, ForwardModelMotivation
 from motivation.M3Motivation import M3Motivation
 from motivation.MateLearnerMotivation import MetaLearnerModel, MetaLearnerMotivation
+from motivation.VAE_ForwardModelMotivation import VAE_ForwardModelMotivation
 
 
 class Critic(DDPGCritic):
@@ -81,6 +83,32 @@ class ForwardModelNetwork(ForwardModel):
         return value
 
 
+class VAE_ForwardModelNetwork(ForwardModel):
+    def __init__(self, state_dim, action_dim, config):
+        super(VAE_ForwardModelNetwork, self).__init__(state_dim, action_dim, config)
+
+        self.vae = VAE(state_dim, action_dim)
+
+        self._model = Sequential(
+            Linear(in_features=action_dim + action_dim, out_features=config.forward_model_h1, bias=True),
+            Tanh(),
+            Linear(in_features=config.forward_model_h1, out_features=config.forward_model_h1, bias=True),
+            Tanh(),
+            Linear(in_features=config.forward_model_h1, out_features=config.forward_model_h2, bias=True),
+            Tanh(),
+            Linear(in_features=config.forward_model_h2, out_features=config.forward_model_h2, bias=True),
+            Tanh(),
+            Linear(in_features=config.forward_model_h2, out_features=action_dim, bias=True)
+        )
+
+    def forward(self, state, action):
+        mu, logvar = self.vae.encode(state)
+        z = self.vae.reparameterize(mu, logvar)
+        x = torch.cat([z, action], state.ndim - 1)
+        value = self._model(x)
+        return value
+
+
 class MetaLearnerNetwork(MetaLearnerModel):
     def __init__(self, state_dim, action_dim, config):
         super(MetaLearnerNetwork, self).__init__(state_dim, action_dim, config)
@@ -100,52 +128,6 @@ class MetaLearnerNetwork(MetaLearnerModel):
         x = torch.cat([state, action], state.ndim - 1)
         value = self._model(x)
         return value
-
-
-class M3Gate(nn.Module):
-    def __init__(self, state_dim, im_dim, config):
-        super(M3Gate, self).__init__()
-
-        self._hidden0 = nn.Linear(state_dim, config.m3gate.h1)
-        self._hidden1 = nn.Linear(config.m3gate.h1, config.m3gate.h2)
-        self._output = nn.Linear(config.m3gate.h2, im_dim)
-
-        self.init()
-
-    def forward(self, state):
-        x = state
-        x = torch.relu(self._hidden0(x))
-        x = torch.relu(self._hidden1(x))
-        value = self._output(x)
-        return value
-
-    def init(self):
-        nn.init.xavier_uniform_(self._hidden0.weight)
-        nn.init.xavier_uniform_(self._hidden1.weight)
-        nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
-
-
-class M3Critic(nn.Module):
-    def __init__(self, state_dim, im_dim, config):
-        super(M3Critic, self).__init__()
-        self._hidden0 = nn.Linear(state_dim, config.m3critic_h1)
-        self._hidden1 = nn.Linear(config.m3critic_h1 + im_dim, config.m3critic_h2)
-        self._output = nn.Linear(config.m3critic_h2, 1)
-        self.init()
-
-    def forward(self, state, action):
-        x = state
-        x = torch.relu(self._hidden0(x))
-        x = torch.cat([x, action], dim=-1)
-        x = torch.relu(self._hidden1(x))
-        value = self._output(x)
-        return value
-
-    def init(self):
-        nn.init.xavier_uniform_(self._hidden0.weight)
-        nn.init.xavier_uniform_(self._hidden1.weight)
-        nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
-
 
 def run_baseline(config):
     env = gym.make('HalfCheetahBulletEnv-v0')
@@ -229,7 +211,7 @@ def run_metalearner_model(config):
     env.close()
 
 
-def run_m3_model(config):
+def run_vae_forward_model(config):
     env = gym.make('HalfCheetahBulletEnv-v0')
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
@@ -239,29 +221,14 @@ def run_m3_model(config):
     for i in range(config.trials):
         actor = Actor(state_dim, action_dim, config)
         critic = Critic(state_dim, action_dim, config)
-        agent_memory = ExperienceReplayBuffer(config.memory_size)
-        m3_memory = ExperienceReplayBuffer(config.memory_size)
+        memory = ExperienceReplayBuffer(config.memory_size)
 
-        agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, agent_memory, config.batch_size)
+        agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)
 
-        if hasattr(config, 'forward_model_batch_size'):
-            forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
-                                                   agent_memory, config.forward_model_batch_size)
-        else:
-            forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta)
+        forward_model = VAE_ForwardModelMotivation(VAE_ForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
+                                                   memory, config.forward_model_batch_size)
+        agent.add_motivation_module(forward_model)
 
-        if hasattr(config, 'metacritic_batch_size'):
-            metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic_lr,
-                                               config.metacritic_variant, config.metacritic_eta, agent_memory, config.metacritic_batch_size)
-        else:
-            metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic_lr,
-                                               config.metacritic_variant, config.metacritic_eta)
-
-        m3gate = M3Gate(state_dim * 2, 4, config)
-        m3critic = M3Critic(state_dim * 2, 4, config)
-        m3module = M3Motivation(m3gate, m3critic, config.m3gate.lr, config.m3critic_lr, config.gamma, config.tau, m3_memory, config.batch_size, forward_model, metacritic)
-        agent.add_motivation_module(m3module)
-
-        experiment.run_m3_model(agent, i)
+        experiment.run_vae_forward_model(agent, i)
 
     env.close()
