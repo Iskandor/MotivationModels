@@ -93,7 +93,8 @@ class MetaLearnerNetwork(MetaLearnerModel):
             Tanh(),
             Linear(in_features=config.metacritic_h2, out_features=config.metacritic_h2, bias=True),
             Tanh(),
-            Linear(in_features=config.metacritic_h2, out_features=1, bias=True)
+            Linear(in_features=config.metacritic_h2, out_features=1, bias=True),
+            ReLU()
         )
 
     def forward(self, state, action):

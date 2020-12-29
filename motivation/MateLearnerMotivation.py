@@ -22,7 +22,7 @@ class MetaLearnerMotivation:
         self._sample_size = sample_size
         self._variant = variant
         self._eta = eta
-        self._sigma = state_dim * 0.005
+        # self._sigma = state_dim * 0.005
 
         if self._variant == 'E':
             self._window = window
@@ -67,7 +67,7 @@ class MetaLearnerMotivation:
         return self._error_buffer.mean()
 
     def reward(self, state0, action, state1):
-        # sigma = 1e-2
+        self._sigma = 1e-2
         k = 1
 
         if self._variant == 'E':
