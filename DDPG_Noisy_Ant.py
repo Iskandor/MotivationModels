@@ -94,7 +94,7 @@ class MetaLearnerNetwork(MetaLearnerModel):
             Linear(in_features=config.metacritic_h2, out_features=config.metacritic_h2, bias=True),
             Tanh(),
             Linear(in_features=config.metacritic_h2, out_features=1, bias=True),
-            ReLU()
+            LeakyReLU()
         )
 
     def forward(self, state, action):

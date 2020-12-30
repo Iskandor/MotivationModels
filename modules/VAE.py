@@ -47,14 +47,12 @@ class VAE(nn.Module):
         return self._decoder(z)
 
     def forward(self, x):
-        mu, logvar = self.encode(x.view(-1, self._state_space_dim))
+        mu, logvar = self.encode(x)
         z = self.reparameterize(mu, logvar)
         return self.decode(z), mu, logvar
 
     def loss_function(self, x):
-        mu, logvar = self.encode(x)
-        recon_x = self.decode(self.reparameterize(mu, logvar))
-
+        recon_x, mu, logvar = self(x)
         BCE = functional.mse_loss(recon_x, x)
         KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
 

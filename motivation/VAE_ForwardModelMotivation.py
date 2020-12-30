@@ -20,7 +20,7 @@ class VAE_ForwardModelMotivation:
                 actions = torch.stack(sample.action)
 
                 self._optimizer.zero_grad()
-                loss = self.error(states, actions, next_states).mean() + self._network.vae.loss_function(states) * 10
+                loss = self.error(states, actions, next_states).mean() + self._network.vae.loss_function(states) * 2
                 loss.backward()
                 self._optimizer.step()
 
@@ -29,7 +29,7 @@ class VAE_ForwardModelMotivation:
         mu, logvar = self._network.vae.encode(state1)
         target = self._network.vae.reparameterize(mu, logvar)
         dim = len(prediction.shape) - 1
-        error = torch.mean(torch.pow(prediction - target, 2), dim=dim).unsqueeze(dim)
+        error = torch.mean(torch.pow(prediction - target.detach(), 2), dim=dim).unsqueeze(dim)
 
         return error
 
