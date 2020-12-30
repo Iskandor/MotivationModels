@@ -86,13 +86,13 @@ class MetaLearnerNetwork(MetaLearnerModel):
         super(MetaLearnerNetwork, self).__init__(state_dim, action_dim, config)
         self._model = Sequential(
             Linear(in_features=state_dim + action_dim, out_features=config.metacritic_h1, bias=True),
-            Tanh(),
+            LeakyReLU(),
             Linear(in_features=config.metacritic_h1, out_features=config.metacritic_h1, bias=True),
-            Tanh(),
+            LeakyReLU(),
             Linear(in_features=config.metacritic_h1, out_features=config.metacritic_h2, bias=True),
-            Tanh(),
+            LeakyReLU(),
             Linear(in_features=config.metacritic_h2, out_features=config.metacritic_h2, bias=True),
-            Tanh(),
+            LeakyReLU(),
             Linear(in_features=config.metacritic_h2, out_features=1, bias=True),
             LeakyReLU()
         )
