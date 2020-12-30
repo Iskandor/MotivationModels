@@ -113,15 +113,16 @@ class MetaLearnerNetwork(MetaLearnerModel):
     def __init__(self, state_dim, action_dim, config):
         super(MetaLearnerNetwork, self).__init__(state_dim, action_dim, config)
         self._model = Sequential(
-            Linear(in_features=state_dim + action_dim, out_features=config.forward_model_h1, bias=True),
-            Tanh(),
-            Linear(in_features=config.forward_model_h1, out_features=config.forward_model_h1, bias=True),
-            Tanh(),
-            Linear(in_features=config.forward_model_h1, out_features=config.forward_model_h2, bias=True),
-            Tanh(),
-            Linear(in_features=config.forward_model_h2, out_features=config.forward_model_h2, bias=True),
-            Tanh(),
-            Linear(in_features=config.forward_model_h2, out_features=1, bias=True)
+            Linear(in_features=state_dim + action_dim, out_features=config.metacritic_h1, bias=True),
+            LeakyReLU(),
+            Linear(in_features=config.metacritic_h1, out_features=config.metacritic_h1, bias=True),
+            LeakyReLU(),
+            Linear(in_features=config.metacritic_h1, out_features=config.metacritic_h2, bias=True),
+            LeakyReLU(),
+            Linear(in_features=config.metacritic_h2, out_features=config.metacritic_h2, bias=True),
+            LeakyReLU(),
+            Linear(in_features=config.metacritic_h2, out_features=1, bias=True),
+            LeakyReLU()
         )
 
     def forward(self, state, action):

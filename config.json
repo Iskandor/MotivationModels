@@ -243,8 +243,8 @@
     "8": {
       "descriptor": "6 LeakyReLU FM",
       "model": "su",
-      "trials": 1,
-      "steps": 1,
+      "trials": 15,
+      "steps": 2,
       "gamma": 0.99,
       "tau ": 0.005,
       "batch_size": 64,
@@ -272,7 +272,7 @@
   "half_cheetah": {
     "1": {
       "model": "baseline",
-      "trials": 5,
+      "trials": 15,
       "steps": 2,
       "gamma": 0.99,
       "tau ": 0.005,
@@ -287,7 +287,7 @@
     },
     "2": {
       "model": "fm",
-      "trials": 5,
+      "trials": 15,
       "steps": 2,
       "gamma": 0.99,
       "tau ": 0.005,
@@ -308,7 +308,7 @@
     },
     "3": {
       "model": "su",
-      "trials": 5,
+      "trials": 15,
       "steps": 2,
       "gamma": 0.99,
       "tau ": 0.005,
@@ -327,8 +327,8 @@
       "forward_model_variant": "A",
       "forward_model_batch_size": 32,
       "metacritic_lr": 0.0002,
-      "metacritic_h1": 700,
-      "metacritic_h2": 350,
+      "metacritic_h1": 350,
+      "metacritic_h2": 175,
       "metacritic_eta": 1,
       "metacritic_variant": "A",
       "metacritic_batch_size": 32
