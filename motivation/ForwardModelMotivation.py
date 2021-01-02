@@ -53,11 +53,11 @@ class ForwardModelMotivation:
 
     def error(self, state0, action, state1):
         with torch.no_grad():
+            dim = len(state0.shape) - 1
             prediction = self._network(state0, action).detach()
-            dim = len(prediction.shape) - 1
-            error = torch.mean(torch.pow(prediction - state1, 2), dim=dim).unsqueeze(dim)
+            error = torch.mean(torch.pow(prediction - state1, 2), dim=dim).sum(dim=dim - 1)
 
-        return error
+        return error.unsqueeze(dim - 1)
 
     def mean_error(self):
         return self._error_buffer.mean()
