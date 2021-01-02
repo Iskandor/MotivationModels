@@ -60,7 +60,7 @@ def encode_state(state):
     return torch.cat((achieved_goal, desired_goal))
 
 
-def run_baseline(config):
+def run_baseline(config, i):
     env = gym.make('FetchReach-v1')
     state_dim = env.observation_space['achieved_goal'].shape[0] + env.observation_space['desired_goal'].shape[0]
     action_dim = env.action_space.shape[0]
@@ -68,11 +68,10 @@ def run_baseline(config):
     experiment = ExperimentNoisyDDPG('FetchReach-v1', env, config)
     experiment.add_preprocess(encode_state)
 
-    for i in range(config.trials):
-        actor = Actor(state_dim, action_dim, config)
-        critic = Critic(state_dim, action_dim, config)
-        memory = ExperienceReplayBuffer(config.memory_size)
-        agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)
-        experiment.run_baseline(agent, i)
+    actor = Actor(state_dim, action_dim, config)
+    critic = Critic(state_dim, action_dim, config)
+    memory = ExperienceReplayBuffer(config.memory_size)
+    agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)
+    experiment.run_baseline(agent, i)
 
     env.close()

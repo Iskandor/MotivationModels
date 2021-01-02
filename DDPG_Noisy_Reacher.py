@@ -147,122 +147,118 @@ class M3Critic(torch.nn.Module):
         torch.nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
 
 
-def run_baseline(config):
+def run_baseline(config, i):
     env = gym.make('ReacherBulletEnv-v0')
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
 
     experiment = ExperimentNoisyDDPG('ReacherBulletEnv-v0', env, config)
 
-    for i in range(config.trials):
-        actor = Actor(state_dim, action_dim, config)
-        critic = Critic(state_dim, action_dim, config)
-        memory = ExperienceReplayBuffer(config.memory_size)
-        agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)
-        experiment.run_baseline(agent, i)
+    actor = Actor(state_dim, action_dim, config)
+    critic = Critic(state_dim, action_dim, config)
+    memory = ExperienceReplayBuffer(config.memory_size)
+    agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)
+    experiment.run_baseline(agent, i)
 
     env.close()
 
 
-def run_forward_model(config):
+def run_forward_model(config, i):
     env = gym.make('ReacherBulletEnv-v0')
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
 
     experiment = ExperimentNoisyDDPG('ReacherBulletEnv-v0', env, config)
 
-    for i in range(config.trials):
-        actor = Actor(state_dim, action_dim, config)
-        critic = Critic(state_dim, action_dim, config)
-        memory = ExperienceReplayBuffer(config.memory_size)
+    actor = Actor(state_dim, action_dim, config)
+    critic = Critic(state_dim, action_dim, config)
+    memory = ExperienceReplayBuffer(config.memory_size)
 
-        agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)
+    agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)
 
-        if hasattr(config, 'forward_model_batch_size'):
-            forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
-                                                   config.forward_model_variant, env._max_episode_steps * 10,
-                                                   memory, config.forward_model_batch_size)
-        else:
-            forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
-                                                   config.forward_model_variant, env._max_episode_steps * 10)
+    if hasattr(config, 'forward_model_batch_size'):
+        forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
+                                               config.forward_model_variant, env._max_episode_steps * 10,
+                                               memory, config.forward_model_batch_size)
+    else:
+        forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
+                                               config.forward_model_variant, env._max_episode_steps * 10)
 
-        agent.add_motivation_module(forward_model)
+    agent.add_motivation_module(forward_model)
 
-        experiment.run_forward_model(agent, i)
+    experiment.run_forward_model(agent, i)
 
     env.close()
 
-def run_metalearner_model(config):
+def run_metalearner_model(config, i):
     env = gym.make('ReacherBulletEnv-v0')
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
 
     experiment = ExperimentNoisyDDPG('ReacherBulletEnv-v0', env, config)
 
-    for i in range(config.trials):
-        actor = Actor(state_dim, action_dim, config)
-        critic = Critic(state_dim, action_dim, config)
-        memory = ExperienceReplayBuffer(config.memory_size)
+    actor = Actor(state_dim, action_dim, config)
+    critic = Critic(state_dim, action_dim, config)
+    memory = ExperienceReplayBuffer(config.memory_size)
 
-        agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)
+    agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)
 
-        if hasattr(config, 'forward_model_batch_size'):
-            forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
-                                                   config.forward_model_variant, env._max_episode_steps * 10,
-                                                   memory, config.forward_model_batch_size)
-        else:
-            forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
-                                                   config.forward_model_variant, env._max_episode_steps * 10)
+    if hasattr(config, 'forward_model_batch_size'):
+        forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
+                                               config.forward_model_variant, env._max_episode_steps * 10,
+                                               memory, config.forward_model_batch_size)
+    else:
+        forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
+                                               config.forward_model_variant, env._max_episode_steps * 10)
 
-        if hasattr(config, 'metacritic_batch_size'):
-            metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic_lr, state_dim,
-                                               config.metacritic_variant, env._max_episode_steps * 10,
-                                               config.metacritic_eta, memory, config.metacritic_batch_size)
-        else:
-            metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic_lr, state_dim,
-                                               config.metacritic_variant, env._max_episode_steps * 10,
-                                               config.metacritic_eta)
+    if hasattr(config, 'metacritic_batch_size'):
+        metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic_lr, state_dim,
+                                           config.metacritic_variant, env._max_episode_steps * 10,
+                                           config.metacritic_eta, memory, config.metacritic_batch_size)
+    else:
+        metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic_lr, state_dim,
+                                           config.metacritic_variant, env._max_episode_steps * 10,
+                                           config.metacritic_eta)
 
-        agent.add_motivation_module(metacritic)
+    agent.add_motivation_module(metacritic)
 
-        experiment.run_metalearner_model(agent, i)
+    experiment.run_metalearner_model(agent, i)
 
     env.close()
 
 
-def run_m3_model(config):
+def run_m3_model(config, i):
     env = gym.make('ReacherBulletEnv-v0')
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
 
     experiment = ExperimentNoisyDDPG('ReacherBulletEnv-v0', env, config)
 
-    for i in range(config.trials):
-        actor = Actor(state_dim, action_dim, config)
-        critic = Critic(state_dim, action_dim, config)
-        agent_memory = ExperienceReplayBuffer(config.memory_size)
-        m3_memory = ExperienceReplayBuffer(config.memory_size)
+    actor = Actor(state_dim, action_dim, config)
+    critic = Critic(state_dim, action_dim, config)
+    agent_memory = ExperienceReplayBuffer(config.memory_size)
+    m3_memory = ExperienceReplayBuffer(config.memory_size)
 
-        agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, agent_memory, config.batch_size)
+    agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, agent_memory, config.batch_size)
 
-        if hasattr(config, 'forward_model_batch_size'):
-            forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
-                                                   agent_memory, config.forward_model_batch_size)
-        else:
-            forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta)
+    if hasattr(config, 'forward_model_batch_size'):
+        forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
+                                               agent_memory, config.forward_model_batch_size)
+    else:
+        forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta)
 
-        if hasattr(config, 'metacritic_batch_size'):
-            metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic_lr,
-                                               config.metacritic_variant, config.metacritic_eta, agent_memory, config.metacritic_batch_size)
-        else:
-            metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic_lr,
-                                               config.metacritic_variant, config.metacritic_eta)
+    if hasattr(config, 'metacritic_batch_size'):
+        metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic_lr,
+                                           config.metacritic_variant, config.metacritic_eta, agent_memory, config.metacritic_batch_size)
+    else:
+        metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic_lr,
+                                           config.metacritic_variant, config.metacritic_eta)
 
-        m3gate = M3Gate(state_dim * 2, 4, config)
-        m3critic = M3Critic(state_dim * 2, 4, config)
-        m3module = M3Motivation(m3gate, m3critic, config.m3gate.lr, config.m3critic_lr, config.gamma, config.tau, m3_memory, config.batch_size, forward_model, metacritic)
-        agent.add_motivation_module(m3module)
+    m3gate = M3Gate(state_dim * 2, 4, config)
+    m3critic = M3Critic(state_dim * 2, 4, config)
+    m3module = M3Motivation(m3gate, m3critic, config.m3gate.lr, config.m3critic_lr, config.gamma, config.tau, m3_memory, config.batch_size, forward_model, metacritic)
+    agent.add_motivation_module(m3module)
 
-        experiment.run_m3_model(agent, i)
+    experiment.run_m3_model(agent, i)
 
     env.close()

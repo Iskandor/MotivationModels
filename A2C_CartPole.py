@@ -41,17 +41,16 @@ class A2CNetwork(torch.nn.Module):
         return value
 
 
-def run_baseline(config):
+def run_baseline(config, i):
     env = gym.make('CartPole-v0')
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.n
 
     experiment = ExperimentA2C('CartPole-v0', env, config)
 
-    for i in range(config.trials):
-        network = A2CNetwork(state_dim, action_dim, config)
-        agent = A2C(network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.beta, config.gamma, config.batch_size)
-        experiment.run_baseline(agent, i)
+    network = A2CNetwork(state_dim, action_dim, config)
+    agent = A2C(network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.beta, config.gamma, config.batch_size)
+    experiment.run_baseline(agent, i)
 
     env.close()
 

@@ -1,4 +1,6 @@
 import abc
+import copy
+
 import torch
 from algorithms.ReplayBuffer import ExperienceReplayBuffer
 
@@ -14,11 +16,9 @@ class DQNCritic(torch.nn.Module):
 
 
 class DQN:
-    def __init__(self, critic_class, state_dim, action_dim, memory_size, sample_size, critic_lr, gamma, weight_decay=0):
-        self._state_dim = state_dim
-        self._action_dim = action_dim
-        self._critic = critic_class(state_dim, action_dim)
-        self._critic_target = critic_class(state_dim, action_dim)
+    def __init__(self, critic, memory_size, sample_size, critic_lr, gamma, weight_decay=0):
+        self._critic = critic
+        self._critic_target = copy.deepcopy(critic)
         self._memory = ExperienceReplayBuffer(memory_size)
         self._sample_size = sample_size
         self._gamma = gamma
