@@ -103,7 +103,7 @@ class VAE_ForwardModelNetwork(ForwardModel):
 
     def forward(self, state, action):
         mu, logvar = self.vae.encode(state)
-        z = self.vae.reparameterize(mu, logvar)
+        z = self.vae.reparameterize(mu, logvar).detach()
         x = torch.cat([z, action], state.ndim - 1)
         value = self._model(x) + z
         return value
