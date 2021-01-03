@@ -90,14 +90,17 @@ class ForwardModelNetwork(ForwardModel):
             nn.LeakyReLU(),
             nn.Conv1d(config.forward_model_kernels_count, config.forward_model_kernels_count, kernel_size=3, stride=1, padding=1),
             nn.LeakyReLU(),
-            nn.ConvTranspose1d(config.forward_model_kernels_count, self.channels, kernel_size=8, stride=4, padding=2, output_padding=0)
+            nn.ConvTranspose1d(config.forward_model_kernels_count, config.forward_model_kernels_count, kernel_size=8, stride=4, padding=2, output_padding=0),
+            nn.LeakyReLU(),
+            nn.Conv1d(config.forward_model_kernels_count, self.channels, kernel_size=3, stride=1, padding=1)
         ]
 
         nn.init.xavier_uniform_(self.layers[0].weight)
         nn.init.xavier_uniform_(self.layers[2].weight)
         nn.init.xavier_uniform_(self.layers[4].weight)
         nn.init.xavier_uniform_(self.layers[6].weight)
-        nn.init.uniform_(self.layers[8].weight, -0.3, 0.3)
+        nn.init.xavier_uniform_(self.layers[8].weight)
+        nn.init.uniform_(self.layers[10].weight, -0.3, 0.3)
 
         self._network = nn.Sequential(*self.layers)
 
