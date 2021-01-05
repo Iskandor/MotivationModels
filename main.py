@@ -10,8 +10,6 @@ import DDPG_FetchReach
 import DDPG_HalfCheetah
 import DDPG_LunarLander
 import DDPG_MountainCar
-# import PPO_Go
-# import PPO_Chess
 import DDPG_Noisy_AerisTargetNavigate
 import DDPG_Noisy_Ant
 import DDPG_Noisy_HalfCheetah
