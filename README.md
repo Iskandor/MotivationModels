@@ -4,17 +4,21 @@ Repository contains reinforcement learning agents (A2C,DQN,DDPG,PPO) and artific
 
 ### Motivation approaches
 ##### Prediction error motivation
-Model predicting next state
-![](https://raw.githubusercontent.com/Iskandor/MotivationModels/master/assets/fm.png | width=250)
-Model predicting the difference between consecutive states
-![](https://raw.githubusercontent.com/Iskandor/MotivationModels/master/assets/rfm.png | width=250)
+
+Model predicting next state:
+![](https://raw.githubusercontent.com/Iskandor/MotivationModels/master/assets/fm.png)
+
+Model predicting the difference between consecutive states:
+![](https://raw.githubusercontent.com/Iskandor/MotivationModels/master/assets/rfm.png)
 
 ##### Predictive surprise motivation
-![](https://raw.githubusercontent.com/Iskandor/MotivationModels/master/assets/mcg.png | width=250)
+![](https://raw.githubusercontent.com/Iskandor/MotivationModels/master/assets/mcg.png)
 
 ### Installation
 
 ```sh
+$ git clone https://github.com/Iskandor/MotivationModels.git
+$ cd MotivationModels
 $ pip install requirements.txt
 ```
 
