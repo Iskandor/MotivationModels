@@ -92,6 +92,7 @@
   "ant": {
     "1": {
       "model": "baseline",
+      "noisy": true,
       "trials": 15,
       "steps": 2,
       "gamma": 0.99,
@@ -107,6 +108,7 @@
     },
     "2": {
       "model": "fm",
+      "noisy": true,
       "trials": 15,
       "steps": 2,
       "gamma": 0.99,
@@ -129,6 +131,7 @@
     "3": {
       "descriptor": "ada_sigma",
       "model": "su",
+      "noisy": true,
       "trials": 10,
       "steps": 2,
       "gamma": 0.99,
@@ -156,6 +159,7 @@
     },
     "4": {
       "model": "fm",
+      "noisy": true,
       "trials": 5,
       "steps": 2,
       "gamma": 0.99,
@@ -178,6 +182,7 @@
     "5": {
       "descriptor": "const_sigma",
       "model": "su",
+      "noisy": true,
       "trials": 1,
       "steps": 2,
       "gamma": 0.99,
@@ -206,6 +211,7 @@
     "6": {
       "descriptor": "const_sigma",
       "model": "su",
+      "noisy": true,
       "trials": 1,
       "steps": 2,
       "gamma": 0.99,
@@ -234,6 +240,7 @@
     "7": {
       "descriptor": "6 LeakyReLU",
       "model": "su",
+      "noisy": true,
       "trials": 1,
       "steps": 1,
       "gamma": 0.99,
@@ -262,6 +269,7 @@
     "8": {
       "descriptor": "6 LeakyReLU FM",
       "model": "su",
+      "noisy": true,
       "trials": 15,
       "steps": 2,
       "gamma": 0.99,
@@ -419,6 +427,7 @@
   "hopper": {
     "1": {
       "model": "baseline",
+      "noisy": true,
       "trials": 15,
       "steps": 2,
       "gamma": 0.99,
@@ -434,6 +443,7 @@
     },
     "2": {
       "model": "fm",
+      "noisy": true,
       "trials": 15,
       "steps": 2,
       "gamma": 0.99,
@@ -455,6 +465,7 @@
     },
     "3": {
       "model": "su",
+      "noisy": true,
       "trials": 15,
       "steps": 2,
       "gamma": 0.99,
@@ -484,6 +495,7 @@
   "lunar_lander": {
     "1": {
       "model": "baseline",
+      "noisy": true,
       "trials": 15,
       "steps": 1,
       "gamma": 0.99,
@@ -499,6 +511,7 @@
     },
     "2": {
       "model": "fm",
+      "noisy": true,
       "trials": 15,
       "steps": 1,
       "gamma": 0.99,
@@ -520,6 +533,7 @@
     },
     "3": {
       "model": "su",
+      "noisy": true,
       "trials": 15,
       "steps": 1,
       "gamma": 0.99,
@@ -549,6 +563,7 @@
   "qbert": {
     "1": {
       "model": "baseline",
+      "noisy": true,
       "trials": 1,
       "steps": 10,
       "gamma": 0.99,
@@ -565,6 +580,7 @@
     },
     "2": {
       "model": "fm",
+      "noisy": true,
       "trials": 1,
       "steps": 10,
       "gamma": 0.99,
@@ -587,6 +603,7 @@
     },
     "3": {
       "model": "su",
+      "noisy": true,
       "trials": 1,
       "steps": 10,
       "gamma": 0.99,
@@ -617,6 +634,7 @@
   "reacher": {
     "1": {
       "model": "baseline",
+      "noisy": true,
       "trials": 15,
       "steps": 0.5,
       "gamma": 0.99,
@@ -632,6 +650,7 @@
     },
     "2": {
       "model": "fm",
+      "noisy": true,
       "trials": 15,
       "steps": 0.5,
       "gamma": 0.99,
@@ -653,6 +672,7 @@
     },
     "3": {
       "model": "su",
+      "noisy": true,
       "trials": 15,
       "steps": 0.5,
       "gamma": 0.99,
@@ -682,6 +702,7 @@
   "zelda": {
     "1": {
       "model": "baseline",
+      "noisy": true,
       "trials": 1,
       "steps": 2,
       "gamma": 0.99,
@@ -698,6 +719,7 @@
     },
     "2": {
       "model": "fm",
+      "noisy": true,
       "trials": 1,
       "steps": 2,
       "gamma": 0.99,
@@ -720,6 +742,7 @@
     },
     "3": {
       "model": "su",
+      "noisy": true,
       "trials": 1,
       "steps": 2,
       "gamma": 0.99,

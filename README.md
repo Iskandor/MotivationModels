@@ -21,7 +21,7 @@ Model predicting the difference between consecutive states:
 ```sh
 $ git clone https://github.com/Iskandor/MotivationModels.git
 $ cd MotivationModels
-$ pip install requirements.txt
+$ pip install -r requirements.txt
 ```
 
 Motivation models requires additionl gym environments:
