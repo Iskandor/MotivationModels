@@ -82,6 +82,26 @@ class ForwardModelNetwork(ForwardModel):
         value = self._model(x)
         return value
 
+class ResidualForwardModelNetwork(ForwardModel):
+    def __init__(self, state_dim, action_dim, config):
+        super(ResidualForwardModelNetwork, self).__init__(state_dim, action_dim, config)
+
+        self._model = Sequential(
+            Linear(in_features=state_dim + action_dim, out_features=config.forward_model_h1, bias=True),
+            Tanh(),
+            Linear(in_features=config.forward_model_h1, out_features=config.forward_model_h1, bias=True),
+            Tanh(),
+            Linear(in_features=config.forward_model_h1, out_features=config.forward_model_h2, bias=True),
+            Tanh(),
+            Linear(in_features=config.forward_model_h2, out_features=config.forward_model_h2, bias=True),
+            Tanh(),
+            Linear(in_features=config.forward_model_h2, out_features=state_dim, bias=True)
+        )
+
+    def forward(self, state, action):
+        x = torch.cat([state, action], state.ndim - 1)
+        predicted_state = self._model(x) + state
+        return predicted_state
 
 class VAE_ForwardModelNetwork(ForwardModel):
     def __init__(self, state_dim, action_dim, config):
@@ -218,6 +238,27 @@ def run_metalearner_model(config, i):
 
     env.close()
 
+def run_residual_forward_model(config, i):
+    env = gym.make('HalfCheetahBulletEnv-v0')
+    state_dim = env.observation_space.shape[0]
+    action_dim = env.action_space.shape[0]
+
+    experiment = ExperimentNoisyDDPG('HalfCheetahBulletEnv-v0', env, config)
+
+    actor = Actor(state_dim, action_dim, config)
+    critic = Critic(state_dim, action_dim, config)
+    memory = ExperienceReplayBuffer(config.memory_size)
+
+    agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)
+
+    forward_model = ForwardModelMotivation(ResidualForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
+                                           config.forward_model_variant, env._max_episode_steps * 10,
+                                           memory, config.forward_model_batch_size)
+    agent.add_motivation_module(forward_model)
+
+    experiment.run_forward_model(agent, i)
+
+    env.close()
 
 def run_vae_forward_model(config, i):
     env = gym.make('HalfCheetahBulletEnv-v0')

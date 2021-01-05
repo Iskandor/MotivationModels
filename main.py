@@ -10,8 +10,8 @@ import DDPG_FetchReach
 import DDPG_HalfCheetah
 import DDPG_LunarLander
 import DDPG_MountainCar
-#import PPO_Go
-#import PPO_Chess
+# import PPO_Go
+# import PPO_Chess
 import DDPG_Noisy_AerisTargetNavigate
 import DDPG_Noisy_Ant
 import DDPG_Noisy_HalfCheetah
@@ -25,101 +25,60 @@ import PPO_Zelda
 from utils.Config import Config
 
 
+def set_env_class(env):
+    env_class = None
+
+    if env == "solaris":
+        env_class = PPO_Solaris
+    if env == "qbert":
+        env_class = PPO_QBert
+    if env == "breakout":
+        env_class = A2C_Breakout
+    if env == "cart_pole":
+        env_class = PPO_CartPole
+    if env == 'mountain_car':
+        env_class = DDPG_MountainCar
+    if env == 'fetch_reach':
+        env_class = DDPG_FetchReach
+    if env == 'lunar_lander':
+        env_class = DDPG_Noisy_LunarLander
+    if env == 'pong':
+        pass
+    if env == 'half_cheetah':
+        env_class = DDPG_Noisy_HalfCheetah
+    if env == 'hopper':
+        env_class = DDPG_Noisy_Hopper
+    if env == 'ant':
+        env_class = DDPG_Noisy_Ant
+    if env == 'reacher':
+        env_class = DDPG_Noisy_Reacher
+    if env == 'aeris_navigate':
+        env_class = DDPG_Noisy_AerisTargetNavigate
+    if env == 'zelda':
+        env_class = PPO_Zelda
+
+    return env_class
+
+
 def run(env, experiment, id):
     print('Starting experiment {0}'.format(id))
-    if env == "solaris":
-        if experiment.model == 'baseline':
-            PPO_Solaris.run_baseline(experiment, id)
-        if experiment.model == 'fm':
-            PPO_Solaris.run_icm(experiment, id)
-    if env == "qbert":
-        if experiment.model == 'baseline':
-            # A2C_QBert.run_baseline(experiment, id)
-            PPO_QBert.run_baseline(experiment, id)
-        if experiment.model == 'fm':
-            PPO_QBert.run_icm(experiment, id)
-    if env == "breakout":
-        if experiment.model == 'baseline':
-            A2C_Breakout.run_baseline(experiment, id)
-    if env == "cart_pole":
-        if experiment.model == 'baseline':
-            # A2C_CartPole.run_baseline(experiment, id)
-            # DQN_CartPole.run(, id)
-            PPO_CartPole.run_baseline(experiment, id)
-    if env == 'mountain_car':
-        if args.model == 'baseline':
-            DDPG_MountainCar.run_baseline(int(args.trials), int(args.episodes))
-        if args.model == 'fm':
-            DDPG_MountainCar.run_forward_model(int(args.trials), int(args.episodes))
-        if args.model == 'su':
-            DDPG_MountainCar.run_metalearner_model(int(args.trials), int(args.episodes))
-    if env == 'fetch_reach':
-        if experiment.model == 'baseline':
-            DDPG_FetchReach.run_baseline(experiment, id)
-        if experiment.model == 'fm':
-            pass
-    if env == 'lunar_lander':
-        if experiment.model == 'baseline':
-            DDPG_Noisy_LunarLander.run_baseline(experiment, id)
-        if experiment.model == 'fm':
-            DDPG_Noisy_LunarLander.run_forward_model(experiment, id)
-        if experiment.model == 's':
-            DDPG_Noisy_LunarLander.run_metalearner_model(experiment, id)
-        if experiment.model == 'su':
-            DDPG_Noisy_LunarLander.run_metalearner_model(experiment, id)
-    if env == 'pong':
-        if args.model == 'baseline':
-            pass
-    if env == 'half_cheetah':
-        if experiment.model == 'baseline':
-            DDPG_Noisy_HalfCheetah.run_baseline(experiment, id)
-        if experiment.model == 'fm':
-            DDPG_Noisy_HalfCheetah.run_forward_model(experiment, id)
-        if experiment.model == 'vfm':
-            DDPG_Noisy_HalfCheetah.run_vae_forward_model(experiment, id)
-        if experiment.model == 's':
-            DDPG_Noisy_HalfCheetah.run_metalearner_model(experiment, id)
-        if experiment.model == 'su':
-            DDPG_Noisy_HalfCheetah.run_metalearner_model(experiment, id)
-        if experiment.model == 'm3':
-            pass
-            # DDPG_Noisy_HalfCheetah.run_m3_model(experiment, id)
-    if env == 'hopper':
-        if experiment.model == 'baseline':
-            DDPG_Noisy_Hopper.run_baseline(experiment, id)
-        if experiment.model == 'fm':
-            DDPG_Noisy_Hopper.run_forward_model(experiment, id)
-        if experiment.model == 's':
-            DDPG_Noisy_Hopper.run_metalearner_model(experiment, id)
-        if experiment.model == 'su':
-            DDPG_Noisy_Hopper.run_metalearner_model(experiment, id)
-    if env == 'ant':
-        if experiment.model == 'baseline':
-            DDPG_Noisy_Ant.run_baseline(experiment, id)
-        if experiment.model == 'fm':
-            DDPG_Noisy_Ant.run_forward_model(experiment, id)
-        if experiment.model == 's':
-            DDPG_Noisy_Ant.run_metalearner_model(experiment, id)
-        if experiment.model == 'su':
-            DDPG_Noisy_Ant.run_metalearner_model(experiment, id)
-    if env == 'reacher':
-        if experiment.model == 'baseline':
-            DDPG_Noisy_Reacher.run_baseline(experiment, id)
-        if experiment.model == 'fm':
-            DDPG_Noisy_Reacher.run_forward_model(experiment, id)
-        if experiment.model == 'su':
-            DDPG_Noisy_Reacher.run_metalearner_model(experiment, id)
-    if env == 'aeris_navigate':
-        if experiment.model == 'baseline':
-            DDPG_Noisy_AerisTargetNavigate.run_baseline(experiment, id)
-        if experiment.model == 'fm':
-            DDPG_Noisy_AerisTargetNavigate.run_forward_model(experiment, id)
-        if experiment.model == 'su':
-            DDPG_Noisy_AerisTargetNavigate.run_metalearner_model(experiment, id)
 
-    if env == 'zelda':
-        if experiment.model == 'baseline':
-            PPO_Zelda.run_baseline(experiment, id)
+    env_class = set_env_class(env)
+
+    if experiment.model == 'baseline':
+        env_class.run_baseline(experiment, id)
+    if experiment.model == 'fm':
+        env_class.run_forward_model(experiment, id)
+    if experiment.model == 'rfm':
+        env_class.run_residual_forward_model(experiment, id)
+    if experiment.model == 'vfm':
+        env_class.run_vae_forward_model(experiment, id)
+    if experiment.model == 's':
+        env_class.run_metalearner_model(experiment, id)
+    if experiment.model == 'su':
+        env_class.run_metalearner_model(experiment, id)
+    if experiment.model == 'm3':
+        env_class.run_m3_model(experiment, id)
 
 
 if __name__ == '__main__':
