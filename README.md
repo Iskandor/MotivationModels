@@ -6,9 +6,11 @@ Repository contains reinforcement learning agents (A2C,DQN,DDPG,PPO) and artific
 ##### Prediction error motivation
 
 Model predicting next state:
+
 ![](https://raw.githubusercontent.com/Iskandor/MotivationModels/master/assets/fm.png)
 
 Model predicting the difference between consecutive states:
+
 ![](https://raw.githubusercontent.com/Iskandor/MotivationModels/master/assets/rfm.png)
 
 ##### Predictive surprise motivation
