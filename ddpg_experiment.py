@@ -18,54 +18,53 @@ class ExperimentDDPG:
         self._config = config
         self._actor = None
         self._critic = None
+        self._preprocess = None
 
-    def test(self, env, agent, metacritic=None, forward_model=None, render=False, video=False):
-        state0 = torch.tensor(env.reset(), dtype=torch.float32)
-        done = False
-        ext_rewards = 0
-        int_rewards = 0
-        steps = 0
-        fm_error = []
-        mc_error = []
+    def add_preprocess(self, preprocess):
+        self._preprocess = preprocess
 
+    def test(self, env, agent, render=False, video=False):
+        config = self._config
         video_recorder = None
-        if video:
-            video_path = './videos/{0:s}_baseline.mp4'.format(self._env_name)
-            video_recorder = VideoRecorder(env, video_path, enabled=video_path is not None)
 
-        while not done:
-            steps += 1
-            if render:
-                env.render()
+        for i in range(5):
+            state0 = torch.tensor(env.reset(), dtype=torch.float32)
+            done = False
+            ext_rewards = 0
+            steps = 0
+
+            print("Test no.{0}".format(i))
+            bar = ProgressBar(env._max_episode_steps, max_width=40)
+            if video:
+                video_path = './videos/{0}_{1}_{2:d}.mp4'.format(config.name, config.model, i)
+                video_recorder = VideoRecorder(env, video_path, enabled=video_path is not None)
+
+            while not done:
+                steps += 1
+                if render:
+                    env.render()
                 if video:
-                    env.unwrapped.render()
+                    env.render()
                     video_recorder.capture_frame()
 
-            action = agent.get_action(state0)
-            next_state, reward, done, _ = env.step(action.detach().numpy())
-            next_state = torch.tensor(next_state, dtype=torch.float32)
+                action = agent.get_action(state0)
+                next_state, reward, done, _ = env.step(action.detach().numpy())
+                next_state = torch.tensor(next_state, dtype=torch.float32)
 
-            ext_rewards += reward
-            if metacritic is not None:
-                int_rewards += metacritic.reward(state0, action, next_state).item()
-                fm_error.append(forward_model.error(state0, action, next_state).item())
-                mc_error.append(metacritic.error(state0, action).item())
-            elif forward_model is not None:
-                int_rewards += forward_model.reward(state0, action, next_state).item()
-                fm_error.append(forward_model.error(state0, action, next_state).item())
+                ext_rewards += reward
+                state0 = next_state
 
-            state0 = next_state
-        if render:
-            env.render()
-        if video:
-            video_recorder.close()
-            video_recorder.enabled = False
+                bar.numerator = steps
+                print(bar)
 
-        return ext_rewards, int_rewards, steps, fm_error, mc_error
+            if video:
+                video_recorder.close()
 
     def run_baseline(self, agent, trial):
         config = self._config
         trial = trial + config.shift
+        step_limit = int(config.steps * 1e6)
+        steps = 0
 
         states = None
         if config.check('generate_states'):
@@ -73,149 +72,253 @@ class ExperimentDDPG:
         if config.check('collect_stats'):
             states = torch.tensor(numpy.load('./{0:s}_states.npy'.format(self._env_name)), dtype=torch.float32)
 
-        if config.load:
-            agent.load(config.load)
+        action_list = []
+        value_list = []
 
-            for i in range(5):
-                self.test(self._env, agent, render=False, video=False)
-        else:
-            action_list = []
-            value_list = []
+        train_ext_rewards = []
+        bar = ProgressBar(config.steps * 1e6, max_width=40)
+        exploration = GaussianExploration(0.2, 0.01, config.steps * 1e6)
 
-            test_ext_rewards = numpy.zeros(config.episodes)
-            exploration = GaussianExploration(0.2)
-            bar = ProgressBar(config.episodes, max_width=40)
-
-            for e in range(config.episodes):
-                if config.check('collect_stats'):
-                    actions, values = self.baseline_activations(agent, states)
-                    action_list.append(actions)
-                    value_list.append(values)
-
-                state0 = torch.tensor(self._env.reset(), dtype=torch.float32)
-                done = False
-                train_ext_reward = 0
-                bar.numerator = e
-                train_steps = 0
-
-                while not done:
-                    train_steps += 1
-                    if config.check('generate_states'):
-                        states.append(state0.numpy())
-                    action0 = exploration.explore(agent.get_action(state0))
-                    next_state, reward, done, _ = self._env.step(action0.numpy())
-                    train_ext_reward += reward
-                    state1 = torch.tensor(next_state, dtype=torch.float32)
-                    agent.train(state0, action0, state1, reward, done)
-                    state0 = state1
-
-                test_ext_reward, _, test_steps, _, _ = self.test(self._env, agent, metacritic=None, forward_model=None)
-                test_ext_rewards[e] = test_ext_reward
-                print('Episode {0:d} training [ext. reward {1:f} steps {2:d}] testing [ext. reward {3:f} steps {4:d}]'.format(
-                        e, train_ext_reward, train_steps, test_ext_reward, test_steps))
-                print(bar)
-
-            agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
-            numpy.save('ddpg_{0}_{1}_{2:d}_re'.format(config.name, config.model, trial), test_ext_rewards)
-
-            if config.check('generate_states'):
-                self.generate_states(states)
-
+        while steps < step_limit:
             if config.check('collect_stats'):
-                action_list = torch.stack(action_list)
-                value_list = torch.stack(value_list)
+                actions, values = self.baseline_activations(agent, states)
+                action_list.append(actions)
+                value_list.append(values)
 
-                numpy.save('ddpg_{0}_{1}_{2:d}_actions'.format(config.name, config.model, trial), action_list)
-                numpy.save('ddpg_{0}_{1}_{2:d}_values'.format(config.name, config.model, trial), value_list)
+            if self._preprocess is None:
+                state0 = torch.tensor(self._env.reset(), dtype=torch.float32)
+            else:
+                state0 = self._preprocess(self._env.reset())
+
+            done = False
+            train_ext_reward = 0
+            train_steps = 0
+
+            while not done:
+                train_steps += 1
+                if config.check('generate_states'):
+                    states.append(state0.numpy())
+                action0 = exploration.explore(agent.get_action(state0))
+                next_state, reward, done, _ = self._env.step(action0.numpy())
+                train_ext_reward += reward
+
+                if self._preprocess is None:
+                    state1 = torch.tensor(next_state, dtype=torch.float32)
+                else:
+                    state1 = self._preprocess(next_state)
+
+                agent.train(state0, action0, state1, reward, done)
+                state0 = state1
+
+            steps += train_steps
+            if steps > step_limit:
+                train_steps -= steps - step_limit
+            bar.numerator = steps
+            exploration.update(steps)
+
+            train_ext_rewards.append([train_steps, train_ext_reward])
+
+            print('Step {0:d} sigma {1:f} training [ext. reward {2:f} steps {3:d}]'.format(steps, exploration.sigma, train_ext_reward, train_steps))
+            print(bar)
+
+        agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
+        numpy.save('ddpg_{0}_{1}_{2:d}_re'.format(config.name, config.model, trial), numpy.array(train_ext_rewards))
+
+        if config.check('generate_states'):
+            self.generate_states(states)
+
+        if config.check('collect_stats'):
+            action_list = torch.stack(action_list)
+            value_list = torch.stack(value_list)
+
+            numpy.save('ddpg_{0}_{1}_{2:d}_actions'.format(config.name, config.model, trial), action_list)
+            numpy.save('ddpg_{0}_{1}_{2:d}_values'.format(config.name, config.model, trial), value_list)
 
     def run_forward_model(self, agent, trial):
         config = self._config
         trial = trial + config.shift
         forward_model = agent.get_motivation_module()
 
+        step_limit = int(config.steps * 1e6)
+        steps = 0
+
         states = None
         if config.check('generate_states'):
             states = []
         if config.check('collect_stats'):
             states = torch.tensor(numpy.load('./{0:s}_states.npy'.format(self._env_name)), dtype=torch.float32)
 
-        if config.load:
-            agent.load(config.load)
+        action_list = []
+        value_list = []
+        fm_error_list = []
+        reward_list = []
 
-            for i in range(5):
-                self.test(self._env, agent, render=False, video=False)
-        else:
-            action_list = []
-            value_list = []
-            fm_error_list = []
-            reward_list = []
+        train_fm_errors = []
+        train_ext_rewards = []
+        train_int_rewards = []
 
-            fm_train_errors = []
-            test_ext_rewards = numpy.zeros(config.episodes)
-            test_int_rewards = numpy.zeros(config.episodes)
+        bar = ProgressBar(config.steps * 1e6, max_width=40)
+        exploration = GaussianExploration(0.2, 0.01, config.steps * 1e6)
 
-            exploration = GaussianExploration(0.2)
-            bar = ProgressBar(config.episodes, max_width=40)
-
-            for e in range(config.episodes):
-                if config.check('collect_stats'):
-                    actions, values, fm_errors, rewards = self.fm_activations(self._env, agent, forward_model, states)
-                    action_list.append(actions)
-                    value_list.append(values)
-                    fm_error_list.append(fm_errors)
-                    reward_list.append(rewards)
-
-                state0 = torch.tensor(self._env.reset(), dtype=torch.float32)
-                done = False
-                train_ext_reward = 0
-                train_int_reward = 0
-                bar.numerator = e
-                train_steps = 0
-
-                while not done:
-                    train_steps += 1
-                    if config.check('generate_states'):
-                        states.append(state0.numpy())
-                    action0 = exploration.explore(agent.get_action(state0))
-                    next_state, reward, done, _ = self._env.step(action0.numpy())
-                    train_ext_reward += reward
-                    state1 = torch.tensor(next_state, dtype=torch.float32)
-                    agent.train(state0, action0, state1, reward, done)
-                    forward_model.train(state0, action0, state1)
-                    train_int_reward += forward_model.reward(state0, action0, state1).item()
-                    state0 = state1
-
-                test_ext_reward, test_int_reward, test_steps, fm_error, _ = self.test(self._env, agent, metacritic=None, forward_model=forward_model)
-                fm_train_errors.append(fm_error)
-                test_ext_rewards[e] = test_ext_reward
-                test_int_rewards[e] = test_int_reward
-
-                print('Episode {0:d} training [ext. reward {1:f} int. reward {2:f} steps {3:d}] testing [ext. reward {4:f} int. reward {5:f} steps {6:d}]'.format(
-                        e, train_ext_reward, train_int_reward, train_steps, test_ext_reward, test_int_reward, test_steps))
-                print(bar)
-
-            agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
-
-            fm_train_errors = [item for sublist in fm_train_errors for item in sublist]
-            fm_train_errors = numpy.stack(fm_train_errors)
-
-            numpy.save('ddpg_{0}_{1}_{2:d}_re'.format(config.name, config.model, trial), test_ext_rewards)
-            numpy.save('ddpg_{0}_{1}_{2:d}_ri'.format(config.name, config.model, trial), test_int_rewards)
-            numpy.save('ddpg_{0}_{1}_{2:d}_fme'.format(config.name, config.model, trial), fm_train_errors)
-
-            if config.check('generate_states'):
-                self.generate_states(states)
-
+        while steps < step_limit:
             if config.check('collect_stats'):
-                action_list = torch.stack(action_list)
-                value_list = torch.stack(value_list)
-                fm_error_list = torch.stack(fm_error_list)
-                reward_list = torch.stack(reward_list)
+                actions, values, fm_errors, rewards = self.fm_activations(self._env, agent, forward_model, states)
+                action_list.append(actions)
+                value_list.append(values)
+                fm_error_list.append(fm_errors)
+                reward_list.append(rewards)
 
-                numpy.save('ddpg_{0}_{1}_{2:d}_actions'.format(config.name, config.model, trial), action_list)
-                numpy.save('ddpg_{0}_{1}_{2:d}_values'.format(config.name, config.model, trial), value_list)
-                numpy.save('ddpg_{0}_{1}_{2:d}_prediction_errors'.format(config.name, config.model, trial), fm_error_list)
-                numpy.save('ddpg_{0}_{1}_{2:d}_rewards'.format(config.name, config.model, trial), reward_list)
+            state0 = torch.tensor(self._env.reset(), dtype=torch.float32)
+            done = False
+            train_ext_reward = 0
+            train_int_reward = 0
+            train_steps = 0
+
+            while not done:
+                train_steps += 1
+                if config.check('generate_states'):
+                    states.append(state0.numpy())
+                action0 = exploration.explore(agent.get_action(state0))
+                next_state, reward, done, _ = self._env.step(action0.numpy())
+                state1 = torch.tensor(next_state, dtype=torch.float32)
+
+                agent.train(state0, action0, state1, reward, done)
+                forward_model.train(state0, action0, state1)
+
+                train_ext_reward += reward
+                train_int_reward += forward_model.reward(state0, action0, state1).item()
+                train_fm_error = forward_model.error(state0, action0, state1).item()
+                train_fm_errors.append(train_fm_error)
+
+                state0 = state1
+
+            steps += train_steps
+            if steps > step_limit:
+                train_steps -= steps - step_limit
+            bar.numerator = steps
+            exploration.update(steps)
+
+            train_ext_rewards.append([train_steps, train_ext_reward])
+            train_int_rewards.append([train_steps, train_int_reward])
+
+            print('Step {0:d} sigma {1:f} training [ext. reward {2:f} int. reward {3:f} steps {4:d}]'.format(steps, exploration.sigma, train_ext_reward, train_int_reward, train_steps))
+            print(bar)
+
+        agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
+
+        numpy.save('ddpg_{0}_{1}_{2:d}_re'.format(config.name, config.model, trial), numpy.array(train_ext_rewards))
+        numpy.save('ddpg_{0}_{1}_{2:d}_ri'.format(config.name, config.model, trial), numpy.array(train_int_rewards))
+        numpy.save('ddpg_{0}_{1}_{2:d}_fme'.format(config.name, config.model, trial), numpy.array(train_fm_errors[:step_limit]))
+
+        if config.check('generate_states'):
+            self.generate_states(states)
+
+        if config.check('collect_stats'):
+            action_list = torch.stack(action_list)
+            value_list = torch.stack(value_list)
+            fm_error_list = torch.stack(fm_error_list)
+            reward_list = torch.stack(reward_list)
+
+            numpy.save('ddpg_{0}_{1}_{2:d}_actions'.format(config.name, config.model, trial), action_list)
+            numpy.save('ddpg_{0}_{1}_{2:d}_values'.format(config.name, config.model, trial), value_list)
+            numpy.save('ddpg_{0}_{1}_{2:d}_prediction_errors'.format(config.name, config.model, trial), fm_error_list)
+            numpy.save('ddpg_{0}_{1}_{2:d}_rewards'.format(config.name, config.model, trial), reward_list)
+
+    def run_vae_forward_model(self, agent, trial):
+        config = self._config
+        trial = trial + config.shift
+        forward_model = agent.get_motivation_module()
+
+        step_limit = int(config.steps * 1e6)
+        steps = 0
+
+        states = None
+        if config.check('generate_states'):
+            states = []
+        if config.check('collect_stats'):
+            states = torch.tensor(numpy.load('./{0:s}_states.npy'.format(self._env_name)), dtype=torch.float32)
+
+        action_list = []
+        value_list = []
+        fm_error_list = []
+        reward_list = []
+
+        train_fm_errors = []
+        train_ext_rewards = []
+        train_int_rewards = []
+        train_vae_losses = []
+
+        bar = ProgressBar(config.steps * 1e6, max_width=40)
+        exploration = GaussianExploration(0.2, 0.01, config.steps * 1e6)
+
+        while steps < step_limit:
+            if config.check('collect_stats'):
+                actions, values, fm_errors, rewards = self.fm_activations(self._env, agent, forward_model, states)
+                action_list.append(actions)
+                value_list.append(values)
+                fm_error_list.append(fm_errors)
+                reward_list.append(rewards)
+
+            state0 = torch.tensor(self._env.reset(), dtype=torch.float32)
+            done = False
+            train_ext_reward = 0
+            train_int_reward = 0
+            train_vae_loss = 0
+            train_steps = 0
+
+            while not done:
+                train_steps += 1
+                if config.check('generate_states'):
+                    states.append(state0.numpy())
+                action0 = exploration.explore(agent.get_action(state0))
+                next_state, reward, done, _ = self._env.step(action0.numpy())
+                state1 = torch.tensor(next_state, dtype=torch.float32)
+
+                agent.train(state0, action0, state1, reward, done)
+                forward_model.train(state0, action0, state1)
+
+                train_ext_reward += reward
+                train_int_reward += forward_model.reward(state0, action0, state1).item()
+                train_vae_loss += forward_model.vae.loss_function(state0).item()
+                train_fm_error = forward_model.error(state0, action0, state1).item()
+                train_fm_errors.append(train_fm_error)
+
+                state0 = state1
+
+            steps += train_steps
+            if steps > step_limit:
+                train_steps -= steps - step_limit
+            bar.numerator = steps
+            exploration.update(steps)
+
+            train_ext_rewards.append([train_steps, train_ext_reward])
+            train_int_rewards.append([train_steps, train_int_reward])
+            train_vae_losses.append([train_steps, train_vae_loss])
+
+            print('Step {0:d} sigma {1:f} training [ext. reward {2:f} int. reward {3:f} VAE loss {4:f} steps {5:d}]'.format(steps, exploration.sigma, train_ext_reward, train_int_reward,
+                                                                                                                train_vae_loss, train_steps))
+            print(bar)
+
+        agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
+
+        numpy.save('ddpg_{0}_{1}_{2:d}_re'.format(config.name, config.model, trial), numpy.array(train_ext_rewards))
+        numpy.save('ddpg_{0}_{1}_{2:d}_ri'.format(config.name, config.model, trial), numpy.array(train_int_rewards))
+        numpy.save('ddpg_{0}_{1}_{2:d}_vl'.format(config.name, config.model, trial), numpy.array(train_vae_losses))
+        numpy.save('ddpg_{0}_{1}_{2:d}_fme'.format(config.name, config.model, trial), numpy.array(train_fm_errors[:step_limit]))
+
+        if config.check('generate_states'):
+            self.generate_states(states)
+
+        if config.check('collect_stats'):
+            action_list = torch.stack(action_list)
+            value_list = torch.stack(value_list)
+            fm_error_list = torch.stack(fm_error_list)
+            reward_list = torch.stack(reward_list)
+
+            numpy.save('ddpg_{0}_{1}_{2:d}_actions'.format(config.name, config.model, trial), action_list)
+            numpy.save('ddpg_{0}_{1}_{2:d}_values'.format(config.name, config.model, trial), value_list)
+            numpy.save('ddpg_{0}_{1}_{2:d}_prediction_errors'.format(config.name, config.model, trial), fm_error_list)
+            numpy.save('ddpg_{0}_{1}_{2:d}_rewards'.format(config.name, config.model, trial), reward_list)
 
     def run_metalearner_model(self, agent, trial):
         config = self._config
@@ -223,215 +326,102 @@ class ExperimentDDPG:
         metacritic = agent.get_motivation_module()
         forward_model = metacritic.get_forward_model()
 
+        step_limit = int(config.steps * 1e6)
+        steps = 0
+
         states = None
         if config.check('generate_states'):
             states = []
         if config.check('collect_stats'):
             states = torch.tensor(numpy.load('./{0:s}_states.npy'.format(self._env_name)), dtype=torch.float32)
 
-        if config.load:
-            agent.load(config.load)
+        action_list = []
+        value_list = []
+        fm_error_list = []
+        mc_error_list = []
+        reward_list = []
 
-            for i in range(5):
-                self.test(self._env, agent, render=False, video=False)
-        else:
-            action_list = []
-            value_list = []
-            fm_error_list = []
-            mc_error_list = []
-            reward_list = []
+        train_fm_errors = []
+        train_mc_errors = []
+        train_fm_rewards = []
+        train_mc_rewards = []
+        train_ext_rewards = []
+        train_int_rewards = []
 
-            fm_train_errors = []
-            mc_train_errors = []
+        bar = ProgressBar(config.steps * 1e6, max_width=40)
+        exploration = GaussianExploration(0.2, 0.01, config.steps * 1e6)
 
-            test_ext_rewards = numpy.zeros(config.episodes)
-            test_int_rewards = numpy.zeros(config.episodes)
-
-            exploration = GaussianExploration(0.2)
-            # exploration = OUExploration(env.action_space.shape[0], 0.2, mu=0.4)
-            bar = ProgressBar(config.episodes, max_width=40)
-
-            for e in range(config.episodes):
-                if config.check('collect_stats'):
-                    actions, values, fm_errors, mc_errors, rewards = self.su_activations(self._env, agent, forward_model, metacritic, states)
-                    action_list.append(actions)
-                    value_list.append(values)
-                    fm_error_list.append(fm_errors)
-                    mc_error_list.append(mc_errors)
-                    reward_list.append(rewards)
-
-                state0 = torch.tensor(self._env.reset(), dtype=torch.float32)
-                done = False
-                train_ext_reward = 0
-                train_int_reward = 0
-                bar.numerator = e
-                train_steps = 0
-
-                while not done:
-                    train_steps += 1
-                    if config.check('generate_states'):
-                        states.append(state0.numpy())
-                    action0 = exploration.explore(agent.get_action(state0))
-                    next_state, reward, done, _ = self._env.step(action0.numpy())
-                    train_ext_reward += reward
-                    state1 = torch.tensor(next_state, dtype=torch.float32)
-                    agent.train(state0, action0, state1, reward, done)
-                    metacritic.train(state0, action0, state1)
-                    train_int_reward += metacritic.reward(state0, action0, state1).item()
-                    state0 = state1
-
-                t0 = time.perf_counter()
-                test_ext_reward, test_int_reward, test_steps, fm_error, mc_error = self.test(self._env, agent, metacritic=metacritic, forward_model=forward_model)
-                fm_train_errors.append(fm_error)
-                mc_train_errors.append(mc_error)
-                test_ext_rewards[e] = test_ext_reward
-                test_int_rewards[e] = test_int_reward
-                t1 = time.perf_counter()
-                print('Testing ' + str(t1 - t0))
-
-                print(
-                    'Episode {0:d} training [ext. reward {1:f} int. reward {2:f} steps {3:d}] testing [ext. reward {4:f} int. reward {5:f} steps {6:d}]'.format(
-                        e, train_ext_reward, train_int_reward, train_steps, test_ext_reward, test_int_reward, test_steps))
-                print(bar)
-
-            agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
-
-            fm_train_errors = [item for sublist in fm_train_errors for item in sublist]
-            fm_train_errors = numpy.stack(fm_train_errors)
-            mc_train_errors = [item for sublist in mc_train_errors for item in sublist]
-            mc_train_errors = numpy.stack(mc_train_errors)
-
-            numpy.save('ddpg_{0}_{1}_{2:d}_re'.format(config.name, config.model, trial), test_ext_rewards)
-            numpy.save('ddpg_{0}_{1}_{2:d}_ri'.format(config.name, config.model, trial), test_int_rewards)
-            numpy.save('ddpg_{0}_{1}_{2:d}_fme'.format(config.name, config.model, trial), fm_train_errors)
-            numpy.save('ddpg_{0}_{1}_{2:d}_mce'.format(config.name, config.model, trial), mc_train_errors)
-
-            if config.check('generate_states'):
-                self.generate_states(states)
-
+        while steps < step_limit:
             if config.check('collect_stats'):
-                action_list = torch.stack(action_list)
-                value_list = torch.stack(value_list)
-                fm_error_list = torch.stack(fm_error_list)
-                mc_error_list = torch.stack(mc_error_list)
-                reward_list = torch.stack(reward_list)
+                actions, values, fm_errors, mc_errors, rewards = self.su_activations(self._env, agent, forward_model, metacritic, states)
+                action_list.append(actions)
+                value_list.append(values)
+                fm_error_list.append(fm_errors)
+                mc_error_list.append(mc_errors)
+                reward_list.append(rewards)
 
-                numpy.save('ddpg_{0}_{1}_{2:d}_actions'.format(config.name, config.model, trial), action_list)
-                numpy.save('ddpg_{0}_{1}_{2:d}_values'.format(config.name, config.model, trial), value_list)
-                numpy.save('ddpg_{0}_{1}_{2:d}_prediction_errors'.format(config.name, config.model, trial), fm_error_list)
-                numpy.save('ddpg_{0}_{1}_{2:d}_error_estimations'.format(config.name, config.model, trial), mc_error_list)
-                numpy.save('ddpg_{0}_{1}_{2:d}_rewards'.format(config.name, config.model, trial), reward_list)
+            state0 = torch.tensor(self._env.reset(), dtype=torch.float32)
+            done = False
+            train_ext_reward = 0
+            train_int_reward = 0
+            train_steps = 0
 
-    def run_m3_model(self, agent, trial):
-        config = self._config
-        m3module = agent.get_motivation_module()
-        metacritic = m3module.get_metacritic()
-        forward_model = m3module.get_forward_model()
-        #env.render()
-
-        states = None
-        if config.check('generate_states'):
-            states = []
-        if config.check('collect_stats'):
-            states = torch.tensor(numpy.load('./{0:s}_states.npy'.format(self._env_name)), dtype=torch.float32)
-
-        if config.load:
-            agent.load(config.load)
-
-            for i in range(5):
-                self.test(self._env, agent, render=False, video=False)
-        else:
-            action_list = []
-            value_list = []
-            fm_error_list = []
-            mc_error_list = []
-            reward_list = []
-
-            fm_train_errors = []
-            mc_train_errors = []
-
-            test_ext_rewards = numpy.zeros(config.episodes)
-            test_int_rewards = numpy.zeros(config.episodes)
-
-            exploration = GaussianExploration(0.2)
-            # exploration = OUExploration(env.action_space.shape[0], 0.2, mu=0.4)
-            bar = ProgressBar(config.episodes, max_width=40)
-
-            for e in range(config.episodes):
-                if config.check('collect_stats'):
-                    actions, values, fm_errors, mc_errors, rewards = self.su_activations(self._env, agent, forward_model, metacritic, states)
-                    action_list.append(actions)
-                    value_list.append(values)
-                    fm_error_list.append(fm_errors)
-                    mc_error_list.append(mc_errors)
-                    reward_list.append(rewards)
-
-                state0 = torch.tensor(self._env.reset(), dtype=torch.float32)
+            while not done:
+                train_steps += 1
+                if config.check('generate_states'):
+                    states.append(state0.numpy())
                 action0 = exploration.explore(agent.get_action(state0))
-                done = False
-                train_ext_reward = 0
-                train_int_reward = 0
-                bar.numerator = e
-                train_steps = 0
+                next_state, reward, done, _ = self._env.step(action0.numpy())
+                state1 = torch.tensor(next_state, dtype=torch.float32)
 
-                t0 = time.perf_counter()
-                while not done:
-                    train_steps += 1
-                    if config.check('generate_states'):
-                        states.append(state0.numpy())
-                    next_state, reward, done, _ = self._env.step(action0.numpy())
-                    train_ext_reward += reward
-                    state1 = torch.tensor(next_state, dtype=torch.float32)
-                    action1 = exploration.explore(agent.get_action(state1))
-                    agent.train(state0, action0, state1, reward, done)
-                    m3module.train(state0, action0, state1, action1, reward, done)
-                    train_int_reward += m3module.reward(state0, action0, state1).item()
-                    state0 = state1
-                    action0 = action1
-                t1 = time.perf_counter()
-                print('Training ' + str(t1 - t0))
+                pe_error, ps_error, pe_reward, ps_reward, int_reward = metacritic.raw_data(state0, action0, state1)
+                train_ext_reward += reward
+                train_int_reward += int_reward.item()
+                train_fm_rewards.append(pe_reward.item())
+                train_fm_errors.append(pe_error.item())
+                train_mc_rewards.append(ps_reward.item())
+                train_mc_errors.append(ps_error.item())
 
-                t0 = time.perf_counter()
-                test_ext_reward, test_int_reward, test_steps, fm_error, mc_error = self.test(self._env, agent, metacritic=metacritic, forward_model=forward_model)
-                fm_train_errors.append(fm_error)
-                mc_train_errors.append(mc_error)
-                test_ext_rewards[e] = test_ext_reward
-                test_int_rewards[e] = test_int_reward
-                t1 = time.perf_counter()
-                print('Testing ' + str(t1 - t0))
+                agent.train(state0, action0, state1, reward, done)
+                metacritic.train(state0, action0, state1)
+                state0 = state1
 
-                print(
-                    'Episode {0:d} training [ext. reward {1:f} int. reward {2:f} steps {3:d}] testing [ext. reward {4:f} int. reward {5:f} steps {6:d}]'.format(
-                        e, train_ext_reward, train_int_reward, train_steps, test_ext_reward, test_int_reward, test_steps))
-                print(bar)
+            steps += train_steps
+            if steps > step_limit:
+                train_steps -= steps - step_limit
+            bar.numerator = steps
+            exploration.update(steps)
 
-            agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
+            train_ext_rewards.append([train_steps, train_ext_reward])
+            train_int_rewards.append([train_steps, train_int_reward])
 
-            fm_train_errors = [item for sublist in fm_train_errors for item in sublist]
-            fm_train_errors = numpy.stack(fm_train_errors)
-            mc_train_errors = [item for sublist in mc_train_errors for item in sublist]
-            mc_train_errors = numpy.stack(mc_train_errors)
+            print('Episode {0:d} sigma {1:f} training [ext. reward {2:f} int. reward {3:f} steps {4:d}]'.format(steps, exploration.sigma, train_ext_reward, train_int_reward, train_steps))
+            print(bar)
 
-            numpy.save('ddpg_{0}_{1}_{2:d}_re'.format(config.name, config.model, trial), test_ext_rewards)
-            numpy.save('ddpg_{0}_{1}_{2:d}_ri'.format(config.name, config.model, trial), test_int_rewards)
-            numpy.save('ddpg_{0}_{1}_{2:d}_fme'.format(config.name, config.model, trial), fm_train_errors)
-            numpy.save('ddpg_{0}_{1}_{2:d}_mce'.format(config.name, config.model, trial), mc_train_errors)
+        agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
 
-            if config.check('generate_states'):
-                self.generate_states(states)
+        numpy.save('ddpg_{0}_{1}_{2:d}_re'.format(config.name, config.model, trial), numpy.array(train_ext_rewards))
+        numpy.save('ddpg_{0}_{1}_{2:d}_ri'.format(config.name, config.model, trial), numpy.array(train_int_rewards))
+        numpy.save('ddpg_{0}_{1}_{2:d}_fme'.format(config.name, config.model, trial), numpy.array(train_fm_errors[:step_limit]))
+        numpy.save('ddpg_{0}_{1}_{2:d}_fmr'.format(config.name, config.model, trial), numpy.array(train_fm_rewards[:step_limit]))
+        numpy.save('ddpg_{0}_{1}_{2:d}_mce'.format(config.name, config.model, trial), numpy.array(train_mc_errors[:step_limit]))
+        numpy.save('ddpg_{0}_{1}_{2:d}_mcr'.format(config.name, config.model, trial), numpy.array(train_mc_rewards[:step_limit]))
 
-            if config.check('collect_stats'):
-                action_list = torch.stack(action_list)
-                value_list = torch.stack(value_list)
-                fm_error_list = torch.stack(fm_error_list)
-                mc_error_list = torch.stack(mc_error_list)
-                reward_list = torch.stack(reward_list)
+        if config.check('generate_states'):
+            self.generate_states(states)
 
-                numpy.save('ddpg_{0}_{1}_{2:d}_actions'.format(config.name, config.model, trial), action_list)
-                numpy.save('ddpg_{0}_{1}_{2:d}_values'.format(config.name, config.model, trial), value_list)
-                numpy.save('ddpg_{0}_{1}_{2:d}_prediction_errors'.format(config.name, config.model, trial), fm_error_list)
-                numpy.save('ddpg_{0}_{1}_{2:d}_error_estimations'.format(config.name, config.model, trial), mc_error_list)
-                numpy.save('ddpg_{0}_{1}_{2:d}_rewards'.format(config.name, config.model, trial), reward_list)
+        if config.check('collect_stats'):
+            action_list = torch.stack(action_list)
+            value_list = torch.stack(value_list)
+            fm_error_list = torch.stack(fm_error_list)
+            mc_error_list = torch.stack(mc_error_list)
+            reward_list = torch.stack(reward_list)
+
+            numpy.save('ddpg_{0}_{1}_{2:d}_actions'.format(config.name, config.model, trial), action_list)
+            numpy.save('ddpg_{0}_{1}_{2:d}_values'.format(config.name, config.model, trial), value_list)
+            numpy.save('ddpg_{0}_{1}_{2:d}_prediction_errors'.format(config.name, config.model, trial), fm_error_list)
+            numpy.save('ddpg_{0}_{1}_{2:d}_error_estimations'.format(config.name, config.model, trial), mc_error_list)
+            numpy.save('ddpg_{0}_{1}_{2:d}_rewards'.format(config.name, config.model, trial), reward_list)
 
     @staticmethod
     def baseline_activations(agent, states):

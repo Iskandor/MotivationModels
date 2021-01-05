@@ -2,6 +2,7 @@
   "aeris_navigate": {
     "1": {
       "model": "baseline",
+      "noisy": true,
       "trials": 15,
       "steps": 1,
       "gamma": 0.99,
@@ -19,6 +20,7 @@
     },
     "2": {
       "model": "fm",
+      "noisy": true,
       "trials": 5,
       "steps": 1,
       "gamma": 0.99,
@@ -41,6 +43,7 @@
     },
     "3": {
       "model": "su",
+      "noisy": true,
       "trials": 5,
       "steps": 1,
       "gamma": 0.99,
@@ -66,6 +69,24 @@
       "metacritic_eta": 0.001,
       "metacritic_variant": "A",
       "metacritic_batch_size": 32
+    },
+    "4": {
+      "model": "baseline",
+      "noisy": false,
+      "trials": 15,
+      "steps": 1,
+      "gamma": 0.99,
+      "tau ": 0.005,
+      "batch_size": 64,
+      "memory_size": 100000,
+      "actor_lr": 0.0001,
+      "actor_kernels_count": 32,
+      "actor_h1": 256,
+      "actor_h2": 128,
+      "critic_lr": 0.0002,
+      "critic_kernels_count": 32,
+      "critic_h1": 256,
+      "critic_h2": 128
     }
   },
   "ant": {

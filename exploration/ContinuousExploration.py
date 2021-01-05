@@ -4,17 +4,17 @@ import torch
 
 class GaussianExploration:
     def __init__(self, sigma0, sigma1=0, epochs=0):
-        self._sigma = sigma0
+        self.sigma = sigma0
         self._sigma0 = sigma0
         self._sigma1 = sigma1
         self._epochs = epochs
 
     def explore(self, action):
-        return action + torch.normal(0, self._sigma, action.size())
+        return action + torch.normal(0, self.sigma, action.size())
 
     def update(self, step):
-        if self._sigma0 > self._sigma1 and self._sigma > self._sigma1 and self._epochs > 0:
-            self._sigma = numpy.interp(step, [0, self._epochs], [self._sigma0, self._sigma1])
+        if self._sigma0 > self._sigma1 and self.sigma > self._sigma1 and self._epochs > 0:
+            self.sigma = numpy.interp(step, [0, self._epochs], [self._sigma0, self._sigma1])
 
 
 class OUExploration:

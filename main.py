@@ -6,6 +6,7 @@ import torch
 
 import A2C_Breakout
 import A2C_QBert
+import DDPG_AerisTargetNavigate
 import DDPG_FetchReach
 import DDPG_HalfCheetah
 import DDPG_LunarLander
@@ -23,7 +24,7 @@ import PPO_Zelda
 from utils.Config import Config
 
 
-def set_env_class(env):
+def set_env_class(env, noisy):
     env_class = None
 
     if env == "solaris":
@@ -39,11 +40,17 @@ def set_env_class(env):
     if env == 'fetch_reach':
         env_class = DDPG_FetchReach
     if env == 'lunar_lander':
-        env_class = DDPG_Noisy_LunarLander
+        if noisy:
+            env_class = DDPG_Noisy_LunarLander
+        else:
+            env_class = DDPG_LunarLander
     if env == 'pong':
         pass
     if env == 'half_cheetah':
-        env_class = DDPG_Noisy_HalfCheetah
+        if noisy:
+            env_class = DDPG_Noisy_HalfCheetah
+        else:
+            env_class = DDPG_HalfCheetah
     if env == 'hopper':
         env_class = DDPG_Noisy_Hopper
     if env == 'ant':
@@ -51,7 +58,10 @@ def set_env_class(env):
     if env == 'reacher':
         env_class = DDPG_Noisy_Reacher
     if env == 'aeris_navigate':
-        env_class = DDPG_Noisy_AerisTargetNavigate
+        if noisy:
+            env_class = DDPG_Noisy_AerisTargetNavigate
+        else:
+            env_class = DDPG_AerisTargetNavigate
     if env == 'zelda':
         env_class = PPO_Zelda
 
@@ -61,7 +71,7 @@ def set_env_class(env):
 def run(env, experiment, id):
     print('Starting experiment {0}'.format(id))
 
-    env_class = set_env_class(env)
+    env_class = set_env_class(env, experiment.noisy)
 
     if experiment.model == 'baseline':
         env_class.run_baseline(experiment, id)
