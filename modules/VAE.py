@@ -13,7 +13,7 @@ class VAE(nn.Module):
         self._state_space_dim = state_space_dim
         self._latent_space_dim = latent_space_dim
 
-        depth = math.floor(math.log2(state_space_dim) - math.log2(latent_space_dim))
+        depth = math.floor(math.log2(state_space_dim) - math.log2(latent_space_dim)) - 1
 
         encoder_layers = []
         decoder_layers = []
@@ -22,16 +22,24 @@ class VAE(nn.Module):
         for i in range(depth):
             in_features = out_features
             out_features = out_features // 2
-            encoder_layers.append(Linear(in_features, out_features, bias=True))
-            encoder_layers.append(ReLU())
-            decoder_layers.insert(0, Linear(out_features, in_features, bias=True))
-            decoder_layers.insert(1, ReLU())
+            e_layer = Linear(in_features, out_features, bias=True)
+            nn.init.xavier_uniform_(e_layer.weight)
+            encoder_layers.append(e_layer)
+            encoder_layers.append(LeakyReLU())
+            d_layer = Linear(out_features, in_features, bias=True)
+            nn.init.xavier_uniform_(d_layer.weight)
+            decoder_layers.insert(0, d_layer)
+            decoder_layers.insert(1, LeakyReLU())
 
         decoder_layers = decoder_layers[:-1]
+        decoder_layers.insert(0, Linear(latent_space_dim, state_space_dim // pow(2, depth), bias=True))
+        decoder_layers.insert(1, LeakyReLU())
 
         self._encoder = Sequential(*encoder_layers)
         self._z_mean = Linear(out_features, latent_space_dim)
+        nn.init.xavier_uniform_(self._z_mean.weight)
         self._z_var = Linear(out_features, latent_space_dim)
+        nn.init.xavier_uniform_(self._z_var.weight)
         self._decoder = Sequential(*decoder_layers)
 
     def encode(self, state):
@@ -44,7 +52,8 @@ class VAE(nn.Module):
         return mu + eps * std
 
     def decode(self, z):
-        return self._decoder(z)
+        x = self._decoder(z)
+        return x
 
     def forward(self, x):
         mu, logvar = self.encode(x)

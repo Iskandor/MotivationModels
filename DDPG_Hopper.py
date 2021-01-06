@@ -1,19 +1,20 @@
 import gym
+import pybullet_envs
 
-from modules.DDPG_Modules import *
+from algorithms.DDPG import DDPG
 from algorithms.ReplayBuffer import ExperienceReplayBuffer
 from ddpg_experiment import ExperimentDDPG
-from algorithms.DDPG import DDPG
+from modules.DDPG_Modules import *
 from motivation.ForwardModelMotivation import ForwardModelMotivation
 from motivation.MateLearnerMotivation import MetaLearnerMotivation
 
 
 def run_baseline(config, i):
-    env = gym.make('MountainCarContinuous-v0')
+    env = gym.make('HopperBulletEnv-v0')
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
 
-    experiment = ExperimentDDPG('MountainCarContinuous-v0', env, config)
+    experiment = ExperimentDDPG('HopperBulletEnv-v0', env, config)
 
     actor = Actor(state_dim, action_dim, config)
     critic = Critic(state_dim, action_dim, config)
@@ -25,11 +26,11 @@ def run_baseline(config, i):
 
 
 def run_forward_model(config, i):
-    env = gym.make('MountainCarContinuous-v0')
+    env = gym.make('HopperBulletEnv-v0')
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
 
-    experiment = ExperimentDDPG('MountainCarContinuous-v0', env, config)
+    experiment = ExperimentDDPG('HopperBulletEnv-v0', env, config)
 
     actor = Actor(state_dim, action_dim, config)
     critic = Critic(state_dim, action_dim, config)
@@ -53,11 +54,11 @@ def run_forward_model(config, i):
 
 
 def run_metalearner_model(config, i):
-    env = gym.make('MountainCarContinuous-v0')
+    env = gym.make('HopperBulletEnv-v0')
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
 
-    experiment = ExperimentDDPG('MountainCarContinuous-v0', env, config)
+    experiment = ExperimentDDPG('HopperBulletEnv-v0', env, config)
 
     actor = Actor(state_dim, action_dim, config)
     critic = Critic(state_dim, action_dim, config)
@@ -75,11 +76,12 @@ def run_metalearner_model(config, i):
 
     if hasattr(config, 'metacritic_batch_size'):
         metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic_lr, state_dim,
-                                           config.metacritic_variant, env._max_episode_steps * 10, config.metacritic_eta,
-                                           memory, config.metacritic_batch_size)
+                                           config.metacritic_variant, env._max_episode_steps * 10,
+                                           config.metacritic_eta, memory, config.metacritic_batch_size)
     else:
         metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic_lr, state_dim,
-                                           config.metacritic_variant, env._max_episode_steps * 10, config.metacritic_eta)
+                                           config.metacritic_variant, env._max_episode_steps * 10,
+                                           config.metacritic_eta)
 
     agent.add_motivation_module(metacritic)
 

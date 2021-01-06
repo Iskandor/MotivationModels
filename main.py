@@ -7,8 +7,10 @@ import torch
 import A2C_Breakout
 import A2C_QBert
 import DDPG_AerisTargetNavigate
+import DDPG_Ant
 import DDPG_FetchReach
 import DDPG_HalfCheetah
+import DDPG_Hopper
 import DDPG_LunarLander
 import DDPG_MountainCar
 import DDPG_Noisy_AerisTargetNavigate
@@ -17,6 +19,7 @@ import DDPG_Noisy_HalfCheetah
 import DDPG_Noisy_Hopper
 import DDPG_Noisy_LunarLander
 import DDPG_Noisy_Reacher
+import DDPG_Reacher
 import PPO_CartPole
 import PPO_QBert
 import PPO_Solaris
@@ -52,11 +55,20 @@ def set_env_class(env, noisy):
         else:
             env_class = DDPG_HalfCheetah
     if env == 'hopper':
-        env_class = DDPG_Noisy_Hopper
+        if noisy:
+            env_class = DDPG_Noisy_Hopper
+        else:
+            env_class = DDPG_Hopper
     if env == 'ant':
-        env_class = DDPG_Noisy_Ant
+        if noisy:
+            env_class = DDPG_Noisy_Ant
+        else:
+            env_class = DDPG_Ant
     if env == 'reacher':
-        env_class = DDPG_Noisy_Reacher
+        if noisy:
+            env_class = DDPG_Noisy_Reacher
+        else:
+            env_class = DDPG_Reacher
     if env == 'aeris_navigate':
         if noisy:
             env_class = DDPG_Noisy_AerisTargetNavigate

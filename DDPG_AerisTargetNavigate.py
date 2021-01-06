@@ -116,25 +116,45 @@ class ForwardModelNetwork(ForwardModel):
 
 
 class MetaLearnerNetwork(MetaLearnerModel):
-    def __init__(self, state_dim, action_dim, config):
-        super(MetaLearnerNetwork, self).__init__(state_dim, action_dim, config)
-        self._hidden0 = nn.Linear(state_dim + action_dim, config.metacritic_h1)
-        self._hidden1 = nn.Linear(config.metacritic_h1, config.metacritic_h2)
-        self._output = nn.Linear(config.metacritic_h2, 1)
+    def __init__(self, input_shape, action_dim, config):
+        super(MetaLearnerNetwork, self).__init__(input_shape, action_dim, config)
 
-        self.init()
+        self.channels = input_shape[0]
+
+        self.layers = [
+            nn.Conv1d(self.channels + action_dim, config.metacritic_kernels_count, kernel_size=8, stride=4, padding=2),
+            nn.LeakyReLU(),
+            nn.Conv1d(config.metacritic_kernels_count, config.metacritic_kernels_count, kernel_size=3, stride=1, padding=1),
+            nn.LeakyReLU(),
+            nn.Conv1d(config.metacritic_kernels_count, config.metacritic_kernels_count, kernel_size=3, stride=1, padding=1),
+            nn.LeakyReLU(),
+            nn.Conv1d(config.metacritic_kernels_count, config.metacritic_kernels_count, kernel_size=3, stride=1, padding=1),
+            nn.LeakyReLU(),
+            nn.ConvTranspose1d(config.metacritic_kernels_count, config.metacritic_kernels_count, kernel_size=8, stride=4, padding=2, output_padding=0),
+            nn.LeakyReLU(),
+            nn.Flatten(),
+            nn.Linear(in_features=64 * config.metacritic_kernels_count, out_features=1, bias=True)
+        ]
+
+        nn.init.xavier_uniform_(self.layers[0].weight)
+        nn.init.xavier_uniform_(self.layers[2].weight)
+        nn.init.xavier_uniform_(self.layers[4].weight)
+        nn.init.xavier_uniform_(self.layers[6].weight)
+        nn.init.xavier_uniform_(self.layers[8].weight)
+        nn.init.uniform_(self.layers[11].weight, -0.3, 0.3)
+
+        self._network = nn.Sequential(*self.layers)
 
     def forward(self, state, action):
-        x = torch.cat([state, action], state.ndim - 1)
-        x = nn.functional.relu(self._hidden0(x))
-        x = nn.functional.relu(self._hidden1(x))
-        value = self._output(x)
-        return value
+        if state.ndim == 3:
+            a = action.unsqueeze(2).repeat(1, 1, state.shape[2])
+            x = torch.cat([state, a], dim=1)
+        if state.ndim == 2:
+            a = action.unsqueeze(1).repeat(1, state.shape[1])
+            x = torch.cat([state, a], dim=0).unsqueeze(0)
 
-    def init(self):
-        nn.init.xavier_uniform_(self._hidden0.weight)
-        nn.init.xavier_uniform_(self._hidden1.weight)
-        nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
+        value = self._network(x).squeeze(0)
+        return value
 
 
 def run_baseline(config, i):
@@ -183,7 +203,7 @@ def run_forward_model(config, i):
 
 def run_metalearner_model(config, i):
     env = gym.make('TargetNavigate-v0')
-    state_dim = env.observation_space.shape[0]
+    state_dim = env.observation_space.shape
     action_dim = env.action_space.shape[0]
 
     experiment = ExperimentDDPG('TargetNavigate-v0', env, config)
@@ -196,19 +216,19 @@ def run_metalearner_model(config, i):
 
     if hasattr(config, 'forward_model_batch_size'):
         forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
-                                               config.forward_model_variant, env._max_episode_steps * 10,
+                                               config.forward_model_variant, 1000 * 10,
                                                memory, config.forward_model_batch_size)
     else:
         forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
-                                               config.forward_model_variant, env._max_episode_steps * 10)
+                                               config.forward_model_variant, 1000 * 10)
 
     if hasattr(config, 'metacritic_batch_size'):
         metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic_lr,
-                                           config.metacritic_variant, env._max_episode_steps * 10, config.metacritic_eta,
+                                           config.metacritic_variant, 1000 * 10, config.metacritic_eta,
                                            memory, config.metacritic_batch_size)
     else:
         metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic_lr,
-                                           config.metacritic_variant, env._max_episode_steps * 10, config.metacritic_eta)
+                                           config.metacritic_variant, 1000 * 10, config.metacritic_eta)
 
     agent.add_motivation_module(metacritic)
 

@@ -27,9 +27,9 @@ class VAE_ForwardModelMotivation:
     def error(self, state0, action, state1):
         prediction = self._network(state0, action)
         mu, logvar = self._network.vae.encode(state1)
-        target = self._network.vae.reparameterize(mu, logvar)
+        target = self._network.vae.reparameterize(mu, logvar).detach()
         dim = len(prediction.shape) - 1
-        error = torch.mean(torch.pow(prediction - target.detach(), 2), dim=dim).unsqueeze(dim)
+        error = torch.mean(torch.pow(prediction - target, 2), dim=dim).unsqueeze(dim)
 
         return error
 

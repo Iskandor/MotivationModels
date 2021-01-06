@@ -1,95 +1,11 @@
 import gym
-import torch
 
-from algorithms.DDPG import DDPGCritic, DDPGActor, DDPG
+from algorithms.DDPG import DDPG
 from algorithms.ReplayBuffer import ExperienceReplayBuffer
 from ddpg_experiment import ExperimentDDPG
-from motivation.ForwardModelMotivation import ForwardModel, ForwardModelMotivation
-from motivation.MateLearnerMotivation import MetaLearnerModel, MetaLearnerMotivation
-
-
-class Critic(DDPGCritic):
-    def __init__(self, state_dim, action_dim, config):
-        super(Critic, self).__init__(state_dim, action_dim)
-
-        self._hidden0 = torch.nn.Linear(state_dim, config.critic_h1)
-        self._hidden1 = torch.nn.Linear(config.critic_h1 + action_dim, config.critic_h2)
-        self._output = torch.nn.Linear(config.critic_h2, 1)
-
-        torch.nn.init.xavier_uniform_(self._hidden0.weight)
-        torch.nn.init.xavier_uniform_(self._hidden1.weight)
-        torch.nn.init.uniform_(self._output.weight, -3e-3, 3e-3)
-
-    def forward(self, state, action):
-        x = torch.nn.functional.relu(self._hidden0(state))
-        x = torch.cat([x, action], 1)
-        x = torch.nn.functional.relu(self._hidden1(x))
-        value = self._output(x)
-        return value
-
-
-class Actor(DDPGActor):
-    def __init__(self, state_dim, action_dim, config):
-        super(Actor, self).__init__(state_dim, action_dim)
-
-        self._hidden0 = torch.nn.Linear(state_dim, config.actor_h1)
-        self._hidden1 = torch.nn.Linear(config.actor_h1, config.actor_h2)
-        self._output = torch.nn.Linear(config.actor_h2, action_dim)
-
-        torch.nn.init.xavier_uniform_(self._hidden0.weight)
-        torch.nn.init.xavier_uniform_(self._hidden1.weight)
-        torch.nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
-
-    def forward(self, state):
-        x = torch.nn.functional.relu(self._hidden0(state))
-        x = torch.nn.functional.relu(self._hidden1(x))
-        policy = torch.tanh(self._output(x))
-        return policy
-
-
-class ForwardModelNetwork(ForwardModel):
-    def __init__(self, state_dim, action_dim, config):
-        super(ForwardModelNetwork, self).__init__(state_dim, action_dim, config)
-        self._rate = state_dim // action_dim
-
-        self._hidden0 = torch.nn.Linear(state_dim + action_dim * self._rate, config.forward_model_h1)
-        self._hidden1 = torch.nn.Linear(config.forward_model_h1, config.forward_model_h2)
-        self._output = torch.nn.Linear(config.forward_model_h2, state_dim)
-
-        torch.nn.init.xavier_uniform_(self._hidden0.weight)
-        torch.nn.init.xavier_uniform_(self._hidden1.weight)
-        torch.nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
-
-    def forward(self, state, action):
-        if state.ndim == 1:
-            action = action.repeat(self._rate)
-        else:
-            action = action.repeat(1, self._rate)
-
-        x = torch.cat([state, action], state.ndim - 1)
-        x = torch.nn.functional.relu(self._hidden0(x))
-        x = torch.nn.functional.relu(self._hidden1(x))
-        value = self._output(x)
-        return value
-
-
-class MetaLearnerNetwork(MetaLearnerModel):
-    def __init__(self, state_dim, action_dim, config):
-        super(MetaLearnerNetwork, self).__init__(state_dim, action_dim, config)
-        self._hidden0 = torch.nn.Linear(state_dim + action_dim, config.metacritic_h1)
-        self._hidden1 = torch.nn.Linear(config.metacritic_h1, config.metacritic_h2)
-        self._output = torch.nn.Linear(config.metacritic_h2, 1)
-
-        torch.nn.init.xavier_uniform_(self._hidden0.weight)
-        torch.nn.init.xavier_uniform_(self._hidden1.weight)
-        torch.nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
-
-    def forward(self, state, action):
-        x = torch.cat([state, action], state.ndim - 1)
-        x = torch.nn.functional.relu(self._hidden0(x))
-        x = torch.nn.functional.relu(self._hidden1(x))
-        value = self._output(x)
-        return value
+from modules.DDPG_Modules import *
+from motivation.ForwardModelMotivation import ForwardModelMotivation
+from motivation.MateLearnerMotivation import MetaLearnerMotivation
 
 
 def run_baseline(config):
@@ -134,6 +50,7 @@ def run_forward_model(config):
         experiment.run_forward_model(agent, i)
 
     env.close()
+
 
 def run_metalearner_model(config):
     env = gym.make('LunarLanderContinuous-v2')

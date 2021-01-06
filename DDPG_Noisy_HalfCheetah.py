@@ -82,51 +82,6 @@ class ForwardModelNetwork(ForwardModel):
         value = self._model(x)
         return value
 
-class ResidualForwardModelNetwork(ForwardModel):
-    def __init__(self, state_dim, action_dim, config):
-        super(ResidualForwardModelNetwork, self).__init__(state_dim, action_dim, config)
-
-        self._model = Sequential(
-            Linear(in_features=state_dim + action_dim, out_features=config.forward_model_h1, bias=True),
-            Tanh(),
-            Linear(in_features=config.forward_model_h1, out_features=config.forward_model_h1, bias=True),
-            Tanh(),
-            Linear(in_features=config.forward_model_h1, out_features=config.forward_model_h2, bias=True),
-            Tanh(),
-            Linear(in_features=config.forward_model_h2, out_features=config.forward_model_h2, bias=True),
-            Tanh(),
-            Linear(in_features=config.forward_model_h2, out_features=state_dim, bias=True)
-        )
-
-    def forward(self, state, action):
-        x = torch.cat([state, action], state.ndim - 1)
-        predicted_state = self._model(x) + state
-        return predicted_state
-
-class VAE_ForwardModelNetwork(ForwardModel):
-    def __init__(self, state_dim, action_dim, config):
-        super(VAE_ForwardModelNetwork, self).__init__(state_dim, action_dim, config)
-
-        self.vae = VAE(state_dim, action_dim)
-
-        self._model = Sequential(
-            Linear(in_features=action_dim + action_dim, out_features=config.forward_model_h1, bias=True),
-            Tanh(),
-            Linear(in_features=config.forward_model_h1, out_features=config.forward_model_h1, bias=True),
-            Tanh(),
-            Linear(in_features=config.forward_model_h1, out_features=config.forward_model_h2, bias=True),
-            Tanh(),
-            Linear(in_features=config.forward_model_h2, out_features=config.forward_model_h2, bias=True),
-            Tanh(),
-            Linear(in_features=config.forward_model_h2, out_features=action_dim, bias=True)
-        )
-
-    def forward(self, state, action):
-        mu, logvar = self.vae.encode(state)
-        z = self.vae.reparameterize(mu, logvar).detach()
-        x = torch.cat([z, action], state.ndim - 1)
-        value = self._model(x) + z
-        return value
 
 
 class MetaLearnerNetwork(MetaLearnerModel):
