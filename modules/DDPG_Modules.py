@@ -85,6 +85,30 @@ class ForwardModelNetwork(ForwardModel):
         return predicted_state
 
 
+class SmallForwardModelNetwork(ForwardModel):
+    def __init__(self, state_dim, action_dim, config):
+        super(SmallForwardModelNetwork, self).__init__(state_dim, action_dim, config)
+
+        self.layers = [
+            Linear(in_features=state_dim + action_dim, out_features=config.forward_model_h1, bias=True),
+            LeakyReLU(),
+            Linear(in_features=config.forward_model_h1, out_features=config.forward_model_h2, bias=True),
+            LeakyReLU(),
+            Linear(in_features=config.forward_model_h2, out_features=state_dim, bias=True)
+        ]
+
+        nn.init.xavier_uniform_(self.layers[0].weight)
+        nn.init.xavier_uniform_(self.layers[2].weight)
+        nn.init.uniform_(self.layers[4].weight, -0.3, 0.3)
+
+        self._model = Sequential(*self.layers)
+
+    def forward(self, state, action):
+        x = torch.cat([state, action], state.ndim - 1)
+        predicted_state = self._model(x)
+        return predicted_state
+
+
 class MetaLearnerNetwork(MetaLearnerModel):
     def __init__(self, state_dim, action_dim, config):
         super(MetaLearnerNetwork, self).__init__(state_dim, action_dim, config)
@@ -107,6 +131,31 @@ class MetaLearnerNetwork(MetaLearnerModel):
         nn.init.xavier_uniform_(self.layers[4].weight)
         nn.init.xavier_uniform_(self.layers[6].weight)
         nn.init.uniform_(self.layers[8].weight, -0.3, 0.3)
+
+        self._model = Sequential(*self.layers)
+
+    def forward(self, state, action):
+        x = torch.cat([state, action], state.ndim - 1)
+        error_estimate = self._model(x)
+        return error_estimate
+
+
+class SmallMetaLearnerNetwork(MetaLearnerModel):
+    def __init__(self, state_dim, action_dim, config):
+        super(SmallMetaLearnerNetwork, self).__init__(state_dim, action_dim, config)
+
+        self.layers = [
+            Linear(in_features=state_dim + action_dim, out_features=config.metacritic_h1, bias=True),
+            LeakyReLU(),
+            Linear(in_features=config.metacritic_h1, out_features=config.metacritic_h2, bias=True),
+            LeakyReLU(),
+            Linear(in_features=config.metacritic_h2, out_features=1, bias=True),
+            LeakyReLU()
+        ]
+
+        nn.init.xavier_uniform_(self.layers[0].weight)
+        nn.init.xavier_uniform_(self.layers[2].weight)
+        nn.init.uniform_(self.layers[4].weight, -0.3, 0.3)
 
         self._model = Sequential(*self.layers)
 

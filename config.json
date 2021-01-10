@@ -415,12 +415,12 @@
     },
     "4": {
       "model": "vfm",
-      "noisy": true,
+      "noisy": false,
       "trials": 1,
       "steps": 1,
       "gamma": 0.99,
       "tau ": 0.005,
-      "batch_size": 64,
+      "batch_size": 16,
       "memory_size": 100000,
       "actor_lr": 0.0001,
       "actor_h1": 256,
@@ -428,12 +428,12 @@
       "critic_lr": 0.0002,
       "critic_h1": 256,
       "critic_h2": 128,
-      "forward_model_lr": 0.0004,
+      "forward_model_lr": 0.001,
       "forward_model_h1": 64,
       "forward_model_h2": 32,
       "forward_model_eta": 1,
       "forward_model_variant": "A",
-      "forward_model_batch_size": 128
+      "forward_model_batch_size": 32
     },
     "5": {
       "model": "rfm",
@@ -578,8 +578,7 @@
       "forward_model_h1": 256,
       "forward_model_h2": 128,
       "forward_model_eta": 1,
-      "forward_model_variant": "A",
-      "forward_model_batch_size": 32
+      "forward_model_variant": "A"
     },
     "3": {
       "model": "su",
@@ -601,13 +600,11 @@
       "forward_model_h2": 128,
       "forward_model_eta": 1,
       "forward_model_variant": "A",
-      "forward_model_batch_size": 32,
       "metacritic_lr": 0.0002,
       "metacritic_h1": 256,
       "metacritic_h2": 128,
       "metacritic_eta": 1,
-      "metacritic_variant": "A",
-      "metacritic_batch_size": 32
+      "metacritic_variant": "A"
     }
   },
   "mountain_car": {
@@ -646,8 +643,7 @@
       "forward_model_h1": 64,
       "forward_model_h2": 32,
       "forward_model_eta": 1,
-      "forward_model_variant": "A",
-      "forward_model_batch_size": 32
+      "forward_model_variant": "A"
     },
     "3": {
       "model": "su",
@@ -669,13 +665,11 @@
       "forward_model_h2": 32,
       "forward_model_eta": 1,
       "forward_model_variant": "A",
-      "forward_model_batch_size": 32,
       "metacritic_lr": 0.0002,
       "metacritic_h1": 64,
       "metacritic_h2": 32,
       "metacritic_eta": 1,
-      "metacritic_variant": "A",
-      "metacritic_batch_size": 32
+      "metacritic_variant": "A"
     }
   },
   "qbert": {

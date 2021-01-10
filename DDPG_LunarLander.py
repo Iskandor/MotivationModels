@@ -40,10 +40,10 @@ def run_forward_model(config):
         agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)
 
         if hasattr(config, 'forward_model_batch_size'):
-            forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
+            forward_model = ForwardModelMotivation(SmallForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
                                                    memory, config.forward_model_batch_size)
         else:
-            forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta)
+            forward_model = ForwardModelMotivation(SmallForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta)
 
         agent.add_motivation_module(forward_model)
 
@@ -67,16 +67,16 @@ def run_metalearner_model(config):
         agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)
 
         if hasattr(config, 'forward_model_batch_size'):
-            forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
+            forward_model = ForwardModelMotivation(SmallForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
                                                    memory, config.forward_model_batch_size)
         else:
-            forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta)
+            forward_model = ForwardModelMotivation(SmallForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta)
 
         if hasattr(config, 'metacritic_batch_size'):
-            metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic_lr, state_dim,
+            metacritic = MetaLearnerMotivation(SmallMetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic_lr, state_dim,
                                                config.metacritic_variant, config.metacritic_eta, memory, config.metacritic_batch_size)
         else:
-            metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic_lr, state_dim,
+            metacritic = MetaLearnerMotivation(SmallMetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic_lr, state_dim,
                                                config.metacritic_variant, config.metacritic_eta)
 
         agent.add_motivation_module(metacritic)
