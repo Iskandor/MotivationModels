@@ -545,7 +545,7 @@
   "lunar_lander": {
     "1": {
       "model": "baseline",
-      "noisy": true,
+      "noisy": false,
       "trials": 15,
       "steps": 1,
       "gamma": 0.99,
@@ -561,7 +561,7 @@
     },
     "2": {
       "model": "fm",
-      "noisy": true,
+      "noisy": false,
       "trials": 15,
       "steps": 1,
       "gamma": 0.99,
@@ -582,7 +582,7 @@
     },
     "3": {
       "model": "su",
-      "noisy": true,
+      "noisy": false,
       "trials": 15,
       "steps": 1,
       "gamma": 0.99,
