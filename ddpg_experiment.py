@@ -77,7 +77,7 @@ class ExperimentDDPG:
 
         train_ext_rewards = []
         bar = ProgressBar(config.steps * 1e6, max_width=40)
-        exploration = GaussianExploration(0.2, 0.01, config.steps * 1e6)
+        exploration = GaussianExploration(1.0, 0.01, config.steps * 1e6)
 
         while steps < step_limit:
             if config.check('collect_stats'):
@@ -158,7 +158,7 @@ class ExperimentDDPG:
         train_int_rewards = []
 
         bar = ProgressBar(config.steps * 1e6, max_width=40)
-        exploration = GaussianExploration(0.2, 0.01, config.steps * 1e6)
+        exploration = GaussianExploration(1.0, 0.01, config.steps * 1e6)
 
         while steps < step_limit:
             if config.check('collect_stats'):
@@ -249,7 +249,7 @@ class ExperimentDDPG:
         train_vae_losses = []
 
         bar = ProgressBar(config.steps * 1e6, max_width=40)
-        exploration = GaussianExploration(0.2, 0.01, config.steps * 1e6)
+        exploration = GaussianExploration(1.0, 0.01, config.steps * 1e6)
 
         while steps < step_limit:
             if config.check('collect_stats'):
@@ -349,7 +349,7 @@ class ExperimentDDPG:
         train_int_rewards = []
 
         bar = ProgressBar(config.steps * 1e6, max_width=40)
-        exploration = GaussianExploration(0.2, 0.01, config.steps * 1e6)
+        exploration = GaussianExploration(1.0, 0.01, config.steps * 1e6)
 
         while steps < step_limit:
             if config.check('collect_stats'):
