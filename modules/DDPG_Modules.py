@@ -91,9 +91,9 @@ class SmallForwardModelNetwork(ForwardModel):
 
         self.layers = [
             Linear(in_features=state_dim + action_dim, out_features=config.forward_model_h1, bias=True),
-            LeakyReLU(),
+            Tanh(),
             Linear(in_features=config.forward_model_h1, out_features=config.forward_model_h2, bias=True),
-            LeakyReLU(),
+            Tanh(),
             Linear(in_features=config.forward_model_h2, out_features=state_dim, bias=True)
         ]
 
