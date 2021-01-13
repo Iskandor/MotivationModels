@@ -108,7 +108,7 @@
       "critic_h2": 128,
       "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 64,
-      "forward_model_eta": 0.001,
+      "forward_model_eta": 0.01,
       "forward_model_variant": "A",
       "forward_model_batch_size": 32
     },
@@ -137,7 +137,7 @@
       "forward_model_batch_size": 32,
       "metacritic_lr": 0.0002,
       "metacritic_kernels_count": 64,
-      "metacritic_eta": 0.001,
+      "metacritic_eta": 0.01,
       "metacritic_variant": "A",
       "metacritic_batch_size": 32
     }
