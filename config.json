@@ -72,6 +72,7 @@
     "4": {
       "model": "baseline",
       "noisy": false,
+      "sigma": 1,
       "trials": 15,
       "steps": 1,
       "gamma": 0.99,
@@ -90,6 +91,7 @@
     "5": {
       "model": "fm",
       "noisy": false,
+      "sigma": 1,
       "trials": 15,
       "steps": 1,
       "gamma": 0.99,
@@ -113,6 +115,7 @@
     "6": {
       "model": "su",
       "noisy": false,
+      "sigma": 1,
       "trials": 15,
       "steps": 1,
       "gamma": 0.99,
@@ -444,6 +447,7 @@
     "4": {
       "model": "vfm",
       "noisy": false,
+      "sigma": 0.2,
       "trials": 1,
       "steps": 1,
       "gamma": 0.99,
@@ -488,6 +492,7 @@
     "6": {
       "model": "baseline",
       "noisy": false,
+      "sigma": 0.2,
       "trials": 15,
       "steps": 2,
       "gamma": 0.99,
@@ -630,6 +635,7 @@
     "1": {
       "model": "baseline",
       "noisy": false,
+      "sigma": 0.2,
       "trials": 15,
       "steps": 1,
       "gamma": 0.99,
@@ -646,6 +652,7 @@
     "2": {
       "model": "fm",
       "noisy": false,
+      "sigma": 0.2,
       "trials": 15,
       "steps": 1,
       "gamma": 0.99,
@@ -667,6 +674,7 @@
     "3": {
       "model": "su",
       "noisy": false,
+      "sigma": 0.2,
       "trials": 15,
       "steps": 1,
       "gamma": 0.99,
@@ -693,6 +701,7 @@
     "4": {
       "model": "fm",
       "noisy": false,
+      "sigma": 0.2,
       "trials": 15,
       "steps": 1,
       "gamma": 0.99,
@@ -714,6 +723,7 @@
     "5": {
       "model": "su",
       "noisy": false,
+      "sigma": 0.2,
       "trials": 15,
       "steps": 1,
       "gamma": 0.99,
@@ -742,6 +752,7 @@
     "1": {
       "model": "baseline",
       "noisy": false,
+      "sigma": 1,
       "trials": 15,
       "steps": 1,
       "gamma": 0.99,
@@ -758,6 +769,7 @@
     "2": {
       "model": "fm",
       "noisy": false,
+      "sigma": 1,
       "trials": 15,
       "steps": 1,
       "gamma": 0.99,
@@ -779,6 +791,7 @@
     "3": {
       "model": "su",
       "noisy": false,
+      "sigma": 1,
       "trials": 15,
       "steps": 1,
       "gamma": 0.99,
