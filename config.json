@@ -650,6 +650,7 @@
       "critic_h2": 64
     },
     "2": {
+      "descriptor": "small model",
       "model": "fm",
       "noisy": false,
       "sigma": 0.2,
@@ -672,6 +673,7 @@
       "forward_model_variant": "A"
     },
     "3": {
+      "descriptor": "small model",
       "model": "su",
       "noisy": false,
       "sigma": 0.2,
@@ -699,6 +701,7 @@
       "metacritic_variant": "A"
     },
     "4": {
+      "descriptor": "large model",
       "model": "fm",
       "noisy": false,
       "sigma": 0.2,
@@ -715,12 +718,13 @@
       "critic_h1": 128,
       "critic_h2": 64,
       "forward_model_lr": 0.0001,
-      "forward_model_h1": 256,
-      "forward_model_h2": 128,
-      "forward_model_eta": 2.5,
+      "forward_model_h1": 128,
+      "forward_model_h2": 64,
+      "forward_model_eta": 1,
       "forward_model_variant": "A"
     },
     "5": {
+      "descriptor": "large model",
       "model": "su",
       "noisy": false,
       "sigma": 0.2,
@@ -737,14 +741,14 @@
       "critic_h1": 128,
       "critic_h2": 64,
       "forward_model_lr": 0.0001,
-      "forward_model_h1": 256,
-      "forward_model_h2": 128,
+      "forward_model_h1": 128,
+      "forward_model_h2": 64,
       "forward_model_eta": 1,
       "forward_model_variant": "A",
       "metacritic_lr": 0.0002,
-      "metacritic_h1": 256,
-      "metacritic_h2": 128,
-      "metacritic_eta": 2.5,
+      "metacritic_h1": 128,
+      "metacritic_h2": 64,
+      "metacritic_eta": 1,
       "metacritic_variant": "A"
     }
   },
