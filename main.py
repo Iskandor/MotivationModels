@@ -4,6 +4,7 @@ import json
 import os
 import platform
 import subprocess
+import multiprocessing
 
 import torch
 
@@ -105,7 +106,8 @@ def run(env, experiment, id):
 
 
 def write_command_file(args, experiment):
-    thread_per_env = max(torch.get_num_threads() // experiment.trials, 1)
+    print(multiprocessing.cpu_count())
+    thread_per_env = max(multiprocessing.cpu_count() // experiment.trials, 1)
     if platform.system() == 'Windows':
         file = open("run.bat", "w")
         file.write('set OMP_NUM_THREADS={0}\n'.format(thread_per_env))
@@ -116,7 +118,7 @@ def write_command_file(args, experiment):
     if platform.system() == 'Linux':
         file = open("run.sh", "w")
         for i in range(experiment.trials):
-            file.write('OMP_NUM_THREADS={0} python main.py --env {1} --config {2} -t -s {3} & \n'.format(thread_per_env, args.env, args.config, i))
+            file.write('OMP_NUM_THREADS={0} python3 main.py --env {1} --config {2} -t -s {3} & \n'.format(thread_per_env, args.env, args.config, i))
         file.close()
 
 
@@ -126,9 +128,10 @@ def run_command_file():
         if os.path.exists('run.bat'):
             os.remove('run.bat')
     if platform.system() == 'Linux':
-        subprocess.call([r'run.sh'])
-        if os.path.exists('run.sh'):
-            os.remove('run.sh')
+        os.chmod('run.sh', 777)
+        subprocess.run(['bash', './run.sh'])
+        if os.path.exists('./run.sh'):
+            os.remove('./run.sh')
 
 if __name__ == '__main__':
     print(platform.system())
