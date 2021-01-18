@@ -1,21 +1,15 @@
-atari-py==0.2.6
-box2d-py==2.3.8
-etaprogress==1.1.1
-future==0.18.2
-gym==0.17.2
-gym-zelda-1==0.2.2
-matplotlib==3.2.1
+atari-py
+box2d-py
+etaprogress
+gym
+gym-zelda-1
 -e git+https://github.com/openai/mujoco-py.git@1fe312b09ae7365f0dd9d4d0e453f8da59fae0bf#egg=mujoco_py
-nes-py==8.1.6
-numpy==1.19.4
-numpydoc==0.9.2
-opencv-python==4.4.0.46
-pandas==1.0.4
-pybullet==3.0.6
-PyYAML==5.3.1
-scikit-image==0.17.2
-scikit-learn==0.22.2.post1
-scipy==1.4.1
-torch==1.7.1
-torchvision==0.8.2
+nes-py
+opencv-python
+pybullet
+PyYAML
+scikit-image
+scikit-learn
+scipy
+torch
 
