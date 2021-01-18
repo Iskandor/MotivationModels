@@ -75,10 +75,10 @@ def run_metalearner_model(config, i):
 
     if hasattr(config, 'metacritic_batch_size'):
         metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic_lr, state_dim,
-                                           config.metacritic_variant, config.metacritic_eta, memory, config.metacritic_batch_size)
+                                           config.metacritic_variant, 0, config.metacritic_eta, memory, config.metacritic_batch_size)
     else:
         metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic_lr, state_dim,
-                                           config.metacritic_variant, config.metacritic_eta)
+                                           config.metacritic_variant, 0, config.metacritic_eta)
 
     agent.add_motivation_module(metacritic)
 
