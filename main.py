@@ -133,11 +133,15 @@ def run_command_file():
         if os.path.exists('./run.sh'):
             os.remove('./run.sh')
 
+
 if __name__ == '__main__':
     print(platform.system())
     print(torch.__config__.show())
     print(torch.__config__.parallel_info())
     parser = argparse.ArgumentParser(description='Motivation models learning platform.')
+
+    if not os.path.exists('./models'):
+        os.mkdir('./models')
 
     parser.add_argument('--env', type=str, help='environment name')
     parser.add_argument('--config', type=int, help='id of config')
