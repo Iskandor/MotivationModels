@@ -29,6 +29,7 @@ class VAE_ForwardModelMotivation:
 
         self._vae_sample_counter += 1
         if self._vae_sample_counter > self._vae_sample_size and len(self._memory) > self._vae_sample_size:
+            print('Training VAE')
             sample = self._memory.sample(self._vae_sample_size)
             states = torch.stack(sample.state)
 
