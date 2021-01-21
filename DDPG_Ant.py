@@ -70,7 +70,7 @@ def run_vae_forward_model(config, i):
     vae = VAE(state_dim, latent_dim)
 
     forward_model = VAE_ForwardModelMotivation(ForwardModelNetwork(latent_dim, action_dim, config), config.forward_model_lr, vae, 0.001,
-                                               config.memory_size // 5,
+                                               env._max_episode_steps,
                                                config.forward_model_eta, memory, config.forward_model_batch_size)
 
     agent.add_motivation_module(forward_model)

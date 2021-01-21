@@ -27,6 +27,11 @@ class VAE_ForwardModelMotivation:
             loss.backward()
             self._fm_optimizer.step()
 
+            # self._vae_optimizer.zero_grad()
+            # loss = self._vae_network.loss_function(states)
+            # loss.backward()
+            # self._vae_optimizer.step()
+
         self._vae_sample_counter += 1
         if self._vae_sample_counter >= self._vae_sample_size:
             print('Training VAE')
