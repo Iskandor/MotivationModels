@@ -112,13 +112,13 @@ def write_command_file(args, experiment):
         file = open("run.bat", "w")
         file.write('set OMP_NUM_THREADS={0}\n'.format(thread_per_env))
         for i in range(experiment.trials):
-            file.write('start "" python main.py --env {0} --config {1} -t -s {2} \n'.format(args.env, args.config, i))
+            file.write('start "" python main.py --env {0} --config {1} -t -s {2} \n'.format(args.env, args.config, i + args.shift))
         file.close()
 
     if platform.system() == 'Linux':
         file = open("run.sh", "w")
         for i in range(experiment.trials):
-            file.write('OMP_NUM_THREADS={0} python3 main.py --env {1} --config {2} -t -s {3} & \n'.format(thread_per_env, args.env, args.config, i))
+            file.write('OMP_NUM_THREADS={0} python3 main.py --env {1} --config {2} -t -s {3} & \n'.format(thread_per_env, args.env, args.config, i + args.shift))
         file.close()
 
 
