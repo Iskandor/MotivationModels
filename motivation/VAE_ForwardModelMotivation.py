@@ -28,16 +28,16 @@ class VAE_ForwardModelMotivation:
             self._fm_optimizer.step()
 
         self._vae_sample_counter += 1
-        if self._vae_sample_counter > self._vae_sample_size and len(self._memory) > self._vae_sample_size:
+        if self._vae_sample_counter >= self._vae_sample_size:
             print('Training VAE')
-            sample = self._memory.sample(self._vae_sample_size)
+            sample = self._memory.sample(self._vae_sample_size * self._sample_size)
             states = torch.stack(sample.state)
 
             self._vae_optimizer.zero_grad()
             loss = self._vae_network.loss_function(states)
             loss.backward()
             self._vae_optimizer.step()
-            self._vae_sample_counter = 0
+            self._vae_sample_counter -= self._vae_sample_size
 
     def error(self, state0, action, state1):
         mu, logvar = self._vae_network.encode(state0)

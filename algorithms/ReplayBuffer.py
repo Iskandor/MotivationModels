@@ -23,9 +23,12 @@ class ExperienceReplayBuffer(ReplayBuffer):
             self.memory.append(MDP_Transition(state, action, next_state, torch.tensor([reward], dtype=torch.float32), torch.tensor([1], dtype=torch.float32)))
 
     def sample(self, batch_size):
-        batch = None
-        if len(self.memory) >= batch_size:
+        if len(self.memory) < batch_size:
+            transitions = []
+            for i in range(batch_size // len(self.memory)):
+                transitions += random.sample(self.memory, len(self.memory))
+        else:
             transitions = random.sample(self.memory, batch_size)
-            batch = MDP_Transition(*zip(*transitions))
+        batch = MDP_Transition(*zip(*transitions))
 
         return batch
