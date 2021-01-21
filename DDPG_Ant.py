@@ -7,6 +7,7 @@ from ddpg_experiment import ExperimentDDPG
 from modules.DDPG_Modules import *
 from motivation.ForwardModelMotivation import ForwardModelMotivation
 from motivation.MateLearnerMotivation import MetaLearnerMotivation
+from motivation.VAE_ForwardModelMotivation import VAE_ForwardModelMotivation
 
 
 def run_baseline(config, i):
@@ -49,6 +50,32 @@ def run_forward_model(config, i):
     agent.add_motivation_module(forward_model)
 
     experiment.run_forward_model(agent, i)
+
+    env.close()
+
+
+def run_vae_forward_model(config, i):
+    env = gym.make('AntBulletEnv-v0')
+    state_dim = env.observation_space.shape[0]
+    action_dim = env.action_space.shape[0]
+    latent_dim = 2
+
+    experiment = ExperimentDDPG('AntBulletEnv-v0', env, config)
+
+    actor = Actor(state_dim, action_dim, config)
+    critic = Critic(state_dim, action_dim, config)
+    memory = ExperienceReplayBuffer(config.memory_size)
+
+    agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)
+    vae = VAE(state_dim, latent_dim)
+
+    forward_model = VAE_ForwardModelMotivation(ForwardModelNetwork(latent_dim, action_dim, config), config.forward_model_lr, vae, 0.001,
+                                               config.memory_size // 5,
+                                               config.forward_model_eta, memory, config.forward_model_batch_size)
+
+    agent.add_motivation_module(forward_model)
+
+    experiment.run_vae_forward_model(agent, i)
 
     env.close()
 
