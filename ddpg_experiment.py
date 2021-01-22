@@ -118,7 +118,7 @@ class ExperimentDDPG:
 
             train_ext_rewards.append([train_steps, train_ext_reward])
 
-            print('Run {0:d} step {1:d} sigma {2:f} training [ext. reward {3:f} steps {4:d}]'.format(trial, steps, exploration.sigma, train_ext_reward, train_steps))
+            print('Run {0} step {1:d} sigma {2:f} training [ext. reward {3:f} steps {4:d}]'.format(trial, steps, exploration.sigma, train_ext_reward, train_steps))
             print(bar)
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
@@ -201,7 +201,7 @@ class ExperimentDDPG:
             train_ext_rewards.append([train_steps, train_ext_reward])
             train_int_rewards.append([train_steps, train_int_reward])
 
-            print('Run {0:d} step {1:d} sigma {2:f} training [ext. reward {2:f} int. reward {3:f} steps {4:d}]'.format(trial, steps, exploration.sigma, train_ext_reward, train_int_reward, train_steps))
+            print('Run {0} step {1:d} sigma {2:f} training [ext. reward {2:f} int. reward {3:f} steps {4:d}]'.format(trial, steps, exploration.sigma, train_ext_reward, train_int_reward, train_steps))
             print(bar)
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
@@ -296,7 +296,7 @@ class ExperimentDDPG:
             train_int_rewards.append([train_steps, train_int_reward])
             train_vae_losses.append([train_steps, train_vae_loss])
 
-            print('Run {0:d} step {1:d} sigma {2:f} training [ext. reward {3:f} int. reward {4:f} VAE loss {5:f} steps {6:d}]'.format(
+            print('Run {0} step {1:d} sigma {2:f} training [ext. reward {3:f} int. reward {4:f} VAE loss {5:f} steps {6:d}]'.format(
                 trial, steps, exploration.sigma, train_ext_reward, train_int_reward, train_vae_loss, train_steps))
             print(bar)
 
@@ -396,7 +396,7 @@ class ExperimentDDPG:
             train_ext_rewards.append([train_steps, train_ext_reward])
             train_int_rewards.append([train_steps, train_int_reward])
 
-            print('Run {0:d} step {1:d} sigma {2:f} training [ext. reward {3:f} int. reward {4:f} steps {5:d}]'.format(
+            print('Run {0} step {1:d} sigma {2:f} training [ext. reward {3:f} int. reward {4:f} steps {5:d}]'.format(
                 trial, steps, exploration.sigma, train_ext_reward, train_int_reward, train_steps))
             print(bar)
 
