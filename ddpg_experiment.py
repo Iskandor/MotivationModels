@@ -228,7 +228,7 @@ class ExperimentDDPG:
         config = self._config
         trial = trial + config.shift
         forward_model = agent.get_motivation_module()
-        vae = forward_model.get_vae()
+        vae = forward_model.get_fm_network()
 
         step_limit = int(config.steps * 1e6)
         steps = 0
@@ -280,7 +280,7 @@ class ExperimentDDPG:
 
                 train_ext_reward += reward
                 train_int_reward += forward_model.reward(state0, action0, state1).item()
-                train_vae_loss += vae.loss_function(state0).item()
+                train_vae_loss += vae.loss_function(state0, action0, state1).item()
                 train_fm_error = forward_model.error(state0, action0, state1).item()
                 train_fm_errors.append(train_fm_error)
 

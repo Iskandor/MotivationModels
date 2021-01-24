@@ -4,6 +4,7 @@ import pybullet_envs
 from algorithms.DDPG import DDPG
 from algorithms.ReplayBuffer import ExperienceReplayBuffer
 from ddpg_experiment import ExperimentDDPG
+from modules import forward_models
 from modules.DDPG_Modules import *
 from motivation.ForwardModelMotivation import ForwardModelMotivation
 from motivation.MateLearnerMotivation import MetaLearnerMotivation
@@ -67,10 +68,8 @@ def run_vae_forward_model(config, i):
     memory = ExperienceReplayBuffer(config.memory_size)
 
     agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)
-    vae = VAE(state_dim, latent_dim)
 
-    forward_model = VAE_ForwardModelMotivation(ForwardModelNetwork(latent_dim, action_dim, config), config.forward_model_lr, vae, 0.001,
-                                               env._max_episode_steps,
+    forward_model = VAE_ForwardModelMotivation(forward_models.VAE_ForwardModel(state_dim, latent_dim, action_dim), config.forward_model_lr,
                                                config.forward_model_eta, memory, config.forward_model_batch_size)
 
     agent.add_motivation_module(forward_model)
