@@ -25,19 +25,22 @@ import DDPG_Noisy_LunarLander
 import DDPG_Noisy_Reacher
 import DDPG_Reacher
 import PPO_CartPole
+import PPO_Pacman
 import PPO_QBert
 import PPO_Solaris
 import PPO_Zelda
 from utils.Config import Config
 
 
-def set_env_class(env, noisy):
+def set_env_class(env, experiment):
     env_class = None
 
     if env == "solaris":
         env_class = PPO_Solaris
     if env == "qbert":
         env_class = PPO_QBert
+    if env == "mspacman":
+        env_class = PPO_Pacman
     if env == "breakout":
         env_class = A2C_Breakout
     if env == "cart_pole":
@@ -47,34 +50,34 @@ def set_env_class(env, noisy):
     if env == 'fetch_reach':
         env_class = DDPG_FetchReach
     if env == 'lunar_lander':
-        if noisy:
+        if experiment.noisy:
             env_class = DDPG_Noisy_LunarLander
         else:
             env_class = DDPG_LunarLander
     if env == 'pong':
         pass
     if env == 'half_cheetah':
-        if noisy:
+        if experiment.noisy:
             env_class = DDPG_Noisy_HalfCheetah
         else:
             env_class = DDPG_HalfCheetah
     if env == 'hopper':
-        if noisy:
+        if experiment.noisy:
             env_class = DDPG_Noisy_Hopper
         else:
             env_class = DDPG_Hopper
     if env == 'ant':
-        if noisy:
+        if experiment.noisy:
             env_class = DDPG_Noisy_Ant
         else:
             env_class = DDPG_Ant
     if env == 'reacher':
-        if noisy:
+        if experiment.noisy:
             env_class = DDPG_Noisy_Reacher
         else:
             env_class = DDPG_Reacher
     if env == 'aeris_navigate':
-        if noisy:
+        if experiment.noisy:
             env_class = DDPG_Noisy_AerisTargetNavigate
         else:
             env_class = DDPG_AerisTargetNavigate
@@ -87,7 +90,7 @@ def set_env_class(env, noisy):
 def run(env, experiment, id):
     print('Starting experiment {0}'.format(id + experiment.shift))
 
-    env_class = set_env_class(env, experiment.noisy)
+    env_class = set_env_class(env, experiment)
 
     if experiment.model == 'baseline':
         env_class.run_baseline(experiment, id)

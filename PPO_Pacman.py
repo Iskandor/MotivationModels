@@ -12,11 +12,11 @@ def encode_state(state):
 
 
 def run_baseline(config, i):
-    env = AtariWrapper(gym.make('Qbert-v0'))
+    env = AtariWrapper(gym.make('MsPacman-v0'))
     input_shape = env.observation_space.shape
     action_dim = env.action_space.n
 
-    experiment = ExperimentPPO('Qbert-v0', env, config)
+    experiment = ExperimentPPO('MsPacman-v0', env, config)
     experiment.add_preprocess(encode_state)
 
     network = AtariPPONetwork(input_shape, action_dim, config).to(config.device)
