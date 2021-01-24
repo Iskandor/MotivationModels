@@ -35,11 +35,11 @@ class ExperimentPPO:
     def run_baseline(self, agent, trial):
         config = self._config
         trial = trial + config.shift
-        bar = ProgressBar(config.steps * 1e6, max_width=40)
+        step_limit = int(config.steps * 1e6)
+        steps = 0
+        bar = ProgressBar(step_limit, max_width=40)
 
         train_ext_rewards = []
-        step_limit = config.steps * 1e6
-        steps = 0
 
         while steps < step_limit:
             bar.numerator = steps
@@ -66,9 +66,9 @@ class ExperimentPPO:
                 agent.train(state0, action0, state1, reward, done)
                 state0 = state1
 
+            if steps + train_steps > step_limit:
+                train_steps = step_limit - steps
             steps += train_steps
-            if steps > step_limit:
-                train_steps -= steps - step_limit
             bar.numerator = steps
 
             train_ext_rewards.append([train_steps, train_ext_reward])
