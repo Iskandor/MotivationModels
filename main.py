@@ -149,6 +149,7 @@ if __name__ == '__main__':
     parser.add_argument('--env', type=str, help='environment name')
     parser.add_argument('--config', type=int, help='id of config')
     parser.add_argument('--device', type=str, help='device type', default='cpu')
+    parser.add_argument('--load', type=str, help='path to saved agent', default='')
     parser.add_argument('-s', '--shift', type=int, help='shift result id', default=0)
     parser.add_argument('-p', '--parallel', action="store_true", help='run envs in parallel')
     parser.add_argument('-t', '--thread', action="store_true", help='do not use: technical parameter for parallel run')
@@ -161,12 +162,18 @@ if __name__ == '__main__':
     experiment = Config(config[args.env][str(args.config)], "{0}_{1}".format(args.env, str(args.config)))
     experiment.device = args.device
     experiment.shift = args.shift
-    if args.thread:
-        experiment.trials = 1
 
-    if args.parallel:
-        write_command_file(args, experiment)
-        run_command_file()
+    if args.load != '':
+        env_class = set_env_class(args.env, experiment)
+        env_class.test(experiment, args.load)
     else:
-        for i in range(experiment.trials):
-            run(args.env, experiment, i)
+        if args.thread:
+            experiment.trials = 1
+
+        if args.parallel:
+            write_command_file(args, experiment)
+            run_command_file()
+        else:
+            for i in range(experiment.trials):
+                run(args.env, experiment, i)
+

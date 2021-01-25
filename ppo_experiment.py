@@ -1,3 +1,5 @@
+import time
+
 import numpy
 import torch
 from etaprogress.progress import ProgressBar
@@ -16,11 +18,10 @@ class ExperimentPPO:
 
     def test(self, agent):
         config = self._config
-        agent.load(config.load)
 
-        for i in range(12):
+        for i in range(3):
             video_path = 'ppo_{0}_{1}_{2:d}.mp4'.format(config.name, config.model, i)
-            video_recorder = VideoRecorder(self._env, video_path, enabled=video_path is not None)
+            video_recorder = VideoRecorder(self._env, video_path, enabled=video_path is not None, fps=15)
             state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0).to(config.device)
             done = False
 

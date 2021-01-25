@@ -11,6 +11,23 @@ def encode_state(state):
     return torch.tensor(state, dtype=torch.float32).unsqueeze(0)
 
 
+def test(config, path):
+    env = AtariWrapper(gym.make('MsPacman-v0'))
+    input_shape = env.observation_space.shape
+    action_dim = env.action_space.n
+
+    experiment = ExperimentPPO('MsPacman-v0', env, config)
+    experiment.add_preprocess(encode_state)
+
+    network = AtariPPONetwork(input_shape, action_dim, config).to(config.device)
+    agent = PPO(network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size, config.beta, config.gamma,
+                device=config.device)
+    agent.load(path)
+    experiment.test(agent)
+
+    env.close()
+
+
 def run_baseline(config, i):
     env = AtariWrapper(gym.make('MsPacman-v0'))
     input_shape = env.observation_space.shape
