@@ -254,11 +254,11 @@ class RND_ForwardModel(nn.Module):
             Linear(in_features=config.forward_model_h2, out_features=state_dim, bias=True)
         ]
 
-        nn.init.xavier_uniform_(self.layers_target[0].weight)
-        nn.init.xavier_uniform_(self.layers_target[2].weight)
-        nn.init.xavier_uniform_(self.layers_target[4].weight)
-        nn.init.xavier_uniform_(self.layers_target[6].weight)
-        nn.init.uniform_(self.layers_target[8].weight, -0.3, 0.3)
+        nn.init.orthogonal_(self.layers_target[0].weight)
+        nn.init.orthogonal_(self.layers_target[2].weight)
+        nn.init.orthogonal_(self.layers_target[4].weight)
+        nn.init.orthogonal_(self.layers_target[6].weight)
+        nn.init.orthogonal_(self.layers_target[8].weight)
 
         self._target = Sequential(*self.layers_target)
 
