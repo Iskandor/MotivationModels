@@ -142,7 +142,7 @@ class PPO:
         return adv_v, ref_v
 
     def get_action(self, state, deterministic=False):
-        probs = torch.softmax(self._agent.action(state), dim=-1)
+        probs = self._agent.action(state)
         if deterministic:
             action = probs.argmax()
         else:

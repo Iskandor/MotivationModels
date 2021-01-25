@@ -2,6 +2,51 @@ import torch
 from torch import nn
 
 
+class ContinuousPPONetwork(torch.nn.Module):
+    def __init__(self, state_dim, action_dim, config):
+        super(ContinuousPPONetwork, self).__init__()
+
+        self.state_dim = state_dim
+        self.action_dim = action_dim
+
+        self.layers_value = [
+            torch.nn.Linear(state_dim, config.critic_h1),
+            torch.nn.ReLU(),
+            torch.nn.Linear(config.critic_h1, config.critic_h2),
+            torch.nn.ReLU(),
+            torch.nn.Linear(config.critic_h2, 1)
+        ]
+
+        self.layers_policy = [
+            torch.nn.Linear(state_dim, config.actor_h1),
+            torch.nn.ReLU(),
+            torch.nn.Linear(config.actor_h1, config.actor_h2),
+            torch.nn.ReLU(),
+            torch.nn.Linear(config.actor_h2, action_dim),
+        ]
+
+        for i in range(len(self.layers_value)):
+            if hasattr(self.layers_value[i], "weight"):
+                torch.nn.init.xavier_uniform_(self.layers_value[i].weight)
+
+        for i in range(len(self.layers_policy)):
+            if hasattr(self.layers_policy[i], "weight"):
+                torch.nn.init.xavier_uniform_(self.layers_policy[i].weight)
+
+        self.critic = nn.Sequential(*self.layers_value)
+        self.actor = nn.Sequential(*self.layers_policy)
+
+    def action(self, state):
+        features = self.features(state)
+        policy = self.actor(features)
+        return policy
+
+    def value(self, state):
+        features = self.features(state)
+        value = self.critic(features)
+        return value
+
+
 class AtariPPONetwork(torch.nn.Module):
     def __init__(self, input_shape, action_dim, config):
         super(AtariPPONetwork, self).__init__()
@@ -44,7 +89,8 @@ class AtariPPONetwork(torch.nn.Module):
             torch.nn.ReLU(),
             torch.nn.Linear(config.actor_h1, config.actor_h2),
             torch.nn.ReLU(),
-            torch.nn.Linear(config.actor_h2, action_dim)
+            torch.nn.Linear(config.actor_h2, action_dim),
+            torch.nn.Softmax()
         ]
 
         for i in range(len(self.layers_features)):
