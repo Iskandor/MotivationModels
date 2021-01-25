@@ -1,15 +1,4 @@
-import abc
 import torch
-
-
-class ForwardModel(torch.nn.Module):
-    @abc.abstractmethod
-    def __init__(self, state_dim, action_dim, config):
-        super(ForwardModel, self).__init__()
-
-    @abc.abstractmethod
-    def forward(self, state, action):
-        raise NotImplementedError
 
 
 class ForwardModelMotivation:
@@ -42,12 +31,12 @@ class ForwardModelMotivation:
                 actions = torch.stack(sample.action)
 
                 self._optimizer.zero_grad()
-                loss = torch.nn.functional.mse_loss(self._network(states, actions), next_states)
+                loss = self._network.loss_function(states, actions, next_states)
                 loss.backward()
                 self._optimizer.step()
         else:
             self._optimizer.zero_grad()
-            loss = torch.nn.functional.mse_loss(self._network(state0, action), state1)
+            loss = self._network.loss_function(state0, action, state1)
             loss.backward()
             self._optimizer.step()
 

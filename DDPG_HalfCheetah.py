@@ -4,6 +4,7 @@ import pybullet_envs
 from algorithms.DDPG import DDPG
 from algorithms.ReplayBuffer import ExperienceReplayBuffer
 from ddpg_experiment import ExperimentDDPG
+from modules import forward_models
 from modules.DDPG_Modules import *
 from motivation.ForwardModelMotivation import ForwardModelMotivation
 from motivation.MateLearnerMotivation import MetaLearnerMotivation
@@ -40,11 +41,11 @@ def run_forward_model(config, i):
     agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)
 
     if hasattr(config, 'forward_model_batch_size'):
-        forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
+        forward_model = ForwardModelMotivation(forward_models.ForwardModel(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
                                                config.forward_model_variant, env._max_episode_steps * 10,
                                                memory, config.forward_model_batch_size)
     else:
-        forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
+        forward_model = ForwardModelMotivation(forward_models.ForwardModel(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
                                                config.forward_model_variant, env._max_episode_steps * 10)
 
     agent.add_motivation_module(forward_model)
@@ -68,11 +69,11 @@ def run_metalearner_model(config, i):
     agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)
 
     if hasattr(config, 'forward_model_batch_size'):
-        forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
+        forward_model = ForwardModelMotivation(forward_models.ForwardModel(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
                                                config.forward_model_variant, env._max_episode_steps * 10,
                                                memory, config.forward_model_batch_size)
     else:
-        forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
+        forward_model = ForwardModelMotivation(forward_models.ForwardModel(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
                                                config.forward_model_variant, env._max_episode_steps * 10)
 
     if hasattr(config, 'metacritic_batch_size'):
@@ -102,7 +103,7 @@ def run_residual_forward_model(config, i):
 
     agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)
 
-    forward_model = ForwardModelMotivation(ResidualForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
+    forward_model = ForwardModelMotivation(forward_models.ResidualForwardModel(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
                                            config.forward_model_variant, env._max_episode_steps * 10,
                                            memory, config.forward_model_batch_size)
     agent.add_motivation_module(forward_model)
@@ -124,7 +125,7 @@ def run_vae_forward_model(config, i):
 
     agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)
 
-    forward_model = VAE_ForwardModelMotivation(VAE_ForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
+    forward_model = VAE_ForwardModelMotivation(forward_models.VAE_ForwardModel(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
                                                memory, config.forward_model_batch_size)
     agent.add_motivation_module(forward_model)
 

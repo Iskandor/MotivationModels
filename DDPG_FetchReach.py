@@ -5,7 +5,6 @@ from algorithms.DDPG import DDPG, DDPGCritic, DDPGActor
 from algorithms.ReplayBuffer import ExperienceReplayBuffer
 from ddpg_noisy_experiment import ExperimentNoisyDDPG
 from modules.NoisyLinear import NoisyLinear
-from motivation.ForwardModelMotivation import ForwardModel
 
 
 class Critic(DDPGCritic):

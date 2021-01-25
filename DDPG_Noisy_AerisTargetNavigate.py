@@ -7,8 +7,7 @@ from algorithms.DDPG import DDPGCritic, DDPGActor, DDPG
 from algorithms.ReplayBuffer import ExperienceReplayBuffer
 from ddpg_noisy_experiment import ExperimentNoisyDDPG
 from modules.NoisyLinear import NoisyLinear
-from motivation.ForwardModelMotivation import ForwardModel, ForwardModelMotivation
-from motivation.M3Motivation import M3Motivation
+from motivation.ForwardModelMotivation import ForwardModelMotivation
 from motivation.MateLearnerMotivation import MetaLearnerModel, MetaLearnerMotivation
 
 
@@ -75,9 +74,9 @@ class Actor(DDPGActor):
         return policy
 
 
-class ForwardModelNetwork(ForwardModel):
+class ForwardModel(nn.Module):
     def __init__(self, input_shape, action_dim, config):
-        super(ForwardModelNetwork, self).__init__(input_shape, action_dim, config)
+        super(ForwardModel, self).__init__()
 
         self.channels = input_shape[0]
 
@@ -168,11 +167,11 @@ def run_forward_model(config, i):
     agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)
 
     if hasattr(config, 'forward_model_batch_size'):
-        forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
+        forward_model = ForwardModelMotivation(ForwardModel(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
                                                config.forward_model_variant, 1000 * 10,
                                                memory, config.forward_model_batch_size)
     else:
-        forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
+        forward_model = ForwardModelMotivation(ForwardModel(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
                                                config.forward_model_variant, 1000 * 10)
 
     agent.add_motivation_module(forward_model)
@@ -196,11 +195,11 @@ def run_metalearner_model(config, i):
     agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)
 
     if hasattr(config, 'forward_model_batch_size'):
-        forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
+        forward_model = ForwardModelMotivation(ForwardModel(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
                                                config.forward_model_variant, env._max_episode_steps * 10,
                                                memory, config.forward_model_batch_size)
     else:
-        forward_model = ForwardModelMotivation(ForwardModelNetwork(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
+        forward_model = ForwardModelMotivation(ForwardModel(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
                                                config.forward_model_variant, env._max_episode_steps * 10)
 
     if hasattr(config, 'metacritic_batch_size'):

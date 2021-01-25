@@ -5,6 +5,90 @@ from torch import nn
 from torch.nn import *
 
 
+class ForwardModel(nn.Module):
+    def __init__(self, state_dim, action_dim, config):
+        super(ForwardModel, self).__init__()
+
+        self.layers = [
+            Linear(in_features=state_dim + action_dim, out_features=config.forward_model_h1, bias=True),
+            LeakyReLU(),
+            Linear(in_features=config.forward_model_h1, out_features=config.forward_model_h1, bias=True),
+            LeakyReLU(),
+            Linear(in_features=config.forward_model_h1, out_features=config.forward_model_h2, bias=True),
+            LeakyReLU(),
+            Linear(in_features=config.forward_model_h2, out_features=config.forward_model_h2, bias=True),
+            LeakyReLU(),
+            Linear(in_features=config.forward_model_h2, out_features=state_dim, bias=True)
+        ]
+
+        nn.init.xavier_uniform_(self.layers[0].weight)
+        nn.init.xavier_uniform_(self.layers[2].weight)
+        nn.init.xavier_uniform_(self.layers[4].weight)
+        nn.init.xavier_uniform_(self.layers[6].weight)
+        nn.init.uniform_(self.layers[8].weight, -0.3, 0.3)
+
+        self._model = Sequential(*self.layers)
+
+    def forward(self, state, action):
+        x = torch.cat([state, action], state.ndim - 1)
+        predicted_state = self._model(x)
+        return predicted_state
+
+    def loss_function(self, state, action, next_state):
+        return nn.functional.mse_loss(self(state, action), next_state)
+
+
+class SmallForwardModel(nn.Module):
+    def __init__(self, state_dim, action_dim, config):
+        super(SmallForwardModel, self).__init__()
+
+        self.layers = [
+            Linear(in_features=state_dim + action_dim, out_features=config.forward_model_h1, bias=True),
+            Tanh(),
+            Linear(in_features=config.forward_model_h1, out_features=config.forward_model_h2, bias=True),
+            Tanh(),
+            Linear(in_features=config.forward_model_h2, out_features=state_dim, bias=True)
+        ]
+
+        nn.init.xavier_uniform_(self.layers[0].weight)
+        nn.init.xavier_uniform_(self.layers[2].weight)
+        nn.init.uniform_(self.layers[4].weight, -0.3, 0.3)
+
+        self._model = Sequential(*self.layers)
+
+    def forward(self, state, action):
+        x = torch.cat([state, action], state.ndim - 1)
+        predicted_state = self._model(x)
+        return predicted_state
+
+    def loss_function(self, state, action, next_state):
+        return nn.functional.mse_loss(self(state, action), next_state)
+
+
+class ResidualForwardModel(nn.Module):
+    def __init__(self, state_dim, action_dim, config):
+        super(ResidualForwardModel, self).__init__()
+
+        self._model = Sequential(
+            Linear(in_features=state_dim + action_dim, out_features=config.forward_model_h1, bias=True),
+            Tanh(),
+            Linear(in_features=config.forward_model_h1, out_features=config.forward_model_h1, bias=True),
+            Tanh(),
+            Linear(in_features=config.forward_model_h1, out_features=config.forward_model_h2, bias=True),
+            Tanh(),
+            Linear(in_features=config.forward_model_h2, out_features=config.forward_model_h2, bias=True),
+            Tanh(),
+            Linear(in_features=config.forward_model_h2, out_features=state_dim, bias=True)
+        )
+
+    def forward(self, state, action):
+        x = torch.cat([state, action], state.ndim - 1)
+        predicted_state = self._model(x) + state
+        return predicted_state
+
+    def loss_function(self, state, action, next_state):
+        return nn.functional.mse_loss(self(state, action), next_state)
+
 class VAE_ForwardModel(nn.Module):
     def __init__(self, state_space_dim, latent_space_dim, action_space_dim):
         super().__init__()
