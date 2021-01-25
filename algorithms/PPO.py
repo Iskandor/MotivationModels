@@ -1,3 +1,5 @@
+import time
+
 import torch
 from torch.distributions import Categorical
 
@@ -29,6 +31,8 @@ class PPO:
         self._trajectory.append((state0, action, state1, reward, done))
 
         if len(self._trajectory) == self._trajectory_size:
+            start = time.time()
+
             states = []
             actions = []
             next_states = []
@@ -37,8 +41,8 @@ class PPO:
                 actions.append(action)
                 next_states.append(next_state)
 
-            states = torch.stack(states).squeeze(1).to('cpu')
-            actions = torch.stack(actions).squeeze(1).to('cpu')
+            states = torch.stack(states).squeeze(1)
+            actions = torch.stack(actions).squeeze(1)
 
             intrinsic_reward = None
             if self._motivation:
@@ -50,15 +54,10 @@ class PPO:
                 actions_code = actions_code.to(self._device)
                 next_states = next_states.to(self._device)
 
-            self._agent.to('cpu')
             traj_adv_v, traj_ref_v = self.calc_advantage(states, intrinsic_reward)
             traj_adv_v = (traj_adv_v - torch.mean(traj_adv_v)) / torch.std(traj_adv_v)
-            probs = torch.gather(torch.softmax(self._agent.action(states), dim=-1), 1, actions)
-            self._agent.to(self._device)
-            actions = actions.to(self._device)
-            states = states.to(self._device)
+            old_logprob = self.calc_log_probs(states, actions)
 
-            old_logprob = probs[:-1].log().detach().to(self._device)
             trajectory = self._trajectory[:-1]
 
             for epoch in range(self._ppo_epochs):
@@ -73,7 +72,7 @@ class PPO:
                     value_v = self._agent.value(states_v)
                     loss_value_v = torch.nn.functional.mse_loss(value_v.squeeze(-1), batch_ref_v)
 
-                    probs_v = torch.gather(torch.softmax(self._agent.action(states_v), dim=-1), 1, actions_v)
+                    probs_v = torch.gather(self._agent.action(states_v), 1, actions_v)
                     logprob_pi_v = probs_v.log()
                     ratio_v = torch.exp(logprob_pi_v - batch_old_logprob_v)
                     surr_obj_v = batch_adv_v * ratio_v
@@ -92,13 +91,28 @@ class PPO:
 
             del self._trajectory[:]
 
+            end = time.time()
+            print("Trajectory {0:d} batch size {1:d} epochs {2:d} training time {3:.2f}s".format(self._trajectory_size, self._batch_size, self._ppo_epochs, end - start))
+
+    def calc_log_probs(self, states, actions):
+        probs = self._agent.action(states[0:self._batch_size]).detach()
+        for batch_ofs in range(self._batch_size, self._trajectory_size, self._batch_size):
+            batch_l = min(batch_ofs + self._batch_size, self._trajectory_size)
+            probs = torch.cat([probs, self._agent.action(states[batch_ofs:batch_l]).detach()], dim=0)
+        return torch.gather(probs, 1, actions)[:-1].log()
+
     def calc_advantage(self, states, intrinsic_reward):
-        values = self._agent.value(states)
-        values = values.squeeze().data.cpu().numpy()
+        values = self._agent.value(states[0:self._batch_size]).detach()
+
+        for batch_ofs in range(self._batch_size, self._trajectory_size, self._batch_size):
+            batch_l = min(batch_ofs + self._batch_size, self._trajectory_size)
+            values = torch.cat([values, self._agent.value(states[batch_ofs:batch_l]).detach()], dim=0)
+        values = values.squeeze()
 
         last_gae = 0.0
-        result_adv = []
-        result_ref = []
+        adv_v = torch.zeros(self._trajectory_size - 1, dtype=torch.float32, device=self._device)
+        ref_v = torch.zeros(self._trajectory_size - 1, dtype=torch.float32, device=self._device)
+        index = self._trajectory_size - 2
 
         if intrinsic_reward is None:
             for val, next_val, exp in zip(reversed(values[:-1]), reversed(values[1:]), reversed(self._trajectory[:-1])):
@@ -109,8 +123,9 @@ class PPO:
                     delta = exp[3] + self._gamma * next_val - val
                     last_gae = delta + self._gamma * self._lambda * last_gae
 
-                result_adv.append(last_gae)
-                result_ref.append(last_gae + val)
+                adv_v[index] = last_gae
+                ref_v[index] = last_gae + val
+                index -= 1
         else:
             for val, next_val, exp, ir in zip(reversed(values[:-1]), reversed(values[1:]), reversed(self._trajectory[:-1]), reversed(intrinsic_reward[:-1])):
                 if exp[4]:
@@ -120,15 +135,14 @@ class PPO:
                     delta = exp[3] + ir + self._gamma * next_val - val
                     last_gae = delta + self._gamma * self._lambda * last_gae
 
-                result_adv.append(last_gae)
-                result_ref.append(last_gae + val)
+                adv_v[index] = last_gae
+                ref_v[index] = last_gae + val
+                index -= 1
 
-        adv_v = torch.FloatTensor(list(reversed(result_adv)))
-        ref_v = torch.FloatTensor(list(reversed(result_ref)))
-        return adv_v.to(self._device), ref_v.to(self._device)
+        return adv_v, ref_v
 
     def get_action(self, state, deterministic=False):
-        probs = torch.softmax(self._agent.action(state), dim=-1)
+        probs = self._agent.action(state)
         if deterministic:
             action = probs.argmax()
         else:
