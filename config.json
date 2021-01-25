@@ -513,6 +513,29 @@
       "forward_model_eta": 1,
       "forward_model_variant": "A",
       "forward_model_batch_size": 32
+    },
+    "15": {
+      "model": "rnd",
+      "noisy": false,
+      "sigma": 0.3,
+      "trials": 5,
+      "steps": 2,
+      "gamma": 0.99,
+      "tau ": 0.005,
+      "batch_size": 64,
+      "memory_size": 100000,
+      "actor_lr": 0.0001,
+      "actor_h1": 256,
+      "actor_h2": 128,
+      "critic_lr": 0.0002,
+      "critic_h1": 256,
+      "critic_h2": 128,
+      "forward_model_lr": 0.0001,
+      "forward_model_h1": 700,
+      "forward_model_h2": 350,
+      "forward_model_eta": 1,
+      "forward_model_variant": "A",
+      "forward_model_batch_size": 32
     }
   },
   "half_cheetah": {

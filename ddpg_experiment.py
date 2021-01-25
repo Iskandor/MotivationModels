@@ -34,7 +34,7 @@ class ExperimentDDPG:
             steps = 0
 
             print("Test no.{0}".format(i))
-            bar = ProgressBar(env._max_episode_steps, max_width=40)
+            bar = ProgressBar(env.spec.max_episode_steps, max_width=40)
             if video:
                 video_path = './videos/{0}_{1}_{2:d}.mp4'.format(config.name, config.model, i)
                 video_recorder = VideoRecorder(env, video_path, enabled=video_path is not None)

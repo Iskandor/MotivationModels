@@ -34,6 +34,14 @@ class ForwardModel(nn.Module):
         predicted_state = self._model(x)
         return predicted_state
 
+    def error(self, state, action, next_state):
+        with torch.no_grad():
+            dim = action.ndim - 1
+            prediction = self(state, action)
+            error = torch.mean(torch.pow(prediction.flatten(dim) - next_state.flatten(dim), 2), dim=dim).unsqueeze(dim)
+
+        return error
+
     def loss_function(self, state, action, next_state):
         return nn.functional.mse_loss(self(state, action), next_state)
 
@@ -61,6 +69,14 @@ class SmallForwardModel(nn.Module):
         predicted_state = self._model(x)
         return predicted_state
 
+    def error(self, state, action, next_state):
+        with torch.no_grad():
+            dim = action.ndim - 1
+            prediction = self(state, action)
+            error = torch.mean(torch.pow(prediction.flatten(dim) - next_state.flatten(dim), 2), dim=dim).unsqueeze(dim)
+
+        return error
+
     def loss_function(self, state, action, next_state):
         return nn.functional.mse_loss(self(state, action), next_state)
 
@@ -86,8 +102,17 @@ class ResidualForwardModel(nn.Module):
         predicted_state = self._model(x) + state
         return predicted_state
 
+    def error(self, state, action, next_state):
+        with torch.no_grad():
+            dim = action.ndim - 1
+            prediction = self(state, action)
+            error = torch.mean(torch.pow(prediction.flatten(dim) - next_state.flatten(dim), 2), dim=dim).unsqueeze(dim)
+
+        return error
+
     def loss_function(self, state, action, next_state):
         return nn.functional.mse_loss(self(state, action), next_state)
+
 
 class VAE_ForwardModel(nn.Module):
     def __init__(self, state_space_dim, latent_space_dim, action_space_dim):
@@ -191,3 +216,67 @@ class VAE_ForwardModel(nn.Module):
         KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
 
         return BCE + KLD
+
+
+class RND_ForwardModel(nn.Module):
+    def __init__(self, state_dim, action_dim, config):
+        super(RND_ForwardModel, self).__init__()
+
+        self.layers_model = [
+            Linear(in_features=state_dim + action_dim, out_features=config.forward_model_h1, bias=True),
+            LeakyReLU(),
+            Linear(in_features=config.forward_model_h1, out_features=config.forward_model_h1, bias=True),
+            LeakyReLU(),
+            Linear(in_features=config.forward_model_h1, out_features=config.forward_model_h2, bias=True),
+            LeakyReLU(),
+            Linear(in_features=config.forward_model_h2, out_features=config.forward_model_h2, bias=True),
+            LeakyReLU(),
+            Linear(in_features=config.forward_model_h2, out_features=state_dim, bias=True)
+        ]
+
+        nn.init.xavier_uniform_(self.layers_model[0].weight)
+        nn.init.xavier_uniform_(self.layers_model[2].weight)
+        nn.init.xavier_uniform_(self.layers_model[4].weight)
+        nn.init.xavier_uniform_(self.layers_model[6].weight)
+        nn.init.uniform_(self.layers_model[8].weight, -0.3, 0.3)
+
+        self._model = Sequential(*self.layers_model)
+
+        self.layers_target = [
+            Linear(in_features=state_dim, out_features=config.forward_model_h1, bias=True),
+            LeakyReLU(),
+            Linear(in_features=config.forward_model_h1, out_features=config.forward_model_h1, bias=True),
+            LeakyReLU(),
+            Linear(in_features=config.forward_model_h1, out_features=config.forward_model_h2, bias=True),
+            LeakyReLU(),
+            Linear(in_features=config.forward_model_h2, out_features=config.forward_model_h2, bias=True),
+            LeakyReLU(),
+            Linear(in_features=config.forward_model_h2, out_features=state_dim, bias=True)
+        ]
+
+        nn.init.xavier_uniform_(self.layers_target[0].weight)
+        nn.init.xavier_uniform_(self.layers_target[2].weight)
+        nn.init.xavier_uniform_(self.layers_target[4].weight)
+        nn.init.xavier_uniform_(self.layers_target[6].weight)
+        nn.init.uniform_(self.layers_target[8].weight, -0.3, 0.3)
+
+        self._target = Sequential(*self.layers_target)
+
+    def encode(self, state):
+        return self._target(state).detach()
+
+    def forward(self, state, action):
+        x = torch.cat([self.encode(state), action], state.ndim - 1)
+        predicted_state = self._model(x)
+        return predicted_state
+
+    def error(self, state, action, next_state):
+        with torch.no_grad():
+            dim = action.ndim - 1
+            prediction = self(self.encode(state), action)
+            error = torch.mean(torch.pow(prediction.flatten(dim) - self.encode(next_state).flatten(dim), 2), dim=dim).unsqueeze(dim)
+
+        return error
+
+    def loss_function(self, state, action, next_state):
+        return nn.functional.mse_loss(self(self.encode(state), action), self.encode(next_state))

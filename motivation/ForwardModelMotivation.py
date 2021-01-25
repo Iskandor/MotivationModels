@@ -41,12 +41,7 @@ class ForwardModelMotivation:
             self._optimizer.step()
 
     def error(self, state0, action, state1):
-        with torch.no_grad():
-            dim = action.ndim - 1
-            prediction = self._network(state0, action)
-            error = torch.mean(torch.pow(prediction.flatten(dim) - state1.flatten(dim), 2), dim=dim).unsqueeze(dim)
-
-        return error
+        return self._network.error(state0, action, state1)
 
     def mean_error(self):
         return self._error_buffer.mean()
