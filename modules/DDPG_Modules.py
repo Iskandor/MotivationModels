@@ -1,9 +1,7 @@
 import torch
 from torch import nn
-from torch.nn import *
 
 from algorithms.DDPG import DDPGCritic, DDPGActor
-from motivation.MateLearnerMotivation import MetaLearnerModel
 
 
 class Critic(DDPGCritic):
@@ -51,58 +49,3 @@ class Actor(DDPGActor):
         nn.init.xavier_uniform_(self._hidden0.weight)
         nn.init.xavier_uniform_(self._hidden1.weight)
         nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
-
-
-class MetaLearnerNetwork(MetaLearnerModel):
-    def __init__(self, state_dim, action_dim, config):
-        super(MetaLearnerNetwork, self).__init__(state_dim, action_dim, config)
-
-        self.layers = [
-            Linear(in_features=state_dim + action_dim, out_features=config.metacritic_h1, bias=True),
-            LeakyReLU(),
-            Linear(in_features=config.metacritic_h1, out_features=config.metacritic_h1, bias=True),
-            LeakyReLU(),
-            Linear(in_features=config.metacritic_h1, out_features=config.metacritic_h2, bias=True),
-            LeakyReLU(),
-            Linear(in_features=config.metacritic_h2, out_features=config.metacritic_h2, bias=True),
-            LeakyReLU(),
-            Linear(in_features=config.metacritic_h2, out_features=1, bias=True),
-            LeakyReLU()
-        ]
-
-        nn.init.xavier_uniform_(self.layers[0].weight)
-        nn.init.xavier_uniform_(self.layers[2].weight)
-        nn.init.xavier_uniform_(self.layers[4].weight)
-        nn.init.xavier_uniform_(self.layers[6].weight)
-        nn.init.uniform_(self.layers[8].weight, -0.3, 0.3)
-
-        self._model = Sequential(*self.layers)
-
-    def forward(self, state, action):
-        x = torch.cat([state, action], state.ndim - 1)
-        error_estimate = self._model(x)
-        return error_estimate
-
-
-class SmallMetaLearnerNetwork(MetaLearnerModel):
-    def __init__(self, state_dim, action_dim, config):
-        super(SmallMetaLearnerNetwork, self).__init__(state_dim, action_dim, config)
-
-        self.layers = [
-            Linear(in_features=state_dim + action_dim, out_features=config.metacritic_h1, bias=True),
-            Tanh(),
-            Linear(in_features=config.metacritic_h1, out_features=config.metacritic_h2, bias=True),
-            Tanh(),
-            Linear(in_features=config.metacritic_h2, out_features=1, bias=True)
-        ]
-
-        nn.init.xavier_uniform_(self.layers[0].weight)
-        nn.init.xavier_uniform_(self.layers[2].weight)
-        nn.init.uniform_(self.layers[4].weight, -0.3, 0.3)
-
-        self._model = Sequential(*self.layers)
-
-    def forward(self, state, action):
-        x = torch.cat([state, action], state.ndim - 1)
-        error_estimate = self._model(x)
-        return error_estimate

@@ -7,10 +7,10 @@ from torch.nn import *
 from algorithms.DDPG import DDPGCritic, DDPGActor, DDPG
 from algorithms.ReplayBuffer import ExperienceReplayBuffer
 from ddpg_noisy_experiment import ExperimentNoisyDDPG
-from modules import forward_models
+from modules import forward_models, metacritic_models
 from modules.NoisyLinear import NoisyLinear
 from motivation.ForwardModelMotivation import ForwardModelMotivation
-from motivation.MateLearnerMotivation import MetaLearnerModel, MetaLearnerMotivation
+from motivation.MateCriticMotivation import MetaCriticMotivation
 
 
 class Critic(DDPGCritic):
@@ -57,28 +57,6 @@ class Actor(DDPGActor):
     def init(self):
         nn.init.xavier_uniform_(self._hidden0.weight)
         nn.init.xavier_uniform_(self._hidden1.weight)
-
-
-class MetaLearnerNetwork(MetaLearnerModel):
-    def __init__(self, state_dim, action_dim, config):
-        super(MetaLearnerNetwork, self).__init__(state_dim, action_dim, config)
-        self._model = Sequential(
-            Linear(in_features=state_dim + action_dim, out_features=config.metacritic_h1, bias=True),
-            LeakyReLU(),
-            Linear(in_features=config.metacritic_h1, out_features=config.metacritic_h1, bias=True),
-            LeakyReLU(),
-            Linear(in_features=config.metacritic_h1, out_features=config.metacritic_h2, bias=True),
-            LeakyReLU(),
-            Linear(in_features=config.metacritic_h2, out_features=config.metacritic_h2, bias=True),
-            LeakyReLU(),
-            Linear(in_features=config.metacritic_h2, out_features=1, bias=True),
-            LeakyReLU()
-        )
-
-    def forward(self, state, action):
-        x = torch.cat([state, action], state.ndim - 1)
-        value = self._model(x)
-        return value
 
 
 def run_baseline(config, i):
@@ -147,12 +125,12 @@ def run_metalearner_model(config, i):
                                                config.forward_model_variant, env.spec.max_episode_steps * 10)
 
     if hasattr(config, 'metacritic_batch_size'):
-        metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic_lr, state_dim,
-                                           config.metacritic_variant, env.spec.max_episode_steps * 10, config.metacritic_eta,
-                                           memory, config.metacritic_batch_size)
+        metacritic = MetaCriticMotivation(metacritic_models.MetaCritic(state_dim, action_dim, config), forward_model, config.metacritic_lr, state_dim,
+                                          config.metacritic_variant, env.spec.max_episode_steps * 10, config.metacritic_eta,
+                                          memory, config.metacritic_batch_size)
     else:
-        metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic_lr, state_dim,
-                                           config.metacritic_variant, env.spec.max_episode_steps * 10, config.metacritic_eta)
+        metacritic = MetaCriticMotivation(metacritic_models.MetaCritic(state_dim, action_dim, config), forward_model, config.metacritic_lr, state_dim,
+                                          config.metacritic_variant, env.spec.max_episode_steps * 10, config.metacritic_eta)
 
     agent.add_motivation_module(metacritic)
 

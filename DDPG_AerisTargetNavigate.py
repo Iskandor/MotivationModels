@@ -7,7 +7,7 @@ from algorithms.DDPG import DDPGCritic, DDPGActor, DDPG
 from algorithms.ReplayBuffer import ExperienceReplayBuffer
 from ddpg_experiment import ExperimentDDPG
 from motivation.ForwardModelMotivation import ForwardModelMotivation
-from motivation.MateLearnerMotivation import MetaLearnerModel, MetaLearnerMotivation
+from motivation.MateCriticMotivation import MetaCriticMotivation
 
 
 class Critic(DDPGCritic):
@@ -114,9 +114,9 @@ class ForwardModel(nn.Module):
         return value
 
 
-class MetaLearnerNetwork(MetaLearnerModel):
+class MetaCritic(nn.Module):
     def __init__(self, input_shape, action_dim, config):
-        super(MetaLearnerNetwork, self).__init__(input_shape, action_dim, config)
+        super(MetaCritic, self).__init__()
 
         self.channels = input_shape[0]
 
@@ -222,12 +222,12 @@ def run_metalearner_model(config, i):
                                                config.forward_model_variant, 1000 * 10)
 
     if hasattr(config, 'metacritic_batch_size'):
-        metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic_lr, state_dim,
-                                           config.metacritic_variant, 1000 * 10, config.metacritic_eta,
-                                           memory, config.metacritic_batch_size)
+        metacritic = MetaCriticMotivation(MetaCritic(state_dim, action_dim, config), forward_model, config.metacritic_lr, state_dim,
+                                          config.metacritic_variant, 1000 * 10, config.metacritic_eta,
+                                          memory, config.metacritic_batch_size)
     else:
-        metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic_lr, state_dim,
-                                           config.metacritic_variant, 1000 * 10, config.metacritic_eta)
+        metacritic = MetaCriticMotivation(MetaCritic(state_dim, action_dim, config), forward_model, config.metacritic_lr, state_dim,
+                                          config.metacritic_variant, 1000 * 10, config.metacritic_eta)
 
     agent.add_motivation_module(metacritic)
 

@@ -8,7 +8,8 @@ from algorithms.ReplayBuffer import ExperienceReplayBuffer
 from ddpg_noisy_experiment import ExperimentNoisyDDPG
 from modules.NoisyLinear import NoisyLinear
 from motivation.ForwardModelMotivation import ForwardModelMotivation
-from motivation.MateLearnerMotivation import MetaLearnerModel, MetaLearnerMotivation
+from motivation.MateCriticMotivation import MetaCriticMotivation
+from modules import metacritic_models
 
 
 class Critic(DDPGCritic):
@@ -115,28 +116,6 @@ class ForwardModel(nn.Module):
         return value
 
 
-class MetaLearnerNetwork(MetaLearnerModel):
-    def __init__(self, state_dim, action_dim, config):
-        super(MetaLearnerNetwork, self).__init__(state_dim, action_dim, config)
-        self._hidden0 = nn.Linear(state_dim + action_dim, config.metacritic_h1)
-        self._hidden1 = nn.Linear(config.metacritic_h1, config.metacritic_h2)
-        self._output = nn.Linear(config.metacritic_h2, 1)
-
-        self.init()
-
-    def forward(self, state, action):
-        x = torch.cat([state, action], state.ndim - 1)
-        x = nn.functional.relu(self._hidden0(x))
-        x = nn.functional.relu(self._hidden1(x))
-        value = self._output(x)
-        return value
-
-    def init(self):
-        nn.init.xavier_uniform_(self._hidden0.weight)
-        nn.init.xavier_uniform_(self._hidden1.weight)
-        nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
-
-
 def run_baseline(config, i):
     env = gym.make('TargetNavigate-v0')
     state_dim = env.observation_space.shape
@@ -203,12 +182,12 @@ def run_metalearner_model(config, i):
                                                config.forward_model_variant, env.spec.max_episode_steps * 10)
 
     if hasattr(config, 'metacritic_batch_size'):
-        metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic_lr,
-                                           config.metacritic_variant, env.spec.max_episode_steps * 10, config.metacritic_eta,
-                                           memory, config.metacritic_batch_size)
+        metacritic = MetaCriticMotivation(metacritic_models.MetaCritic(state_dim, action_dim, config), forward_model, config.metacritic_lr,
+                                          config.metacritic_variant, env.spec.max_episode_steps * 10, config.metacritic_eta,
+                                          memory, config.metacritic_batch_size)
     else:
-        metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic_lr,
-                                           config.metacritic_variant, env.spec.max_episode_steps * 10, config.metacritic_eta)
+        metacritic = MetaCriticMotivation(metacritic_models.MetaCritic(state_dim, action_dim, config), forward_model, config.metacritic_lr,
+                                          config.metacritic_variant, env.spec.max_episode_steps * 10, config.metacritic_eta)
 
     agent.add_motivation_module(metacritic)
 

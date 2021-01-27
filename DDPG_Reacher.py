@@ -4,10 +4,10 @@ import pybullet_envs
 from algorithms.DDPG import DDPG
 from algorithms.ReplayBuffer import ExperienceReplayBuffer
 from ddpg_experiment import ExperimentDDPG
-from modules import forward_models
+from modules import forward_models, metacritic_models
 from modules.DDPG_Modules import *
 from motivation.ForwardModelMotivation import ForwardModelMotivation
-from motivation.MateLearnerMotivation import MetaLearnerMotivation
+from motivation.MateCriticMotivation import MetaCriticMotivation
 
 
 def run_baseline(config, i):
@@ -53,6 +53,7 @@ def run_forward_model(config, i):
 
     env.close()
 
+
 def run_metalearner_model(config, i):
     env = gym.make('ReacherBulletEnv-v0')
     state_dim = env.observation_space.shape[0]
@@ -75,13 +76,13 @@ def run_metalearner_model(config, i):
                                                config.forward_model_variant, env.spec.max_episode_steps * 10)
 
     if hasattr(config, 'metacritic_batch_size'):
-        metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic_lr, state_dim,
-                                           config.metacritic_variant, env.spec.max_episode_steps * 10,
-                                           config.metacritic_eta, memory, config.metacritic_batch_size)
+        metacritic = MetaCriticMotivation(metacritic_models.MetaCritic(state_dim, action_dim, config), forward_model, config.metacritic_lr, state_dim,
+                                          config.metacritic_variant, env.spec.max_episode_steps * 10,
+                                          config.metacritic_eta, memory, config.metacritic_batch_size)
     else:
-        metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic_lr, state_dim,
-                                           config.metacritic_variant, env.spec.max_episode_steps * 10,
-                                           config.metacritic_eta)
+        metacritic = MetaCriticMotivation(metacritic_models.MetaCritic(state_dim, action_dim, config), forward_model, config.metacritic_lr, state_dim,
+                                          config.metacritic_variant, env.spec.max_episode_steps * 10,
+                                          config.metacritic_eta)
 
     agent.add_motivation_module(metacritic)
 

@@ -3,10 +3,10 @@ import gym
 from algorithms.DDPG import DDPG
 from algorithms.ReplayBuffer import ExperienceReplayBuffer
 from ddpg_experiment import ExperimentDDPG
-from modules import forward_models
+from modules import forward_models, metacritic_models
 from modules.DDPG_Modules import *
 from motivation.ForwardModelMotivation import ForwardModelMotivation
-from motivation.MateLearnerMotivation import MetaLearnerMotivation
+from motivation.MateCriticMotivation import MetaCriticMotivation
 
 
 def run_baseline(config, i):
@@ -75,11 +75,11 @@ def run_metalearner_model(config, i):
                                                config.forward_model_eta, config.forward_model_variant)
 
     if hasattr(config, 'metacritic_batch_size'):
-        metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic_lr, state_dim,
-                                           config.metacritic_variant, 0, config.metacritic_eta, memory, config.metacritic_batch_size)
+        metacritic = MetaCriticMotivation(metacritic_models.MetaCritic(state_dim, action_dim, config), forward_model, config.metacritic_lr, state_dim,
+                                          config.metacritic_variant, 0, config.metacritic_eta, memory, config.metacritic_batch_size)
     else:
-        metacritic = MetaLearnerMotivation(MetaLearnerNetwork(state_dim, action_dim, config), forward_model, config.metacritic_lr, state_dim,
-                                           config.metacritic_variant, 0, config.metacritic_eta)
+        metacritic = MetaCriticMotivation(metacritic_models.MetaCritic(state_dim, action_dim, config), forward_model, config.metacritic_lr, state_dim,
+                                          config.metacritic_variant, 0, config.metacritic_eta)
 
     agent.add_motivation_module(metacritic)
 

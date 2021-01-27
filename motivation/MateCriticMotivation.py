@@ -3,17 +3,7 @@ import abc
 import torch
 
 
-class MetaLearnerModel(torch.nn.Module):
-    @abc.abstractmethod
-    def __init__(self, state_dim, action_dim, config):
-        super(MetaLearnerModel, self).__init__()
-
-    @abc.abstractmethod
-    def forward(self, state, action):
-        raise NotImplementedError
-
-
-class MetaLearnerMotivation:
+class MetaCriticMotivation:
     def __init__(self, network, forward_model, lr, state_dim, variant='A', window=1, eta=1.0, memory_buffer=None, sample_size=0):
         self._forward_model = forward_model
         self._network = network
@@ -22,7 +12,6 @@ class MetaLearnerMotivation:
         self._sample_size = sample_size
         self._variant = variant
         self._eta = eta
-        # self._sigma = state_dim * 0.005
         self._sigma = 1e-2
 
         if self._variant == 'E':
