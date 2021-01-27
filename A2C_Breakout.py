@@ -1,7 +1,7 @@
 import gym
 import torch
 
-from a2c_experiment import ExperimentA2C
+from experiment.a2c_experiment import ExperimentA2C
 from algorithms.A2C import A2C
 from utils.AtariWrapper import AtariWrapper
 

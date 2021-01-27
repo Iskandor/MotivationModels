@@ -3,7 +3,7 @@ import gym
 from modules import forward_models, metacritic_models
 from modules.DDPG_Modules import *
 from algorithms.ReplayBuffer import ExperienceReplayBuffer
-from ddpg_experiment import ExperimentDDPG
+from experiment.ddpg_experiment import ExperimentDDPG
 from algorithms.DDPG import DDPG
 from motivation.ForwardModelMotivation import ForwardModelMotivation
 from motivation.MateCriticMotivation import MetaCriticMotivation

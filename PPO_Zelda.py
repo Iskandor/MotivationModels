@@ -3,10 +3,8 @@ import torch
 
 from algorithms.PPO import PPO
 from motivation.ICM import ICM
-from ppo_experiment import ExperimentPPO
-from utils.AtariWrapper import AtariWrapper
+from experiment.ppo_experiment import ExperimentPPO
 from nes_py.wrappers import JoypadSpace
-import gym_zelda_1
 from gym_zelda_1.actions import MOVEMENT
 
 

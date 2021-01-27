@@ -3,7 +3,7 @@ import torch
 
 from algorithms.PPO import PPO
 from modules.PPO_Modules import AtariPPONetwork
-from ppo_experiment import ExperimentPPO
+from experiment.ppo_experiment import ExperimentPPO
 from utils.AtariWrapper import AtariWrapper
 
 

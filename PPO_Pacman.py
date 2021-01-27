@@ -2,8 +2,9 @@ import gym
 import torch
 
 from algorithms.PPO import PPO
+from experiment.ppo_nenv_experiment import ExperimentNEnvPPO
 from modules.PPO_Modules import AtariPPONetwork
-from ppo_experiment import ExperimentPPO
+from experiment.ppo_experiment import ExperimentPPO
 from utils.AtariWrapper import AtariWrapper
 
 
@@ -33,12 +34,25 @@ def run_baseline(config, i):
     input_shape = env.observation_space.shape
     action_dim = env.action_space.n
 
-    experiment = ExperimentPPO('MsPacman-v0', env, config)
-    experiment.add_preprocess(encode_state)
+    if config.n_env > 1:
+        env_list = []
+        print('Creating {0:d} environments'.format(config.n_env))
+        for i in range(config.n_env):
+            env_list.append(AtariWrapper(gym.make('MsPacman-v0')))
+
+        print('Start training')
+        experiment = ExperimentNEnvPPO('MsPacman-v0', env_list, config)
+    else:
+        experiment = ExperimentPPO('MsPacman-v0', env, config)
+        experiment.add_preprocess(encode_state)
 
     network = AtariPPONetwork(input_shape, action_dim, config).to(config.device)
     agent = PPO(network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size, config.beta, config.gamma,
-                device=config.device)
+                device=config.device, n_env=config.n_env)
     experiment.run_baseline(agent, i)
 
     env.close()
+
+    if config.n_env > 1:
+        for i in range(config.n_env):
+            env_list[i].close()

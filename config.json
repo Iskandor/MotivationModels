@@ -1157,6 +1157,7 @@
   "mspacman": {
     "1": {
       "model": "baseline",
+      "n_env": 64,
       "trials": 1,
       "steps": 8,
       "gamma": 0.99,
@@ -1173,6 +1174,7 @@
     },
     "2": {
       "model": "fm",
+      "n_env": 1,
       "trials": 1,
       "steps": 8,
       "gamma": 0.99,
@@ -1195,6 +1197,7 @@
     },
     "3": {
       "model": "su",
+      "n_env": 1,
       "trials": 1,
       "steps": 8,
       "gamma": 0.99,

@@ -2,7 +2,7 @@ import gym
 import torch
 
 from algorithms.PPO import PPO
-from ppo_experiment import ExperimentPPO
+from experiment.ppo_experiment import ExperimentPPO
 
 
 class PPONetwork(torch.nn.Module):

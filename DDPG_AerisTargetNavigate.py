@@ -1,11 +1,10 @@
 import gym
-import gym_aeris
 import torch
 from torch import nn
 
 from algorithms.DDPG import DDPGCritic, DDPGActor, DDPG
 from algorithms.ReplayBuffer import ExperienceReplayBuffer
-from ddpg_experiment import ExperimentDDPG
+from experiment.ddpg_experiment import ExperimentDDPG
 from motivation.ForwardModelMotivation import ForwardModelMotivation
 from motivation.MateCriticMotivation import MetaCriticMotivation
 

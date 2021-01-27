@@ -1,8 +1,7 @@
 import gym
 import torch
-import numpy as np
 
-from a2c_experiment import ExperimentA2C
+from experiment.a2c_experiment import ExperimentA2C
 from algorithms.A2C import A2C
 
 

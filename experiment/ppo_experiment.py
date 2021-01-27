@@ -43,8 +43,6 @@ class ExperimentPPO:
         train_ext_rewards = []
 
         while steps < step_limit:
-            bar.numerator = steps
-
             if self._preprocess is None:
                 state0 = torch.tensor(self._env.reset(), dtype=torch.float32).to(config.device)
             else:
