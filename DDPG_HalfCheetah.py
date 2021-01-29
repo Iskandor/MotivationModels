@@ -1,5 +1,5 @@
 import gym
-
+import pybullet_envs
 from algorithms.DDPG import DDPG
 from algorithms.ReplayBuffer import ExperienceReplayBuffer
 from experiment.ddpg_experiment import ExperimentDDPG

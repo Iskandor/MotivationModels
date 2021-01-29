@@ -1,4 +1,5 @@
 import gym
+import gym_aeris.envs
 import torch
 from torch import nn
 
@@ -6,9 +7,10 @@ from algorithms.DDPG import DDPGCritic, DDPGActor, DDPG
 from algorithms.ReplayBuffer import ExperienceReplayBuffer
 from experiment.ddpg_noisy_experiment import ExperimentNoisyDDPG
 from modules.NoisyLinear import NoisyLinear
+from modules.forward_models import ForwardModel
 from motivation.ForwardModelMotivation import ForwardModelMotivation
 from motivation.MateCriticMotivation import MetaCriticMotivation
-from modules import metacritic_models
+from modules import metacritic_models, ARCH
 
 
 class Critic(DDPGCritic):
@@ -74,49 +76,8 @@ class Actor(DDPGActor):
         return policy
 
 
-class ForwardModel(nn.Module):
-    def __init__(self, input_shape, action_dim, config):
-        super(ForwardModel, self).__init__()
-
-        self.channels = input_shape[0]
-
-        self.layers = [
-            nn.Conv1d(self.channels + action_dim, config.forward_model_kernels_count, kernel_size=8, stride=4, padding=2),
-            nn.LeakyReLU(),
-            nn.Conv1d(config.forward_model_kernels_count, config.forward_model_kernels_count, kernel_size=3, stride=1, padding=1),
-            nn.LeakyReLU(),
-            nn.Conv1d(config.forward_model_kernels_count, config.forward_model_kernels_count, kernel_size=3, stride=1, padding=1),
-            nn.LeakyReLU(),
-            nn.Conv1d(config.forward_model_kernels_count, config.forward_model_kernels_count, kernel_size=3, stride=1, padding=1),
-            nn.LeakyReLU(),
-            nn.ConvTranspose1d(config.forward_model_kernels_count, config.forward_model_kernels_count, kernel_size=8, stride=4, padding=2, output_padding=0),
-            nn.LeakyReLU(),
-            nn.Conv1d(config.forward_model_kernels_count, self.channels, kernel_size=3, stride=1, padding=1)
-        ]
-
-        nn.init.xavier_uniform_(self.layers[0].weight)
-        nn.init.xavier_uniform_(self.layers[2].weight)
-        nn.init.xavier_uniform_(self.layers[4].weight)
-        nn.init.xavier_uniform_(self.layers[6].weight)
-        nn.init.xavier_uniform_(self.layers[8].weight)
-        nn.init.uniform_(self.layers[10].weight, -0.3, 0.3)
-
-        self._network = nn.Sequential(*self.layers)
-
-    def forward(self, state, action):
-        if state.ndim == 3:
-            a = action.unsqueeze(2).repeat(1, 1, state.shape[2])
-            x = torch.cat([state, a], dim=1)
-        if state.ndim == 2:
-            a = action.unsqueeze(1).repeat(1, state.shape[1])
-            x = torch.cat([state, a], dim=0).unsqueeze(0)
-
-        value = self._network(x).squeeze(0)
-        return value
-
-
 def run_baseline(config, i):
-    env = gym.make('TargetNavigate-v0')
+    env = gym_aeris.envs.TargetNavigateEnv()
     state_dim = env.observation_space.shape
     action_dim = env.action_space.shape[0]
 
@@ -132,7 +93,7 @@ def run_baseline(config, i):
 
 
 def run_forward_model(config, i):
-    env = gym.make('TargetNavigate-v0')
+    env = gym_aeris.envs.TargetNavigateEnv()
     state_dim = env.observation_space.shape
     action_dim = env.action_space.shape[0]
 
@@ -145,11 +106,11 @@ def run_forward_model(config, i):
     agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)
 
     if hasattr(config, 'forward_model_batch_size'):
-        forward_model = ForwardModelMotivation(ForwardModel(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
+        forward_model = ForwardModelMotivation(ForwardModel(state_dim, action_dim, config, ARCH.aeris), config.forward_model_lr, config.forward_model_eta,
                                                config.forward_model_variant, 1000 * 10,
                                                memory, config.forward_model_batch_size)
     else:
-        forward_model = ForwardModelMotivation(ForwardModel(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
+        forward_model = ForwardModelMotivation(ForwardModel(state_dim, action_dim, config, ARCH.aeris), config.forward_model_lr, config.forward_model_eta,
                                                config.forward_model_variant, 1000 * 10)
 
     agent.add_motivation_module(forward_model)
@@ -160,7 +121,7 @@ def run_forward_model(config, i):
 
 
 def run_metalearner_model(config, i):
-    env = gym.make('TargetNavigate-v0')
+    env = gym_aeris.envs.TargetNavigateEnv()
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
 
