@@ -79,8 +79,13 @@ def run_forward_model(config, i):
         experiment = ExperimentPPO('MsPacman-v0', env, config)
         experiment.add_preprocess(encode_state)
 
+    if hasattr(config, 'memory_size'):
+        memory = ExperienceReplayBuffer(config.memory_size)
+    else:
+        memory = None
+
     network = AtariPPONetwork(input_shape, action_dim, config).to(config.device)
-    memory = ExperienceReplayBuffer(config.memory_size)
+
     forward_model = ForwardModelMotivation(ForwardModel(input_shape, action_dim, config, ARCH.atari).to(config.device), config.forward_model_lr, config.forward_model_eta,
                                            config.forward_model_variant, env.spec.max_episode_steps * 10,
                                            memory, config.forward_model_batch_size, device=config.device)
