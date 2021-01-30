@@ -12,10 +12,18 @@ class ForwardModel(nn.Module):
         super(ForwardModel, self).__init__()
 
         self.arch = arch
-        self.layers = self._create_model(input_shape, action_dim, arch, config)
-        self._model = Sequential(*self.layers)
+
+        if self.arch == ARCH.atari:
+            self.layers_encoder, self.layers_model, self.layers_decoder = self._create_model(input_shape, action_dim, arch, config)
+            self._encoder = Sequential(*self.layers_encoder)
+            self._model = Sequential(*self.layers_model)
+            self._decoder = Sequential(*self.layers_decoder)
+        else:
+            self.layers = self._create_model(input_shape, action_dim, arch, config)
+            self._model = Sequential(*self.layers)
 
     def forward(self, state, action):
+        predicted_state = None
         if self.arch == ARCH.robotic or self.arch == ARCH.small_robotic:
             x = torch.cat([state, action], state.ndim - 1)
             predicted_state = self._model(x)
@@ -28,6 +36,12 @@ class ForwardModel(nn.Module):
                 x = torch.cat([state, a], dim=0).unsqueeze(0)
 
             predicted_state = self._model(x).squeeze(0)
+        if self.arch == ARCH.atari:
+            x = self._encoder(state)
+            x = torch.cat([x, action.float().repeat(1, x.shape[1])], dim=1)
+            x = self._model(x).unsqueeze(2).unsqueeze(3)
+            x = self._decoder(x)
+            predicted_state = x
 
         return predicted_state
 
@@ -116,6 +130,76 @@ class ForwardModel(nn.Module):
         nn.init.uniform_(layers[10].weight, -0.3, 0.3)
 
         return layers
+
+    def _atari_arch(self, input_shape, action_dim, config):
+        channels = input_shape[0]
+
+        layers_encoder = [
+            nn.Conv2d(channels, 64, kernel_size=7, stride=3, padding=2),
+            nn.LeakyReLU(),
+
+            nn.Conv2d(64, 64, kernel_size=5, stride=3, padding=0),
+            nn.LeakyReLU(),
+
+            nn.Conv2d(64, 128, kernel_size=5, stride=1, padding=0),
+            nn.LeakyReLU(),
+
+            nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=0),
+            nn.LeakyReLU(),
+
+            nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=0),
+            nn.LeakyReLU(),
+
+            nn.Conv2d(256, 256, kernel_size=2, stride=1, padding=0),
+            nn.LeakyReLU(),
+
+            nn.Flatten()
+        ]
+
+        nn.init.xavier_uniform_(layers_encoder[0].weight)
+        nn.init.xavier_uniform_(layers_encoder[2].weight)
+        nn.init.xavier_uniform_(layers_encoder[4].weight)
+        nn.init.xavier_uniform_(layers_encoder[6].weight)
+        nn.init.xavier_uniform_(layers_encoder[8].weight)
+        nn.init.xavier_uniform_(layers_encoder[10].weight)
+
+        layers_model = [
+            nn.Linear(512, 256),
+            nn.LeakyReLU(),
+            nn.Linear(256, 256),
+            nn.LeakyReLU(),
+        ]
+
+        nn.init.xavier_uniform_(layers_model[0].weight)
+        nn.init.xavier_uniform_(layers_model[2].weight)
+
+        layers_decoder = [
+            nn.ConvTranspose2d(256, 256, kernel_size=2, stride=1, padding=0),
+            nn.LeakyReLU(),
+
+            nn.ConvTranspose2d(256, 128, kernel_size=3, stride=1, padding=0),
+            nn.LeakyReLU(),
+
+            nn.ConvTranspose2d(128, 128, kernel_size=3, stride=1, padding=0),
+            nn.LeakyReLU(),
+
+            nn.ConvTranspose2d(128, 64, kernel_size=5, stride=1, padding=0),
+            nn.LeakyReLU(),
+
+            nn.ConvTranspose2d(64, 64, kernel_size=5, stride=3, padding=0),
+            nn.LeakyReLU(),
+
+            nn.ConvTranspose2d(64, channels, kernel_size=7, stride=3, padding=2),
+        ]
+
+        nn.init.xavier_uniform_(layers_decoder[0].weight)
+        nn.init.xavier_uniform_(layers_decoder[2].weight)
+        nn.init.xavier_uniform_(layers_decoder[4].weight)
+        nn.init.xavier_uniform_(layers_decoder[6].weight)
+        nn.init.xavier_uniform_(layers_decoder[8].weight)
+        nn.init.xavier_uniform_(layers_decoder[10].weight)
+
+        return layers_encoder, layers_model, layers_decoder
 
 
 class ResidualForwardModel(nn.Module):

@@ -53,25 +53,27 @@ class PPO:
         states = []
         actions = []
         next_states = []
-        for state, action, next_state, _, _ in self._trajectory:
+        rewards = []
+        dones = []
+
+        for state, action, next_state, reward, done in self._trajectory:
             states.append(state)
             actions.append(action)
             next_states.append(next_state)
+            rewards.append(reward)
+            dones.append(done)
 
         states = torch.stack(states).squeeze(1)
         actions = torch.stack(actions).squeeze(1)
+        rewards = torch.tensor(rewards, dtype=torch.float32, device=self._device)
+        dones = torch.tensor(dones, dtype=torch.float32, device=self._device)
 
         intrinsic_reward = None
         if self._motivation:
-            self._motivation.to('cpu')
-            next_states = torch.stack(next_states).squeeze(1).to('cpu')
-            actions_code = one_hot_code(actions, self._agent.action_dim, 'cpu')
-            intrinsic_reward = self._motivation.reward(states, actions_code, next_states)
-            self._motivation.to(self._device)
-            actions_code = actions_code.to(self._device)
-            next_states = next_states.to(self._device)
+            next_states = torch.stack(next_states).squeeze(1)
+            intrinsic_reward = self.calc_int_reward(states, actions, next_states)
 
-        traj_adv_v, traj_ref_v = self.calc_advantage(states, intrinsic_reward)
+        traj_adv_v, traj_ref_v = self.calc_advantage(states, rewards, dones, intrinsic_reward)
         traj_adv_v = (traj_adv_v - torch.mean(traj_adv_v)) / torch.std(traj_adv_v)
         old_logprob = self.calc_log_probs(states, actions)
 
@@ -99,10 +101,6 @@ class PPO:
 
                 self._optimizer.zero_grad()
                 loss = loss_value_v * self._critic_loss_weight + loss_policy_v * self._actor_loss_weight
-                if self._motivation:
-                    next_states_v = next_states[batch_ofs:batch_l]
-                    actions_code_v = actions_code[batch_ofs:batch_l]
-                    loss += self._motivation.loss(states_v, actions_code_v, next_states_v)
                 loss.backward()
                 self._optimizer.step()
 
@@ -111,6 +109,16 @@ class PPO:
         end = time.time()
         print("Trajectory {0:d} batch size {1:d} epochs {2:d} training time {3:.2f}s".format(self._trajectory_size, self._batch_size, self._ppo_epochs, end - start))
 
+    def calc_int_reward(self, states, actions, next_states):
+        int_reward = self._motivation.reward(states[0:self._batch_size], actions[0:self._batch_size], next_states[0:self._batch_size]).detach()
+
+        for batch_ofs in range(self._batch_size, self._trajectory_size, self._batch_size):
+            batch_l = min(batch_ofs + self._batch_size, self._trajectory_size)
+            int_reward = torch.cat([int_reward, self._motivation.reward(states[batch_ofs:batch_l], actions[batch_ofs:batch_l], next_states[batch_ofs:batch_l]).detach()], dim=0)
+        int_reward = int_reward.squeeze()
+
+        return int_reward
+
     def calc_log_probs(self, states, actions):
         probs = self._agent.action(states[0:self._batch_size]).detach()
         for batch_ofs in range(self._batch_size, self._trajectory_size, self._batch_size):
@@ -118,43 +126,31 @@ class PPO:
             probs = torch.cat([probs, self._agent.action(states[batch_ofs:batch_l]).detach()], dim=0)
         return torch.gather(probs, 1, actions)[:-1].log()
 
-    def calc_advantage(self, states, intrinsic_reward):
+    def calc_advantage(self, states, rewards, dones, intrinsic_reward):
         values = self._agent.value(states[0:self._batch_size]).detach()
 
         for batch_ofs in range(self._batch_size, self._trajectory_size, self._batch_size):
             batch_l = min(batch_ofs + self._batch_size, self._trajectory_size)
             values = torch.cat([values, self._agent.value(states[batch_ofs:batch_l]).detach()], dim=0)
-        values = values.squeeze()
+        values = values.flip(0).squeeze()
+
+        val = values[:-1]
+        next_val = values[1:] * self._gamma * dones[:-1].flip(0)
+        delta = rewards[:-1].flip(0) + next_val - val
+        gamma_lambda = self._gamma * self._lambda * dones
+
+        if intrinsic_reward is not None:
+            delta += intrinsic_reward[:-1].flip(0)
 
         last_gae = 0.0
-        adv_v = torch.zeros(self._trajectory_size - 1, dtype=torch.float32, device=self._device)
-        ref_v = torch.zeros(self._trajectory_size - 1, dtype=torch.float32, device=self._device)
-        index = self._trajectory_size - 2
+        adv_v = []
 
-        if intrinsic_reward is None:
-            for val, next_val, exp in zip(reversed(values[:-1]), reversed(values[1:]), reversed(self._trajectory[:-1])):
-                if exp[4]:
-                    delta = exp[3] - val
-                    last_gae = delta
-                else:
-                    delta = exp[3] + self._gamma * next_val - val
-                    last_gae = delta + self._gamma * self._lambda * last_gae
+        for d, gl in zip(delta, gamma_lambda):
+            last_gae = d + gl * last_gae
+            adv_v.append(last_gae)
 
-                adv_v[index] = last_gae
-                ref_v[index] = last_gae + val
-                index -= 1
-        else:
-            for val, next_val, exp, ir in zip(reversed(values[:-1]), reversed(values[1:]), reversed(self._trajectory[:-1]), reversed(intrinsic_reward[:-1])):
-                if exp[4]:
-                    delta = exp[3] + ir - val
-                    last_gae = delta
-                else:
-                    delta = exp[3] + ir + self._gamma * next_val - val
-                    last_gae = delta + self._gamma * self._lambda * last_gae
-
-                adv_v[index] = last_gae
-                ref_v[index] = last_gae + val
-                index -= 1
+        adv_v = torch.tensor(adv_v, dtype=torch.float32, device=self._device).flip(0)
+        ref_v = adv_v + val
 
         return adv_v, ref_v
 
@@ -168,10 +164,10 @@ class PPO:
 
         return action.unsqueeze(probs.ndim - 1)
 
-    def add_motivation(self, motivation):
+    def add_motivation_module(self, motivation):
         self._motivation = motivation
 
-    def get_motivation(self):
+    def get_motivation_module(self):
         return self._motivation
 
     def save(self, path):
