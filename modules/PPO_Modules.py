@@ -90,7 +90,6 @@ class AtariPPONetwork(torch.nn.Module):
             torch.nn.Linear(config.actor_h1, config.actor_h2),
             torch.nn.ReLU(),
             torch.nn.Linear(config.actor_h2, action_dim),
-            torch.nn.Softmax()
         ]
 
         for i in range(len(self.layers_features)):

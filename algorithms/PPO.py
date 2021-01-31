@@ -1,5 +1,6 @@
 import time
 
+from torch import nn
 from torch.distributions import Categorical
 
 from utils import *
@@ -91,8 +92,8 @@ class PPO:
                 value_v = self._agent.value(states_v)
                 loss_value_v = torch.nn.functional.mse_loss(value_v.squeeze(-1), batch_ref_v)
 
-                probs_v = torch.gather(self._agent.action(states_v), 1, actions_v)
-                logprob_pi_v = probs_v.log()
+                log_probs_v = torch.log_softmax(self._agent.action(states_v), dim=1)
+                logprob_pi_v = torch.gather(log_probs_v, 1, actions_v)
                 ratio_v = torch.exp(logprob_pi_v - batch_old_logprob_v)
                 surr_obj_v = batch_adv_v * ratio_v
                 c_ratio_v = torch.clamp(ratio_v, 1.0 - self._epsilon, 1.0 + self._epsilon)
@@ -120,11 +121,11 @@ class PPO:
         return int_reward
 
     def calc_log_probs(self, states, actions):
-        probs = self._agent.action(states[0:self._batch_size]).detach()
+        log_probs = nn.functional.log_softmax(self._agent.action(states[0:self._batch_size]), dim=1).detach()
         for batch_ofs in range(self._batch_size, self._trajectory_size, self._batch_size):
             batch_l = min(batch_ofs + self._batch_size, self._trajectory_size)
-            probs = torch.cat([probs, self._agent.action(states[batch_ofs:batch_l]).detach()], dim=0)
-        return torch.gather(probs, 1, actions)[:-1].log()
+            log_probs = torch.cat([log_probs, self._agent.action(states[batch_ofs:batch_l]).detach()], dim=0)
+        return torch.gather(log_probs, 1, actions)[:-1]
 
     def calc_advantage(self, states, rewards, dones, intrinsic_reward):
         values = self._agent.value(states[0:self._batch_size]).detach()
@@ -155,7 +156,8 @@ class PPO:
         return adv_v, ref_v
 
     def get_action(self, state, deterministic=False):
-        probs = self._agent.action(state)
+        logits = self._agent.action(state)
+        probs = nn.functional.softmax(logits, dim=logits.ndim - 1)
         if deterministic:
             action = probs.argmax()
         else:
