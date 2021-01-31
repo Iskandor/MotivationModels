@@ -7,7 +7,7 @@ from experiment.ppo_nenv_experiment import ExperimentNEnvPPO
 from modules import ARCH
 from modules.PPO_Modules import AtariPPONetwork
 from experiment.ppo_experiment import ExperimentPPO
-from modules.forward_models import ForwardModel
+from modules.forward_models.ForwardModel import ForwardModel
 from motivation.ForwardModelMotivation import ForwardModelMotivation
 from utils.AtariWrapper import AtariWrapper
 

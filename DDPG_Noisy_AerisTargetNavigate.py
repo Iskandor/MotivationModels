@@ -7,10 +7,11 @@ from algorithms.DDPG import DDPGCritic, DDPGActor, DDPG
 from algorithms.ReplayBuffer import ExperienceReplayBuffer
 from experiment.ddpg_noisy_experiment import ExperimentNoisyDDPG
 from modules.NoisyLinear import NoisyLinear
-from modules.forward_models import ForwardModel
+from modules.forward_models.ForwardModel import ForwardModel
+from modules.metacritic_models import MetaCritic
 from motivation.ForwardModelMotivation import ForwardModelMotivation
 from motivation.MateCriticMotivation import MetaCriticMotivation
-from modules import metacritic_models, ARCH
+from modules import ARCH
 
 
 class Critic(DDPGCritic):
@@ -142,11 +143,11 @@ def run_metalearner_model(config, i):
                                                config.forward_model_variant, env.spec.max_episode_steps * 10)
 
     if hasattr(config, 'metacritic_batch_size'):
-        metacritic = MetaCriticMotivation(metacritic_models.MetaCritic(state_dim, action_dim, config), forward_model, config.metacritic_lr,
+        metacritic = MetaCriticMotivation(MetaCritic(state_dim, action_dim, config), forward_model, config.metacritic_lr,
                                           config.metacritic_variant, env.spec.max_episode_steps * 10, config.metacritic_eta,
                                           memory, config.metacritic_batch_size)
     else:
-        metacritic = MetaCriticMotivation(metacritic_models.MetaCritic(state_dim, action_dim, config), forward_model, config.metacritic_lr,
+        metacritic = MetaCriticMotivation(MetaCritic(state_dim, action_dim, config), forward_model, config.metacritic_lr,
                                           config.metacritic_variant, env.spec.max_episode_steps * 10, config.metacritic_eta)
 
     agent.add_motivation_module(metacritic)

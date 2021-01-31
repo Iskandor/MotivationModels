@@ -7,7 +7,8 @@ from algorithms.DDPG import DDPGCritic, DDPGActor, DDPG
 from algorithms.ReplayBuffer import ExperienceReplayBuffer
 from experiment.ddpg_experiment import ExperimentDDPG
 from modules import ARCH
-from modules.forward_models import ForwardModel, RND_ForwardModel
+from modules.forward_models.ForwardModel import ForwardModel
+from modules.forward_models.RND_ForwardModel import RND_ForwardModel
 from motivation.ForwardModelMotivation import ForwardModelMotivation
 from motivation.MateCriticMotivation import MetaCriticMotivation
 
