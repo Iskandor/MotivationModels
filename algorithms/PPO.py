@@ -128,16 +128,18 @@ class PPO:
         return torch.gather(log_probs, 1, actions)[:-1]
 
     def calc_advantage(self, states, rewards, dones, intrinsic_reward):
+        dones = dones[:-1].flip(0)
+        rewards = rewards[:-1].flip(0)
         values = self._agent.value(states[0:self._batch_size]).detach()
 
         for batch_ofs in range(self._batch_size, self._trajectory_size, self._batch_size):
             batch_l = min(batch_ofs + self._batch_size, self._trajectory_size)
             values = torch.cat([values, self._agent.value(states[batch_ofs:batch_l]).detach()], dim=0)
-        values = values.flip(0).squeeze()
+        values = values.squeeze()
 
-        val = values[:-1]
-        next_val = values[1:] * self._gamma * dones[:-1].flip(0)
-        delta = rewards[:-1].flip(0) + next_val - val
+        val = values[:-1].flip(0)
+        next_val = values[1:].flip(0) * self._gamma * dones
+        delta = rewards + next_val - val
         gamma_lambda = self._gamma * self._lambda * dones
 
         if intrinsic_reward is not None:
@@ -151,20 +153,20 @@ class PPO:
             adv_v.append(last_gae)
 
         adv_v = torch.tensor(adv_v, dtype=torch.float32, device=self._device).flip(0)
-        ref_v = adv_v + val
+        ref_v = adv_v + val.flip(0)
 
         return adv_v, ref_v
 
     def get_action(self, state, deterministic=False):
         logits = self._agent.action(state)
-        probs = nn.functional.softmax(logits, dim=logits.ndim - 1)
+        probs = nn.functional.softmax(logits, dim=1)
         if deterministic:
             action = probs.argmax()
         else:
             m = Categorical(probs)
             action = m.sample()
 
-        return action.unsqueeze(probs.ndim - 1)
+        return action.unsqueeze(1)
 
     def add_motivation_module(self, motivation):
         self._motivation = motivation

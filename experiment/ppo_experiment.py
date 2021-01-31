@@ -60,7 +60,10 @@ class ExperimentPPO:
                 action0 = agent.get_action(state0)
                 next_state, reward, done, info = self._env.step(action0.item())
                 state1 = self.process_state(next_state)
-                agent.train(state0, action0, state1, reward, done)
+                mask = 1
+                if done:
+                    mask = 0
+                agent.train(state0, action0, state1, reward, mask)
                 state0 = state1
 
                 train_ext_reward += reward

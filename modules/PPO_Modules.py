@@ -114,11 +114,15 @@ class AtariPPONetwork(torch.nn.Module):
         self.actor.to(config.device)
 
     def action(self, state):
+        if state.ndim == 3:
+            state = state.unsqueeze(0)
         features = self.features(state)
         policy = self.actor(features)
         return policy
 
     def value(self, state):
+        if state.ndim == 3:
+            state = state.unsqueeze(0)
         features = self.features(state)
         value = self.critic(features)
         return value

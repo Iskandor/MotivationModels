@@ -32,10 +32,14 @@ class PPONetwork(torch.nn.Module):
             torch.nn.init.xavier_uniform_(module.weight)
 
     def action(self, state):
+        if state.ndim == 1:
+            state = state.unsqueeze(0)
         policy = self.actor(state)
         return policy
 
     def value(self, state):
+        if state.ndim == 1:
+            state = state.unsqueeze(0)
         value = self.critic(state)
         return value
 
