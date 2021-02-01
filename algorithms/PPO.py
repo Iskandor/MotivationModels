@@ -80,6 +80,14 @@ class PPO:
 
         trajectory = self._trajectory[:-1]
 
+        if self._motivation:
+            for batch_ofs in range(0, len(trajectory), self._batch_size):
+                batch_l = min(batch_ofs + self._batch_size, len(trajectory))
+                states_v = states[batch_ofs:batch_l]
+                actions_v = actions[batch_ofs:batch_l]
+                next_states_v = next_states[batch_ofs:batch_l]
+                self._motivation.train(states_v, actions_v, next_states_v)
+
         for epoch in range(self._ppo_epochs):
             for batch_ofs in range(0, len(trajectory), self._batch_size):
                 batch_l = min(batch_ofs + self._batch_size, len(trajectory))

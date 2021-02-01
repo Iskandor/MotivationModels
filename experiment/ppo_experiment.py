@@ -113,7 +113,6 @@ class ExperimentPPO:
                     memory.add(state0, action0, state1, reward, done)
 
                 agent.train(state0, action0, state1, reward, done)
-                forward_model.train(state0, action0, state1)
 
                 train_ext_reward += reward
                 train_int_reward += forward_model.reward(state0, action0, state1).item()

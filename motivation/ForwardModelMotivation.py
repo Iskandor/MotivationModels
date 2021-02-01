@@ -37,7 +37,7 @@ class ForwardModelMotivation:
                 self._optimizer.step()
         else:
             self._optimizer.zero_grad()
-            loss = self._network.loss_function(state0.to(self._device), action.to(self._device), state1.to(self._device))
+            loss = self._network.loss_function(state0, action, state1)
             loss.backward()
             self._optimizer.step()
 
