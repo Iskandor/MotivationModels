@@ -33,7 +33,7 @@ def test(config, path):
     env.close()
 
 
-def run_baseline(config, i):
+def run_baseline(config, trial):
     env = AtariWrapper(gym.make('MsPacman-v0'))
     input_shape = env.observation_space.shape
     action_dim = env.action_space.n
@@ -53,7 +53,7 @@ def run_baseline(config, i):
     network = AtariPPONetwork(input_shape, action_dim, config).to(config.device)
     agent = PPO(network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size, config.beta, config.gamma,
                 device=config.device, n_env=config.n_env)
-    experiment.run_baseline(agent, i)
+    experiment.run_baseline(agent, trial)
 
     env.close()
 
@@ -62,7 +62,7 @@ def run_baseline(config, i):
             env_list[i].close()
 
 
-def run_forward_model(config, i):
+def run_forward_model(config, trial):
     env = AtariWrapper(gym.make('MsPacman-v0'))
     input_shape = env.observation_space.shape
     action_dim = env.action_space.n
@@ -79,21 +79,16 @@ def run_forward_model(config, i):
         experiment = ExperimentPPO('MsPacman-v0', env, config)
         experiment.add_preprocess(encode_state)
 
-    if hasattr(config, 'memory_size'):
-        memory = ExperienceReplayBuffer(config.memory_size)
-    else:
-        memory = None
-
     network = AtariPPONetwork(input_shape, action_dim, config).to(config.device)
 
     forward_model = ForwardModelMotivation(ForwardModel(input_shape, action_dim, config, ARCH.atari).to(config.device), config.forward_model_lr, config.forward_model_eta,
                                            config.forward_model_variant, env.spec.max_episode_steps * 10,
-                                           memory, config.forward_model_batch_size, device=config.device)
+                                           None, config.forward_model_batch_size, device=config.device)
     agent = PPO(network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size, config.beta, config.gamma,
                 device=config.device, n_env=config.n_env)
     agent.add_motivation_module(forward_model)
 
-    experiment.run_forward_model(agent, i, memory)
+    experiment.run_forward_model(agent, trial)
 
     env.close()
 

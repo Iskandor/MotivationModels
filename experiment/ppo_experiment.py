@@ -82,7 +82,7 @@ class ExperimentPPO:
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
         numpy.save('ppo_{0}_{1}_{2:d}_re'.format(config.name, config.model, trial), numpy.array(train_ext_rewards))
 
-    def run_forward_model(self, agent, trial, memory = None):
+    def run_forward_model(self, agent, trial):
         config = self._config
         trial = trial + config.shift
         forward_model = agent.get_motivation_module()
@@ -109,9 +109,6 @@ class ExperimentPPO:
                 next_state, reward, done, info = self._env.step(action0.item())
                 state1 = self.process_state(next_state)
 
-                if memory is not None:
-                    memory.add(state0, action0, state1, reward, done)
-
                 agent.train(state0, action0, state1, reward, done)
 
                 train_ext_reward += reward
@@ -133,7 +130,6 @@ class ExperimentPPO:
             print(bar)
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
-
-        numpy.save('ddpg_{0}_{1}_{2:d}_re'.format(config.name, config.model, trial), numpy.array(train_ext_rewards))
-        numpy.save('ddpg_{0}_{1}_{2:d}_ri'.format(config.name, config.model, trial), numpy.array(train_int_rewards))
-        numpy.save('ddpg_{0}_{1}_{2:d}_fme'.format(config.name, config.model, trial), numpy.array(train_fm_errors[:step_limit]))
+        numpy.save('ppo_{0}_{1}_{2:d}_re'.format(config.name, config.model, trial), numpy.array(train_ext_rewards))
+        numpy.save('ppo_{0}_{1}_{2:d}_ri'.format(config.name, config.model, trial), numpy.array(train_int_rewards))
+        numpy.save('ppo_{0}_{1}_{2:d}_fme'.format(config.name, config.model, trial), numpy.array(train_fm_errors[:step_limit]))
