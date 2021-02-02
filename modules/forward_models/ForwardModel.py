@@ -1,3 +1,5 @@
+import random
+
 import torch
 from torch import nn
 from torch.nn import *
@@ -56,10 +58,20 @@ class ForwardModel(nn.Module):
 
     def loss_function(self, state, action, next_state):
         if self.arch == ARCH.atari:
-            loss = nn.functional.mse_loss(self(state, action), self._encoder(next_state).detach())
+            loss = nn.functional.mse_loss(self(state, action), self._encoder(next_state).detach()) + self.variation_prior(state) + self.stability_prior(state, next_state)
         else:
             loss = nn.functional.mse_loss(self(state, action), next_state)
         return loss
+
+    def variation_prior(self, state):
+        sa = state[torch.randperm(state.shape[0])]
+        sb = state[torch.randperm(state.shape[0])]
+        variation_loss = torch.exp((self._encoder(sa) - self._encoder(sb)).abs() * -1.0).mean()
+        return variation_loss
+
+    def stability_prior(self, state, next_state):
+        stability_loss = (self._encoder(next_state) - self._encoder(state)).abs().pow(2).mean()
+        return stability_loss
 
     def _create_model(self, input_shape, action_dim, arch, config):
         layers = None

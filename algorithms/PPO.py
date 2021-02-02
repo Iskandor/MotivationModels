@@ -21,7 +21,7 @@ class PPO:
         self._actor_loss_weight = actor_loss_weight
         self._critic_loss_weight = critic_loss_weight
         self._trajectory = []
-        self._ppo_epochs = 10
+        self._ppo_epochs = 4
         self._motivation = None
         self._n_env = n_env
 
