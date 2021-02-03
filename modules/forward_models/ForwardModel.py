@@ -16,7 +16,7 @@ class ForwardModel(nn.Module):
         self.input_shape = input_shape
         self.action_dim = action_dim
 
-        if self.arch == ARCH.atari:
+        if self.arch == ARCH.atari or self.arch == ARCH.robotic:
             self.layers_encoder, self.layers_model = self._create_model(input_shape, action_dim, arch, config)
             self._encoder = Sequential(*self.layers_encoder)
             self._model = Sequential(*self.layers_model)
@@ -26,8 +26,13 @@ class ForwardModel(nn.Module):
 
     def forward(self, state, action):
         predicted_state = None
-        if self.arch == ARCH.robotic or self.arch == ARCH.small_robotic:
-            x = torch.cat([state, action], state.ndim - 1)
+        if self.arch == ARCH.robotic:
+            f = self._encoder(state)
+            x = torch.cat([f, action], dim=1)
+            x = self._model(x)
+            predicted_state = x
+        if self.arch == ARCH.small_robotic:
+            x = torch.cat([state, action], dim=1)
             predicted_state = self._model(x)
         if self.arch == ARCH.aeris:
             if state.ndim == 3:
@@ -52,7 +57,7 @@ class ForwardModel(nn.Module):
             dim = action.ndim - 1
             prediction = self(state, action)
 
-            if self.arch == ARCH.atari:
+            if self.arch == ARCH.atari or self.arch == ARCH.robotic:
                 target = self._encoder(next_state)
                 error = torch.mean(torch.pow(prediction - target, 2), dim=dim).unsqueeze(dim)
             else:
@@ -61,7 +66,7 @@ class ForwardModel(nn.Module):
         return error
 
     def loss_function(self, state, action, next_state):
-        if self.arch == ARCH.atari:
+        if self.arch == ARCH.atari or self.arch == ARCH.robotic:
             loss = nn.functional.mse_loss(self(state, action), self._encoder(next_state).detach()) + self.variation_prior(state) + self.stability_prior(state, next_state)
         else:
             loss = nn.functional.mse_loss(self(state, action), next_state)
@@ -106,25 +111,37 @@ class ForwardModel(nn.Module):
         return layers
 
     def _robotic_arch(self, input_shape, action_dim, config):
-        layers = [
-            Linear(in_features=input_shape + action_dim, out_features=config.forward_model_h1, bias=True),
+        layers_encoder = [
+            Linear(in_features=input_shape, out_features=input_shape * 10, bias=True),
             LeakyReLU(),
-            Linear(in_features=config.forward_model_h1, out_features=config.forward_model_h1, bias=True),
+            Linear(in_features=input_shape * 10, out_features=input_shape * 10, bias=True),
             LeakyReLU(),
-            Linear(in_features=config.forward_model_h1, out_features=config.forward_model_h2, bias=True),
+            Linear(in_features=input_shape * 10, out_features=input_shape * 5, bias=True),
             LeakyReLU(),
-            Linear(in_features=config.forward_model_h2, out_features=config.forward_model_h2, bias=True),
+            Linear(in_features=input_shape * 5, out_features=input_shape * 5, bias=True),
             LeakyReLU(),
-            Linear(in_features=config.forward_model_h2, out_features=input_shape, bias=True)
+            Linear(in_features=input_shape * 5, out_features=action_dim, bias=True)
         ]
 
-        nn.init.xavier_uniform_(layers[0].weight)
-        nn.init.xavier_uniform_(layers[2].weight)
-        nn.init.xavier_uniform_(layers[4].weight)
-        nn.init.xavier_uniform_(layers[6].weight)
-        nn.init.uniform_(layers[8].weight, -0.3, 0.3)
+        nn.init.xavier_uniform_(layers_encoder[0].weight)
+        nn.init.xavier_uniform_(layers_encoder[2].weight)
+        nn.init.xavier_uniform_(layers_encoder[4].weight)
+        nn.init.xavier_uniform_(layers_encoder[6].weight)
+        nn.init.xavier_uniform_(layers_encoder[8].weight)
 
-        return layers
+        layers_model = [
+            Linear(in_features=action_dim + action_dim, out_features=config.forward_model_h1, bias=True),
+            Tanh(),
+            Linear(in_features=config.forward_model_h1, out_features=config.forward_model_h2, bias=True),
+            Tanh(),
+            Linear(in_features=config.forward_model_h2, out_features=action_dim, bias=True)
+        ]
+
+        nn.init.xavier_uniform_(layers_model[0].weight)
+        nn.init.xavier_uniform_(layers_model[2].weight)
+        nn.init.uniform_(layers_model[4].weight, -0.3, 0.3)
+
+        return layers_encoder, layers_model
 
     def _aeris_arch(self, input_shape, action_dim, config):
         channels = input_shape[0]

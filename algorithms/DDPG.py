@@ -68,9 +68,9 @@ class DDPG:
         if len(self._memory) > self._sample_size:
             sample = self._memory.sample(self._sample_size)
 
-            states = torch.stack(sample.state)
-            next_states = torch.stack(sample.next_state)
-            actions = torch.stack(sample.action)
+            states = torch.stack(sample.state).squeeze(1)
+            next_states = torch.stack(sample.next_state).squeeze(1)
+            actions = torch.stack(sample.action).squeeze(1)
             rewards = torch.stack(sample.reward)
             masks = torch.stack(sample.mask)
 

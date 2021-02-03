@@ -86,7 +86,7 @@ class ExperimentDDPG:
                 value_list.append(values)
 
             if self._preprocess is None:
-                state0 = torch.tensor(self._env.reset(), dtype=torch.float32)
+                state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0)
             else:
                 state0 = self._preprocess(self._env.reset())
 
@@ -99,11 +99,11 @@ class ExperimentDDPG:
                 if config.check('generate_states'):
                     states.append(state0.numpy())
                 action0 = exploration.explore(agent.get_action(state0))
-                next_state, reward, done, _ = self._env.step(action0.numpy())
+                next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
                 train_ext_reward += reward
 
                 if self._preprocess is None:
-                    state1 = torch.tensor(next_state, dtype=torch.float32)
+                    state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
                 else:
                     state1 = self._preprocess(next_state)
 
@@ -168,7 +168,7 @@ class ExperimentDDPG:
                 fm_error_list.append(fm_errors)
                 reward_list.append(rewards)
 
-            state0 = torch.tensor(self._env.reset(), dtype=torch.float32)
+            state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0)
             done = False
             train_ext_reward = 0
             train_int_reward = 0
@@ -179,8 +179,8 @@ class ExperimentDDPG:
                 if config.check('generate_states'):
                     states.append(state0.numpy())
                 action0 = exploration.explore(agent.get_action(state0))
-                next_state, reward, done, _ = self._env.step(action0.numpy())
-                state1 = torch.tensor(next_state, dtype=torch.float32)
+                next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
+                state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
 
                 agent.train(state0, action0, state1, reward, done)
                 forward_model.train(state0, action0, state1)
@@ -260,7 +260,7 @@ class ExperimentDDPG:
                 fm_error_list.append(fm_errors)
                 reward_list.append(rewards)
 
-            state0 = torch.tensor(self._env.reset(), dtype=torch.float32)
+            state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0)
             done = False
             train_ext_reward = 0
             train_int_reward = 0
@@ -272,8 +272,8 @@ class ExperimentDDPG:
                 if config.check('generate_states'):
                     states.append(state0.numpy())
                 action0 = exploration.explore(agent.get_action(state0))
-                next_state, reward, done, _ = self._env.step(action0.numpy())
-                state1 = torch.tensor(next_state, dtype=torch.float32)
+                next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
+                state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
 
                 agent.train(state0, action0, state1, reward, done)
                 forward_model.train(state0, action0, state1)
@@ -361,7 +361,7 @@ class ExperimentDDPG:
                 mc_error_list.append(mc_errors)
                 reward_list.append(rewards)
 
-            state0 = torch.tensor(self._env.reset(), dtype=torch.float32)
+            state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0)
             done = False
             train_ext_reward = 0
             train_int_reward = 0
@@ -372,8 +372,8 @@ class ExperimentDDPG:
                 if config.check('generate_states'):
                     states.append(state0.numpy())
                 action0 = exploration.explore(agent.get_action(state0))
-                next_state, reward, done, _ = self._env.step(action0.numpy())
-                state1 = torch.tensor(next_state, dtype=torch.float32)
+                next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
+                state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
 
                 pe_error, ps_error, pe_reward, ps_reward, int_reward = metacritic.raw_data(state0, action0, state1)
                 train_ext_reward += reward
