@@ -10,7 +10,10 @@ class GaussianExploration:
         self._epochs = epochs
 
     def explore(self, action):
-        return action + torch.normal(0, self.sigma, action.size())
+        if self.sigma == 0:
+            return action
+        else:
+            return action + torch.normal(0, self.sigma, action.size())
 
     def update(self, step):
         if self._sigma0 > self._sigma1 and self.sigma > self._sigma1 and self._epochs > 0:
