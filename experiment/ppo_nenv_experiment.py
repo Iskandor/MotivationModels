@@ -170,8 +170,8 @@ class ExperimentNEnvPPO:
                     train_fm_errors += train_fm_error[i]
                     bar.numerator = steps
 
-                    print('Run {0:d} step {1:d} training [ext. reward {2:f} int. reward {3:f} steps {4:d}]'.format(
-                        trial, steps, train_ext_reward[i], train_int_reward[i], train_steps[i]))
+                    print('Run {0:d} step {1:d} training [ext. reward {2:f} c int. reward {3:f} c fm. error {4:f} ps steps {5:d}]'.format(
+                        trial, steps, train_ext_reward[i], train_int_reward[i], numpy.array(train_fm_error[i]).mean(), train_steps[i]))
                     print(bar)
 
                     train_ext_reward[i] = 0

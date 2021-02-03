@@ -1263,8 +1263,9 @@
       "forward_model_batch_size": 32
     },
     "3": {
-      "model": "su",
-      "n_env": 1,
+      "descriptor": "with priors",
+      "model": "fm",
+      "n_env": 64,
       "trials": 1,
       "steps": 8,
       "gamma": 0.99,
@@ -1283,13 +1284,7 @@
       "forward_model_h2": 256,
       "forward_model_eta": 1,
       "forward_model_variant": "A",
-      "forward_model_batch_size": 32,
-      "metacritic_lr": 0.0002,
-      "metacritic_h1": 700,
-      "metacritic_h2": 350,
-      "metacritic_eta": 1,
-      "metacritic_variant": "A",
-      "metacritic_batch_size": 32
+      "forward_model_batch_size": 32
     }
   },
   "qbert": {

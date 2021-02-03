@@ -13,6 +13,9 @@ class ForwardModel(nn.Module):
 
         self.arch = arch
 
+        self.input_shape = input_shape
+        self.action_dim = action_dim
+
         if self.arch == ARCH.atari:
             self.layers_encoder, self.layers_model = self._create_model(input_shape, action_dim, arch, config)
             self._encoder = Sequential(*self.layers_encoder)
@@ -36,8 +39,9 @@ class ForwardModel(nn.Module):
 
             predicted_state = self._model(x).squeeze(0)
         if self.arch == ARCH.atari:
-            x = self._encoder(state)
-            x = torch.cat([x, action.float().repeat(1, x.shape[1])], dim=1)
+            f = self._encoder(state)
+            a = (action.float() / self.action_dim).repeat(1, f.shape[1])
+            x = torch.cat([f, a], dim=1)
             x = self._model(x)
             predicted_state = x
 
@@ -152,23 +156,22 @@ class ForwardModel(nn.Module):
         channels = input_shape[0]
 
         layers_encoder = [
-            nn.Conv2d(channels, 64, kernel_size=7, stride=3, padding=2),
+            nn.Conv2d(channels, 32, kernel_size=7, stride=3, padding=2),
             nn.LeakyReLU(),
 
-            nn.Conv2d(64, 64, kernel_size=5, stride=3, padding=0),
+            nn.Conv2d(32, 32, kernel_size=5, stride=3, padding=0),
             nn.LeakyReLU(),
 
-            nn.Conv2d(64, 128, kernel_size=5, stride=1, padding=0),
+            nn.Conv2d(32, 64, kernel_size=5, stride=1, padding=0),
             nn.LeakyReLU(),
 
-            nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=0),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
             nn.LeakyReLU(),
 
-            nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=0),
+            nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=0),
             nn.LeakyReLU(),
 
-            nn.Conv2d(256, 256, kernel_size=2, stride=1, padding=0),
-            nn.LeakyReLU(),
+            nn.Conv2d(128, 128, kernel_size=2, stride=1, padding=0),
 
             nn.Flatten()
         ]
@@ -181,7 +184,7 @@ class ForwardModel(nn.Module):
         nn.init.xavier_uniform_(layers_encoder[10].weight)
 
         layers_model = [
-            Linear(in_features=512, out_features=config.forward_model_h1, bias=True),
+            Linear(in_features=256, out_features=config.forward_model_h1, bias=True),
             LeakyReLU(),
             Linear(in_features=config.forward_model_h1, out_features=config.forward_model_h1, bias=True),
             LeakyReLU(),
@@ -189,14 +192,14 @@ class ForwardModel(nn.Module):
             LeakyReLU(),
             Linear(in_features=config.forward_model_h2, out_features=config.forward_model_h2, bias=True),
             LeakyReLU(),
-            Linear(in_features=config.forward_model_h2, out_features=256, bias=True)
+            Linear(in_features=config.forward_model_h2, out_features=128, bias=True)
         ]
 
         nn.init.xavier_uniform_(layers_model[0].weight)
         nn.init.xavier_uniform_(layers_model[2].weight)
         nn.init.xavier_uniform_(layers_model[4].weight)
         nn.init.xavier_uniform_(layers_model[6].weight)
-        nn.init.uniform_(layers_model[8].weight, -0.3, 0.3)
+        nn.init.xavier_uniform_(layers_model[8].weight)
 
         return layers_encoder, layers_model
 
