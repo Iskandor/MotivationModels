@@ -27,7 +27,7 @@ class ForwardModel(nn.Module):
     def forward(self, state, action):
         predicted_state = None
         if self.arch == ARCH.robotic:
-            f = self._encoder(state)
+            f = self._encoder(state).detach()
             x = torch.cat([f, action], dim=1)
             x = self._model(x)
             predicted_state = x
@@ -51,6 +51,9 @@ class ForwardModel(nn.Module):
             predicted_state = x
 
         return predicted_state
+
+    def encode(self, state):
+        return self._encoder(state)
 
     def error(self, state, action, next_state):
         with torch.no_grad():

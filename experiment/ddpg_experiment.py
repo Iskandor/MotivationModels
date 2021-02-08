@@ -142,16 +142,7 @@ class ExperimentDDPG:
         step_limit = int(config.steps * 1e6)
         steps = 0
 
-        states = None
-        if config.check('generate_states'):
-            states = []
-        if config.check('collect_stats'):
-            states = torch.tensor(numpy.load('./{0:s}_states.npy'.format(self._env_name)), dtype=torch.float32)
-
-        action_list = []
-        value_list = []
-        fm_error_list = []
-        reward_list = []
+        states = []
 
         train_fm_errors = []
         train_ext_rewards = []
@@ -161,13 +152,6 @@ class ExperimentDDPG:
         exploration = GaussianExploration(config.sigma, 0.01, config.steps * 1e6)
 
         while steps < step_limit:
-            if config.check('collect_stats'):
-                actions, values, fm_errors, rewards = self.fm_activations(self._env, agent, forward_model, states)
-                action_list.append(actions)
-                value_list.append(values)
-                fm_error_list.append(fm_errors)
-                reward_list.append(rewards)
-
             state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0)
             done = False
             train_ext_reward = 0
@@ -176,8 +160,7 @@ class ExperimentDDPG:
 
             while not done:
                 train_steps += 1
-                if config.check('generate_states'):
-                    states.append(state0.numpy())
+                states.append(state0.squeeze(0).numpy())
                 action0 = exploration.explore(agent.get_action(state0))
                 next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
                 state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
@@ -206,23 +189,14 @@ class ExperimentDDPG:
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
 
+        states = self.generate_states(states)
+        latent_states = forward_model.forward_model().encode(torch.tensor(states, dtype=torch.float32)).detach()
+        dist_matrix = torch.cdist(latent_states, latent_states)
+
         numpy.save('ddpg_{0}_{1}_{2:d}_re'.format(config.name, config.model, trial), numpy.array(train_ext_rewards))
         numpy.save('ddpg_{0}_{1}_{2:d}_ri'.format(config.name, config.model, trial), numpy.array(train_int_rewards))
         numpy.save('ddpg_{0}_{1}_{2:d}_fme'.format(config.name, config.model, trial), numpy.array(train_fm_errors[:step_limit]))
-
-        if config.check('generate_states'):
-            self.generate_states(states)
-
-        if config.check('collect_stats'):
-            action_list = torch.stack(action_list)
-            value_list = torch.stack(value_list)
-            fm_error_list = torch.stack(fm_error_list)
-            reward_list = torch.stack(reward_list)
-
-            numpy.save('ddpg_{0}_{1}_{2:d}_actions'.format(config.name, config.model, trial), action_list)
-            numpy.save('ddpg_{0}_{1}_{2:d}_values'.format(config.name, config.model, trial), value_list)
-            numpy.save('ddpg_{0}_{1}_{2:d}_prediction_errors'.format(config.name, config.model, trial), fm_error_list)
-            numpy.save('ddpg_{0}_{1}_{2:d}_rewards'.format(config.name, config.model, trial), reward_list)
+        numpy.save('ddpg_{0}_{1}_{2:d}_dm'.format(config.name, config.model, trial), dist_matrix.numpy())
 
     def run_vae_forward_model(self, agent, trial):
         config = self._config
@@ -462,9 +436,8 @@ class ExperimentDDPG:
 
         return actions, values, fm_errors, mc_errors, rewards
 
-    def generate_states(self, states):
-        kmeans = KMeans(n_clusters=2000, random_state=0).fit(states)
+    @staticmethod
+    def generate_states(states):
+        kmeans = KMeans(n_clusters=1024, random_state=0).fit(states)
         states = numpy.stack(kmeans.cluster_centers_)
-        states[:, 6] = numpy.round(states[:, 6])
-        states[:, 7] = numpy.round(states[:, 7])
-        numpy.save('{0:s}_states'.format(self._env_name), states)
+        return states

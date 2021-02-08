@@ -16,6 +16,9 @@ class ForwardModelMotivation:
             self._window_index = 0
             self._error_buffer = torch.zeros(window, dtype=torch.float32)
 
+    def forward_model(self):
+        return self._network
+
     def train(self, state0, action, state1):
         if self._variant == 'B':
             self._error_buffer[self._window_index] = self.error(state0, action, state1)
