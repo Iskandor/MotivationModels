@@ -6,6 +6,7 @@ import numpy
 import torch
 from etaprogress.progress import ProgressBar
 from gym.wrappers.monitoring.video_recorder import VideoRecorder
+from scipy.spatial.distance import cdist
 from sklearn.cluster import KMeans
 
 from exploration.ContinuousExploration import GaussianExploration
@@ -189,14 +190,19 @@ class ExperimentDDPG:
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
 
-        states = self.generate_states(states)
+        states = self.generate_states(states, 512)
+        state_dist = cdist(states, states, 'euclidean')
+        index_list = numpy.argsort(numpy.linalg.norm(state_dist, axis=1))
+        states = states[index_list]
+        state_dist = cdist(states, states, 'euclidean')
         latent_states = forward_model.forward_model().encode(torch.tensor(states, dtype=torch.float32)).detach()
-        dist_matrix = torch.cdist(latent_states, latent_states)
+        latent_dist = torch.cdist(latent_states, latent_states)
 
         numpy.save('ddpg_{0}_{1}_{2:d}_re'.format(config.name, config.model, trial), numpy.array(train_ext_rewards))
         numpy.save('ddpg_{0}_{1}_{2:d}_ri'.format(config.name, config.model, trial), numpy.array(train_int_rewards))
         numpy.save('ddpg_{0}_{1}_{2:d}_fme'.format(config.name, config.model, trial), numpy.array(train_fm_errors[:step_limit]))
-        numpy.save('ddpg_{0}_{1}_{2:d}_dm'.format(config.name, config.model, trial), dist_matrix.numpy())
+        numpy.save('ddpg_{0}_{1}_{2:d}_sdm'.format(config.name, config.model, trial), state_dist)
+        numpy.save('ddpg_{0}_{1}_{2:d}_ldm'.format(config.name, config.model, trial), latent_dist.numpy())
 
     def run_vae_forward_model(self, agent, trial):
         config = self._config
@@ -437,7 +443,7 @@ class ExperimentDDPG:
         return actions, values, fm_errors, mc_errors, rewards
 
     @staticmethod
-    def generate_states(states):
-        kmeans = KMeans(n_clusters=1024, random_state=0).fit(states)
+    def generate_states(states, n_clusters):
+        kmeans = KMeans(n_clusters=n_clusters, random_state=0).fit(states)
         states = numpy.stack(kmeans.cluster_centers_)
         return states
