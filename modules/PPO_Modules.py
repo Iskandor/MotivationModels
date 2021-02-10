@@ -22,8 +22,12 @@ class ContinuousPPONetwork(torch.nn.Module):
             torch.nn.ReLU(),
             torch.nn.Linear(config.actor_h1, config.actor_h2),
             torch.nn.ReLU(),
-            torch.nn.Linear(config.actor_h2, action_dim),
         ]
+
+        self.layers_mean = nn.Linear(config.actor_h2, action_dim)
+        nn.init.uniform_(self.layers_mean.weight, -0.01, 0.01)
+        self.layers_var = nn.Linear(config.actor_h2, action_dim)
+        nn.init.uniform_(self.layers_var.weight, -1.0, 1.0)
 
         for i in range(len(self.layers_value)):
             if hasattr(self.layers_value[i], "weight"):
@@ -36,16 +40,15 @@ class ContinuousPPONetwork(torch.nn.Module):
         self.critic = nn.Sequential(*self.layers_value)
         self.actor = nn.Sequential(*self.layers_policy)
 
-    def action(self, state):
-        features = self.features(state)
-        policy = self.actor(features)
-        return policy
+    def dist(self, state):
+        x = self.actor(state)
+        mu = self.layers_mean(x)
+        var = self.layers_var(x)
+        return torch.distributions.Normal(mu, torch.exp(0.5 * var))
 
     def value(self, state):
-        features = self.features(state)
-        value = self.critic(features)
+        value = self.critic(state)
         return value
-
 
 class AtariPPONetwork(torch.nn.Module):
     def __init__(self, input_shape, action_dim, config):

@@ -6,6 +6,8 @@ import platform
 import subprocess
 import multiprocessing
 
+import psutil
+import ray
 import torch
 
 import A2C_Breakout
@@ -25,8 +27,10 @@ import DDPG_Noisy_LunarLander
 import DDPG_Noisy_Reacher
 import DDPG_Reacher
 import PPO_CartPole
+import PPO_MountainCar
 import PPO_Pacman
 import PPO_QBert
+import PPO_Reacher
 import PPO_Solaris
 import PPO_Zelda
 from utils.Config import Config
@@ -46,7 +50,8 @@ def set_env_class(env, experiment):
     if env == "cart_pole":
         env_class = PPO_CartPole
     if env == 'mountain_car':
-        env_class = DDPG_MountainCar
+        # env_class = DDPG_MountainCar
+        env_class = PPO_MountainCar
     if env == 'fetch_reach':
         env_class = DDPG_FetchReach
     if env == 'lunar_lander':
@@ -76,6 +81,8 @@ def set_env_class(env, experiment):
             env_class = DDPG_Noisy_Reacher
         else:
             env_class = DDPG_Reacher
+    if env == 'reacher_ppo':
+        env_class = PPO_Reacher
     if env == 'aeris_navigate':
         if experiment.noisy:
             env_class = DDPG_Noisy_AerisTargetNavigate
@@ -86,6 +93,18 @@ def set_env_class(env, experiment):
 
     return env_class
 
+
+def run_parallel(args, experiment):
+    thread_params = []
+    for i in range(experiment.trials):
+        thread_params.append((args.env, experiment, i))
+
+    ray.get([run_thread.remote(tp) for tp in thread_params])
+
+@ray.remote
+def run_thread(thread_params):
+    env, experiment, i = thread_params
+    run(env, experiment, i)
 
 def run(env, experiment, id):
     print('Starting experiment {0}'.format(id + experiment.shift))
@@ -173,8 +192,13 @@ if __name__ == '__main__':
             experiment.trials = 1
 
         if args.parallel:
-            write_command_file(args, experiment)
-            run_command_file()
+            num_cpus = psutil.cpu_count(logical=True)
+            print('Running parallel on {0} CPUs'.format(num_cpus))
+            ray.init(num_cpus=num_cpus)
+
+            run_parallel(args, experiment)
+            # write_command_file(args, experiment)
+            # run_command_file()
         else:
             for i in range(experiment.trials):
                 run(args.env, experiment, i)

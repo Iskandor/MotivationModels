@@ -56,4 +56,3 @@ def run_baseline(config, i):
     experiment.run_baseline(agent, i)
 
     env.close()
-

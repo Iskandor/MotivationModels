@@ -190,6 +190,7 @@ class ExperimentDDPG:
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
 
+        print('Calculating distance matrices')
         states = self.generate_states(states, 512)
         state_dist = cdist(states, states, 'euclidean')
         index_list = numpy.argsort(numpy.linalg.norm(state_dist, axis=1))
