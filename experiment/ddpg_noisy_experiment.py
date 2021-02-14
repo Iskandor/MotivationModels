@@ -121,7 +121,12 @@ class ExperimentNoisyDDPG:
             print(bar)
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
-        numpy.save('ddpg_{0}_{1}_{2:d}_re'.format(config.name, config.model, trial), numpy.array(train_ext_rewards))
+
+        print('Saving data...')
+        save_data = {
+            're': numpy.array(train_ext_rewards)
+        }
+        numpy.save('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
 
         if config.check('generate_states'):
             self.generate_states(states)
@@ -203,9 +208,13 @@ class ExperimentNoisyDDPG:
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
 
-        numpy.save('ddpg_{0}_{1}_{2:d}_re'.format(config.name, config.model, trial), numpy.array(train_ext_rewards))
-        numpy.save('ddpg_{0}_{1}_{2:d}_ri'.format(config.name, config.model, trial), numpy.array(train_int_rewards))
-        numpy.save('ddpg_{0}_{1}_{2:d}_fme'.format(config.name, config.model, trial), numpy.array(train_fm_errors[:step_limit]))
+        print('Saving data...')
+        save_data = {
+            're': numpy.array(train_ext_rewards),
+            'ri': numpy.array(train_int_rewards),
+            'fme': numpy.array(train_fm_errors[:step_limit])
+        }
+        numpy.save('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
 
         if config.check('generate_states'):
             self.generate_states(states)
@@ -295,10 +304,14 @@ class ExperimentNoisyDDPG:
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
 
-        numpy.save('ddpg_{0}_{1}_{2:d}_re'.format(config.name, config.model, trial), numpy.array(train_ext_rewards))
-        numpy.save('ddpg_{0}_{1}_{2:d}_ri'.format(config.name, config.model, trial), numpy.array(train_int_rewards))
-        numpy.save('ddpg_{0}_{1}_{2:d}_vl'.format(config.name, config.model, trial), numpy.array(train_vae_losses))
-        numpy.save('ddpg_{0}_{1}_{2:d}_fme'.format(config.name, config.model, trial), numpy.array(train_fm_errors[:step_limit]))
+        print('Saving data...')
+        save_data = {
+            're': numpy.array(train_ext_rewards),
+            'ri': numpy.array(train_int_rewards),
+            'fme': numpy.array(train_fm_errors[:step_limit]),
+            'vl': numpy.array(train_vae_losses),
+        }
+        numpy.save('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
 
         if config.check('generate_states'):
             self.generate_states(states)
@@ -392,12 +405,16 @@ class ExperimentNoisyDDPG:
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
 
-        numpy.save('ddpg_{0}_{1}_{2:d}_re'.format(config.name, config.model, trial), numpy.array(train_ext_rewards))
-        numpy.save('ddpg_{0}_{1}_{2:d}_ri'.format(config.name, config.model, trial), numpy.array(train_int_rewards))
-        numpy.save('ddpg_{0}_{1}_{2:d}_fme'.format(config.name, config.model, trial), numpy.array(train_fm_errors[:step_limit]))
-        numpy.save('ddpg_{0}_{1}_{2:d}_fmr'.format(config.name, config.model, trial), numpy.array(train_fm_rewards[:step_limit]))
-        numpy.save('ddpg_{0}_{1}_{2:d}_mce'.format(config.name, config.model, trial), numpy.array(train_mc_errors[:step_limit]))
-        numpy.save('ddpg_{0}_{1}_{2:d}_mcr'.format(config.name, config.model, trial), numpy.array(train_mc_rewards[:step_limit]))
+        print('Saving data...')
+        save_data = {
+            're': numpy.array(train_ext_rewards),
+            'ri': numpy.array(train_int_rewards),
+            'fme': numpy.array(train_fm_errors[:step_limit]),
+            'fmr': numpy.array(train_fm_rewards[:step_limit]),
+            'mce': numpy.array(train_mc_errors[:step_limit]),
+            'mcr': numpy.array(train_mc_rewards[:step_limit])
+        }
+        numpy.save('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
 
         if config.check('generate_states'):
             self.generate_states(states)

@@ -106,7 +106,12 @@ class ExperimentNEnvPPO:
             state0 = self.process_state(numpy.stack(s))
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
-        numpy.save('ppo_{0}_{1}_{2:d}_re'.format(config.name, config.model, trial), numpy.array(train_ext_rewards))
+
+        print('Saving data...')
+        save_data = {
+            're': numpy.array(train_ext_rewards)
+        }
+        numpy.save('ppo_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
 
     def run_forward_model(self, agent, trial):
         config = self._config
@@ -194,3 +199,11 @@ class ExperimentNEnvPPO:
         numpy.save('ppo_{0}_{1}_{2:d}_re'.format(config.name, config.model, trial), numpy.array(train_ext_rewards))
         numpy.save('ppo_{0}_{1}_{2:d}_ri'.format(config.name, config.model, trial), numpy.array(train_int_rewards))
         numpy.save('ppo_{0}_{1}_{2:d}_fme'.format(config.name, config.model, trial), numpy.array(train_fm_errors[:step_limit]))
+
+        print('Saving data...')
+        save_data = {
+            're': numpy.array(train_ext_rewards),
+            'ri': numpy.array(train_int_rewards),
+            'fme': numpy.array(train_fm_errors[:step_limit])
+        }
+        numpy.save('ppo_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)

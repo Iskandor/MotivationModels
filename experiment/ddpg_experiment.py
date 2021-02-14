@@ -6,8 +6,9 @@ import numpy
 import torch
 from etaprogress.progress import ProgressBar
 from gym.wrappers.monitoring.video_recorder import VideoRecorder
+from pyclustering.cluster.center_initializer import kmeans_plusplus_initializer
 from scipy.spatial.distance import cdist
-from sklearn.cluster import KMeans
+from pyclustering.cluster.kmeans import kmeans, kmeans_visualizer
 
 from exploration.ContinuousExploration import GaussianExploration
 
@@ -123,7 +124,12 @@ class ExperimentDDPG:
             print(bar)
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
-        numpy.save('ddpg_{0}_{1}_{2:d}_re'.format(config.name, config.model, trial), numpy.array(train_ext_rewards))
+
+        print('Saving data...')
+        save_data = {
+            're': numpy.array(train_ext_rewards)
+        }
+        numpy.save('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
 
         if config.check('generate_states'):
             self.generate_states(states)
@@ -199,11 +205,15 @@ class ExperimentDDPG:
         latent_states = forward_model.forward_model().encode(torch.tensor(states, dtype=torch.float32)).detach()
         latent_dist = torch.cdist(latent_states, latent_states)
 
-        numpy.save('ddpg_{0}_{1}_{2:d}_re'.format(config.name, config.model, trial), numpy.array(train_ext_rewards))
-        numpy.save('ddpg_{0}_{1}_{2:d}_ri'.format(config.name, config.model, trial), numpy.array(train_int_rewards))
-        numpy.save('ddpg_{0}_{1}_{2:d}_fme'.format(config.name, config.model, trial), numpy.array(train_fm_errors[:step_limit]))
-        numpy.save('ddpg_{0}_{1}_{2:d}_sdm'.format(config.name, config.model, trial), state_dist)
-        numpy.save('ddpg_{0}_{1}_{2:d}_ldm'.format(config.name, config.model, trial), latent_dist.numpy())
+        print('Saving data...')
+        save_data = {
+            're': numpy.array(train_ext_rewards),
+            'ri': numpy.array(train_int_rewards),
+            'fme': numpy.array(train_fm_errors[:step_limit]),
+            'sdm': state_dist,
+            'ldm': latent_dist.numpy()
+        }
+        numpy.save('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
 
     def run_vae_forward_model(self, agent, trial):
         config = self._config
@@ -283,10 +293,14 @@ class ExperimentDDPG:
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
 
-        numpy.save('ddpg_{0}_{1}_{2:d}_re'.format(config.name, config.model, trial), numpy.array(train_ext_rewards))
-        numpy.save('ddpg_{0}_{1}_{2:d}_ri'.format(config.name, config.model, trial), numpy.array(train_int_rewards))
-        numpy.save('ddpg_{0}_{1}_{2:d}_vl'.format(config.name, config.model, trial), numpy.array(train_vae_losses))
-        numpy.save('ddpg_{0}_{1}_{2:d}_fme'.format(config.name, config.model, trial), numpy.array(train_fm_errors[:step_limit]))
+        print('Saving data...')
+        save_data = {
+            're': numpy.array(train_ext_rewards),
+            'ri': numpy.array(train_int_rewards),
+            'fme': numpy.array(train_fm_errors[:step_limit]),
+            'vl': numpy.array(train_vae_losses),
+        }
+        numpy.save('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
 
         if config.check('generate_states'):
             self.generate_states(states)
@@ -383,12 +397,16 @@ class ExperimentDDPG:
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
 
-        numpy.save('ddpg_{0}_{1}_{2:d}_re'.format(config.name, config.model, trial), numpy.array(train_ext_rewards))
-        numpy.save('ddpg_{0}_{1}_{2:d}_ri'.format(config.name, config.model, trial), numpy.array(train_int_rewards))
-        numpy.save('ddpg_{0}_{1}_{2:d}_fme'.format(config.name, config.model, trial), numpy.array(train_fm_errors[:step_limit]))
-        numpy.save('ddpg_{0}_{1}_{2:d}_fmr'.format(config.name, config.model, trial), numpy.array(train_fm_rewards[:step_limit]))
-        numpy.save('ddpg_{0}_{1}_{2:d}_mce'.format(config.name, config.model, trial), numpy.array(train_mc_errors[:step_limit]))
-        numpy.save('ddpg_{0}_{1}_{2:d}_mcr'.format(config.name, config.model, trial), numpy.array(train_mc_rewards[:step_limit]))
+        print('Saving data...')
+        save_data = {
+            're': numpy.array(train_ext_rewards),
+            'ri': numpy.array(train_int_rewards),
+            'fme': numpy.array(train_fm_errors[:step_limit]),
+            'fmr': numpy.array(train_fm_rewards[:step_limit]),
+            'mce': numpy.array(train_mc_errors[:step_limit]),
+            'mcr': numpy.array(train_mc_rewards[:step_limit])
+        }
+        numpy.save('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
 
         if config.check('generate_states'):
             self.generate_states(states)
@@ -445,6 +463,12 @@ class ExperimentDDPG:
 
     @staticmethod
     def generate_states(states, n_clusters):
-        kmeans = KMeans(n_clusters=n_clusters, random_state=0).fit(states)
-        states = numpy.stack(kmeans.cluster_centers_)
+        initial_centers = kmeans_plusplus_initializer(states, n_clusters).initialize()
+        kmeans_instance = kmeans(states, initial_centers)
+        kmeans_instance.process()
+        # clusters = kmeans_instance.get_clusters()
+        final_centers = kmeans_instance.get_centers()
+        # kmeans_visualizer.show_clusters(states, clusters, final_centers)
+        # kmeans = KMeans(n_clusters=n_clusters, random_state=0).fit(states)
+        states = numpy.stack(final_centers)
         return states

@@ -32,7 +32,6 @@ import PPO_Pacman
 import PPO_QBert
 import PPO_Reacher
 import PPO_Solaris
-import PPO_Zelda
 from utils.Config import Config
 
 
@@ -88,8 +87,6 @@ def set_env_class(env, experiment):
             env_class = DDPG_Noisy_AerisTargetNavigate
         else:
             env_class = DDPG_AerisTargetNavigate
-    if env == 'zelda':
-        env_class = PPO_Zelda
 
     return env_class
 
@@ -195,6 +192,7 @@ if __name__ == '__main__':
             num_cpus = psutil.cpu_count(logical=True)
             print('Running parallel on {0} CPUs'.format(num_cpus))
             ray.init(num_cpus=num_cpus)
+            torch.set_num_threads(num_cpus // experiment.trials)
 
             run_parallel(args, experiment)
             # write_command_file(args, experiment)
