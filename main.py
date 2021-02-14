@@ -27,6 +27,7 @@ import DDPG_Noisy_LunarLander
 import DDPG_Noisy_Reacher
 import DDPG_Reacher
 import PPO_CartPole
+import PPO_MidnightResistance
 import PPO_MountainCar
 import PPO_Pacman
 import PPO_QBert
@@ -44,6 +45,8 @@ def set_env_class(env, experiment):
         env_class = PPO_QBert
     if env == "mspacman":
         env_class = PPO_Pacman
+    if env == "midnight_resistance":
+        env_class = PPO_MidnightResistance
     if env == "breakout":
         env_class = A2C_Breakout
     if env == "cart_pole":
@@ -122,6 +125,8 @@ def run(env, experiment, id):
         env_class.run_metalearner_model(experiment, id)
     if experiment.model == 'su':
         env_class.run_metalearner_model(experiment, id)
+    if experiment.model == 'm2':
+        env_class.run_m2_model(experiment, id)
     if experiment.model == 'm3':
         env_class.run_m3_model(experiment, id)
 

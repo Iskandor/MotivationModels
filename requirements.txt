@@ -11,4 +11,9 @@ scikit-image
 scikit-learn
 scipy
 torch
-
+numpy
+Pillow
+psutil
+ray
+pybulletgym
+pyclustering

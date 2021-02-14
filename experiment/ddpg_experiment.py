@@ -208,7 +208,7 @@ class ExperimentDDPG:
         index_list = numpy.argsort(numpy.linalg.norm(state_dist, axis=1))
         states = states[index_list]
         state_dist = cdist(states, states, 'euclidean')
-        latent_states = forward_model.forward_model().encode(torch.tensor(states, dtype=torch.float32)).detach()
+        latent_states = forward_model.forward_model().encode(states).detach()
         latent_dist = torch.cdist(latent_states, latent_states)
 
         print('Saving data...')
@@ -429,6 +429,76 @@ class ExperimentDDPG:
             numpy.save('ddpg_{0}_{1}_{2:d}_prediction_errors'.format(config.name, config.model, trial), fm_error_list)
             numpy.save('ddpg_{0}_{1}_{2:d}_error_estimations'.format(config.name, config.model, trial), mc_error_list)
             numpy.save('ddpg_{0}_{1}_{2:d}_rewards'.format(config.name, config.model, trial), reward_list)
+
+    def run_m2_model(self, agent, trial):
+        config = self._config
+        trial = trial + config.shift
+        m2_model = agent.get_motivation_module()
+        forward_model = m2_model.get_forward_model()
+
+        step_limit = int(config.steps * 1e6)
+        steps = 0
+
+        states = []
+
+        train_fm_errors = []
+        train_ext_rewards = []
+        train_int_rewards = []
+        train_m2_weight = []
+
+        bar = ProgressBar(config.steps * 1e6, max_width=40)
+        exploration = GaussianExploration(config.sigma, 0.01, config.steps * 1e6)
+
+        while steps < step_limit:
+            state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0)
+            done = False
+            train_ext_reward = 0
+            train_int_reward = 0
+            train_steps = 0
+
+            while not done:
+                train_steps += 1
+                states.append(state0.squeeze(0))
+                action0 = exploration.explore(agent.get_action(state0))
+                next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
+                state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
+
+                agent.train(state0, action0, state1, reward, done)
+                m2_model.train(state0, state1, reward, done)
+
+                train_ext_reward += reward
+                train_int_reward += m2_model.reward(state0, action0, state1).item()
+                train_fm_error = forward_model.error(state0, action0, state1).item()
+                train_fm_errors.append(train_fm_error)
+                train_m2_weight.append(m2_model.weight(state0, action0).numpy())
+
+                state0 = state1
+
+            steps += train_steps
+            if steps > step_limit:
+                train_steps -= steps - step_limit
+            bar.numerator = steps
+            exploration.update(steps)
+
+            train_ext_rewards.append([train_steps, train_ext_reward])
+            train_int_rewards.append([train_steps, train_int_reward])
+
+            print('Run {0:d} step {1:d} sigma {2:f} training [ext. reward {3:f} int. reward {4:f} steps {5:d}]'.format(trial, steps, exploration.sigma,
+                                                                                                                       train_ext_reward, train_int_reward,
+                                                                                                                       train_steps))
+            print(bar)
+
+        agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
+
+        print('Saving data...')
+        save_data = {
+            're': numpy.array(train_ext_rewards),
+            'ri': numpy.array(train_int_rewards),
+            'fme': numpy.array(train_fm_errors[:step_limit]),
+            'm2w': numpy.array(train_m2_weight[:step_limit])
+        }
+        numpy.save('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
+
 
     @staticmethod
     def baseline_activations(agent, states):
