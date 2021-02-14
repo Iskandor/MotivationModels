@@ -11,6 +11,7 @@ from scipy.spatial.distance import cdist
 from pyclustering.cluster.kmeans import kmeans, kmeans_visualizer
 
 from exploration.ContinuousExploration import GaussianExploration
+from utils import stratify_sampling
 
 
 class ExperimentDDPG:
@@ -120,7 +121,8 @@ class ExperimentDDPG:
 
             train_ext_rewards.append([train_steps, train_ext_reward])
 
-            print('Run {0:d} step {1:d} sigma {2:f} training [ext. reward {3:f} steps {4:d}]'.format(trial, steps, exploration.sigma, train_ext_reward, train_steps))
+            print('Run {0:d} step {1:d} sigma {2:f} training [ext. reward {3:f} steps {4:d}]'.format(trial, steps, exploration.sigma, train_ext_reward,
+                                                                                                     train_steps))
             print(bar)
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
@@ -167,7 +169,7 @@ class ExperimentDDPG:
 
             while not done:
                 train_steps += 1
-                states.append(state0.squeeze(0).numpy())
+                states.append(state0.squeeze(0))
                 action0 = exploration.explore(agent.get_action(state0))
                 next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
                 state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
@@ -191,12 +193,16 @@ class ExperimentDDPG:
             train_ext_rewards.append([train_steps, train_ext_reward])
             train_int_rewards.append([train_steps, train_int_reward])
 
-            print('Run {0:d} step {1:d} sigma {2:f} training [ext. reward {3:f} int. reward {4:f} steps {5:d}]'.format(trial, steps, exploration.sigma, train_ext_reward, train_int_reward, train_steps))
+            print('Run {0:d} step {1:d} sigma {2:f} training [ext. reward {3:f} int. reward {4:f} steps {5:d}]'.format(trial, steps, exploration.sigma,
+                                                                                                                       train_ext_reward, train_int_reward,
+                                                                                                                       train_steps))
             print(bar)
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
 
         print('Calculating distance matrices')
+        # states = torch.rand((1000000, 8), dtype=torch.float32)
+        states = self.generate_states(torch.stack(states), 512)
         states = self.generate_states(states, 512)
         state_dist = cdist(states, states, 'euclidean')
         index_list = numpy.argsort(numpy.linalg.norm(state_dist, axis=1))
@@ -463,12 +469,13 @@ class ExperimentDDPG:
 
     @staticmethod
     def generate_states(states, n_clusters):
-        initial_centers = kmeans_plusplus_initializer(states, n_clusters).initialize()
-        kmeans_instance = kmeans(states, initial_centers)
-        kmeans_instance.process()
-        # clusters = kmeans_instance.get_clusters()
-        final_centers = kmeans_instance.get_centers()
-        # kmeans_visualizer.show_clusters(states, clusters, final_centers)
-        # kmeans = KMeans(n_clusters=n_clusters, random_state=0).fit(states)
-        states = numpy.stack(final_centers)
+        # initial_centers = kmeans_plusplus_initializer(states, n_clusters).initialize()
+        # kmeans_instance = kmeans(states, initial_centers)
+        # kmeans_instance.process()
+        # final_centers = kmeans_instance.get_centers()
+        # states = numpy.stack(final_centers)
+
+        stratify_size = states.shape[0] // 4
+        stratify_sampling(states, n_clusters, (stratify_size, stratify_size, stratify_size, stratify_size))
+
         return states
