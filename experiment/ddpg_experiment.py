@@ -202,8 +202,8 @@ class ExperimentDDPG:
 
         print('Calculating distance matrices')
         # states = torch.rand((1000000, 8), dtype=torch.float32)
-        states = self.generate_states(torch.stack(states), 512)
-        states = self.generate_states(states, 512)
+        states = self.generate_states(torch.stack(states[:step_limit]), 500)
+        # states = self.generate_states(states, 500)
         state_dist = cdist(states, states, 'euclidean')
         index_list = numpy.argsort(numpy.linalg.norm(state_dist, axis=1))
         states = states[index_list]
@@ -475,7 +475,7 @@ class ExperimentDDPG:
         # final_centers = kmeans_instance.get_centers()
         # states = numpy.stack(final_centers)
 
-        stratify_size = states.shape[0] // 4
-        stratify_sampling(states, n_clusters, (stratify_size, stratify_size, stratify_size, stratify_size))
+        stratify_size = states.shape[0] // n_clusters
+        samples = stratify_sampling(states, n_clusters, [stratify_size] * n_clusters)
 
-        return states
+        return samples

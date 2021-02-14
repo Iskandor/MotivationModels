@@ -27,7 +27,7 @@ def stratify_sampling(x, n_samples, stratify):
     assert sum(stratify) == n_total
 
     n_strat_samples = [int(i * n_samples / n_total) for i in stratify]
-    cum_n_samples = np.cumsum([0] + list(stratify))
+    cum_n_samples = np.cumsum([0] + stratify)
     sampled_idcs = []
     for i, n_strat_sample in enumerate(n_strat_samples):
         sampled_idcs.append(np.random.choice(range(cum_n_samples[i], cum_n_samples[i + 1]),
