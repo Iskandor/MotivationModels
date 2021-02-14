@@ -49,3 +49,11 @@ class M2Motivation:
     @staticmethod
     def _familiar_reward(error):
         return torch.tanh(1 / error)
+
+    def save(self, path):
+        self._forward_model.save(path)
+        torch.save(self._gate.state_dict(), path + '_m2.pth')
+
+    def load(self, path):
+        self._forward_model.load(path)
+        self._gate.load_state_dict(torch.load(path + '_m2.pth'))
