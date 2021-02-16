@@ -70,7 +70,7 @@ class ForwardModel(nn.Module):
 
     def loss_function(self, state, action, next_state):
         if self.arch == ARCH.atari or self.arch == ARCH.robotic:
-            loss = nn.functional.mse_loss(self(state, action), self._encoder(next_state).detach()) + self.variation_prior(state) + self.stability_prior(state, next_state)
+            loss = nn.functional.mse_loss(self(state, action), self._encoder(next_state).detach()) + self.variation_prior(state) * 10 + self.stability_prior(state, next_state) * 10
         else:
             loss = nn.functional.mse_loss(self(state, action), next_state)
         return loss
