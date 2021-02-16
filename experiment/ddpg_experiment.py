@@ -470,7 +470,7 @@ class ExperimentDDPG:
                 train_int_reward += m2_model.reward(state0, action0, state1).item()
                 train_fm_error = forward_model.error(state0, action0, state1).item()
                 train_fm_errors.append(train_fm_error)
-                train_m2_weight.append(m2_model.weight(state0, action0).numpy())
+                train_m2_weight.append(m2_model.weight(state0, action0).squeeze(0).numpy())
 
                 state0 = state1
 
