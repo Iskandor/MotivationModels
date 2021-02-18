@@ -70,7 +70,7 @@ class ForwardModel(nn.Module):
 
     def loss_function(self, state, action, next_state):
         if self.arch == ARCH.atari or self.arch == ARCH.robotic:
-            loss = nn.functional.mse_loss(self(state, action), self._encoder(next_state).detach()) + self.variation_prior(state) + self.stability_prior(state, next_state)
+            loss = nn.functional.mse_loss(self(state, action), self._encoder(next_state).detach()) + self.variation_prior(state) + self.stability_prior(state, next_state) + self.distance_conservation(state)
         else:
             loss = nn.functional.mse_loss(self(state, action), next_state)
         return loss
@@ -84,6 +84,16 @@ class ForwardModel(nn.Module):
     def stability_prior(self, state, next_state):
         stability_loss = (self._encoder(next_state) - self._encoder(state)).abs().pow(2).sum()
         return stability_loss
+
+    def distance_conservation(self, state):
+        sa = state[torch.randperm(state.shape[0])]
+        sb = state[torch.randperm(state.shape[0])]
+        esa = self._encoder(sa)
+        esb = self._encoder(sb)
+
+        distance_conservation_loss = ((sa - sb).pow(2).sum().sqrt() - (esa - esb).pow(2).sum().sqrt()).sum()
+        return distance_conservation_loss
+
 
     def _create_model(self, input_shape, action_dim, arch, config):
         layers = None
