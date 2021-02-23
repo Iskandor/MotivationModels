@@ -70,20 +70,11 @@ def run_metalearner_model(config, i):
 
     agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)
 
-    if hasattr(config, 'forward_model_batch_size'):
-        forward_model = ForwardModelMotivation(ForwardModel(state_dim, action_dim, config, ARCH.robotic), config.forward_model_lr,
-                                               config.forward_model_eta, config.forward_model_variant, 0,
-                                               memory, config.forward_model_batch_size)
-    else:
-        forward_model = ForwardModelMotivation(ForwardModel(state_dim, action_dim, config, ARCH.robotic), config.forward_model_lr,
-                                               config.forward_model_eta, config.forward_model_variant)
-
     if hasattr(config, 'metacritic_batch_size'):
-        metacritic = MetaCriticMotivation(MetaCritic(state_dim, action_dim, config), forward_model, config.metacritic_lr, state_dim,
-                                          config.metacritic_variant, 0, config.metacritic_eta, memory, config.metacritic_batch_size)
+        metacritic = MetaCriticMotivation(MetaCritic(state_dim, action_dim, config), config.metacritic_lr, config.metacritic_variant, config.metacritic_eta,
+                                          memory, config.metacritic_batch_size)
     else:
-        metacritic = MetaCriticMotivation(MetaCritic(state_dim, action_dim, config), forward_model, config.metacritic_lr, state_dim,
-                                          config.metacritic_variant, 0, config.metacritic_eta)
+        metacritic = MetaCriticMotivation(MetaCritic(state_dim, action_dim, config), config.metacritic_lr, config.metacritic_variant, config.metacritic_eta)
 
     agent.add_motivation_module(metacritic)
 

@@ -18,22 +18,22 @@ class ForwardModel(nn.Module):
 
         if self.arch == ARCH.atari or self.arch == ARCH.robotic:
             self.layers_encoder, self.layers_model = self._create_model(input_shape, action_dim, arch, config)
-            self._encoder = Sequential(*self.layers_encoder)
-            self._model = Sequential(*self.layers_model)
+            self.encoder = Sequential(*self.layers_encoder)
+            self.model = Sequential(*self.layers_model)
         else:
             self.layers = self._create_model(input_shape, action_dim, arch, config)
-            self._model = Sequential(*self.layers)
+            self.model = Sequential(*self.layers)
 
     def forward(self, state, action):
         predicted_state = None
         if self.arch == ARCH.robotic:
-            f = self._encoder(state).detach()
+            f = self.encoder(state).detach()
             x = torch.cat([f, action], dim=1)
-            x = self._model(x)
+            x = self.model(x)
             predicted_state = x
         if self.arch == ARCH.small_robotic:
             x = torch.cat([state, action], dim=1)
-            predicted_state = self._model(x)
+            predicted_state = self.model(x)
         if self.arch == ARCH.aeris:
             if state.ndim == 3:
                 a = action.unsqueeze(2).repeat(1, 1, state.shape[2])
@@ -42,18 +42,18 @@ class ForwardModel(nn.Module):
                 a = action.unsqueeze(1).repeat(1, state.shape[1])
                 x = torch.cat([state, a], dim=0).unsqueeze(0)
 
-            predicted_state = self._model(x).squeeze(0)
+            predicted_state = self.model(x).squeeze(0)
         if self.arch == ARCH.atari:
-            f = self._encoder(state)
+            f = self.encoder(state)
             a = (action.float() / self.action_dim).repeat(1, f.shape[1])
             x = torch.cat([f, a], dim=1)
-            x = self._model(x)
+            x = self.model(x)
             predicted_state = x
 
         return predicted_state
 
     def encode(self, state):
-        return self._encoder(state)
+        return self.encoder(state)
 
     def error(self, state, action, next_state):
         with torch.no_grad():
@@ -61,7 +61,7 @@ class ForwardModel(nn.Module):
             prediction = self(state, action)
 
             if self.arch == ARCH.atari or self.arch == ARCH.robotic:
-                target = self._encoder(next_state)
+                target = self.encoder(next_state)
                 error = torch.mean(torch.pow(prediction - target, 2), dim=dim).unsqueeze(dim)
             else:
                 error = torch.mean(torch.pow(prediction.flatten(dim) - next_state.flatten(dim), 2), dim=dim).unsqueeze(dim)
@@ -70,7 +70,7 @@ class ForwardModel(nn.Module):
 
     def loss_function(self, state, action, next_state):
         if self.arch == ARCH.atari or self.arch == ARCH.robotic:
-            loss = nn.functional.mse_loss(self(state, action), self._encoder(next_state).detach()) + self.variation_prior(state) + self.stability_prior(state, next_state) + self.distance_conservation(state)
+            loss = nn.functional.mse_loss(self(state, action), self.encoder(next_state).detach()) + self.variation_prior(state) + self.stability_prior(state, next_state)
         else:
             loss = nn.functional.mse_loss(self(state, action), next_state)
         return loss
@@ -78,22 +78,23 @@ class ForwardModel(nn.Module):
     def variation_prior(self, state):
         sa = state[torch.randperm(state.shape[0])]
         sb = state[torch.randperm(state.shape[0])]
-        variation_loss = torch.exp((self._encoder(sa) - self._encoder(sb)).abs() * -1.0).sum()
+        variation_loss = torch.exp((self.encoder(sa) - self.encoder(sb)).abs() * -1.0).mean()
         return variation_loss
 
     def stability_prior(self, state, next_state):
-        stability_loss = (self._encoder(next_state) - self._encoder(state)).abs().pow(2).sum()
+        stability_loss = (self.encoder(next_state) - self.encoder(state)).abs().pow(2).mean()
         return stability_loss
 
     def distance_conservation(self, state):
         sa = state[torch.randperm(state.shape[0])]
         sb = state[torch.randperm(state.shape[0])]
-        esa = self._encoder(sa)
-        esb = self._encoder(sb)
+        esa = self.encoder(sa)
+        esb = self.encoder(sb)
+        d1 = (sa - sb).pow(2).sum().sqrt()
+        d2 = (esa - esb).pow(2).sum().sqrt()
 
-        distance_conservation_loss = ((sa - sb).pow(2).sum().sqrt() - (esa - esb).pow(2).sum().sqrt()).sum()
+        distance_conservation_loss = nn.functional.mse_loss(d2, d1)
         return distance_conservation_loss
-
 
     def _create_model(self, input_shape, action_dim, arch, config):
         layers = None

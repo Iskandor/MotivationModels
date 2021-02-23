@@ -326,7 +326,6 @@ class ExperimentDDPG:
         config = self._config
         trial = trial + config.shift
         metacritic = agent.get_motivation_module()
-        forward_model = metacritic.get_forward_model()
 
         step_limit = int(config.steps * 1e6)
         steps = 0
@@ -434,7 +433,6 @@ class ExperimentDDPG:
         config = self._config
         trial = trial + config.shift
         m2_model = agent.get_motivation_module()
-        forward_model = m2_model.get_forward_model()
 
         step_limit = int(config.steps * 1e6)
         steps = 0
@@ -468,7 +466,7 @@ class ExperimentDDPG:
 
                 train_ext_reward += reward
                 train_int_reward += m2_model.reward(state0, action0, state1).item()
-                train_fm_error = forward_model.error(state0, action0, state1).item()
+                train_fm_error = m2_model.error(state0, action0, state1).item()
                 train_fm_errors.append(train_fm_error)
                 train_m2_weight.append(m2_model.weight(state0, action0).squeeze(0).numpy())
 
@@ -522,7 +520,7 @@ class ExperimentDDPG:
         return actions, values, errors, rewards
 
     @staticmethod
-    def su_activations(env, agent, forward_model, metacritic, states):
+    def su_activations(env, agent, metacritic, states):
         actions, values = ExperimentDDPG.baseline_activations(agent, states)
         next_states = []
         env.reset()
@@ -531,8 +529,8 @@ class ExperimentDDPG:
             next_state, _, _, _ = env.step(actions[i].numpy())
             next_states.append(torch.tensor(next_state))
         next_states = torch.stack(next_states)
-        fm_errors = forward_model.error(states, actions, next_states)
-        mc_errors = metacritic.error(states, actions)
+        fm_errors = metacritic.error(states, actions, next_states)
+        mc_errors = metacritic.error_estimate(states, actions)
         rewards = metacritic.reward(states, actions, next_states)
 
         return actions, values, fm_errors, mc_errors, rewards

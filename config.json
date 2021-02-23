@@ -622,7 +622,8 @@
       "forward_model_h1": 512,
       "forward_model_h2": 256,
       "forward_model_eta": 1,
-      "forward_model_variant": "A"
+      "forward_model_variant": "A",
+      "forward_model_batch_size": 64
     },
     "18": {
       "model": "fm",
@@ -665,8 +666,38 @@
       "forward_model_lr": 0.0001,
       "forward_model_h1": 512,
       "forward_model_h2": 256,
-      "forward_model_eta": 10,
-      "forward_model_variant": "A"
+      "forward_model_eta": 1,
+      "forward_model_variant": "A",
+      "forward_model_batch_size": 64
+    },
+    "20": {
+      "model": "su",
+      "noisy": false,
+      "sigma": 0.3,
+      "trials": 15,
+      "steps": 2,
+      "gamma": 0.99,
+      "tau ": 0.005,
+      "batch_size": 64,
+      "memory_size": 100000,
+      "actor_lr": 0.0001,
+      "actor_h1": 256,
+      "actor_h2": 128,
+      "critic_lr": 0.0002,
+      "critic_h1": 256,
+      "critic_h2": 128,
+      "forward_model_lr": 0.0001,
+      "forward_model_h1": 700,
+      "forward_model_h2": 350,
+      "forward_model_eta": 1,
+      "forward_model_variant": "A",
+      "forward_model_batch_size": 64,
+      "metacritic_lr": 0.0002,
+      "metacritic_h1": 700,
+      "metacritic_h2": 350,
+      "metacritic_eta": 1,
+      "metacritic_variant": "A",
+      "metacritic_batch_size": 64
     }
   },
   "cart_pole": {
@@ -1302,7 +1333,7 @@
       "descriptor": "encoder model",
       "model": "fm",
       "noisy": false,
-      "sigma": 0,
+      "sigma": 0.2,
       "trials": 15,
       "steps": 1,
       "gamma": 0.99,
@@ -1319,10 +1350,11 @@
       "forward_model_h1": 64,
       "forward_model_h2": 32,
       "forward_model_eta": 1,
-      "forward_model_variant": "A"
+      "forward_model_variant": "A",
+      "forward_model_batch_size": 64
     },
     "17": {
-      "descriptor": "encoder model",
+      "descriptor": "16 f detached",
       "model": "fm",
       "noisy": false,
       "sigma": 0.2,
@@ -1342,7 +1374,8 @@
       "forward_model_h1": 64,
       "forward_model_h2": 32,
       "forward_model_eta": 1,
-      "forward_model_variant": "A"
+      "forward_model_variant": "A",
+      "forward_model_batch_size": 64
     },
     "18": {
       "model": "m2",
@@ -1364,7 +1397,8 @@
       "forward_model_h1": 64,
       "forward_model_h2": 32,
       "forward_model_eta": 1,
-      "forward_model_variant": "A"
+      "forward_model_variant": "A",
+      "forward_model_batch_size": 64
     },
     "19": {
       "descriptor": "17 fm loss x 10",
@@ -1383,11 +1417,12 @@
       "critic_lr": 0.0002,
       "critic_h1": 128,
       "critic_h2": 64,
-      "forward_model_lr": 0.0001,
+      "forward_model_lr": 0.001,
       "forward_model_h1": 64,
       "forward_model_h2": 32,
-      "forward_model_eta": 5,
-      "forward_model_variant": "A"
+      "forward_model_eta": 1,
+      "forward_model_variant": "A",
+      "forward_model_batch_size": 64
     },
     "20": {
       "descriptor": "17 fm loss sum",
@@ -1414,7 +1449,7 @@
       "forward_model_batch_size": 64
     },
     "21": {
-      "descriptor": "20 + dist. conservation",
+      "descriptor": "17 + dist. conservation",
       "model": "fm",
       "noisy": false,
       "sigma": 0.2,
@@ -1774,7 +1809,7 @@
       "metacritic_batch_size": 32
     }
   },
-  "reacher_ppo": {
+  "pendulum": {
     "1": {
       "model": "baseline",
       "n_env": 1,

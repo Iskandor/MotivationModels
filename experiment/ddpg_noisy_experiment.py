@@ -331,7 +331,6 @@ class ExperimentNoisyDDPG:
         config = self._config
         trial = trial + config.shift
         metacritic = agent.get_motivation_module()
-        forward_model = metacritic.get_forward_model()
 
         step_limit = int(config.steps * 1e6)
         steps = 0
@@ -359,7 +358,7 @@ class ExperimentNoisyDDPG:
 
         while steps < step_limit:
             if config.check('collect_stats'):
-                actions, values, fm_errors, mc_errors, rewards = self.su_activations(self._env, agent, forward_model, metacritic, states)
+                actions, values, fm_errors, mc_errors, rewards = self.su_activations(self._env, agent, metacritic, states)
                 action_list.append(actions)
                 value_list.append(values)
                 fm_error_list.append(fm_errors)
@@ -454,7 +453,7 @@ class ExperimentNoisyDDPG:
         return actions, values, errors, rewards
 
     @staticmethod
-    def su_activations(env, agent, forward_model, metacritic, states):
+    def su_activations(env, agent, metacritic, states):
         actions, values = ExperimentNoisyDDPG.baseline_activations(agent, states)
         next_states = []
         env.reset()
@@ -463,8 +462,8 @@ class ExperimentNoisyDDPG:
             next_state, _, _, _ = env.step(actions[i].numpy())
             next_states.append(torch.tensor(next_state))
         next_states = torch.stack(next_states)
-        fm_errors = forward_model.error(states, actions, next_states)
-        mc_errors = metacritic.error(states, actions)
+        fm_errors = metacritic.error(states, actions, next_states)
+        mc_errors = metacritic.error_estimate(states, actions)
         rewards = metacritic.reward(states, actions, next_states)
 
         return actions, values, fm_errors, mc_errors, rewards

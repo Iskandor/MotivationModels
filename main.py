@@ -30,6 +30,7 @@ import PPO_CartPole
 import PPO_MidnightResistance
 import PPO_MountainCar
 import PPO_Pacman
+import PPO_Pendulum
 import PPO_QBert
 import PPO_Reacher
 import PPO_Solaris
@@ -83,8 +84,8 @@ def set_env_class(env, experiment):
             env_class = DDPG_Noisy_Reacher
         else:
             env_class = DDPG_Reacher
-    if env == 'reacher_ppo':
-        env_class = PPO_Reacher
+    if env == 'pendulum':
+        env_class = PPO_Pendulum
     if env == 'aeris_navigate':
         if experiment.noisy:
             env_class = DDPG_Noisy_AerisTargetNavigate

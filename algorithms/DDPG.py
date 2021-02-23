@@ -81,28 +81,42 @@ class DDPG:
                 rewards = rewards.cuda()
                 masks = masks.cuda()
 
-            if self._motivation_module:
-                rewards += self._motivation_module.reward(states, actions, next_states)
-                # int_reward = self._motivation_module.reward(states, actions, next_states)
-                # k = 0.1
-                # self.int_reward_filtered = (1 - k)*self.int_reward_filtered + k*int_reward
-                # rewards += self.int_reward_filtered
-                # if done:
-                #     self.int_reward_filtered = 0.0
+            if self._critic.heads == 1:
+                if self._motivation_module:
+                    rewards += self._motivation_module.reward(states, actions, next_states)
 
-            expected_values = rewards + masks * self._gamma * self._critic_target(next_states, self._actor_target(next_states).detach()).detach()
+                expected_values = rewards + masks * self._gamma * self._critic_target(next_states, self._actor_target(next_states).detach()).detach()
 
+                self._critic_optimizer.zero_grad()
+                value_loss = torch.nn.functional.mse_loss(self._critic(states, actions), expected_values)
+                value_loss.backward()
+                self._critic_optimizer.step()
 
-            self._critic_optimizer.zero_grad()
-            value_loss = torch.nn.functional.mse_loss(self._critic(states, actions), expected_values)
-            value_loss.backward()
-            self._critic_optimizer.step()
+                self._actor_optimizer.zero_grad()
+                policy_loss = -self._critic(states, self._actor(states))
+                policy_loss = policy_loss.mean()
+                policy_loss.backward()
+                self._actor_optimizer.step()
 
-            self._actor_optimizer.zero_grad()
-            policy_loss = -self._critic(states, self._actor(states))
-            policy_loss = policy_loss.mean()
-            policy_loss.backward()
-            self._actor_optimizer.step()
+            if self._critic.heads == 2:
+                rewards_internal = self._motivation_module.reward(states, actions, next_states)
+                value_re, value_ri = self._critic(states, actions)
+                value_re_target, value_ri_target = self._critic_target(next_states, self._actor_target(next_states).detach())
+
+                expected_values_re = rewards + masks * self._gamma * value_re_target.detach()
+                expected_values_ri = rewards_internal + masks * self._gamma * value_ri_target.detach()
+
+                self._critic_optimizer.zero_grad()
+                value_loss = torch.nn.functional.mse_loss(value_re, expected_values_re) + torch.nn.functional.mse_loss(value_ri, expected_values_ri)
+                value_loss.backward()
+                self._critic_optimizer.step()
+
+                self._actor_optimizer.zero_grad()
+                policy_target_re, policy_target_ri = self._critic(states, self._actor(states))
+                policy_loss = policy_target_re + policy_target_ri
+                policy_loss = -policy_loss.mean()
+                policy_loss.backward()
+                self._actor_optimizer.step()
 
             self._soft_update(self._actor_target, self._actor, self._tau)
             self._soft_update(self._critic_target, self._critic, self._tau)
