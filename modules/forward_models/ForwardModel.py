@@ -145,15 +145,21 @@ class ForwardModel(nn.Module):
 
         layers_model = [
             Linear(in_features=action_dim + action_dim, out_features=config.forward_model_h1, bias=True),
-            Tanh(),
+            LeakyReLU(),
+            Linear(in_features=config.forward_model_h1, out_features=config.forward_model_h1, bias=True),
+            LeakyReLU(),
             Linear(in_features=config.forward_model_h1, out_features=config.forward_model_h2, bias=True),
-            Tanh(),
+            LeakyReLU(),
+            Linear(in_features=config.forward_model_h2, out_features=config.forward_model_h2, bias=True),
+            LeakyReLU(),
             Linear(in_features=config.forward_model_h2, out_features=action_dim, bias=True)
         ]
 
         nn.init.xavier_uniform_(layers_model[0].weight)
         nn.init.xavier_uniform_(layers_model[2].weight)
-        nn.init.uniform_(layers_model[4].weight, -0.3, 0.3)
+        nn.init.xavier_uniform_(layers_model[4].weight)
+        nn.init.xavier_uniform_(layers_model[6].weight)
+        nn.init.uniform_(layers_model[8].weight, -0.3, 0.3)
 
         return layers_encoder, layers_model
 

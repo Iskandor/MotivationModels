@@ -671,7 +671,7 @@
       "forward_model_batch_size": 64
     },
     "20": {
-      "model": "su",
+      "model": "fm",
       "noisy": false,
       "sigma": 0.3,
       "trials": 15,
@@ -687,17 +687,11 @@
       "critic_h1": 256,
       "critic_h2": 128,
       "forward_model_lr": 0.0001,
-      "forward_model_h1": 700,
-      "forward_model_h2": 350,
+      "forward_model_h1": 256,
+      "forward_model_h2": 128,
       "forward_model_eta": 1,
       "forward_model_variant": "A",
-      "forward_model_batch_size": 64,
-      "metacritic_lr": 0.0002,
-      "metacritic_h1": 700,
-      "metacritic_h2": 350,
-      "metacritic_eta": 1,
-      "metacritic_variant": "A",
-      "metacritic_batch_size": 64
+      "forward_model_batch_size": 64
     }
   },
   "cart_pole": {
