@@ -20,8 +20,8 @@ def run_baseline(config, i):
 
     experiment = ExperimentDDPG('AntBulletEnv-v0', env, config)
 
-    actor = Actor(state_dim, action_dim, config)
-    critic = Critic(state_dim, action_dim, config)
+    actor = ActorDeep(state_dim, action_dim, config)
+    critic = CriticDeep(state_dim, action_dim, config)
     memory = ExperienceReplayBuffer(config.memory_size)
     agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)
     experiment.run_baseline(agent, i)
@@ -36,8 +36,8 @@ def run_forward_model(config, i):
 
     experiment = ExperimentDDPG('AntBulletEnv-v0', env, config)
 
-    actor = Actor(state_dim, action_dim, config)
-    critic = Critic(state_dim, action_dim, config)
+    actor = ActorDeep(state_dim, action_dim, config)
+    critic = CriticDeep(state_dim, action_dim, config)
     memory = ExperienceReplayBuffer(config.memory_size)
 
     agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)
@@ -116,8 +116,8 @@ def run_metalearner_model(config, i):
 
     experiment = ExperimentDDPG('AntBulletEnv-v0', env, config)
 
-    actor = Actor(state_dim, action_dim, config)
-    critic = Critic(state_dim, action_dim, config)
+    actor = ActorDeep(state_dim, action_dim, config)
+    critic = CriticDeep(state_dim, action_dim, config)
     memory = ExperienceReplayBuffer(config.memory_size)
 
     agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)

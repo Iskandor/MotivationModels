@@ -53,6 +53,37 @@ class Critic2Heads(nn.Module):
         nn.init.uniform_(self._output_vi.weight, -3e-3, 3e-3)
 
 
+class CriticDeep(nn.Module):
+    def __init__(self, state_dim, action_dim, config):
+        super(CriticDeep, self).__init__()
+
+        self._hidden0 = nn.Linear(state_dim, config.critic_h1)
+        self._hidden1 = nn.Linear(config.critic_h1, config.critic_h1)
+        self._hidden2 = nn.Linear(config.critic_h1 + action_dim, config.critic_h2)
+        self._hidden3 = nn.Linear(config.critic_h2, config.critic_h2)
+        self._output = nn.Linear(config.critic_h2, 1)
+
+        self.init()
+        self.heads = 1
+
+    def forward(self, state, action):
+        x = state
+        x = torch.relu(self._hidden0(x))
+        x = torch.relu(self._hidden1(x))
+        x = torch.cat([x, action], 1)
+        x = torch.relu(self._hidden2(x))
+        x = torch.relu(self._hidden3(x))
+        value = self._output(x)
+        return value
+
+    def init(self):
+        nn.init.xavier_uniform_(self._hidden0.weight)
+        nn.init.xavier_uniform_(self._hidden1.weight)
+        nn.init.xavier_uniform_(self._hidden2.weight)
+        nn.init.xavier_uniform_(self._hidden3.weight)
+        nn.init.uniform_(self._output.weight, -3e-3, 3e-3)
+
+
 class Actor(nn.Module):
     def __init__(self, state_dim, action_dim, config):
         super(Actor, self).__init__()
@@ -73,4 +104,32 @@ class Actor(nn.Module):
     def init(self):
         nn.init.xavier_uniform_(self._hidden0.weight)
         nn.init.xavier_uniform_(self._hidden1.weight)
+        nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
+
+class ActorDeep(nn.Module):
+    def __init__(self, state_dim, action_dim, config):
+        super(ActorDeep, self).__init__()
+
+        self._hidden0 = nn.Linear(state_dim, config.actor_h1)
+        self._hidden1 = nn.Linear(config.actor_h1, config.actor_h1)
+        self._hidden2 = nn.Linear(config.actor_h1, config.actor_h2)
+        self._hidden3 = nn.Linear(config.actor_h2, config.actor_h2)
+        self._output = nn.Linear(config.actor_h2, action_dim)
+
+        self.init()
+
+    def forward(self, state):
+        x = state
+        x = torch.relu(self._hidden0(x))
+        x = torch.relu(self._hidden1(x))
+        x = torch.relu(self._hidden2(x))
+        x = torch.relu(self._hidden3(x))
+        policy = torch.tanh(self._output(x))
+        return policy
+
+    def init(self):
+        nn.init.xavier_uniform_(self._hidden0.weight)
+        nn.init.xavier_uniform_(self._hidden1.weight)
+        nn.init.xavier_uniform_(self._hidden2.weight)
+        nn.init.xavier_uniform_(self._hidden3.weight)
         nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
