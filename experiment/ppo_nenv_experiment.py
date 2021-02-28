@@ -23,7 +23,7 @@ class ExperimentNEnvPPO:
         else:
             processed_state = self._preprocess(state).to(self._config.device)
 
-        return processed_state
+        return processed_state.unsqueeze(0)
 
     def test(self, agent):
         config = self._config
@@ -65,7 +65,7 @@ class ExperimentNEnvPPO:
         state0 = self.process_state(numpy.stack(s))
 
         while steps < step_limit:
-            action0 = agent.get_action(state0)
+            action0, log_prob = agent.get_action(state0)
 
             for i in range(n_env):
                 next_state, reward, done, info = self._env_list[i].step(action0[i].item())
@@ -101,7 +101,7 @@ class ExperimentNEnvPPO:
             reward = torch.tensor(numpy.stack(r), dtype=torch.float32)
             done = torch.tensor(numpy.stack(d), dtype=torch.float32)
 
-            agent.train_n_env(state0, action0, state1, reward, done)
+            agent.train_n_env(state0, action0, log_prob, state1, reward, done)
 
             state0 = self.process_state(numpy.stack(s))
 

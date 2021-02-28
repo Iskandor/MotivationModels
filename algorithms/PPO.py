@@ -21,7 +21,7 @@ class PPO:
         self._actor_loss_weight = actor_loss_weight
         self._critic_loss_weight = critic_loss_weight
         self._trajectory = []
-        self._ppo_epochs = 4
+        self._ppo_epochs = 20
         self._motivation = None
         self._n_env = n_env
 
@@ -31,15 +31,15 @@ class PPO:
     def action_dim(self):
         return self._agent.action_dim
 
-    def train(self, state0, action, state1, reward, done):
-        self._trajectory.append((state0, action, state1, reward, done))
+    def train(self, state0, action, log_prob, state1, reward, done):
+        self._trajectory.append((state0, action, log_prob, state1, reward, done))
 
         if len(self._trajectory) == self._trajectory_size:
             self._train()
 
-    def train_n_env(self, state0, action, state1, reward, done):
+    def train_n_env(self, state0, action, log_prob, state1, reward, done):
         for i in range(self._n_env):
-            self._trajectories[i].append((state0[i], action[i].unsqueeze(0), state1[i], reward[i], done[i]))
+            self._trajectories[i].append((state0[i], action[i], log_prob[i], state1[i], reward[i], done[i]))
 
         if len(self._trajectories[0]) == self._trajectory_size // self._n_env:
             for i in range(self._n_env):
@@ -53,19 +53,22 @@ class PPO:
 
         states = []
         actions = []
+        old_logprob = []
         next_states = []
         rewards = []
         dones = []
 
-        for state, action, next_state, reward, done in self._trajectory:
+        for state, action, log_prob, next_state, reward, done in self._trajectory:
             states.append(state)
             actions.append(action)
+            old_logprob.append(log_prob)
             next_states.append(next_state)
             rewards.append(reward)
             dones.append(done)
 
         states = torch.stack(states).squeeze(1)
         actions = torch.stack(actions).squeeze(1)
+        old_logprob = torch.stack(old_logprob).squeeze(1)
         rewards = torch.tensor(rewards, dtype=torch.float32, device=self._device)
         dones = torch.tensor(dones, dtype=torch.float32, device=self._device)
 
@@ -76,7 +79,6 @@ class PPO:
 
         traj_adv_v, traj_ref_v = self.calc_advantage(states, rewards, dones, intrinsic_reward)
         traj_adv_v = (traj_adv_v - torch.mean(traj_adv_v)) / torch.std(traj_adv_v)
-        old_logprob = self.calc_log_probs(states, actions)
 
         trajectory = self._trajectory[:-1]
 
@@ -100,16 +102,16 @@ class PPO:
                 value_v = self._agent.value(states_v)
                 loss_value_v = torch.nn.functional.mse_loss(value_v.squeeze(-1), batch_ref_v)
 
-                log_probs_v = torch.log_softmax(self._agent.action(states_v), dim=1)
-                logprob_pi_v = torch.gather(log_probs_v, 1, actions_v)
-                ratio_v = torch.exp(logprob_pi_v - batch_old_logprob_v)
+                log_probs_v, entropy_v = self._agent.evaluate(states_v, actions_v)
+
+                ratio_v = torch.exp(log_probs_v - batch_old_logprob_v)
                 surr_obj_v = batch_adv_v * ratio_v
                 c_ratio_v = torch.clamp(ratio_v, 1.0 - self._epsilon, 1.0 + self._epsilon)
                 clipped_surr_v = batch_adv_v * c_ratio_v
                 loss_policy_v = -torch.min(surr_obj_v, clipped_surr_v).mean()
 
                 self._optimizer.zero_grad()
-                loss = loss_value_v * self._critic_loss_weight + loss_policy_v * self._actor_loss_weight
+                loss = loss_value_v * self._critic_loss_weight + loss_policy_v * self._actor_loss_weight + self._beta * entropy_v
                 loss.backward()
                 self._optimizer.step()
 
@@ -127,13 +129,6 @@ class PPO:
         int_reward = int_reward.squeeze()
 
         return int_reward
-
-    def calc_log_probs(self, states, actions):
-        log_probs = nn.functional.log_softmax(self._agent.action(states[0:self._batch_size]), dim=1).detach()
-        for batch_ofs in range(self._batch_size, self._trajectory_size, self._batch_size):
-            batch_l = min(batch_ofs + self._batch_size, self._trajectory_size)
-            log_probs = torch.cat([log_probs, self._agent.action(states[batch_ofs:batch_l]).detach()], dim=0)
-        return torch.gather(log_probs, 1, actions)[:-1]
 
     def calc_advantage(self, states, rewards, dones, intrinsic_reward):
         dones = dones[:-1].flip(0)
@@ -166,15 +161,7 @@ class PPO:
         return adv_v, ref_v
 
     def get_action(self, state, deterministic=False):
-        logits = self._agent.action(state)
-        probs = nn.functional.softmax(logits, dim=1)
-        if deterministic:
-            action = probs.argmax()
-        else:
-            m = Categorical(probs)
-            action = m.sample()
-
-        return action.unsqueeze(1)
+        return self._agent.action(state, deterministic)
 
     def add_motivation_module(self, motivation):
         self._motivation = motivation

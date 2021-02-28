@@ -8,7 +8,7 @@ from modules.DDPG_Modules import *
 from algorithms.ReplayBuffer import ExperienceReplayBuffer
 from experiment.ddpg_experiment import ExperimentDDPG
 from algorithms.DDPG import DDPG
-from modules.PPO_Modules import ContinuousPPONetwork
+from modules.PPO_Modules import PPONetwork, HEAD
 from modules.forward_models.ForwardModel import ForwardModel
 from modules.metacritic_models import SmallMetaCritic
 from motivation.ForwardModelMotivation import ForwardModelMotivation
@@ -22,7 +22,7 @@ def run_baseline(config, i):
 
     experiment = ExperimentPPOContinuous('MountainCarContinuous-v0', env, config)
 
-    network = ContinuousPPONetwork(state_dim, action_dim, config)
+    network = PPONetwork(state_dim, action_dim, config, head=HEAD.continuous)
     agent = PPOContinuous(network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size, config.beta, config.gamma)
     experiment.run_baseline(agent, i)
 

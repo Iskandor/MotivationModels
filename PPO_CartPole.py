@@ -3,45 +3,7 @@ import torch
 
 from algorithms.PPO import PPO
 from experiment.ppo_experiment import ExperimentPPO
-
-
-class PPONetwork(torch.nn.Module):
-    def __init__(self, state_dim, action_dim, config):
-        super(PPONetwork, self).__init__()
-
-        self.critic = torch.nn.Sequential(
-            torch.nn.Linear(state_dim, config.critic_h1),
-            torch.nn.ReLU(),
-            torch.nn.Linear(config.critic_h1, config.critic_h2),
-            torch.nn.ReLU(),
-            torch.nn.Linear(config.critic_h2, 1)
-        )
-        self.critic.apply(self.init_weights)
-
-        self.actor = torch.nn.Sequential(
-            torch.nn.Linear(state_dim, config.actor_h1),
-            torch.nn.ReLU(),
-            torch.nn.Linear(config.actor_h1, config.actor_h2),
-            torch.nn.ReLU(),
-            torch.nn.Linear(config.actor_h2, action_dim)
-        )
-        self.actor.apply(self.init_weights)
-
-    def init_weights(self, module):
-        if type(module) == torch.nn.Linear:
-            torch.nn.init.xavier_uniform_(module.weight)
-
-    def action(self, state):
-        if state.ndim == 1:
-            state = state.unsqueeze(0)
-        policy = self.actor(state)
-        return policy
-
-    def value(self, state):
-        if state.ndim == 1:
-            state = state.unsqueeze(0)
-        value = self.critic(state)
-        return value
+from modules.PPO_Modules import PPONetwork
 
 
 def run_baseline(config, i):

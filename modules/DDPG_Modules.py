@@ -106,6 +106,7 @@ class Actor(nn.Module):
         nn.init.xavier_uniform_(self._hidden1.weight)
         nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
 
+
 class ActorDeep(nn.Module):
     def __init__(self, state_dim, action_dim, config):
         super(ActorDeep, self).__init__()

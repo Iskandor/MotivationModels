@@ -32,7 +32,6 @@ import PPO_MountainCar
 import PPO_Pacman
 import PPO_Pendulum
 import PPO_QBert
-import PPO_Reacher
 import PPO_Solaris
 from utils.Config import Config
 
