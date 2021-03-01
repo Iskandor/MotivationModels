@@ -1,9 +1,11 @@
 import gym
 import pybullet_envs
 from algorithms.DDPG import DDPG
+from algorithms.DDPG2 import DDPG2
 from algorithms.ReplayBuffer import ExperienceReplayBuffer
 from experiment.ddpg_experiment import ExperimentDDPG
 from modules.DDPG_Modules import *
+from modules.agents.DDPGRobotic import BaselineRobotic
 from modules.forward_models.ForwardModel import ForwardModel
 from modules.forward_models.RND_ForwardModel import RND_ForwardModel
 from modules.forward_models.VAE_ForwardModel import VAE_ForwardModel
@@ -20,10 +22,9 @@ def run_baseline(config, i):
 
     experiment = ExperimentDDPG('AntBulletEnv-v0', env, config)
 
-    actor = Actor(state_dim, action_dim, config)
-    critic = Critic(state_dim, action_dim, config)
+    agent = BaselineRobotic(state_dim, action_dim, config)
     memory = ExperienceReplayBuffer(config.memory_size)
-    agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)
+    agent = DDPG2(agent, config.actor_lr, config.gamma, config.tau, memory, config.batch_size)
     experiment.run_baseline(agent, i)
 
     env.close()

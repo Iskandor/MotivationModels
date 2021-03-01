@@ -101,10 +101,12 @@ def run_parallel(args, experiment):
 
     ray.get([run_thread.remote(tp) for tp in thread_params])
 
+
 @ray.remote
 def run_thread(thread_params):
     env, experiment, i = thread_params
     run(env, experiment, i)
+
 
 def run(env, experiment, id):
     print('Starting experiment {0}'.format(id + experiment.shift))
@@ -144,7 +146,8 @@ def write_command_file(args, experiment):
     if platform.system() == 'Linux':
         file = open("run.sh", "w")
         for i in range(experiment.trials):
-            file.write('OMP_NUM_THREADS={0} python3 main.py --env {1} --config {2} -t -s {3} & \n'.format(thread_per_env, args.env, args.config, i + args.shift))
+            file.write(
+                'OMP_NUM_THREADS={0} python3 main.py --env {1} --config {2} -t -s {3} & \n'.format(thread_per_env, args.env, args.config, i + args.shift))
         file.close()
 
 
@@ -205,4 +208,3 @@ if __name__ == '__main__':
         else:
             for i in range(experiment.trials):
                 run(args.env, experiment, i)
-

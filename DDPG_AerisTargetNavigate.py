@@ -76,48 +76,6 @@ class Actor(DDPGActor):
         return policy
 
 
-class MetaCritic(nn.Module):
-    def __init__(self, input_shape, action_dim, config):
-        super(MetaCritic, self).__init__()
-
-        self.channels = input_shape[0]
-
-        self.layers = [
-            nn.Conv1d(self.channels + action_dim, config.metacritic_kernels_count, kernel_size=8, stride=4, padding=2),
-            nn.LeakyReLU(),
-            nn.Conv1d(config.metacritic_kernels_count, config.metacritic_kernels_count, kernel_size=3, stride=1, padding=1),
-            nn.LeakyReLU(),
-            nn.Conv1d(config.metacritic_kernels_count, config.metacritic_kernels_count, kernel_size=3, stride=1, padding=1),
-            nn.LeakyReLU(),
-            nn.Conv1d(config.metacritic_kernels_count, config.metacritic_kernels_count, kernel_size=3, stride=1, padding=1),
-            nn.LeakyReLU(),
-            nn.ConvTranspose1d(config.metacritic_kernels_count, config.metacritic_kernels_count, kernel_size=8, stride=4, padding=2, output_padding=0),
-            nn.LeakyReLU(),
-            nn.Flatten(),
-            nn.Linear(in_features=64 * config.metacritic_kernels_count, out_features=1, bias=True)
-        ]
-
-        nn.init.xavier_uniform_(self.layers[0].weight)
-        nn.init.xavier_uniform_(self.layers[2].weight)
-        nn.init.xavier_uniform_(self.layers[4].weight)
-        nn.init.xavier_uniform_(self.layers[6].weight)
-        nn.init.xavier_uniform_(self.layers[8].weight)
-        nn.init.uniform_(self.layers[11].weight, -0.3, 0.3)
-
-        self._network = nn.Sequential(*self.layers)
-
-    def forward(self, state, action):
-        if state.ndim == 3:
-            a = action.unsqueeze(2).repeat(1, 1, state.shape[2])
-            x = torch.cat([state, a], dim=1)
-        if state.ndim == 2:
-            a = action.unsqueeze(1).repeat(1, state.shape[1])
-            x = torch.cat([state, a], dim=0).unsqueeze(0)
-
-        value = self._network(x).squeeze(0)
-        return value
-
-
 def run_baseline(config, i):
     env = gym_aeris.envs.TargetNavigateEnv()
     state_dim = env.observation_space.shape

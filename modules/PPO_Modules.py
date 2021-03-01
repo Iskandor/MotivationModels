@@ -70,8 +70,8 @@ class ContinuousHead(nn.Module):
 
         dist = Normal(mu, var.sqrt())
 
-        action = dist.rsample().detach()
-        log_prob = dist.log_prob(action).detach()
+        action = dist.sample().detach().squeeze(1)
+        log_prob = dist.log_prob(action).detach().squeeze(1)
 
         return action.numpy(), action, log_prob
 
@@ -81,8 +81,8 @@ class ContinuousHead(nn.Module):
 
         dist = Normal(mu, var.sqrt())
 
-        action = dist.mean
-        log_prob = dist.log_prob(action).detach()
+        action = dist.mean.squeeze(1)
+        log_prob = dist.log_prob(action).detach().squeeze(1)
 
         return action.numpy(), action, log_prob
 
@@ -92,7 +92,7 @@ class ContinuousHead(nn.Module):
 
         dist = Normal(mu, var.sqrt())
 
-        log_prob = dist.log_prob(action.squeeze(1)).unsqueeze(1)
+        log_prob = dist.log_prob(action)
         entropy = dist.entropy().mean()
 
         return log_prob, entropy

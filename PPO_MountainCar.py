@@ -1,7 +1,6 @@
 import gym
 
-from algorithms.PPOContinuous import PPOContinuous
-from experiment.ppo_continuous_experiment import ExperimentPPOContinuous
+from algorithms.PPO import PPO
 from experiment.ppo_experiment import ExperimentPPO
 from modules import ARCH
 from modules.DDPG_Modules import *
@@ -20,10 +19,10 @@ def run_baseline(config, i):
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
 
-    experiment = ExperimentPPOContinuous('MountainCarContinuous-v0', env, config)
+    experiment = ExperimentPPO('MountainCarContinuous-v0', env, config)
 
     network = PPONetwork(state_dim, action_dim, config, head=HEAD.continuous)
-    agent = PPOContinuous(network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size, config.beta, config.gamma)
+    agent = PPO(network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size, config.beta, config.gamma)
     experiment.run_baseline(agent, i)
 
     env.close()
