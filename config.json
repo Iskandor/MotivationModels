@@ -788,6 +788,24 @@
       "forward_model_eta": 1,
       "forward_model_variant": "A",
       "forward_model_batch_size": 64
+    },
+    "25": {
+      "descriptor": "ddpg robotic",
+      "model": "baseline",
+      "noisy": false,
+      "sigma": 0.3,
+      "trials": 15,
+      "steps": 2,
+      "gamma": 0.99,
+      "tau ": 0.005,
+      "batch_size": 64,
+      "memory_size": 100000,
+      "actor_lr": 0.0001,
+      "actor_h1": 128,
+      "actor_h2": 64,
+      "critic_lr": 0.0002,
+      "critic_h1": 128,
+      "critic_h2": 64
     }
   },
   "cart_pole": {
@@ -1634,7 +1652,7 @@
       "model": "baseline",
       "n_env": 1,
       "trials": 1,
-      "steps": 1,
+      "steps": 0.1,
       "gamma": 0.99,
       "beta": 0.01,
       "batch_size": 512,
@@ -1651,7 +1669,7 @@
       "model": "fm",
       "n_env": 1,
       "trials": 1,
-      "steps": 1,
+      "steps": 0.1,
       "gamma": 0.99,
       "beta": 0.01,
       "batch_size": 512,
@@ -1673,7 +1691,7 @@
       "model": "su",
       "n_env": 1,
       "trials": 1,
-      "steps": 1,
+      "steps": 0.1,
       "gamma": 0.99,
       "beta": 0.01,
       "batch_size": 512,
@@ -1904,18 +1922,18 @@
       "model": "baseline",
       "n_env": 1,
       "trials": 1,
-      "steps": 1,
+      "steps": 2,
       "gamma": 0.99,
-      "beta": 0.0,
+      "beta": 0.01,
       "batch_size": 1024,
       "trajectory_size": 4096,
-      "lr": 0.0002,
+      "lr": 0.002,
       "actor_loss_weight": 0.5,
-      "actor_h1": 64,
-      "actor_h2": 32,
+      "actor_h1": 32,
+      "actor_h2": 16,
       "critic_loss_weight": 1,
-      "critic_h1": 64,
-      "critic_h2": 32
+      "critic_h1": 32,
+      "critic_h2": 16
     }
   }
 }

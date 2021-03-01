@@ -116,29 +116,29 @@ class BaselineRobotic(nn.Module):
         self.hard_update()
 
     def value(self, state, action):
-        features = self.encoder(state)
+        features = self.encoder(state).detach()
         value = self.critic(features, action)
 
         return value
 
     def action(self, state):
-        features = self.encoder(state)
+        features = self.encoder(state).detach()
         policy = self.actor(features)
         return policy
 
     def value_target(self, state, action):
-        features = self.encoder(state)
+        features = self.encoder(state).detach()
         value = self.critic_target(features, action)
 
         return value
 
     def action_target(self, state):
-        features = self.encoder(state)
+        features = self.encoder(state).detach()
         policy = self.actor_target(features)
         return policy
 
     def loss_function(self, state, action, next_state, expected_values):
-        features = self.encoder(state)
+        features = self.encoder(state).detach()
         loss = torch.nn.functional.mse_loss(self.critic(features, action), expected_values) * 2 - self.critic(features, self.actor(features)).mean() + self.encoder.loss_function(state, next_state)
         return loss
 
