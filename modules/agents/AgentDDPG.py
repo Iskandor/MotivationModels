@@ -78,8 +78,12 @@ class AgentDDPG(nn.Module):
         policy = self.actor_target(state)
         return policy
 
-    def loss_function(self, state, action, next_state, expected_values):
-        loss = torch.nn.functional.mse_loss(self.critic(state, action), expected_values) * 2 - self.critic(state, self.actor(state)).mean()
+    def critic_loss(self, state, action, expected_values):
+        loss = torch.nn.functional.mse_loss(self.value(state, action), expected_values) * 2
+        return loss
+
+    def actor_loss(self, state):
+        loss = -self.value(state, self.policy(state)).mean()
         return loss
 
     def soft_update(self, tau):
