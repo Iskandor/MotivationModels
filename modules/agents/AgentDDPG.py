@@ -83,7 +83,7 @@ class AgentDDPG(nn.Module):
         return loss
 
     def actor_loss(self, state):
-        loss = -self.value(state, self.policy(state)).mean()
+        loss = -self.value(state, self.action(state)).mean()
         return loss
 
     def soft_update(self, tau):
