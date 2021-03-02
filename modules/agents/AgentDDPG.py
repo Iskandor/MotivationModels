@@ -78,8 +78,8 @@ class AgentDDPG(nn.Module):
         policy = self.actor_target(state)
         return policy
 
-    def critic_loss(self, state, action, expected_values):
-        loss = torch.nn.functional.mse_loss(self.value(state, action), expected_values) * 2
+    def critic_loss(self, state, action, next_state, expected_values):
+        loss = torch.nn.functional.mse_loss(self.value(state, action), expected_values)
         return loss
 
     def actor_loss(self, state):

@@ -23,9 +23,8 @@ def run_baseline(config, i):
 
     experiment = ExperimentDDPG('AntBulletEnv-v0', env, config)
 
-    agent = AgentDDPG(state_dim, action_dim, config)
     memory = ExperienceReplayBuffer(config.memory_size)
-    agent = DDPG2(agent, config.actor_lr, config.gamma, config.tau, memory, config.batch_size)
+    agent = DDPG2(AgentDDPGRobotic(state_dim, action_dim, config), config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)
     experiment.run_baseline(agent, i)
 
     env.close()

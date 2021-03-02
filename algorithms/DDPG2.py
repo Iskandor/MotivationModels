@@ -4,7 +4,7 @@ import torch
 
 
 class DDPG2:
-    def __init__(self, agent, lr, gamma, tau, memory_buffer, sample_size):
+    def __init__(self, agent, actor_lr, critic_lr, gamma, tau, memory_buffer, sample_size):
         self._agent = agent
         self._motivation_module = None
         self._memory = memory_buffer
@@ -12,8 +12,8 @@ class DDPG2:
         self._gamma = gamma
         self._tau = tau
 
-        self._critic_optimizer = torch.optim.Adam(self._agent.critic.parameters(), lr=lr)
-        self._actor_optimizer = torch.optim.Adam(self._agent.actor.parameters(), lr=lr)
+        self._critic_optimizer = torch.optim.Adam(self._agent.critic.parameters(), lr=critic_lr)
+        self._actor_optimizer = torch.optim.Adam(self._agent.actor.parameters(), lr=actor_lr)
 
     def add_motivation_module(self, motivation_module):
         self._motivation_module = motivation_module
@@ -49,7 +49,7 @@ class DDPG2:
             expected_values = rewards + masks * self._gamma * self._agent.value_target(next_states, self._agent.action_target(next_states).detach()).detach()
 
             self._critic_optimizer.zero_grad()
-            loss = self._agent.critic_loss(states, actions, expected_values)
+            loss = self._agent.critic_loss(states, actions, next_states, expected_values)
             loss.backward()
             self._critic_optimizer.step()
 

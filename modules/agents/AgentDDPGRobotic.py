@@ -137,9 +137,12 @@ class AgentDDPGRobotic(nn.Module):
         policy = self.actor_target(features)
         return policy
 
-    def loss_function(self, state, action, next_state, expected_values):
-        features = self.encoder(state).detach()
-        loss = torch.nn.functional.mse_loss(self.critic(features, action), expected_values) * 2 - self.critic(features, self.actor(features)).mean() + self.encoder.loss_function(state, next_state)
+    def critic_loss(self, state, action, next_state, expected_values):
+        loss = torch.nn.functional.mse_loss(self.value(state, action), expected_values) + self.encoder.loss_function(state, next_state)
+        return loss
+
+    def actor_loss(self, state):
+        loss = -self.value(state, self.action(state)).mean()
         return loss
 
     def soft_update(self, tau):
