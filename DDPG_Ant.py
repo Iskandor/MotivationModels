@@ -5,7 +5,8 @@ from algorithms.DDPG2 import DDPG2
 from algorithms.ReplayBuffer import ExperienceReplayBuffer
 from experiment.ddpg_experiment import ExperimentDDPG
 from modules.DDPG_Modules import *
-from modules.agents.DDPGRobotic import BaselineRobotic
+from modules.agents.AgentDDPG import AgentDDPG
+from modules.agents.AgentDDPGRobotic import AgentDDPGRobotic
 from modules.forward_models.ForwardModel import ForwardModel
 from modules.forward_models.RND_ForwardModel import RND_ForwardModel
 from modules.forward_models.VAE_ForwardModel import VAE_ForwardModel
@@ -22,7 +23,7 @@ def run_baseline(config, i):
 
     experiment = ExperimentDDPG('AntBulletEnv-v0', env, config)
 
-    agent = BaselineRobotic(state_dim, action_dim, config)
+    agent = AgentDDPG(state_dim, action_dim, config)
     memory = ExperienceReplayBuffer(config.memory_size)
     agent = DDPG2(agent, config.actor_lr, config.gamma, config.tau, memory, config.batch_size)
     experiment.run_baseline(agent, i)

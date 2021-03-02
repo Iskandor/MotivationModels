@@ -104,9 +104,9 @@ class ActorRobotic(nn.Module):
         nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
 
 
-class BaselineRobotic(nn.Module):
+class AgentDDPGRobotic(nn.Module):
     def __init__(self, input_shape, action_dim, config):
-        super(BaselineRobotic, self).__init__()
+        super(AgentDDPGRobotic, self).__init__()
         feature_dim = action_dim
         self.encoder = EncoderRobotic(input_shape, feature_dim)
         self.critic = CriticRobotic(feature_dim, action_dim, config)
