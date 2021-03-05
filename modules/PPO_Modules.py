@@ -239,11 +239,12 @@ class AtariPPONetwork(torch.nn.Module):
         return a, l
 
     def evaluate(self, state, action):
-        logits = self.actor(state)
+        features = self.features(state)
+        logits = self.actor(features)
         probs = torch.softmax(logits, dim=1)
         dist = self.dist(probs)
 
-        log_prob = dist.log_prob(action.squeeze(1)).unsqueeze(1)
+        log_prob = dist.log_prob(action)
         entropy = dist.entropy().mean()
 
         return log_prob, entropy
