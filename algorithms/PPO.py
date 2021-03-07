@@ -100,7 +100,7 @@ class PPO:
                 actions_v = actions[batch_ofs:batch_l]
                 probs_v = probs[batch_ofs:batch_l]
                 batch_adv_v = traj_adv_v[batch_ofs:batch_l].unsqueeze(-1)
-                batch_ref_v = traj_ref_v[batch_ofs:batch_l]
+                batch_ref_v = traj_ref_v[batch_ofs:batch_l].unsqueeze(-1)
 
                 self._optimizer.zero_grad()
                 loss = self.calc_loss(states_v, batch_ref_v, batch_adv_v, actions_v, probs_v)
@@ -115,16 +115,15 @@ class PPO:
     def calc_loss(self, states, ref_value, adv_value, old_actions, old_probs):
         values, _, probs = self._agent(states)
 
-        loss_value = torch.nn.functional.mse_loss(values.squeeze(-1), ref_value)
+        loss_value = torch.nn.functional.mse_loss(values, ref_value)
 
         log_probs = self._agent.log_prob(probs, old_actions)
         old_logprobs = self._agent.log_prob(old_probs, old_actions)
 
-        ratio = torch.exp(log_probs - old_logprobs)
-        surr_obj = adv_value * ratio
-        clipped_ratio = torch.clamp(ratio, 1.0 - self._epsilon, 1.0 + self._epsilon)
-        clipped_surr = adv_value * clipped_ratio
-        loss_policy = -torch.min(surr_obj, clipped_surr).mean()
+        ratio = torch.exp(log_probs - old_logprobs) * adv_value
+        clipped_ratio = torch.clamp(ratio, 1.0 - self._epsilon, 1.0 + self._epsilon) * adv_value
+        loss_policy = -torch.min(ratio, clipped_ratio)
+        loss_policy = loss_policy.mean()
 
         entropy = self._agent.entropy(probs)
         loss = loss_value * self._critic_loss_weight + loss_policy * self._actor_loss_weight + self._beta * entropy

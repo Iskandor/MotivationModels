@@ -97,9 +97,9 @@ class PPONetwork(torch.nn.Module):
 
         self.critic = nn.Sequential(
             nn.Linear(state_dim, config.critic_h1),
-            nn.Tanh(),
+            nn.ReLU(),
             nn.Linear(config.critic_h1, config.critic_h2),
-            nn.Tanh(),
+            nn.ReLU(),
             torch.nn.Linear(config.critic_h2, 1)
         )
         nn.init.xavier_uniform_(self.critic[0].weight)
@@ -107,9 +107,9 @@ class PPONetwork(torch.nn.Module):
 
         self.actor = nn.Sequential(
             torch.nn.Linear(state_dim, config.actor_h1),
-            nn.Tanh(),
+            nn.ReLU(),
             torch.nn.Linear(config.actor_h1, config.actor_h2),
-            nn.Tanh()
+            nn.ReLU()
         )
         nn.init.xavier_uniform_(self.actor[0].weight)
         nn.init.xavier_uniform_(self.actor[2].weight)

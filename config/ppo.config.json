@@ -1093,11 +1093,11 @@
       "trajectory_size": 128,
       "lr": 0.0002,
       "actor_loss_weight": 0.5,
-      "actor_h1": 64,
-      "actor_h2": 32,
+      "actor_h1": 128,
+      "actor_h2": 64,
       "critic_loss_weight": 1,
       "critic_h1": 128,
-      "critic_h2": 32
+      "critic_h2": 64
     }
   },
   "midnight_resistance": {
@@ -1445,14 +1445,14 @@
       "gamma": 0.99,
       "beta": 0.001,
       "batch_size": 1024,
-      "trajectory_size": 4096,
+      "trajectory_size": 2048,
       "lr": 0.001,
       "actor_loss_weight": 0.5,
-      "actor_h1": 8,
-      "actor_h2": 4,
+      "actor_h1": 64,
+      "actor_h2": 32,
       "critic_loss_weight": 1,
-      "critic_h1": 8,
-      "critic_h2": 4
+      "critic_h1": 64,
+      "critic_h2": 32
     }
   }
 }
