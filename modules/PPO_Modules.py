@@ -1,3 +1,4 @@
+import math
 from enum import Enum
 
 import torch
@@ -23,7 +24,7 @@ class DiscreteHead(nn.Module):
         probs = torch.softmax(logits, dim=1)
         dist = Categorical(probs)
 
-        action = dist.sample()
+        action = dist.sample().unsqueeze(0)
 
         return action, probs
 
@@ -37,11 +38,12 @@ class DiscreteHead(nn.Module):
     @staticmethod
     def entropy(probs):
         dist = Categorical(probs)
-        return dist.entropy().mean()
+        entropy = -dist.entropy()
+        return entropy.mean()
 
     @staticmethod
     def convert_action(action):
-        return action.item()
+        return action.squeeze(0).item()
 
 
 class ContinuousHead(nn.Module):
@@ -59,6 +61,8 @@ class ContinuousHead(nn.Module):
         torch.nn.init.xavier_uniform_(self.mu[0].weight)
         torch.nn.init.xavier_uniform_(self.var[0].weight)
 
+        self.action_dim = action_dim
+
     def forward(self, x):
         mu = self.mu(x)
         var = self.var(x)
@@ -68,19 +72,19 @@ class ContinuousHead(nn.Module):
 
         return action, torch.cat([mu, var], dim=1)
 
-    @staticmethod
-    def log_prob(probs, actions):
-        mu, var = probs[:, 0].unsqueeze(1), probs[:, 1].unsqueeze(1)
+    def log_prob(self, probs, actions):
+        mu, var = probs[:, 0:self.action_dim], probs[:, self.action_dim:self.action_dim*2]
         dist = Normal(mu, var.sqrt())
-        log_prob = dist.log_prob(actions.squeeze(1))
+        log_prob = dist.log_prob(actions)
 
         return log_prob
 
-    @staticmethod
-    def entropy(probs):
-        mu, var = probs[:, 0].unsqueeze(1), probs[:, 1].unsqueeze(1)
+    def entropy(self, probs):
+        mu, var = probs[:, 0:self.action_dim], probs[:, self.action_dim:self.action_dim*2]
         dist = Normal(mu, var.sqrt())
-        return dist.entropy().mean()
+        entropy = -dist.entropy()
+
+        return entropy.mean()
 
     @staticmethod
     def convert_action(action):
@@ -93,9 +97,9 @@ class PPONetwork(torch.nn.Module):
 
         self.critic = nn.Sequential(
             nn.Linear(state_dim, config.critic_h1),
-            nn.ReLU(),
+            nn.Tanh(),
             nn.Linear(config.critic_h1, config.critic_h2),
-            nn.ReLU(),
+            nn.Tanh(),
             torch.nn.Linear(config.critic_h2, 1)
         )
         nn.init.xavier_uniform_(self.critic[0].weight)
@@ -103,9 +107,9 @@ class PPONetwork(torch.nn.Module):
 
         self.actor = nn.Sequential(
             torch.nn.Linear(state_dim, config.actor_h1),
-            nn.ReLU(),
+            nn.Tanh(),
             torch.nn.Linear(config.actor_h1, config.actor_h2),
-            nn.ReLU()
+            nn.Tanh()
         )
         nn.init.xavier_uniform_(self.actor[0].weight)
         nn.init.xavier_uniform_(self.actor[2].weight)

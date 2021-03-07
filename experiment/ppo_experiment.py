@@ -69,7 +69,7 @@ class ExperimentPPO:
                 mask = 1
                 if done:
                     mask = 0
-                agent.train(state0, value, action0.unsqueeze(0), probs0, state1, reward, mask)
+                agent.train(state0, value, action0, probs0, state1, reward, mask)
                 state0 = state1
 
                 train_ext_reward += reward
