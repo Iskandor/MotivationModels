@@ -73,7 +73,7 @@ class ContinuousHead(nn.Module):
         action = dist.sample().detach().squeeze(1)
         log_prob = dist.log_prob(action).detach().squeeze(1)
 
-        return action.numpy(), action, log_prob
+        return action.squeeze(0).numpy(), action, log_prob
 
     def mean(self, x):
         mu = self.mu(x)
@@ -84,7 +84,7 @@ class ContinuousHead(nn.Module):
         action = dist.mean.squeeze(1)
         log_prob = dist.log_prob(action).detach().squeeze(1)
 
-        return action.numpy(), action, log_prob
+        return action.squeeze(0).numpy(), action, log_prob
 
     def evaluate(self, x, action):
         mu = self.mu(x)
@@ -102,42 +102,41 @@ class PPONetwork(torch.nn.Module):
     def __init__(self, state_dim, action_dim, config, head=HEAD.discrete):
         super(PPONetwork, self).__init__()
 
-        self.critic = torch.nn.Sequential(
-            torch.nn.Linear(state_dim, config.critic_h1),
-            torch.nn.Tanh(),
-            torch.nn.Linear(config.critic_h1, config.critic_h2),
-            torch.nn.Tanh(),
+        self.critic = nn.Sequential(
+            nn.Linear(state_dim, config.critic_h1),
+            nn.ReLU(),
+            nn.Linear(config.critic_h1, config.critic_h2),
+            nn.ReLU(),
             torch.nn.Linear(config.critic_h2, 1)
         )
-        self.critic.apply(self.init_weights)
+        nn.init.xavier_uniform_(self.critic[0].weight)
+        nn.init.xavier_uniform_(self.critic[2].weight)
 
-        self.actor = torch.nn.Sequential(
+        self.actor = nn.Sequential(
             torch.nn.Linear(state_dim, config.actor_h1),
-            torch.nn.Tanh(),
+            nn.ReLU(),
             torch.nn.Linear(config.actor_h1, config.actor_h2),
-            torch.nn.Tanh()
+            nn.ReLU()
         )
-        self.actor.apply(self.init_weights)
-        self.head = None
+        nn.init.xavier_uniform_(self.actor[0].weight)
+        nn.init.xavier_uniform_(self.actor[2].weight)
+
+        self.actor_head = None
 
         if head == HEAD.discrete:
-            self.head = DiscreteHead(config.actor_h2, action_dim)
+            self.actor_head = DiscreteHead(config.critic_h2, action_dim)
         if head == HEAD.continuous:
-            self.head = ContinuousHead(config.actor_h2, action_dim)
+            self.actor_head = ContinuousHead(config.critic_h2, action_dim)
         if head == HEAD.multibinary:
             pass
-
-    def init_weights(self, module):
-        if type(module) == torch.nn.Linear:
-            torch.nn.init.xavier_uniform_(module.weight)
 
     def action(self, state, deterministic=False):
         x = self.actor(state)
 
         if deterministic:
-            action_env, action, log_prob = self.head.mean(x)
+            action_env, action, log_prob = self.actor_head.mean(x)
         else:
-            action_env, action, log_prob = self.head.sample(x)
+            action_env, action, log_prob = self.actor_head.sample(x)
 
         return action_env, action, log_prob
 
@@ -147,7 +146,7 @@ class PPONetwork(torch.nn.Module):
 
     def evaluate(self, state, action):
         x = self.actor(state)
-        log_prob, entropy = self.head.evaluate(x, action)
+        log_prob, entropy = self.actor_head.evaluate(x, action)
         return log_prob, entropy
 
 

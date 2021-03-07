@@ -4,7 +4,7 @@ import torch
 from algorithms.PPO import PPO
 from motivation.ICM import ICM
 from experiment.ppo_experiment import ExperimentPPO
-from utils.AtariWrapper import AtariWrapper
+from utils.AtariWrapper import WrapperAtari
 
 
 class PPONetwork(torch.nn.Module):
@@ -114,7 +114,7 @@ def encode_state(state):
 
 
 def run_baseline(config, i):
-    env = AtariWrapper(gym.make('Solaris-v0'))
+    env = WrapperAtari(gym.make('Solaris-v0'))
     state_dim = 4
     action_dim = env.action_space.n
 
@@ -129,7 +129,7 @@ def run_baseline(config, i):
 
 
 def run_icm(config, i):
-    env = AtariWrapper(gym.make('Solaris-v0'))
+    env = WrapperAtari(gym.make('Solaris-v0'))
     state_dim = 4
     action_dim = env.action_space.n
     config.state_dim = state_dim

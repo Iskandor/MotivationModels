@@ -3,7 +3,7 @@ import torch
 
 from experiment.a2c_experiment import ExperimentA2C
 from algorithms.A2C import A2C
-from utils.AtariWrapper import AtariWrapper
+from utils.AtariWrapper import WrapperAtari
 
 
 class A2CNetwork(torch.nn.Module):
@@ -65,7 +65,7 @@ class A2CNetwork(torch.nn.Module):
 
 
 def run_baseline(config, i):
-    env = AtariWrapper(gym.make('Breakout-v0'))
+    env = WrapperAtari(gym.make('Breakout-v0'))
     state_dim = 4
     action_dim = env.action_space.n
 

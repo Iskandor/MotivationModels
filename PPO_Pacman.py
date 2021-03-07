@@ -9,7 +9,7 @@ from modules.PPO_Modules import AtariPPONetwork
 from experiment.ppo_experiment import ExperimentPPO
 from modules.forward_models.ForwardModel import ForwardModel
 from motivation.ForwardModelMotivation import ForwardModelMotivation
-from utils.AtariWrapper import AtariWrapper
+from utils.AtariWrapper import WrapperAtari
 
 
 def encode_state(state):
@@ -17,7 +17,7 @@ def encode_state(state):
 
 
 def test(config, path):
-    env = AtariWrapper(gym.make('MsPacman-v0'))
+    env = WrapperAtari(gym.make('MsPacman-v0'))
     input_shape = env.observation_space.shape
     action_dim = env.action_space.n
 
@@ -34,7 +34,7 @@ def test(config, path):
 
 
 def run_baseline(config, trial):
-    env = AtariWrapper(gym.make('MsPacman-v0'))
+    env = WrapperAtari(gym.make('MsPacman-v0'))
     input_shape = env.observation_space.shape
     action_dim = env.action_space.n
 
@@ -63,7 +63,7 @@ def run_baseline(config, trial):
 
 
 def run_forward_model(config, trial):
-    env = AtariWrapper(gym.make('MsPacman-v0'))
+    env = WrapperAtari(gym.make('MsPacman-v0'))
     input_shape = env.observation_space.shape
     action_dim = env.action_space.n
 

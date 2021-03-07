@@ -1,5 +1,4 @@
 import argparse
-import concurrent.futures
 import json
 import os
 import platform
@@ -11,7 +10,6 @@ import ray
 import torch
 
 import A2C_Breakout
-import A2C_QBert
 import DDPG_AerisTargetNavigate
 import DDPG_Ant
 import DDPG_FetchReach
@@ -27,33 +25,22 @@ import DDPG_Noisy_LunarLander
 import DDPG_Noisy_Reacher
 import DDPG_Reacher
 import PPO_CartPole
+import PPO_LunarLander
 import PPO_MidnightResistance
 import PPO_MountainCar
 import PPO_Pacman
 import PPO_Pendulum
 import PPO_QBert
 import PPO_Solaris
-from utils.Config import Config
+from config import load_config_file
+from config.Config import Config
 
 
-def set_env_class(env, experiment):
+def set_env_class_ddpg(env, experiment):
     env_class = None
 
-    if env == "solaris":
-        env_class = PPO_Solaris
-    if env == "qbert":
-        env_class = PPO_QBert
-    if env == "mspacman":
-        env_class = PPO_Pacman
-    if env == "midnight_resistance":
-        env_class = PPO_MidnightResistance
-    if env == "breakout":
-        env_class = A2C_Breakout
-    if env == "cart_pole":
-        env_class = PPO_CartPole
     if env == 'mountain_car':
-        # env_class = DDPG_MountainCar
-        env_class = PPO_MountainCar
+        env_class = DDPG_MountainCar
     if env == 'fetch_reach':
         env_class = DDPG_FetchReach
     if env == 'lunar_lander':
@@ -61,8 +48,6 @@ def set_env_class(env, experiment):
             env_class = DDPG_Noisy_LunarLander
         else:
             env_class = DDPG_LunarLander
-    if env == 'pong':
-        pass
     if env == 'half_cheetah':
         if experiment.noisy:
             env_class = DDPG_Noisy_HalfCheetah
@@ -83,8 +68,6 @@ def set_env_class(env, experiment):
             env_class = DDPG_Noisy_Reacher
         else:
             env_class = DDPG_Reacher
-    if env == 'pendulum':
-        env_class = PPO_Pendulum
     if env == 'aeris_navigate':
         if experiment.noisy:
             env_class = DDPG_Noisy_AerisTargetNavigate
@@ -94,24 +77,69 @@ def set_env_class(env, experiment):
     return env_class
 
 
+def set_env_class_ppo(env):
+    env_class = None
+
+    if env == "solaris":
+        env_class = PPO_Solaris
+    if env == "qbert":
+        env_class = PPO_QBert
+    if env == "mspacman":
+        env_class = PPO_Pacman
+    if env == "midnight_resistance":
+        env_class = PPO_MidnightResistance
+    if env == "cart_pole":
+        env_class = PPO_CartPole
+    if env == 'mountain_car':
+        env_class = PPO_MountainCar
+    if env == 'pendulum':
+        env_class = PPO_Pendulum
+    if env == 'lunar_lander':
+        env_class = PPO_LunarLander
+
+    return env_class
+
+
+def set_env_class_a2c(env):
+    env_class = None
+
+    if env == "breakout":
+        env_class = A2C_Breakout
+
+    return env_class
+
+
+def set_env_class(algorithm, env, experiment):
+    env_class = None
+
+    if algorithm == 'a2c':
+        env_class = set_env_class_a2c(env)
+    if algorithm == 'ddpg':
+        env_class = set_env_class_ddpg(env, experiment)
+    if algorithm == 'ppo':
+        env_class = set_env_class_ppo(env)
+
+    return env_class
+
+
 def run_parallel(args, experiment):
     thread_params = []
     for i in range(experiment.trials):
-        thread_params.append((args.env, experiment, i))
+        thread_params.append((args.algorithm, args.env, experiment, i))
 
     ray.get([run_thread.remote(tp) for tp in thread_params])
 
 
 @ray.remote
 def run_thread(thread_params):
-    env, experiment, i = thread_params
-    run(env, experiment, i)
+    algorithm, env, experiment, i = thread_params
+    run(algorithm, env, experiment, i)
 
 
-def run(env, experiment, id):
-    print('Starting experiment {0}'.format(id + experiment.shift))
+def run(algorithm, env, experiment, id):
+    print('Starting experiment {0} on env {1} learning algorithm {2}'.format(id + experiment.shift, env, algorithm))
 
-    env_class = set_env_class(env, experiment)
+    env_class = set_env_class(algorithm, env, experiment)
 
     if experiment.model == 'baseline':
         env_class.run_baseline(experiment, id)
@@ -173,6 +201,7 @@ if __name__ == '__main__':
         os.mkdir('./models')
 
     parser.add_argument('--env', type=str, help='environment name')
+    parser.add_argument('-a', '--algorithm', type=str, help='training algorithm', choices=['ppo', 'ddpg', 'a2c', 'dqn'])
     parser.add_argument('--config', type=int, help='id of config')
     parser.add_argument('--device', type=str, help='device type', default='cpu')
     parser.add_argument('--load', type=str, help='path to saved agent', default='')
@@ -181,9 +210,7 @@ if __name__ == '__main__':
     parser.add_argument('-t', '--thread', action="store_true", help='do not use: technical parameter for parallel run')
 
     args = parser.parse_args()
-
-    with open('./config.json') as f:
-        config = json.load(f)
+    config = load_config_file(args.algorithm)
 
     experiment = Config(config[args.env][str(args.config)], "{0}_{1}".format(args.env, str(args.config)))
     experiment.device = args.device
@@ -207,4 +234,4 @@ if __name__ == '__main__':
             # run_command_file()
         else:
             for i in range(experiment.trials):
-                run(args.env, experiment, i)
+                run(args.algorithm, args.env, experiment, i)

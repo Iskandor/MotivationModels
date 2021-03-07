@@ -5,8 +5,6 @@ import torch
 from etaprogress.progress import ProgressBar
 from gym.wrappers.monitoring.video_recorder import VideoRecorder
 
-from exploration.ContinuousExploration import GaussianExploration
-
 
 class ExperimentPPO:
     def __init__(self, env_name, env, config):
@@ -60,12 +58,9 @@ class ExperimentPPO:
             train_ext_reward = 0
             train_steps = 0
 
-            exploration = GaussianExploration(0.7, 0.01, step_limit)
-
             while not done:
                 a, action0, log_prob = agent.get_action(state0)
-                action0 = exploration.explore(action0)
-                next_state, reward, done, info = self._env.step(action0)
+                next_state, reward, done, info = self._env.step(a)
 
                 if isinstance(reward, numpy.ndarray):
                     reward = reward[0]
@@ -84,8 +79,6 @@ class ExperimentPPO:
                 train_steps = step_limit - steps
             steps += train_steps
             bar.numerator = steps
-
-            exploration.update(steps)
 
             train_ext_rewards.append([train_steps, train_ext_reward])
 

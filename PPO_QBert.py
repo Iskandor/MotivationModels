@@ -4,7 +4,7 @@ import torch
 from algorithms.PPO import PPO
 from modules.PPO_Modules import AtariPPONetwork
 from experiment.ppo_experiment import ExperimentPPO
-from utils.AtariWrapper import AtariWrapper
+from utils.AtariWrapper import WrapperAtari
 
 
 def encode_state(state):
@@ -12,7 +12,7 @@ def encode_state(state):
 
 
 def run_baseline(config, i):
-    env = AtariWrapper(gym.make('Qbert-v0'))
+    env = WrapperAtari(gym.make('Qbert-v0'))
     input_shape = env.observation_space.shape
     action_dim = env.action_space.n
 
