@@ -18,35 +18,30 @@ class DiscreteHead(nn.Module):
 
         torch.nn.init.xavier_uniform_(self.logits.weight)
 
-    def sample(self, x):
+    def forward(self, x):
         logits = self.logits(x)
         probs = torch.softmax(logits, dim=1)
         dist = Categorical(probs)
 
         action = dist.sample()
-        log_prob = dist.log_prob(action).detach()
 
-        return action.item(), action, log_prob
+        return action, probs
 
-    def mean(self, x):
-        logits = self.logits(x)
-        probs = torch.softmax(logits, dim=1)
+    @staticmethod
+    def log_prob(probs, actions):
         dist = Categorical(probs)
+        log_prob = dist.log_prob(actions.squeeze(1)).unsqueeze(1)
 
-        action = probs.argmax(dim=1)
-        log_prob = dist.log_prob(action).detach()
+        return log_prob
 
-        return action.item(), action, log_prob
-
-    def evaluate(self, x, action):
-        logits = self.logits(x)
-        probs = torch.softmax(logits, dim=1)
+    @staticmethod
+    def entropy(probs):
         dist = Categorical(probs)
+        return dist.entropy().mean()
 
-        log_prob = dist.log_prob(action.squeeze(1)).unsqueeze(1)
-        entropy = dist.entropy().mean()
-
-        return log_prob, entropy
+    @staticmethod
+    def convert_action(action):
+        return action.item()
 
 
 class ContinuousHead(nn.Module):
@@ -64,38 +59,32 @@ class ContinuousHead(nn.Module):
         torch.nn.init.xavier_uniform_(self.mu[0].weight)
         torch.nn.init.xavier_uniform_(self.var[0].weight)
 
-    def sample(self, x):
+    def forward(self, x):
         mu = self.mu(x)
         var = self.var(x)
 
         dist = Normal(mu, var.sqrt())
+        action = dist.sample()
 
-        action = dist.sample().detach().squeeze(1)
-        log_prob = dist.log_prob(action).detach().squeeze(1)
+        return action, torch.cat([mu, var], dim=1)
 
-        return action.squeeze(0).numpy(), action, log_prob
-
-    def mean(self, x):
-        mu = self.mu(x)
-        var = self.var(x)
-
+    @staticmethod
+    def log_prob(probs, actions):
+        mu, var = probs[:, 0].unsqueeze(1), probs[:, 1].unsqueeze(1)
         dist = Normal(mu, var.sqrt())
+        log_prob = dist.log_prob(actions.squeeze(1))
 
-        action = dist.mean.squeeze(1)
-        log_prob = dist.log_prob(action).detach().squeeze(1)
+        return log_prob
 
-        return action.squeeze(0).numpy(), action, log_prob
-
-    def evaluate(self, x, action):
-        mu = self.mu(x)
-        var = self.var(x)
-
+    @staticmethod
+    def entropy(probs):
+        mu, var = probs[:, 0].unsqueeze(1), probs[:, 1].unsqueeze(1)
         dist = Normal(mu, var.sqrt())
+        return dist.entropy().mean()
 
-        log_prob = dist.log_prob(action)
-        entropy = dist.entropy().mean()
-
-        return log_prob, entropy
+    @staticmethod
+    def convert_action(action):
+        return action.squeeze(0).numpy()
 
 
 class PPONetwork(torch.nn.Module):
@@ -130,24 +119,20 @@ class PPONetwork(torch.nn.Module):
         if head == HEAD.multibinary:
             pass
 
-    def action(self, state, deterministic=False):
-        x = self.actor(state)
-
-        if deterministic:
-            action_env, action, log_prob = self.actor_head.mean(x)
-        else:
-            action_env, action, log_prob = self.actor_head.sample(x)
-
-        return action_env, action, log_prob
-
-    def value(self, state):
+    def forward(self, state):
         value = self.critic(state)
-        return value
+        action, probs = self.actor_head(self.actor(state))
 
-    def evaluate(self, state, action):
-        x = self.actor(state)
-        log_prob, entropy = self.actor_head.evaluate(x, action)
-        return log_prob, entropy
+        return value, action, probs
+
+    def log_prob(self, probs, actions):
+        return self.actor_head.log_prob(probs, actions)
+
+    def entropy(self, probs):
+        return self.actor_head.entropy(probs)
+
+    def convert_action(self, action):
+        return self.actor_head.convert_action(action)
 
 
 class AtariPPONetwork(torch.nn.Module):

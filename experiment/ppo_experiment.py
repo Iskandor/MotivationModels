@@ -59,8 +59,8 @@ class ExperimentPPO:
             train_steps = 0
 
             while not done:
-                a, action0, log_prob = agent.get_action(state0)
-                next_state, reward, done, info = self._env.step(a)
+                value, action0, probs0 = agent.get_action(state0)
+                next_state, reward, done, info = self._env.step(agent.convert_action(action0))
 
                 if isinstance(reward, numpy.ndarray):
                     reward = reward[0]
@@ -69,7 +69,7 @@ class ExperimentPPO:
                 mask = 1
                 if done:
                     mask = 0
-                agent.train(state0, action0.unsqueeze(0), log_prob.unsqueeze(0), state1, reward, mask)
+                agent.train(state0, value, action0.unsqueeze(0), probs0, state1, reward, mask)
                 state0 = state1
 
                 train_ext_reward += reward
