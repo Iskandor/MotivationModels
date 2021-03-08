@@ -1,15 +1,8 @@
-import math
-from enum import Enum
-
 import torch
 from torch import nn
 from torch.distributions import Categorical, MultivariateNormal, Normal
 
-
-class HEAD(Enum):
-    discrete = 0
-    continuous = 1
-    multibinary = 2
+from agents import TYPE
 
 
 class DiscreteHead(nn.Module):
@@ -27,23 +20,6 @@ class DiscreteHead(nn.Module):
         action = dist.sample().unsqueeze(0)
 
         return action, probs
-
-    @staticmethod
-    def log_prob(probs, actions):
-        dist = Categorical(probs)
-        log_prob = dist.log_prob(actions.squeeze(1)).unsqueeze(1)
-
-        return log_prob
-
-    @staticmethod
-    def entropy(probs):
-        dist = Categorical(probs)
-        entropy = -dist.entropy()
-        return entropy.mean()
-
-    @staticmethod
-    def convert_action(action):
-        return action.squeeze(0).item()
 
 
 class ContinuousHead(nn.Module):
@@ -72,27 +48,9 @@ class ContinuousHead(nn.Module):
 
         return action, torch.cat([mu, var], dim=1)
 
-    def log_prob(self, probs, actions):
-        mu, var = probs[:, 0:self.action_dim], probs[:, self.action_dim:self.action_dim*2]
-        dist = Normal(mu, var.sqrt())
-        log_prob = dist.log_prob(actions)
-
-        return log_prob
-
-    def entropy(self, probs):
-        mu, var = probs[:, 0:self.action_dim], probs[:, self.action_dim:self.action_dim*2]
-        dist = Normal(mu, var.sqrt())
-        entropy = -dist.entropy()
-
-        return entropy.mean()
-
-    @staticmethod
-    def convert_action(action):
-        return action.squeeze(0).numpy()
-
 
 class PPONetwork(torch.nn.Module):
-    def __init__(self, state_dim, action_dim, config, head=HEAD.discrete):
+    def __init__(self, state_dim, action_dim, config, head):
         super(PPONetwork, self).__init__()
 
         self.critic = nn.Sequential(
@@ -116,11 +74,11 @@ class PPONetwork(torch.nn.Module):
 
         self.actor_head = None
 
-        if head == HEAD.discrete:
-            self.actor_head = DiscreteHead(config.critic_h2, action_dim)
-        if head == HEAD.continuous:
-            self.actor_head = ContinuousHead(config.critic_h2, action_dim)
-        if head == HEAD.multibinary:
+        if head == TYPE.discrete:
+            self.actor_head = DiscreteHead(config.actor_h2, action_dim)
+        if head == TYPE.continuous:
+            self.actor_head = ContinuousHead(config.actor_h2, action_dim)
+        if head == TYPE.multibinary:
             pass
 
     def forward(self, state):
@@ -128,15 +86,6 @@ class PPONetwork(torch.nn.Module):
         action, probs = self.actor_head(self.actor(state))
 
         return value, action, probs
-
-    def log_prob(self, probs, actions):
-        return self.actor_head.log_prob(probs, actions)
-
-    def entropy(self, probs):
-        return self.actor_head.entropy(probs)
-
-    def convert_action(self, action):
-        return self.actor_head.convert_action(action)
 
 
 class AtariPPONetwork(torch.nn.Module):

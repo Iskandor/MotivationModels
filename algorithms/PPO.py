@@ -1,16 +1,12 @@
 import time
-
-from torch import nn
-from torch.distributions import Categorical
-
 from utils import *
 
 
 class PPO:
-    def __init__(self, agent, lr, actor_loss_weight, critic_loss_weight, batch_size, trajectory_size, p_beta, p_gamma, p_epsilon=0.2, p_lambda=0.95,
-                 weight_decay=0, device='cpu', n_env=1):
-        self._agent = agent
-        self._optimizer = torch.optim.Adam(self._agent.parameters(), lr=lr, weight_decay=weight_decay)
+    def __init__(self, network, lr, actor_loss_weight, critic_loss_weight, batch_size, trajectory_size, p_beta, p_gamma, log_prob_fn, entropy_fn,
+                 p_epsilon=0.2, p_lambda=0.95, weight_decay=0, device='cpu', n_env=1):
+        self._network = network
+        self._optimizer = torch.optim.Adam(self._network.parameters(), lr=lr, weight_decay=weight_decay)
         self._beta = p_beta
         self._gamma = p_gamma
         self._epsilon = p_epsilon
@@ -20,6 +16,9 @@ class PPO:
         self._trajectory_size = trajectory_size
         self._actor_loss_weight = actor_loss_weight
         self._critic_loss_weight = critic_loss_weight
+        self._log_prob_fn = log_prob_fn
+        self._entropy_fn = entropy_fn
+
         self._trajectory = []
         self._ppo_epochs = 10
         self._motivation = None
@@ -28,18 +27,15 @@ class PPO:
         if self._n_env > 1:
             self._trajectories = [[] for _ in range(self._n_env)]
 
-    def action_dim(self):
-        return self._agent.action_dim
-
-    def train(self, state0, value, action, log_prob, state1, reward, done):
-        self._trajectory.append((state0, value, action, log_prob, state1, reward, done))
+    def train(self, state0, value, action, prob, state1, reward, done):
+        self._trajectory.append((state0, value, action, prob, state1, reward, done))
 
         if len(self._trajectory) == self._trajectory_size:
             self._train()
 
-    def train_n_env(self, state0, action, log_prob, state1, reward, done):
+    def train_n_env(self, state0, action, prob, state1, reward, done):
         for i in range(self._n_env):
-            self._trajectories[i].append((state0[i], action[i], log_prob[i], state1[i], reward[i], done[i]))
+            self._trajectories[i].append((state0[i], action[i], prob[i], state1[i], reward[i], done[i]))
 
         if len(self._trajectories[0]) == self._trajectory_size // self._n_env:
             for i in range(self._n_env):
@@ -113,19 +109,19 @@ class PPO:
         print("Trajectory {0:d} batch size {1:d} epochs {2:d} training time {3:.2f}s".format(self._trajectory_size, self._batch_size, self._ppo_epochs, end - start))
 
     def calc_loss(self, states, ref_value, adv_value, old_actions, old_probs):
-        values, _, probs = self._agent(states)
+        values, _, probs = self._network(states)
 
         loss_value = torch.nn.functional.mse_loss(values, ref_value)
 
-        log_probs = self._agent.log_prob(probs, old_actions)
-        old_logprobs = self._agent.log_prob(old_probs, old_actions)
+        log_probs = self._log_prob_fn(probs, old_actions)
+        old_logprobs = self._log_prob_fn(old_probs, old_actions)
 
         ratio = torch.exp(log_probs - old_logprobs) * adv_value
         clipped_ratio = torch.clamp(ratio, 1.0 - self._epsilon, 1.0 + self._epsilon) * adv_value
         loss_policy = -torch.min(ratio, clipped_ratio)
         loss_policy = loss_policy.mean()
 
-        entropy = self._agent.entropy(probs)
+        entropy = self._entropy_fn(probs)
         loss = loss_value * self._critic_loss_weight + loss_policy * self._actor_loss_weight + self._beta * entropy
 
         return loss
@@ -143,13 +139,6 @@ class PPO:
     def calc_advantage(self, values, rewards, dones, intrinsic_reward):
         dones = dones[:-1].flip(0)
         rewards = rewards[:-1].flip(0)
-        # values, _, _ = self._agent(states[0:self._batch_size])
-        # values = values.detach()
-        #
-        # for batch_ofs in range(self._batch_size, self._trajectory_size, self._batch_size):
-        #     batch_l = min(batch_ofs + self._batch_size, self._trajectory_size)
-        #     batch_values, _, _ = self._agent(states[batch_ofs:batch_l])
-        #     values = torch.cat([values, batch_values.detach()], dim=0)
         values = values.squeeze()
 
         val = values[:-1].flip(0)
@@ -172,22 +161,8 @@ class PPO:
 
         return adv_v, ref_v
 
-    def get_action(self, state):
-        value, action, probs = self._agent(state)
-
-        return value.detach(), action, probs.detach()
-
-    def convert_action(self, action):
-        return self._agent.convert_action(action)
-
     def add_motivation_module(self, motivation):
         self._motivation = motivation
 
     def get_motivation_module(self):
         return self._motivation
-
-    def save(self, path):
-        torch.save(self._agent.state_dict(), path + '.pth')
-
-    def load(self, path):
-        self._agent.load_state_dict(torch.load(path + '.pth'))

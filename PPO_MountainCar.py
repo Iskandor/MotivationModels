@@ -1,13 +1,13 @@
 import gym
 
-from algorithms.PPO import PPO
+from agents import TYPE
+from agents.PPOAgent import PPOAgent
 from experiment.ppo_experiment import ExperimentPPO
 from modules import ARCH
 from modules.DDPG_Modules import *
 from algorithms.ReplayBuffer import ExperienceReplayBuffer
 from experiment.ddpg_experiment import ExperimentDDPG
 from algorithms.DDPG import DDPG
-from modules.PPO_Modules import PPONetwork, HEAD
 from modules.forward_models.ForwardModel import ForwardModel
 from modules.metacritic_models import SmallMetaCritic
 from motivation.ForwardModelMotivation import ForwardModelMotivation
@@ -21,8 +21,7 @@ def run_baseline(config, i):
 
     experiment = ExperimentPPO('MountainCarContinuous-v0', env, config)
 
-    network = PPONetwork(state_dim, action_dim, config, head=HEAD.continuous)
-    agent = PPO(network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size, config.beta, config.gamma)
+    agent = PPOAgent(state_dim, action_dim, config, TYPE.continuous)
     experiment.run_baseline(agent, i)
 
     env.close()
