@@ -3,6 +3,7 @@ import gym_aeris.envs
 import torch
 from torch import nn
 
+from agents.DDPGAgent import DDPGAerisAgent
 from algorithms.DDPG import DDPGCritic, DDPGActor, DDPG
 from algorithms.ReplayBuffer import ExperienceReplayBuffer
 from experiment.ddpg_experiment import ExperimentDDPG
@@ -13,69 +14,6 @@ from motivation.ForwardModelMotivation import ForwardModelMotivation
 from motivation.MateCriticMotivation import MetaCriticMotivation
 
 
-class Critic(DDPGCritic):
-    def __init__(self, input_shape, action_dim, config):
-        super(Critic, self).__init__(input_shape, action_dim)
-
-        self.channels = input_shape[0]
-        self.width = input_shape[1]
-
-        fc_count = config.critic_kernels_count * self.width // 4
-
-        self.layers = [
-            nn.Conv1d(self.channels + action_dim, config.critic_kernels_count, kernel_size=8, stride=4, padding=2),
-            nn.ReLU(),
-            nn.Flatten(),
-            nn.Linear(fc_count, config.critic_h1),
-            nn.ReLU(),
-            nn.Linear(config.critic_h1, 1)]
-
-        nn.init.xavier_uniform_(self.layers[0].weight)
-        nn.init.xavier_uniform_(self.layers[3].weight)
-        nn.init.uniform_(self.layers[5].weight, -0.003, 0.003)
-
-        self._network = nn.Sequential(*self.layers)
-
-    def forward(self, state, action):
-        a = action.unsqueeze(state.ndim - 1).repeat(1, 1, state.shape[2])
-        x = torch.cat([state, a], dim=1)
-        value = self._network(x)
-        return value
-
-
-class Actor(DDPGActor):
-    def __init__(self, input_shape, action_dim, config):
-        super(Actor, self).__init__(input_shape, action_dim)
-
-        self.channels = input_shape[0]
-        self.width = input_shape[1]
-
-        fc_count = config.actor_kernels_count * self.width // 4
-
-        self.layers = [
-            nn.Conv1d(self.channels, config.actor_kernels_count, kernel_size=8, stride=4, padding=2),
-            nn.ReLU(),
-            nn.Flatten(),
-            nn.Linear(fc_count, config.actor_h1),
-            nn.ReLU(),
-            nn.Linear(config.actor_h1, action_dim),
-            nn.Tanh()]
-
-        nn.init.xavier_uniform_(self.layers[0].weight)
-        nn.init.xavier_uniform_(self.layers[3].weight)
-        nn.init.uniform_(self.layers[5].weight, -0.3, 0.3)
-
-        self._network = nn.Sequential(*self.layers)
-
-    def forward(self, state):
-        if state.ndim == 2:
-            state = state.unsqueeze(0)
-            policy = self._network(state).squeeze(0)
-        else:
-            policy = self._network(state)
-        return policy
-
-
 def run_baseline(config, i):
     env = gym_aeris.envs.TargetNavigateEnv()
     state_dim = env.observation_space.shape
@@ -83,10 +21,7 @@ def run_baseline(config, i):
 
     experiment = ExperimentDDPG('TargetNavigate-v0', env, config)
 
-    actor = Actor(state_dim, action_dim, config)
-    critic = Critic(state_dim, action_dim, config)
-    memory = ExperienceReplayBuffer(config.memory_size)
-    agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)
+    agent = DDPGAerisAgent(state_dim, action_dim, config)
     experiment.run_baseline(agent, i)
 
     env.close()

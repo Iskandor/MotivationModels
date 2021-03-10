@@ -42,7 +42,7 @@ class DDPG2:
             self._critic_optimizer.step()
 
             self._actor_optimizer.zero_grad()
-            loss = -self.network.critic(states, self.network.action(states)).mean()
+            loss = -self.network.value(states, self.network.action(states)).mean()
             loss.backward()
             self._actor_optimizer.step()
 

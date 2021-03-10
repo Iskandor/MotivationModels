@@ -51,13 +51,12 @@ class Actor(nn.Module):
 
 
 class DDPGNetwork(nn.Module):
-    def __init__(self, input_shape, action_dim, config):
+    def __init__(self):
         super(DDPGNetwork, self).__init__()
-        self.critic = Critic(input_shape, action_dim, config)
-        self.actor = Actor(input_shape, action_dim, config)
-        self.critic_target = copy.deepcopy(self.critic)
-        self.actor_target = copy.deepcopy(self.actor)
-        self.hard_update()
+        self.critic = None
+        self.actor = None
+        self.critic_target = None
+        self.actor_target = None
 
     def value(self, state, action):
         value = self.critic(state, action)
@@ -94,6 +93,70 @@ class DDPGNetwork(nn.Module):
             target_param.data.copy_(param.data)
 
 
+class DDPGSimpleNetwork(DDPGNetwork):
+    def __init__(self, input_shape, action_dim, config):
+        super(DDPGSimpleNetwork, self).__init__()
+        self.critic = Critic(input_shape, action_dim, config)
+        self.actor = Actor(input_shape, action_dim, config)
+        self.critic_target = copy.deepcopy(self.critic)
+        self.actor_target = copy.deepcopy(self.actor)
+        self.hard_update()
+
+
+class DDPGAerisNetwork(DDPGNetwork):
+    def __init__(self, input_shape, action_dim, config):
+        super(DDPGAerisNetwork, self).__init__()
+
+        self.channels = input_shape[0]
+        self.width = input_shape[1]
+
+        fc_count = config.critic_kernels_count * self.width // 4
+
+        self.critic = nn.Sequential(
+            nn.Conv1d(self.channels + action_dim, config.critic_kernels_count, kernel_size=8, stride=4, padding=2),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(fc_count, config.critic_h1),
+            nn.ReLU(),
+            nn.Linear(config.critic_h1, 1))
+
+        nn.init.xavier_uniform_(self.critic[0].weight)
+        nn.init.xavier_uniform_(self.critic[3].weight)
+        nn.init.uniform_(self.critic[5].weight, -0.003, 0.003)
+
+        fc_count = config.actor_kernels_count * self.width // 4
+
+        self.actor = nn.Sequential(
+            nn.Conv1d(self.channels, config.actor_kernels_count, kernel_size=8, stride=4, padding=2),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(fc_count, config.actor_h1),
+            nn.ReLU(),
+            nn.Linear(config.actor_h1, action_dim),
+            nn.Tanh())
+
+        nn.init.xavier_uniform_(self.actor[0].weight)
+        nn.init.xavier_uniform_(self.actor[3].weight)
+        nn.init.uniform_(self.actor[5].weight, -0.3, 0.3)
+
+        self.critic_target = copy.deepcopy(self.critic)
+        self.actor_target = copy.deepcopy(self.actor)
+        self.hard_update()
+
+    def value(self, state, action):
+        a = action.unsqueeze(state.ndim - 1).repeat(1, 1, state.shape[2])
+        x = torch.cat([state, a], dim=1)
+        value = self.critic(x)
+        return value
+
+    def value_target(self, state, action):
+        a = action.unsqueeze(state.ndim - 1).repeat(1, 1, state.shape[2])
+        x = torch.cat([state, a], dim=1)
+        value = self.critic_target(x)
+        return value
+
+
+
 class Critic2Heads(nn.Module):
     def __init__(self, state_dim, action_dim, config):
         super(Critic2Heads, self).__init__()
@@ -118,63 +181,3 @@ class Critic2Heads(nn.Module):
         nn.init.xavier_uniform_(self._hidden1.weight)
         nn.init.uniform_(self._output_ve.weight, -3e-3, 3e-3)
         nn.init.uniform_(self._output_vi.weight, -3e-3, 3e-3)
-
-
-class CriticDeep(nn.Module):
-    def __init__(self, state_dim, action_dim, config):
-        super(CriticDeep, self).__init__()
-
-        self._hidden0 = nn.Linear(state_dim, config.critic_h1)
-        self._hidden1 = nn.Linear(config.critic_h1, config.critic_h1)
-        self._hidden2 = nn.Linear(config.critic_h1 + action_dim, config.critic_h2)
-        self._hidden3 = nn.Linear(config.critic_h2, config.critic_h2)
-        self._output = nn.Linear(config.critic_h2, 1)
-
-        self.init()
-        self.heads = 1
-
-    def forward(self, state, action):
-        x = state
-        x = torch.relu(self._hidden0(x))
-        x = torch.relu(self._hidden1(x))
-        x = torch.cat([x, action], 1)
-        x = torch.relu(self._hidden2(x))
-        x = torch.relu(self._hidden3(x))
-        value = self._output(x)
-        return value
-
-    def init(self):
-        nn.init.xavier_uniform_(self._hidden0.weight)
-        nn.init.xavier_uniform_(self._hidden1.weight)
-        nn.init.xavier_uniform_(self._hidden2.weight)
-        nn.init.xavier_uniform_(self._hidden3.weight)
-        nn.init.uniform_(self._output.weight, -3e-3, 3e-3)
-
-
-class ActorDeep(nn.Module):
-    def __init__(self, state_dim, action_dim, config):
-        super(ActorDeep, self).__init__()
-
-        self._hidden0 = nn.Linear(state_dim, config.actor_h1)
-        self._hidden1 = nn.Linear(config.actor_h1, config.actor_h1)
-        self._hidden2 = nn.Linear(config.actor_h1, config.actor_h2)
-        self._hidden3 = nn.Linear(config.actor_h2, config.actor_h2)
-        self._output = nn.Linear(config.actor_h2, action_dim)
-
-        self.init()
-
-    def forward(self, state):
-        x = state
-        x = torch.relu(self._hidden0(x))
-        x = torch.relu(self._hidden1(x))
-        x = torch.relu(self._hidden2(x))
-        x = torch.relu(self._hidden3(x))
-        policy = torch.tanh(self._output(x))
-        return policy
-
-    def init(self):
-        nn.init.xavier_uniform_(self._hidden0.weight)
-        nn.init.xavier_uniform_(self._hidden1.weight)
-        nn.init.xavier_uniform_(self._hidden2.weight)
-        nn.init.xavier_uniform_(self._hidden3.weight)
-        nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
