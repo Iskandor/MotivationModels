@@ -6,7 +6,6 @@ from algorithms.DDPG import DDPG
 class M2Motivation:
     def __init__(self, gate, gate_lr, gamma, tau, memory_buffer, sample_size, actor, critic, forward_model):
         self._gate = gate
-        self._gate_agent = DDPG(gate.actor, gate.critic, gate_lr, gate_lr * 2, gamma, tau, memory_buffer, sample_size)
         self._critic = critic
         self._actor = actor
         self._forward_model = forward_model
@@ -20,7 +19,6 @@ class M2Motivation:
         m3_state1 = torch.cat([state1, v1.expand_as(state1)], dim=1)
         m3_action = torch.softmax(self._gate.policy(m3_state0).detach(), dim=1)
 
-        self._gate_agent.train(m3_state0, m3_action, m3_state1, reward, done)
 
     def reward(self, state0, action, state1):
         error = self._forward_model.error(state0, action, state1)

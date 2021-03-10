@@ -71,7 +71,7 @@ def run_forward_model(config, trial):
         env_list = []
         print('Creating {0:d} environments'.format(config.n_env))
         for i in range(config.n_env):
-            env_list.append(AtariWrapper(gym.make('MsPacman-v0')))
+            env_list.append(WrapperAtari(gym.make('MsPacman-v0')))
 
         print('Start training')
         experiment = ExperimentNEnvPPO('MsPacman-v0', env_list, config)

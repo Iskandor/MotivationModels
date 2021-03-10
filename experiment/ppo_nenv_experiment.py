@@ -55,6 +55,7 @@ class ExperimentNEnvPPO:
         train_steps = [0] * n_env
 
         s = [None] * n_env
+        v = [None] * n_env
         ns = [None] * n_env
         r = [None] * n_env
         d = [None] * n_env
@@ -65,10 +66,10 @@ class ExperimentNEnvPPO:
         state0 = self.process_state(numpy.stack(s))
 
         while steps < step_limit:
-            action0, log_prob = agent.get_action(state0)
+            value, action0, probs0 = agent.get_action(state0)
 
             for i in range(n_env):
-                next_state, reward, done, info = self._env_list[i].step(action0[i].item())
+                next_state, reward, done, info = self._env_list[i].step(agent.convert_action(action0[i]))
                 mask = 1
                 if done:
                     mask = 0
@@ -101,7 +102,7 @@ class ExperimentNEnvPPO:
             reward = torch.tensor(numpy.stack(r), dtype=torch.float32)
             done = torch.tensor(numpy.stack(d), dtype=torch.float32)
 
-            agent.train_n_env(state0, action0.unsqueeze(1), log_prob.unsqueeze(1), state1, reward, done)
+            agent.train_n_env(state0, value, action0, probs0, state1, reward, done)
 
             state0 = self.process_state(numpy.stack(s))
 

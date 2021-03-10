@@ -1,7 +1,7 @@
 import gym
 
 from agents import TYPE
-from agents.PPOAgent import PPOAgent
+from agents.PPOAgent import PPOSimpleAgent
 from experiment.ppo_experiment import ExperimentPPO
 
 
@@ -12,7 +12,7 @@ def run_baseline(config, i):
 
     experiment = ExperimentPPO('CartPole-v0', env, config)
 
-    agent = PPOAgent(state_dim, action_dim, config, TYPE.discrete)
+    agent = PPOSimpleAgent(state_dim, action_dim, config, TYPE.discrete)
     experiment.run_baseline(agent, i)
 
     env.close()

@@ -49,9 +49,9 @@ class ContinuousHead(nn.Module):
         return action, torch.cat([mu, var], dim=1)
 
 
-class PPONetwork(torch.nn.Module):
+class PPOSimpleNetwork(torch.nn.Module):
     def __init__(self, state_dim, action_dim, config, head):
-        super(PPONetwork, self).__init__()
+        super(PPOSimpleNetwork, self).__init__()
 
         self.critic = nn.Sequential(
             nn.Linear(state_dim, config.critic_h1),
@@ -63,23 +63,75 @@ class PPONetwork(torch.nn.Module):
         nn.init.xavier_uniform_(self.critic[0].weight)
         nn.init.xavier_uniform_(self.critic[2].weight)
 
-        self.actor = nn.Sequential(
+        self.layers_actor = [
             torch.nn.Linear(state_dim, config.actor_h1),
             nn.ReLU(),
             torch.nn.Linear(config.actor_h1, config.actor_h2),
             nn.ReLU()
-        )
-        nn.init.xavier_uniform_(self.actor[0].weight)
-        nn.init.xavier_uniform_(self.actor[2].weight)
-
-        self.actor_head = None
+        ]
+        nn.init.xavier_uniform_(self.layers_actor[0].weight)
+        nn.init.xavier_uniform_(self.layers_actor[2].weight)
 
         if head == TYPE.discrete:
-            self.actor_head = DiscreteHead(config.actor_h2, action_dim)
+            self.layers_actor.append(DiscreteHead(config.actor_h2, action_dim))
         if head == TYPE.continuous:
-            self.actor_head = ContinuousHead(config.actor_h2, action_dim)
+            self.layers_actor.append(ContinuousHead(config.actor_h2, action_dim))
         if head == TYPE.multibinary:
             pass
+
+        self.actor = nn.Sequential(*self.layers_actor)
+
+    def forward(self, state):
+        value = self.critic(state)
+        action, probs = self.actor(state)
+
+        return value, action, probs
+
+
+class PPOAerisNetwork(torch.nn.Module):
+    def __init__(self, input_shape, action_dim, config, head):
+        super(PPOAerisNetwork, self).__init__()
+
+        self.channels = input_shape[0]
+        self.width = input_shape[1]
+
+        fc_count = config.critic_kernels_count * self.width // 4
+
+        self.critic = nn.Sequential(
+            nn.Conv1d(self.channels, config.critic_kernels_count, kernel_size=8, stride=4, padding=2),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(fc_count, config.critic_h1),
+            nn.ReLU(),
+            nn.Linear(config.critic_h1, 1))
+
+        nn.init.xavier_uniform_(self.layers[0].weight)
+        nn.init.xavier_uniform_(self.layers[3].weight)
+        nn.init.uniform_(self.layers[5].weight, -0.003, 0.003)
+
+        self.channels = input_shape[0]
+        self.width = input_shape[1]
+
+        fc_count = config.actor_kernels_count * self.width // 4
+
+        self.layers_actor = [
+            nn.Conv1d(self.channels, config.actor_kernels_count, kernel_size=8, stride=4, padding=2),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(fc_count, config.actor_h1),
+            nn.ReLU()]
+
+        if head == TYPE.discrete:
+            self.layers_actor.append(DiscreteHead(config.actor_h2, action_dim))
+        if head == TYPE.continuous:
+            self.layers_actor.append(ContinuousHead(config.actor_h2, action_dim))
+        if head == TYPE.multibinary:
+            pass
+
+        nn.init.xavier_uniform_(self.layers[0].weight)
+        nn.init.xavier_uniform_(self.layers[3].weight)
+
+        self.actor = nn.Sequential(*self.layers_actor)
 
     def forward(self, state):
         value = self.critic(state)

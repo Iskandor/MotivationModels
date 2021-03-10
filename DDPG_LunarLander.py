@@ -1,5 +1,6 @@
 import gym
 
+from agents.DDPGAgent import DDPGAgent
 from algorithms.DDPG import DDPG
 from algorithms.ReplayBuffer import ExperienceReplayBuffer
 from experiment.ddpg_experiment import ExperimentDDPG
@@ -20,10 +21,7 @@ def run_baseline(config, i):
 
     experiment = ExperimentDDPG('LunarLanderContinuous-v2', env, config)
 
-    actor = Actor(state_dim, action_dim, config)
-    critic = Critic(state_dim, action_dim, config)
-    memory = ExperienceReplayBuffer(config.memory_size)
-    agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)
+    agent = DDPGAgent(state_dim, action_dim, config)
     experiment.run_baseline(agent, i)
 
     env.close()

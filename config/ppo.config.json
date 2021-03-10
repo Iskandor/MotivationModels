@@ -21,11 +21,11 @@
   "lunar_lander": {
     "1": {
       "model": "baseline",
-      "n_env": 1,
+      "n_env": 64,
       "trials": 15,
       "steps": 2,
       "gamma": 0.99,
-      "beta": 0.001,
+      "beta": 0.0001,
       "lr": 0.0002,
       "batch_size": 256,
       "trajectory_size": 1024,
@@ -33,8 +33,8 @@
       "actor_h1": 64,
       "actor_h2": 32,
       "critic_loss_weight": 1,
-      "critic_h1": 128,
-      "critic_h2": 64
+      "critic_h1": 256,
+      "critic_h2": 128
     },
     "2": {
       "model": "baseline",
@@ -42,16 +42,16 @@
       "trials": 15,
       "steps": 2,
       "gamma": 0.99,
-      "beta": 0.001,
+      "beta": 0.0001,
       "lr": 0.0002,
       "batch_size": 256,
       "trajectory_size": 1024,
       "actor_loss_weight": 0.5,
       "actor_h1": 64,
-      "actor_h2": 64,
+      "actor_h2": 32,
       "critic_loss_weight": 1,
-      "critic_h1": 128,
-      "critic_h2": 64
+      "critic_h1": 256,
+      "critic_h2": 256
     },
     "3": {
       "model": "baseline",
@@ -59,16 +59,16 @@
       "trials": 15,
       "steps": 2,
       "gamma": 0.99,
-      "beta": 0.001,
+      "beta": 0.0001,
       "lr": 0.0002,
       "batch_size": 256,
       "trajectory_size": 1024,
       "actor_loss_weight": 0.5,
-      "actor_h1": 128,
-      "actor_h2": 64,
+      "actor_h1": 64,
+      "actor_h2": 32,
       "critic_loss_weight": 1,
-      "critic_h1": 128,
-      "critic_h2": 64
+      "critic_h1": 256,
+      "critic_h2": 512
     },
     "4": {
       "model": "baseline",
@@ -76,16 +76,16 @@
       "trials": 15,
       "steps": 2,
       "gamma": 0.99,
-      "beta": 0.001,
+      "beta": 0.0001,
       "lr": 0.0002,
       "batch_size": 256,
       "trajectory_size": 1024,
       "actor_loss_weight": 0.5,
-      "actor_h1": 128,
-      "actor_h2": 128,
+      "actor_h1": 64,
+      "actor_h2": 32,
       "critic_loss_weight": 1,
-      "critic_h1": 128,
-      "critic_h2": 64
+      "critic_h1": 512,
+      "critic_h2": 512
     },
     "5": {
       "model": "baseline",
@@ -93,16 +93,16 @@
       "trials": 15,
       "steps": 2,
       "gamma": 0.99,
-      "beta": 0.001,
+      "beta": 0.0001,
       "lr": 0.0002,
       "batch_size": 256,
       "trajectory_size": 1024,
       "actor_loss_weight": 0.5,
-      "actor_h1": 256,
-      "actor_h2": 128,
+      "actor_h1": 64,
+      "actor_h2": 32,
       "critic_loss_weight": 1,
-      "critic_h1": 128,
-      "critic_h2": 64
+      "critic_h1": 1024,
+      "critic_h2": 512
     }
   },
   "midnight_resistance": {

@@ -102,7 +102,7 @@ class ExperimentDDPG:
                 if config.check('generate_states'):
                     states.append(state0.numpy())
                 action0 = exploration.explore(agent.get_action(state0))
-                next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
+                next_state, reward, done, _ = self._env.step(agent.convert_action(action0))
                 train_ext_reward += reward
 
                 if self._preprocess is None:
@@ -121,8 +121,7 @@ class ExperimentDDPG:
 
             train_ext_rewards.append([train_steps, train_ext_reward])
 
-            print('Run {0:d} step {1:d} sigma {2:f} training [ext. reward {3:f} steps {4:d}]'.format(trial, steps, exploration.sigma, train_ext_reward,
-                                                                                                     train_steps))
+            print('Run {0:d} step {1:d} sigma {2:f} training [ext. reward {3:f} steps {4:d}]'.format(trial, steps, exploration.sigma, train_ext_reward, train_steps))
             print(bar)
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
