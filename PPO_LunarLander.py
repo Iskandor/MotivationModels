@@ -14,7 +14,7 @@ def run_baseline(config, i):
     if config.n_env > 1:
         env_list = []
         print('Creating {0:d} environments'.format(config.n_env))
-        for i in range(config.n_env):
+        for _ in range(config.n_env):
             env_list.append(gym.make('LunarLanderContinuous-v2'))
 
         print('Start training')
