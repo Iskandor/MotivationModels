@@ -2,9 +2,9 @@ import torch
 
 
 class DDPG2:
-    def __init__(self, network, actor_lr, critic_lr, gamma, tau, memory_buffer, sample_size):
+    def __init__(self, network, actor_lr, critic_lr, gamma, tau, memory_buffer, sample_size, motivation=None):
         self.network = network
-        self._motivation_module = None
+        self.motivation = motivation
         self._memory = memory_buffer
         self._sample_size = sample_size
         self._gamma = gamma
@@ -12,12 +12,6 @@ class DDPG2:
 
         self._critic_optimizer = torch.optim.Adam(self.network.critic.parameters(), lr=critic_lr)
         self._actor_optimizer = torch.optim.Adam(self.network.actor.parameters(), lr=actor_lr)
-
-    def add_motivation_module(self, motivation_module):
-        self._motivation_module = motivation_module
-
-    def get_motivation_module(self):
-        return self._motivation_module
 
     def train(self, state0, action0, state1, reward, done):
         self._memory.add(state0, action0, state1, reward, done)
@@ -31,8 +25,8 @@ class DDPG2:
             rewards = torch.stack(sample.reward)
             masks = torch.stack(sample.mask)
 
-            if self._motivation_module:
-                rewards += self._motivation_module.reward(states, actions, next_states)
+            if self.motivation:
+                rewards += self.motivation.reward(states, actions, next_states)
 
             expected_values = rewards + masks * self._gamma * self.network.value_target(next_states, self.network.action_target(next_states).detach()).detach()
 

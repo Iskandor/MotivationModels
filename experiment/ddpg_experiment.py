@@ -145,12 +145,11 @@ class ExperimentDDPG:
     def run_forward_model(self, agent, trial):
         config = self._config
         trial = trial + config.shift
-        forward_model = agent.get_motivation_module()
 
         step_limit = int(config.steps * 1e6)
         steps = 0
 
-        states = []
+        # states = []
 
         train_fm_errors = []
         train_ext_rewards = []
@@ -168,17 +167,16 @@ class ExperimentDDPG:
 
             while not done:
                 train_steps += 1
-                states.append(state0.squeeze(0))
+                # states.append(state0.squeeze(0))
                 action0 = exploration.explore(agent.get_action(state0))
                 next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
                 state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
 
                 agent.train(state0, action0, state1, reward, done)
-                forward_model.train(state0, action0, state1)
 
                 train_ext_reward += reward
-                train_int_reward += forward_model.reward(state0, action0, state1).item()
-                train_fm_error = forward_model.error(state0, action0, state1).item()
+                train_int_reward += agent.motivation.reward(state0, action0, state1).item()
+                train_fm_error = agent.motivation.error(state0, action0, state1).item()
                 train_fm_errors.append(train_fm_error)
 
                 state0 = state1
@@ -199,24 +197,22 @@ class ExperimentDDPG:
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
 
-        print('Calculating distance matrices')
-        # states = torch.rand((1000000, 8), dtype=torch.float32)
-        states = self.generate_states(torch.stack(states[:step_limit]), 500)
-        # states = self.generate_states(states, 500)
-        state_dist = cdist(states, states, 'euclidean')
-        index_list = numpy.argsort(numpy.linalg.norm(state_dist, axis=1))
-        states = states[index_list]
-        state_dist = cdist(states, states, 'euclidean')
-        latent_states = forward_model.forward_model().encode(states).detach()
-        latent_dist = torch.cdist(latent_states, latent_states)
+        # print('Calculating distance matrices')
+        # states = self.generate_states(torch.stack(states[:step_limit]), 500)
+        # state_dist = cdist(states, states, 'euclidean')
+        # index_list = numpy.argsort(numpy.linalg.norm(state_dist, axis=1))
+        # states = states[index_list]
+        # state_dist = cdist(states, states, 'euclidean')
+        # latent_states = forward_model.forward_model().encode(states).detach()
+        # latent_dist = torch.cdist(latent_states, latent_states)
 
         print('Saving data...')
         save_data = {
             're': numpy.array(train_ext_rewards),
             'ri': numpy.array(train_int_rewards),
-            'fme': numpy.array(train_fm_errors[:step_limit]),
-            'sdm': state_dist,
-            'ldm': latent_dist.numpy()
+            'fme': numpy.array(train_fm_errors[:step_limit])
+            # 'sdm': state_dist,
+            # 'ldm': latent_dist.numpy()
         }
         numpy.save('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
 
