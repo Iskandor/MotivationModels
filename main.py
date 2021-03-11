@@ -204,16 +204,21 @@ if __name__ == '__main__':
     parser.add_argument('-a', '--algorithm', type=str, help='training algorithm', choices=['ppo', 'ddpg', 'a2c', 'dqn'])
     parser.add_argument('--config', type=int, help='id of config')
     parser.add_argument('--device', type=str, help='device type', default='cpu')
+    parser.add_argument('--gpus', help='device ids', default=None)
     parser.add_argument('--load', type=str, help='path to saved agent', default='')
     parser.add_argument('-s', '--shift', type=int, help='shift result id', default=0)
     parser.add_argument('-p', '--parallel', action="store_true", help='run envs in parallel')
     parser.add_argument('-t', '--thread', action="store_true", help='do not use: technical parameter for parallel run')
 
     args = parser.parse_args()
+    if args.gpus:
+        args.gpus = [int(s) for s in args.gpus.split(',')]
+        torch.cuda.set_device(args.gpus[0])
     config = load_config_file(args.algorithm)
 
     experiment = Config(config[args.env][str(args.config)], "{0}_{1}".format(args.env, str(args.config)))
     experiment.device = args.device
+    experiment.gpus = args.gpus
     experiment.shift = args.shift
 
     if args.load != '':

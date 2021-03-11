@@ -1,4 +1,5 @@
 import torch
+from torch import nn
 from torch.distributions import Categorical, Normal
 
 from agents import TYPE
@@ -11,6 +12,8 @@ class PPOAgent:
         self.state_dim = state_dim
         self.action_dim = action_dim
         self.network = network.to(config.device)
+        if config.gpus and len(config.gpus) > 1:
+            self.network = nn.DataParallel(self.network, config.gpus)
 
         if action_type == TYPE.discrete:
             self.algorithm = PPO(self.network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size, config.beta, config.gamma,
