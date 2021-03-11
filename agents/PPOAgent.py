@@ -3,24 +3,24 @@ from torch.distributions import Categorical, Normal
 
 from agents import TYPE
 from algorithms.PPO import PPO
-from modules.PPO_Modules import PPOSimpleNetwork, PPOAerisNetwork
+from modules.PPO_Modules import PPOSimpleNetwork, PPOAerisNetwork, PPOAtariNetwork
 
 
 class PPOAgent:
-    def __init__(self, network, state_dim, action_dim, config, action_type, n_env=1):
+    def __init__(self, network, state_dim, action_dim, config, action_type):
         self.state_dim = state_dim
         self.action_dim = action_dim
-        self.network = network
+        self.network = network.to(config.device)
 
         if action_type == TYPE.discrete:
             self.algorithm = PPO(self.network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size, config.beta, config.gamma,
-                                 self.log_prob_discrete, self.entropy_discrete, n_env=n_env)
+                                 self.log_prob_discrete, self.entropy_discrete, n_env=config.n_env, device=config.device)
         if action_type == TYPE.continuous:
             self.algorithm = PPO(self.network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size, config.beta, config.gamma,
-                                 self.log_prob_continuous, self.entropy_continuous, n_env=n_env)
+                                 self.log_prob_continuous, self.entropy_continuous, n_env=config.n_env, device=config.device)
         if action_type == TYPE.multibinary:
             self.algorithm = PPO(self.network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size, config.beta, config.gamma,
-                                 self.log_prob_discrete, self.entropy_discrete, n_env=n_env)
+                                 self.log_prob_discrete, self.entropy_discrete, n_env=config.n_env, device=config.device)
 
         self.action_type = action_type
 
@@ -78,12 +78,18 @@ class PPOAgent:
 
 
 class PPOSimpleAgent(PPOAgent):
-    def __init__(self, state_dim, action_dim, config, action_type, n_env=1):
+    def __init__(self, state_dim, action_dim, config, action_type):
         network = PPOSimpleNetwork(state_dim, action_dim, config, head=action_type)
-        super().__init__(network, state_dim, action_dim, config, action_type, n_env)
+        super().__init__(network, state_dim, action_dim, config, action_type)
 
 
 class PPOAerisAgent(PPOAgent):
-    def __init__(self, input_shape, action_dim, config, action_type, n_env=1):
+    def __init__(self, input_shape, action_dim, config, action_type):
         network = PPOAerisNetwork(input_shape, action_dim, config, head=action_type)
-        super().__init__(network, input_shape, action_dim, config, action_type, n_env)
+        super().__init__(network, input_shape, action_dim, config, action_type)
+
+
+class PPOAtariAgent(PPOAgent):
+    def __init__(self, input_shape, action_dim, config, action_type):
+        network = PPOAtariNetwork(input_shape, action_dim, config, head=action_type)
+        super().__init__(network, input_shape, action_dim, config, action_type)

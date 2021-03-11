@@ -35,7 +35,7 @@ class PPO:
 
     def train_n_env(self, state0, value, action, prob, state1, reward, done):
         for i in range(self._n_env):
-            self._trajectories[i].append((state0[i], value[i], action[i], prob[i], state1[i], reward[i], done[i]))
+            self._trajectories[i].append((state0[i].unsqueeze(0), value[i].unsqueeze(0), action[i].unsqueeze(0), prob[i].unsqueeze(0), state1[i].unsqueeze(0), reward[i], done[i]))
 
         if len(self._trajectories[0]) == self._trajectory_size // self._n_env:
             for i in range(self._n_env):

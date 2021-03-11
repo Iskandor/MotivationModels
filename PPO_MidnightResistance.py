@@ -6,7 +6,7 @@ import numpy as np
 from algorithms.PPO import PPO
 from experiment.ppo_nenv_experiment import ExperimentNEnvPPO
 from modules import ARCH
-from modules.PPO_Modules import AtariPPONetwork, SegaPPONetwork
+from modules.PPO_Modules import SegaPPONetwork
 from experiment.ppo_experiment import ExperimentPPO
 from modules.forward_models.ForwardModel import ForwardModel
 from motivation.ForwardModelMotivation import ForwardModelMotivation

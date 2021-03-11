@@ -1,8 +1,8 @@
 import gym
 import torch
 
-from algorithms.PPO import PPO
-from modules.PPO_Modules import AtariPPONetwork
+from agents import TYPE
+from agents.PPOAgent import PPOAtariAgent
 from experiment.ppo_experiment import ExperimentPPO
 from utils.AtariWrapper import WrapperAtari
 
@@ -19,9 +19,7 @@ def run_baseline(config, i):
     experiment = ExperimentPPO('Qbert-v0', env, config)
     experiment.add_preprocess(encode_state)
 
-    network = AtariPPONetwork(input_shape, action_dim, config).to(config.device)
-    agent = PPO(network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size, config.beta, config.gamma,
-                device=config.device)
+    agent = PPOAtariAgent(input_shape, action_dim, config, TYPE.discrete)
     experiment.run_baseline(agent, i)
 
     env.close()

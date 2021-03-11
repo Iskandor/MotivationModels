@@ -17,7 +17,7 @@ class DiscreteHead(nn.Module):
         probs = torch.softmax(logits, dim=1)
         dist = Categorical(probs)
 
-        action = dist.sample().unsqueeze(0)
+        action = dist.sample().unsqueeze(1)
 
         return action, probs
 
@@ -135,14 +135,14 @@ class PPOAerisNetwork(torch.nn.Module):
 
     def forward(self, state):
         value = self.critic(state)
-        action, probs = self.actor_head(self.actor(state))
+        action, probs = self.actor(state)
 
         return value, action, probs
 
 
-class AtariPPONetwork(torch.nn.Module):
-    def __init__(self, input_shape, action_dim, config):
-        super(AtariPPONetwork, self).__init__()
+class PPOAtariNetwork(torch.nn.Module):
+    def __init__(self, input_shape, action_dim, config, head):
+        super(PPOAtariNetwork, self).__init__()
 
         self.input_shape = input_shape
         self.action_dim = action_dim
@@ -182,8 +182,14 @@ class AtariPPONetwork(torch.nn.Module):
             torch.nn.ReLU(),
             torch.nn.Linear(config.actor_h1, config.actor_h2),
             torch.nn.ReLU(),
-            torch.nn.Linear(config.actor_h2, action_dim),
         ]
+
+        if head == TYPE.discrete:
+            self.layers_policy.append(DiscreteHead(config.actor_h2, action_dim))
+        if head == TYPE.continuous:
+            self.layers_policy.append(ContinuousHead(config.actor_h2, action_dim))
+        if head == TYPE.multibinary:
+            pass
 
         for i in range(len(self.layers_features)):
             if hasattr(self.layers_features[i], "weight"):
@@ -198,45 +204,15 @@ class AtariPPONetwork(torch.nn.Module):
                 torch.nn.init.xavier_uniform_(self.layers_policy[i].weight)
 
         self.features = nn.Sequential(*self.layers_features)
-        self.features.to(config.device)
-
         self.critic = nn.Sequential(*self.layers_value)
-        self.critic.to(config.device)
-
         self.actor = nn.Sequential(*self.layers_policy)
-        self.actor.to(config.device)
 
-        self.dist = Categorical
-
-    def value(self, state):
+    def forward(self, state):
         features = self.features(state)
         value = self.critic(features)
-        return value
+        action, probs = self.actor(features)
 
-    def action(self, state, deterministic=False):
-        features = self.features(state)
-        logits = self.actor(features)
-        probs = torch.softmax(logits, dim=1)
-        dist = self.dist(probs)
-        if deterministic:
-            a = probs.argmax()
-        else:
-            a = dist.sample()
-
-        l = dist.log_prob(a).detach()
-
-        return a, l
-
-    def evaluate(self, state, action):
-        features = self.features(state)
-        logits = self.actor(features)
-        probs = torch.softmax(logits, dim=1)
-        dist = self.dist(probs)
-
-        log_prob = dist.log_prob(action)
-        entropy = dist.entropy().mean()
-
-        return log_prob, entropy
+        return value, action, probs
 
 
 class SegaPPONetwork(torch.nn.Module):
@@ -297,13 +273,8 @@ class SegaPPONetwork(torch.nn.Module):
                 torch.nn.init.xavier_uniform_(self.layers_policy[i].weight)
 
         self.features = nn.Sequential(*self.layers_features)
-        self.features.to(config.device)
-
         self.critic = nn.Sequential(*self.layers_value)
-        self.critic.to(config.device)
-
         self.actor = nn.Sequential(*self.layers_policy)
-        self.actor.to(config.device)
 
     def action(self, state):
         if state.ndim == 3:

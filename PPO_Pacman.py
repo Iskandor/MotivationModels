@@ -1,19 +1,20 @@
 import gym
 import torch
 
+from agents import TYPE
+from agents.PPOAgent import PPOAtariAgent
 from algorithms.PPO import PPO
-from algorithms.ReplayBuffer import ExperienceReplayBuffer
 from experiment.ppo_nenv_experiment import ExperimentNEnvPPO
 from modules import ARCH
-from modules.PPO_Modules import AtariPPONetwork
 from experiment.ppo_experiment import ExperimentPPO
+from modules.PPO_Modules import PPOAtariNetwork
 from modules.forward_models.ForwardModel import ForwardModel
 from motivation.ForwardModelMotivation import ForwardModelMotivation
 from utils.AtariWrapper import WrapperAtari
 
 
 def encode_state(state):
-    return torch.tensor(state, dtype=torch.float32).unsqueeze(0)
+    return torch.tensor(state, dtype=torch.float32)
 
 
 def test(config, path):
@@ -24,9 +25,7 @@ def test(config, path):
     experiment = ExperimentPPO('MsPacman-v0', env, config)
     experiment.add_preprocess(encode_state)
 
-    network = AtariPPONetwork(input_shape, action_dim, config).to(config.device)
-    agent = PPO(network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size, config.beta, config.gamma,
-                device=config.device)
+    agent = PPOAtariAgent(input_shape, action_dim, config, TYPE.discrete)
     agent.load(path)
     experiment.test(agent)
 
@@ -42,7 +41,7 @@ def run_baseline(config, trial):
         env_list = []
         print('Creating {0:d} environments'.format(config.n_env))
         for i in range(config.n_env):
-            env_list.append(AtariWrapper(gym.make('MsPacman-v0')))
+            env_list.append(WrapperAtari(gym.make('MsPacman-v0')))
 
         print('Start training')
         experiment = ExperimentNEnvPPO('MsPacman-v0', env_list, config)
@@ -50,9 +49,7 @@ def run_baseline(config, trial):
         experiment = ExperimentPPO('MsPacman-v0', env, config)
         experiment.add_preprocess(encode_state)
 
-    network = AtariPPONetwork(input_shape, action_dim, config).to(config.device)
-    agent = PPO(network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size, config.beta, config.gamma,
-                device=config.device, n_env=config.n_env)
+    agent = PPOAtariAgent(input_shape, action_dim, config, TYPE.discrete)
     experiment.run_baseline(agent, trial)
 
     env.close()
@@ -79,7 +76,7 @@ def run_forward_model(config, trial):
         experiment = ExperimentPPO('MsPacman-v0', env, config)
         experiment.add_preprocess(encode_state)
 
-    network = AtariPPONetwork(input_shape, action_dim, config).to(config.device)
+    network = PPOAtariNetwork(input_shape, action_dim, config).to(config.device)
 
     forward_model = ForwardModelMotivation(ForwardModel(input_shape, action_dim, config, ARCH.atari).to(config.device), config.forward_model_lr, config.forward_model_eta,
                                            config.forward_model_variant, env.spec.max_episode_steps * 10,
