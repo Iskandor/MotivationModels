@@ -13,6 +13,7 @@ class PPOAgent:
         self.action_dim = action_dim
         self.network = network.to(config.device)
         if config.gpus and len(config.gpus) > 1:
+            config.batch_size *= len(config.gpus)
             self.network = nn.DataParallel(self.network, config.gpus)
 
         if action_type == TYPE.discrete:
