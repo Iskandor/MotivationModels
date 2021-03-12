@@ -14,6 +14,14 @@ class ExperimentNEnvPPO:
         self._config = config
         self._preprocess = None
 
+        self._config.steps *= self._config.n_env
+        self._config.batch_size *= self._config.n_env
+        self._config.trajectory_size *= self._config.n_env
+
+        print('Total steps: {0:d}M'.format(self._config.steps))
+        print('Total batch size: {0:d}'.format(self._config.batch_size))
+        print('Total trajectory size: {0:d}'.format(self._config.trajectory_size))
+
     def add_preprocess(self, preprocess):
         self._preprocess = preprocess
 

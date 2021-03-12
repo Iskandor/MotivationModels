@@ -4,7 +4,7 @@ from utils import *
 
 class PPO:
     def __init__(self, network, lr, actor_loss_weight, critic_loss_weight, batch_size, trajectory_size, p_beta, p_gamma, log_prob_fn, entropy_fn,
-                 p_epsilon=0.2, p_lambda=0.95, weight_decay=0, device='cpu', n_env=1):
+                 ppo_epochs=10, p_epsilon=0.2, p_lambda=0.95, weight_decay=0, device='cpu', n_env=1):
         self._network = network
         self._optimizer = torch.optim.Adam(self._network.parameters(), lr=lr, weight_decay=weight_decay)
         self._beta = p_beta
@@ -20,7 +20,7 @@ class PPO:
         self._entropy_fn = entropy_fn
 
         self._trajectory = []
-        self._ppo_epochs = 10
+        self._ppo_epochs = ppo_epochs
         self._motivation = None
         self._n_env = n_env
 

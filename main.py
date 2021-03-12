@@ -27,6 +27,7 @@ import DDPG_Reacher
 import PPO_CartPole
 import PPO_LunarLander
 import PPO_MidnightResistance
+import PPO_Montezuma
 import PPO_MountainCar
 import PPO_Pacman
 import PPO_Pendulum
@@ -86,6 +87,8 @@ def set_env_class_ppo(env):
         env_class = PPO_QBert
     if env == "mspacman":
         env_class = PPO_Pacman
+    if env == "montezuma":
+        env_class = PPO_Montezuma
     if env == "midnight_resistance":
         env_class = PPO_MidnightResistance
     if env == "cart_pole":

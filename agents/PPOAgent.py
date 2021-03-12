@@ -18,13 +18,13 @@ class PPOAgent:
 
         if action_type == TYPE.discrete:
             self.algorithm = PPO(self.network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size, config.beta, config.gamma,
-                                 self.log_prob_discrete, self.entropy_discrete, n_env=config.n_env, device=config.device)
+                                 self.log_prob_discrete, self.entropy_discrete, ppo_epochs=config.ppo_epochs, n_env=config.n_env, device=config.device)
         if action_type == TYPE.continuous:
             self.algorithm = PPO(self.network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size, config.beta, config.gamma,
-                                 self.log_prob_continuous, self.entropy_continuous, n_env=config.n_env, device=config.device)
+                                 self.log_prob_continuous, self.entropy_continuous, ppo_epochs=config.ppo_epochs, n_env=config.n_env, device=config.device)
         if action_type == TYPE.multibinary:
             self.algorithm = PPO(self.network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size, config.beta, config.gamma,
-                                 self.log_prob_discrete, self.entropy_discrete, n_env=config.n_env, device=config.device)
+                                 self.log_prob_discrete, self.entropy_discrete, ppo_epochs=config.ppo_epochs, n_env=config.n_env, device=config.device)
 
         self.action_type = action_type
 
