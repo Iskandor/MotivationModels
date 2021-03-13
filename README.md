@@ -1,6 +1,7 @@
-# Motivation models
+![](https://raw.githubusercontent.com/Iskandor/MotivationModels/master/assets/pythia_logo.png)
+## Seer for reinforcement learning agents
 
-Repository contains reinforcement learning agents (A2C,DQN,DDPG,PPO) and artificial motivation modules from the knowledge-based category of intrinsic motivation. Models are being tested on robotic environments and Atari games.
+Repository contains reinforcement learning agents (A2C,DQN,DDPG,PPO), different forward models and artificial motivation modules from the knowledge-based category of intrinsic motivation. Models are being tested on robotic environments and Atari games.
 
 ### Motivation approaches
 ##### Prediction error motivation
