@@ -33,8 +33,10 @@ All have to be cloned and installed following their instructions.
 
 ### Usage
 ```sh
-$ python main.py --env env_name --config config_id
+$ python main.py --algorithm alg_name --env env_name --config config_id
 ```
+Avaialable algorithms are ppo, ddpg, a2c, dqn
+
 Environment names and ids of configuration can be found in [config.json](https://github.com/Iskandor/MotivationModels/blob/master/config.json)
 
 ### Development
