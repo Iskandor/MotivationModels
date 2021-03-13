@@ -3,7 +3,7 @@ import copy
 import torch
 from torch import nn
 
-from modules.forward_models.ForwardModelAeris import ForwardModelAeris
+from modules.forward_models.ForwardModelAeris import ForwardModelAeris, ForwardModelEncoderAeris
 
 
 class Critic(nn.Module):
@@ -200,6 +200,48 @@ class DDPGAerisNetworkFM(DDPGAerisNetwork):
 
         self.forward_model = ForwardModelAeris(input_shape, action_dim, config)
 
+
+class DDPGAerisNetworkFME(DDPGAerisNetwork):
+    def __init__(self, input_shape, action_dim, config):
+        super(DDPGAerisNetworkFME, self).__init__(input_shape, action_dim, config)
+
+        self.channels = input_shape[0]
+        self.width = input_shape[1]
+
+        fc_count = config.critic_kernels_count * self.width // 4
+
+        self.critic = nn.Sequential(
+            nn.Conv1d(self.channels + action_dim, config.critic_kernels_count, kernel_size=8, stride=4, padding=2),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(fc_count, config.critic_h1),
+            nn.ReLU(),
+            nn.Linear(config.critic_h1, 1))
+
+        nn.init.xavier_uniform_(self.critic[0].weight)
+        nn.init.xavier_uniform_(self.critic[3].weight)
+        nn.init.uniform_(self.critic[5].weight, -0.003, 0.003)
+
+        fc_count = config.actor_kernels_count * self.width // 4
+
+        self.actor = nn.Sequential(
+            nn.Conv1d(self.channels, config.actor_kernels_count, kernel_size=8, stride=4, padding=2),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(fc_count, config.actor_h1),
+            nn.ReLU(),
+            nn.Linear(config.actor_h1, action_dim),
+            nn.Tanh())
+
+        nn.init.xavier_uniform_(self.actor[0].weight)
+        nn.init.xavier_uniform_(self.actor[3].weight)
+        nn.init.uniform_(self.actor[5].weight, -0.3, 0.3)
+
+        self.critic_target = copy.deepcopy(self.critic)
+        self.actor_target = copy.deepcopy(self.actor)
+        self.hard_update()
+
+        self.forward_model = ForwardModelEncoderAeris(input_shape, action_dim, config)
 
 class Critic2Heads(nn.Module):
     def __init__(self, state_dim, action_dim, config):

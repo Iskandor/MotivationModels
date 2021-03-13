@@ -1,7 +1,7 @@
 import gym
 import gym_aeris.envs
 
-from agents.DDPGAgent import DDPGAerisAgent, DDPGAerisFMAgent
+from agents.DDPGAgent import DDPGAerisAgent, DDPGAerisFMAgent, DDPGAerisFMEAgent
 from algorithms.DDPG import DDPG
 from algorithms.ReplayBuffer import ExperienceReplayBuffer
 from experiment.ddpg_experiment import ExperimentDDPG
@@ -32,6 +32,19 @@ def run_forward_model(config, i):
     experiment = ExperimentDDPG('TargetNavigate-v0', env, config)
 
     agent = DDPGAerisFMAgent(state_dim, action_dim, config)
+    experiment.run_forward_model(agent, i)
+
+    env.close()
+
+
+def run_forward_model_encoder(config, i):
+    env = gym_aeris.envs.TargetNavigateEnv()
+    state_dim = env.observation_space.shape
+    action_dim = env.action_space.shape[0]
+
+    experiment = ExperimentDDPG('TargetNavigate-v0', env, config)
+
+    agent = DDPGAerisFMEAgent(state_dim, action_dim, config)
     experiment.run_forward_model(agent, i)
 
     env.close()

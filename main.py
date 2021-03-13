@@ -148,6 +148,8 @@ def run(algorithm, env, experiment, id):
         env_class.run_baseline(experiment, id)
     if experiment.model == 'fm':
         env_class.run_forward_model(experiment, id)
+    if experiment.model == 'fme':
+        env_class.run_forward_model_encoder(experiment, id)
     if experiment.model == 'rfm':
         env_class.run_residual_forward_model(experiment, id)
     if experiment.model == 'vfm':

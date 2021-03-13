@@ -38,7 +38,9 @@ $ python main.py --algorithm alg_name --env env_name --config config_id
 ```
 Avaialable algorithms are ppo, ddpg, a2c, dqn
 
-Environment names and ids of configuration can be found in [config.json](https://github.com/Iskandor/MotivationModels/blob/master/config.json)
+Environment names and ids of configuration can be found in config/alg_name.config.json 
+
+eg. [ddpg.config.json](https://github.com/Iskandor/MotivationModels/blob/master/config/ddpg.config.json)
 
 ### Development
 Project is still in development and we are planning to implement additional models and methods of reinforcement learning and intrinsic motivation. 
