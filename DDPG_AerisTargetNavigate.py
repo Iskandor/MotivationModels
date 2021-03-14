@@ -45,7 +45,7 @@ def run_forward_model_encoder(config, i):
     experiment = ExperimentDDPG('TargetNavigate-v0', env, config)
 
     agent = DDPGAerisFMEAgent(state_dim, action_dim, config)
-    experiment.run_forward_model(agent, i)
+    experiment.run_forward_model_encoder(agent, i)
 
     env.close()
 

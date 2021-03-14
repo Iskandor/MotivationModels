@@ -66,7 +66,7 @@ class ForwardModelEncoderAeris(nn.Module):
 
         fc_count = config.forward_model_kernels_count * self.width // 4
 
-        self.feature_dim = action_dim
+        self.feature_dim = config.forward_model_kernels_count
 
         channels = input_shape[0]
 
@@ -77,7 +77,7 @@ class ForwardModelEncoderAeris(nn.Module):
             nn.Linear(fc_count, fc_count // 2),
             nn.ReLU(),
             nn.Linear(fc_count // 2, self.feature_dim),
-            nn.ReLU()
+            nn.Tanh()
         ]
 
         nn.init.xavier_uniform_(self.layers_encoder[0].weight)
