@@ -2,7 +2,7 @@ import torch
 
 from algorithms.DDPG2 import DDPG2
 from algorithms.ReplayBuffer import ExperienceReplayBuffer
-from modules.DDPG_Modules import DDPGSimpleNetwork, DDPGAerisNetwork, DDPGAerisNetworkFM, DDPGAerisNetworkFME
+from modules.DDPG_Modules import DDPGSimpleNetwork, DDPGAerisNetwork, DDPGAerisNetworkFM, DDPGAerisNetworkFME, DDPGAerisNetworkIM
 from motivation.ForwardModelMotivation import ForwardModelMotivation
 
 
@@ -46,7 +46,7 @@ class DDPGAerisAgent(DDPGAgent):
         self.algorithm = DDPG2(self.network, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)
 
 
-class DDPGAerisFMAgent(DDPGAgent):
+class DDPGAerisForwardModelAgent(DDPGAgent):
     def __init__(self, state_dim, action_dim, config):
         super().__init__(state_dim, action_dim)
         self.network = DDPGAerisNetworkFM(state_dim, action_dim, config)
@@ -59,12 +59,25 @@ class DDPGAerisFMAgent(DDPGAgent):
         self.motivation.train(state0, action0, state1)
 
 
-class DDPGAerisFMEAgent(DDPGAgent):
+class DDPGAerisForwardModelEncoderAgent(DDPGAgent):
     def __init__(self, state_dim, action_dim, config):
         super().__init__(state_dim, action_dim)
         self.network = DDPGAerisNetworkFME(state_dim, action_dim, config)
         memory = ExperienceReplayBuffer(config.memory_size)
         self.motivation = ForwardModelMotivation(self.network.forward_model, config.forward_model_lr, config.forward_model_eta, config.forward_model_variant, memory, config.forward_model_batch_size, config.device)
+        self.algorithm = DDPG2(self.network, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size, self.motivation)
+
+    def train(self, state0, action0, state1, reward, mask):
+        self.algorithm.train(state0, action0, state1, reward, mask)
+        self.motivation.train(state0, action0, state1)
+
+
+class DDPGAerisInverseModelAgent(DDPGAgent):
+    def __init__(self, state_dim, action_dim, config):
+        super().__init__(state_dim, action_dim)
+        self.network = DDPGAerisNetworkIM(state_dim, action_dim, config)
+        memory = ExperienceReplayBuffer(config.memory_size)
+        self.motivation = ForwardModelMotivation(self.network.inverse_model, config.forward_model_lr, config.forward_model_eta, config.forward_model_variant, memory, config.forward_model_batch_size, config.device)
         self.algorithm = DDPG2(self.network, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size, self.motivation)
 
     def train(self, state0, action0, state1, reward, mask):
