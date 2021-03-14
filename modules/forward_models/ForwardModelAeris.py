@@ -59,34 +59,38 @@ class ForwardModelEncoderAeris(nn.Module):
     def __init__(self, input_shape, action_dim, config):
         super(ForwardModelEncoderAeris, self).__init__()
 
-        self.input_shape = input_shape
+        self.channels = input_shape[0]
+        self.width = input_shape[1]
+
         self.action_dim = action_dim
-        self.feature_dim = 64
+
+        fc_count = config.forward_model_kernels_count * self.width // 4
+
+        self.feature_dim = action_dim
 
         channels = input_shape[0]
 
         self.layers_encoder = [
             nn.Conv1d(channels, config.forward_model_kernels_count, kernel_size=8, stride=4, padding=2),
-            nn.LeakyReLU(),
-            nn.Conv1d(config.forward_model_kernels_count, config.forward_model_kernels_count // 2, kernel_size=3, stride=1, padding=1),
-            nn.LeakyReLU(),
-            nn.Conv1d(config.forward_model_kernels_count // 2, config.forward_model_kernels_count // 4, kernel_size=3, stride=1, padding=1),
-            nn.LeakyReLU(),
-            nn.Conv1d(config.forward_model_kernels_count // 4, config.forward_model_kernels_count // 8, kernel_size=3, stride=1, padding=1),
-            nn.LeakyReLU(),
-            nn.Flatten()
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(fc_count, fc_count // 2),
+            nn.ReLU(),
+            nn.Linear(fc_count // 2, self.feature_dim),
+            nn.ReLU()
         ]
 
         nn.init.xavier_uniform_(self.layers_encoder[0].weight)
-        nn.init.xavier_uniform_(self.layers_encoder[2].weight)
-        nn.init.xavier_uniform_(self.layers_encoder[4].weight)
-        nn.init.xavier_uniform_(self.layers_encoder[6].weight)
+        nn.init.xavier_uniform_(self.layers_encoder[3].weight)
+        nn.init.xavier_uniform_(self.layers_encoder[5].weight)
 
         self.encoder = Sequential(*self.layers_encoder)
 
         self.layers = [
             nn.Linear(self.feature_dim + self.action_dim, self.feature_dim)
         ]
+
+        nn.init.xavier_uniform_(self.layers[0].weight)
 
         self.model = Sequential(*self.layers)
 
