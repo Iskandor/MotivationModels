@@ -1,44 +1,54 @@
 import torch
 
-from algorithms.DDPG import DDPG
+from algorithms.DDPG2 import DDPG2
 
 
 class M2Motivation:
-    def __init__(self, gate, gate_lr, gamma, tau, memory_buffer, sample_size, actor, critic, forward_model):
-        self._gate = gate
-        self._critic = critic
-        self._actor = actor
-        self._forward_model = forward_model
+    def __init__(self, network, lr, gamma, tau, eta, model_memory_buffer, gate_memory_buffer, sample_size):
+        self.network = network
+        self._optimizer = torch.optim.Adam(self.network.forward_model.parameters(), lr=lr)
+        self.eta = eta
+        self._model_memory = model_memory_buffer
+        self._gate_memory = gate_memory_buffer
+        self._sample_size = sample_size
 
-    def train(self, state0, state1, reward, done):
-        a0 = self._actor(state0).detach()
-        v0 = self._critic(state0, a0).detach()
-        a1 = self._actor(state1).detach()
-        v1 = self._critic(state1, a1).detach()
-        m3_state0 = torch.cat([state0, v0.expand_as(state0)], dim=1)
-        m3_state1 = torch.cat([state1, v1.expand_as(state1)], dim=1)
-        m3_action = torch.softmax(self._gate.policy(m3_state0).detach(), dim=1)
+        self.gate_algorithm = DDPG2(self.network, lr, lr, gamma, tau, self._gate_memory, 32)
 
+    def train(self, state0, im0, action, weight, state1, im1, reward, done):
+        self.gate_algorithm.train(im0, weight, im1, reward, done)
 
-    def reward(self, state0, action, state1):
-        error = self._forward_model.error(state0, action, state1)
-        rewards = torch.cat([self._curious_reward(error), self._familiar_reward(error)], dim=1)
+        if self._model_memory is not None:
+            if len(self._model_memory) > self._sample_size:
+                sample = self._model_memory.sample(self._sample_size)
 
-        weight = self.weight(state0, action)
-        reward = rewards * weight
-        reward = reward.sum(dim=1).unsqueeze(1)
+                states = torch.stack(sample.state).squeeze(1)
+                next_states = torch.stack(sample.next_state).squeeze(1)
+                actions = torch.stack(sample.action).squeeze(1)
 
-        return reward
+                self._optimizer.zero_grad()
+                loss = self.network.forward_model.loss_function(states, actions, next_states)
+                loss.backward()
+                self._optimizer.step()
+        else:
+            self._optimizer.zero_grad()
+            loss = self.network.forward_model.loss_function(state0, action, state1)
+            loss.backward()
+            self._optimizer.step()
 
-    def weight(self, state0, action):
-        v0 = self._critic(state0, action).detach()
-        m3_state0 = torch.cat([state0, v0.expand_as(state0)], dim=1)
-        weight = torch.softmax(self._gate.policy(m3_state0).detach(), dim=1)
+    def reward(self, state0, action, weight, state1):
+        with torch.no_grad():
+            error = self.network.forward_model.error(state0, action, state1)
+            rewards = torch.cat([self._curious_reward(error), self._familiar_reward(error)], dim=1)
 
-        return weight
+            reward = rewards * weight
+            reward = reward.sum(dim=1).unsqueeze(1)
 
-    def get_forward_model(self):
-        return self._forward_model
+        return reward * self.eta
+
+    def weight(self, im):
+        with torch.no_grad():
+            weight = self.network.weight(im)
+            return weight
 
     @staticmethod
     def _curious_reward(error):
@@ -47,11 +57,3 @@ class M2Motivation:
     @staticmethod
     def _familiar_reward(error):
         return torch.tanh(1 / error)
-
-    def save(self, path):
-        self._forward_model.save(path)
-        torch.save(self._gate.state_dict(), path + '_m2.pth')
-
-    def load(self, path):
-        self._forward_model.load(path)
-        self._gate.load_state_dict(torch.load(path + '_m2.pth'))
