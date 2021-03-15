@@ -113,5 +113,15 @@ class ForwardModelEncoderAeris(nn.Module):
 
     def loss_function(self, state, action, next_state):
         target = self.encoder(next_state).detach()
-        loss = nn.functional.mse_loss(self(state, action), target)
+        loss = nn.functional.mse_loss(self(state, action), target) + self.variation_prior(state) + self.stability_prior(state, next_state)
         return loss
+
+    def variation_prior(self, state):
+        sa = state[torch.randperm(state.shape[0])]
+        sb = state[torch.randperm(state.shape[0])]
+        variation_loss = torch.exp((self.encoder(sa) - self.encoder(sb).detach()).abs() * -1.0).mean()
+        return variation_loss
+
+    def stability_prior(self, state, next_state):
+        stability_loss = (self.encoder(next_state) - self.encoder(state).detach()).abs().pow(2).mean()
+        return stability_loss
