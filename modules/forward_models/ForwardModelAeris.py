@@ -73,6 +73,8 @@ class ForwardModelEncoderAeris(nn.Module):
         self.layers_encoder = [
             nn.Conv1d(channels, config.forward_model_kernels_count, kernel_size=8, stride=4, padding=2),
             nn.ReLU(),
+            nn.Conv1d(config.forward_model_kernels_count, config.forward_model_kernels_count, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
             nn.Flatten(),
             nn.Linear(fc_count, fc_count // 2),
             nn.ReLU(),
@@ -81,8 +83,9 @@ class ForwardModelEncoderAeris(nn.Module):
         ]
 
         nn.init.xavier_uniform_(self.layers_encoder[0].weight)
-        nn.init.xavier_uniform_(self.layers_encoder[3].weight)
+        nn.init.xavier_uniform_(self.layers_encoder[2].weight)
         nn.init.xavier_uniform_(self.layers_encoder[5].weight)
+        nn.init.xavier_uniform_(self.layers_encoder[7].weight)
 
         self.encoder = Sequential(*self.layers_encoder)
 
