@@ -90,7 +90,9 @@ class ForwardModelEncoderAeris(nn.Module):
         self.encoder = Sequential(*self.layers_encoder)
 
         self.layers = [
-            nn.Linear(self.feature_dim + self.action_dim, self.feature_dim),
+            nn.Linear(self.feature_dim + self.action_dim, self.feature_dim * 2),
+            nn.ReLU(),
+            nn.Linear(self.feature_dim * 2, self.feature_dim),
             nn.Tanh()
         ]
 
