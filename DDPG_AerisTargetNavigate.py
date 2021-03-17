@@ -58,7 +58,7 @@ def run_inverse_model(config, i):
     experiment = ExperimentDDPG('TargetNavigate-v0', env, config)
 
     agent = DDPGAerisInverseModelAgent(state_dim, action_dim, config)
-    experiment.run_forward_model_encoder(agent, i)
+    experiment.run_inverse_model(agent, i)
 
     env.close()
 
