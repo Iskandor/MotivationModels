@@ -263,7 +263,7 @@ class ExperimentDDPG:
         index_list = numpy.argsort(numpy.linalg.norm(state_dist, axis=1))
         states = states[index_list]
         state_dist = cdist(states.flatten(1), states.flatten(1), 'euclidean')
-        latent_states = agent.network.forward_model.encoder(states).detach()
+        latent_states = agent.network.inverse_model.encoder(states).detach()
         latent_dist = torch.cdist(latent_states, latent_states)
 
         print('Saving data...')
