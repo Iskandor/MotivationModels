@@ -10,6 +10,8 @@ import ray
 import torch
 
 import A2C_Breakout
+import DDPG_AerisAvoidFragiles
+import DDPG_AerisAvoidHazards
 import DDPG_AerisTargetNavigate
 import DDPG_Ant
 import DDPG_FetchReach
@@ -74,6 +76,10 @@ def set_env_class_ddpg(env, experiment):
             env_class = DDPG_Noisy_AerisTargetNavigate
         else:
             env_class = DDPG_AerisTargetNavigate
+    if env == 'aeris_hazards':
+        env_class = DDPG_AerisAvoidHazards
+    if env == 'aeris_fragiles':
+        env_class = DDPG_AerisAvoidFragiles
 
     return env_class
 
