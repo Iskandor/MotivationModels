@@ -3,6 +3,7 @@ import copy
 import torch
 from torch import nn
 
+from modules.encoders.EncoderAeris import EncoderAeris
 from modules.forward_models.ForwardModelAeris import ForwardModelAeris, ForwardModelEncoderAeris
 from modules.inverse_models.InverseModelAeris import InverseModelAeris
 
@@ -194,20 +195,31 @@ class DDPGAerisNetworkFM(DDPGAerisNetwork):
 class DDPGAerisNetworkFME(DDPGAerisNetwork):
     def __init__(self, input_shape, action_dim, config):
         super(DDPGAerisNetworkFME, self).__init__(input_shape, action_dim, config)
-        self.forward_model = ForwardModelEncoderAeris(input_shape, action_dim, config)
+        self.encoder = EncoderAeris(input_shape, action_dim, config)
+        self.forward_model = ForwardModelEncoderAeris(self.encoder, action_dim, config, encoder_loss=True)
 
 
 class DDPGAerisNetworkIM(DDPGAerisNetwork):
     def __init__(self, input_shape, action_dim, config):
         super(DDPGAerisNetworkIM, self).__init__(input_shape, action_dim, config)
-        self.inverse_model = InverseModelAeris(input_shape, action_dim, config)
+        self.encoder = EncoderAeris(input_shape, action_dim, config)
+        self.inverse_model = InverseModelAeris(self.encoder, action_dim, config)
+
+
+class DDPGAerisNetworkFIM(DDPGAerisNetwork):
+    def __init__(self, input_shape, action_dim, config):
+        super(DDPGAerisNetworkFIM, self).__init__(input_shape, action_dim, config)
+        self.encoder = EncoderAeris(input_shape, action_dim, config)
+        self.forward_model = ForwardModelEncoderAeris(self.encoder, action_dim, config, encoder_loss=False)
+        self.inverse_model = InverseModelAeris(self.encoder, action_dim, config)
 
 
 class DDPGAerisNetworkM2(DDPGAerisNetwork):
     def __init__(self, input_shape, action_dim, config):
         super(DDPGAerisNetworkM2, self).__init__(input_shape, action_dim, config)
 
-        self.forward_model = ForwardModelEncoderAeris(input_shape, action_dim, config)
+        self.encoder = EncoderAeris(input_shape, action_dim, config)
+        self.forward_model = ForwardModelEncoderAeris(self.encoder, action_dim, config, encoder_loss=True)
         self.gate = DDPGSimpleNetwork(1, 2, config)
 
     def weight(self, im):

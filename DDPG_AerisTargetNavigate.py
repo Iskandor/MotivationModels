@@ -1,7 +1,7 @@
 import gym
 import gym_aeris.envs
 
-from agents.DDPGAgent import DDPGAerisAgent, DDPGAerisForwardModelAgent, DDPGAerisForwardModelEncoderAgent, DDPGAerisInverseModelAgent, DDPGAerisM2ModelAgent
+from agents.DDPGAgent import DDPGAerisAgent, DDPGAerisForwardModelAgent, DDPGAerisForwardModelEncoderAgent, DDPGAerisInverseModelAgent, DDPGAerisM2ModelAgent, DDPGAerisForwardInverseModelAgent
 from algorithms.DDPG import DDPG
 from algorithms.ReplayBuffer import ExperienceReplayBuffer
 from experiment.ddpg_experiment import ExperimentDDPG
@@ -63,6 +63,19 @@ def run_inverse_model(config, i):
     env.close()
 
 
+def run_forward_inverse_model(config, i):
+    env = gym_aeris.envs.TargetNavigateEnv()
+    state_dim = env.observation_space.shape
+    action_dim = env.action_space.shape[0]
+
+    experiment = ExperimentDDPG('TargetNavigate-v0', env, config)
+
+    agent = DDPGAerisForwardInverseModelAgent(state_dim, action_dim, config)
+    experiment.run_forward_inverse_model(agent, i)
+
+    env.close()
+
+
 def run_m2_model(config, i):
     env = gym_aeris.envs.TargetNavigateEnv()
     state_dim = env.observation_space.shape
@@ -74,6 +87,7 @@ def run_m2_model(config, i):
     experiment.run_m2_model(agent, i)
 
     env.close()
+
 
 def run_rnd_forward_model(config, i):
     env = gym_aeris.envs.TargetNavigateEnv()

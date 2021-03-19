@@ -11,9 +11,6 @@ class ForwardModelMotivation:
         self._variant = variant
         self._device = device
 
-    def forward_model(self):
-        return self._network
-
     def train(self, state0, action, state1):
         if self._memory is not None:
             if len(self._memory) > self._sample_size:

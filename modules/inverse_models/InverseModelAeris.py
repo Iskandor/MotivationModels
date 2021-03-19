@@ -4,35 +4,13 @@ from torch.nn import *
 
 
 class InverseModelAeris(nn.Module):
-    def __init__(self, input_shape, action_dim, config):
+    def __init__(self, encoder, action_dim, config):
         super(InverseModelAeris, self).__init__()
 
-        self.channels = input_shape[0]
-        self.width = input_shape[1]
-
         self.action_dim = action_dim
-
-        fc_count = config.forward_model_kernels_count * self.width // 4
-
         self.feature_dim = config.forward_model_kernels_count
 
-        channels = input_shape[0]
-
-        self.layers_encoder = [
-            nn.Conv1d(channels, config.forward_model_kernels_count, kernel_size=8, stride=4, padding=2),
-            nn.ReLU(),
-            nn.Flatten(),
-            nn.Linear(fc_count, fc_count // 2),
-            nn.ReLU(),
-            nn.Linear(fc_count // 2, self.feature_dim),
-            nn.Tanh()
-        ]
-
-        nn.init.xavier_uniform_(self.layers_encoder[0].weight)
-        nn.init.xavier_uniform_(self.layers_encoder[3].weight)
-        nn.init.xavier_uniform_(self.layers_encoder[5].weight)
-
-        self.encoder = Sequential(*self.layers_encoder)
+        self.encoder = encoder
 
         self.layers = [
             nn.Linear(self.feature_dim * 2, self.action_dim),
