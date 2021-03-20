@@ -13,11 +13,9 @@ class DDPG2:
         self._critic_optimizer = torch.optim.Adam(self.network.critic.parameters(), lr=critic_lr)
         self._actor_optimizer = torch.optim.Adam(self.network.actor.parameters(), lr=actor_lr)
 
-    def train(self, state0, action0, state1, reward, done):
-        self._memory.add(state0, action0, state1, reward, done)
-
-        if len(self._memory) > self._sample_size:
-            sample = self._memory.sample(self._sample_size)
+    def train_sample(self, indices):
+        if indices:
+            sample = self._memory.sample(indices)
 
             states = torch.stack(sample.state).squeeze(1)
             next_states = torch.stack(sample.next_state).squeeze(1)
@@ -26,18 +24,21 @@ class DDPG2:
             masks = torch.stack(sample.mask)
 
             if self.motivation:
-                rewards += self.motivation.reward(states, actions, next_states)
+                rewards += self.motivation.reward_sample(indices)
 
-            expected_values = rewards + masks * self._gamma * self.network.value_target(next_states, self.network.action_target(next_states).detach()).detach()
+            self.train(states, actions, next_states, rewards, masks)
 
-            self._critic_optimizer.zero_grad()
-            loss = torch.nn.functional.mse_loss(self.network.value(states, actions), expected_values)
-            loss.backward()
-            self._critic_optimizer.step()
+    def train(self, states, actions, next_states, rewards, masks):
+        expected_values = rewards + masks * self._gamma * self.network.value_target(next_states, self.network.action_target(next_states).detach()).detach()
 
-            self._actor_optimizer.zero_grad()
-            loss = -self.network.value(states, self.network.action(states)).mean()
-            loss.backward()
-            self._actor_optimizer.step()
+        self._critic_optimizer.zero_grad()
+        loss = torch.nn.functional.mse_loss(self.network.value(states, actions), expected_values)
+        loss.backward()
+        self._critic_optimizer.step()
 
-            self.network.soft_update(self._tau)
+        self._actor_optimizer.zero_grad()
+        loss = -self.network.value(states, self.network.action(states)).mean()
+        loss.backward()
+        self._actor_optimizer.step()
+
+        self.network.soft_update(self._tau)

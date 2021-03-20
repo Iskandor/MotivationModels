@@ -670,7 +670,7 @@ class ExperimentDDPG:
                 weight = agent.motivation.weight(im0)
                 im1 = agent.motivation.reward(state0, action0, weight, state1)
 
-                agent.train(state0, im0, action0, weight, state1, im1, reward, done)
+                agent.train(state0, action0, state1, im0, weight, im1, reward, done)
 
                 train_ext_reward += reward
                 train_int_reward += im1.item()

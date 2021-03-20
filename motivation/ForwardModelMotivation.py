@@ -11,34 +11,34 @@ class ForwardModelMotivation:
         self._variant = variant
         self._device = device
 
-    def train(self, state0, action, state1):
-        if self._memory is not None:
-            if len(self._memory) > self._sample_size:
-                sample = self._memory.sample(self._sample_size)
+    def train(self, indices):
+        if indices:
+            sample = self._memory.sample(indices)
 
-                states = torch.stack(sample.state).squeeze(1)
-                next_states = torch.stack(sample.next_state).squeeze(1)
-                actions = torch.stack(sample.action).squeeze(1)
+            states = torch.stack(sample.state).squeeze(1)
+            next_states = torch.stack(sample.next_state).squeeze(1)
+            actions = torch.stack(sample.action).squeeze(1)
 
-                self._optimizer.zero_grad()
-                loss = self._network.loss_function(states, actions, next_states)
-                loss.backward()
-                self._optimizer.step()
-        else:
             self._optimizer.zero_grad()
-            loss = self._network.loss_function(state0, action, state1)
+            loss = self._network.loss_function(states, actions, next_states)
             loss.backward()
             self._optimizer.step()
 
     def error(self, state0, action, state1):
         return self._network.error(state0, action, state1)
 
-    def reward(self, state0=None, action=None, state1=None, error=None):
+    def reward_sample(self, indices):
+        sample = self._memory.sample(indices)
+
+        states = torch.stack(sample.state).squeeze(1)
+        next_states = torch.stack(sample.next_state).squeeze(1)
+        actions = torch.stack(sample.action).squeeze(1)
+
+        return self.reward(states, actions, next_states)
+
+    def reward(self, state0, action, state1):
         reward = 0
         if self._variant == 'A':
-            if error is None:
-                reward = torch.tanh(self.error(state0, action, state1))
-            else:
-                reward = torch.tanh(error)
+            reward = torch.tanh(self.error(state0, action, state1))
 
         return reward * self._eta

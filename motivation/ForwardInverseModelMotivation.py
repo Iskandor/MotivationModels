@@ -15,37 +15,35 @@ class ForwardInverseModelMotivation:
         self._variant = variant
         self._device = device
 
-    def train(self, state0, action, state1):
-        if self._memory is not None:
-            if len(self._memory) > self._sample_size:
-                sample = self._memory.sample(self._sample_size)
+    def train(self, indices):
+        if indices:
+            sample = self._memory.sample(indices)
 
-                states = torch.stack(sample.state).squeeze(1)
-                next_states = torch.stack(sample.next_state).squeeze(1)
-                actions = torch.stack(sample.action).squeeze(1)
+            states = torch.stack(sample.state).squeeze(1)
+            next_states = torch.stack(sample.next_state).squeeze(1)
+            actions = torch.stack(sample.action).squeeze(1)
 
-                self._forward_model_optimizer.zero_grad()
-                loss = self._forward_model.loss_function(states, actions, next_states)
-                loss.backward()
-                self._forward_model_optimizer.step()
-
-                self._inverse_model_optimizer.zero_grad()
-                loss = self._inverse_model.loss_function(states, actions, next_states)
-                loss.backward()
-                self._inverse_model_optimizer.step()
-        else:
             self._forward_model_optimizer.zero_grad()
-            loss = self._forward_model.loss_function(state0, action, state1)
+            loss = self._forward_model.loss_function(states, actions, next_states)
             loss.backward()
             self._forward_model_optimizer.step()
 
             self._inverse_model_optimizer.zero_grad()
-            loss = self._inverse_model.loss_function(state0, action, state1)
+            loss = self._inverse_model.loss_function(states, actions, next_states)
             loss.backward()
             self._inverse_model_optimizer.step()
 
     def error(self, state0, action, state1):
         return self._forward_model.error(state0, action, state1), self._inverse_model.error(state0, action, state1)
+
+    def reward_sample(self, indices):
+        sample = self._memory.sample(indices)
+
+        states = torch.stack(sample.state).squeeze(1)
+        next_states = torch.stack(sample.next_state).squeeze(1)
+        actions = torch.stack(sample.action).squeeze(1)
+
+        return self.reward(states, actions, next_states)
 
     def reward(self, state0, action, state1):
         fm_error, im_error = self.error(state0, action, state1)

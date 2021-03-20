@@ -4,36 +4,45 @@ from algorithms.DDPG2 import DDPG2
 
 
 class M2Motivation:
-    def __init__(self, network, lr, gamma, tau, eta, model_memory_buffer, gate_memory_buffer, sample_size):
+    def __init__(self, network, lr, gamma, tau, eta, memory, sample_size):
         self.network = network
         self._optimizer = torch.optim.Adam(self.network.forward_model.parameters(), lr=lr)
         self.eta = eta
-        self._model_memory = model_memory_buffer
-        self._gate_memory = gate_memory_buffer
+        self._memory = memory
         self._sample_size = sample_size
 
-        self.gate_algorithm = DDPG2(self.network, lr, lr, gamma, tau, self._gate_memory, 32)
+        self.gate_algorithm = DDPG2(self.network.gate, lr, lr, gamma, tau, memory, 32)
 
-    def train(self, state0, im0, action, weight, state1, im1, reward, done):
-        self.gate_algorithm.train(im0, weight, im1, reward, done)
+    def train(self, indices):
+        if indices:
+            sample = self._memory.sample(indices)
 
-        if self._model_memory is not None:
-            if len(self._model_memory) > self._sample_size:
-                sample = self._model_memory.sample(self._sample_size)
+            states = torch.stack(sample.state).squeeze(1)
+            next_states = torch.stack(sample.next_state).squeeze(1)
+            actions = torch.stack(sample.action).squeeze(1)
+            im = torch.stack(sample.im).squeeze(1)
+            next_im = torch.stack(sample.next_im).squeeze(1)
+            weights = torch.stack(sample.weight).squeeze(1)
+            rewards = torch.stack(sample.reward)
+            masks = torch.stack(sample.mask)
 
-                states = torch.stack(sample.state).squeeze(1)
-                next_states = torch.stack(sample.next_state).squeeze(1)
-                actions = torch.stack(sample.action).squeeze(1)
-
-                self._optimizer.zero_grad()
-                loss = self.network.forward_model.loss_function(states, actions, next_states)
-                loss.backward()
-                self._optimizer.step()
-        else:
             self._optimizer.zero_grad()
-            loss = self.network.forward_model.loss_function(state0, action, state1)
+            loss = self.network.forward_model.loss_function(states, actions, next_states)
             loss.backward()
             self._optimizer.step()
+
+            self.gate_algorithm.train(im, weights, next_im, rewards, masks)
+
+    def reward_sample(self, indices):
+        sample = self._memory.sample(indices)
+
+        states = torch.stack(sample.state).squeeze(1)
+        next_states = torch.stack(sample.next_state).squeeze(1)
+        actions = torch.stack(sample.action).squeeze(1)
+        im = torch.stack(sample.im).squeeze(1)
+        weights = self.weight(im)
+
+        return self.reward(states, actions, weights, next_states)
 
     def reward(self, state0, action, weight, state1):
         with torch.no_grad():
