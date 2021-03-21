@@ -9,7 +9,6 @@ from experiment.ddpg_experiment import ExperimentDDPG
 from modules import ARCH
 from modules.forward_models.RND_ForwardModel import RND_ForwardModel
 from motivation.ForwardModelMotivation import ForwardModelMotivation
-from motivation.MateCriticMotivation import MetaCriticMotivation
 
 
 def run_baseline(config, i):

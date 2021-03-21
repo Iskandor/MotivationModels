@@ -1,7 +1,8 @@
 import gym
 import gym_aeris.envs
 
-from agents.DDPGAgent import DDPGAerisAgent, DDPGAerisForwardModelAgent, DDPGAerisForwardModelEncoderAgent, DDPGAerisInverseModelAgent, DDPGAerisM2ModelAgent
+from agents.DDPGAgent import DDPGAerisAgent, DDPGAerisForwardModelAgent, DDPGAerisForwardModelEncoderAgent, DDPGAerisInverseModelAgent, DDPGAerisM2ModelAgent, DDPGAerisForwardInverseModelAgent, \
+    DDPGAerisGatedMetacriticModelAgent
 from algorithms.DDPG import DDPG
 from algorithms.ReplayBuffer import ExperienceReplayBuffer
 from experiment.ddpg_experiment import ExperimentDDPG
@@ -63,6 +64,19 @@ def run_inverse_model(config, i):
     env.close()
 
 
+def run_forward_inverse_model(config, i):
+    env = gym_aeris.envs.AvoidHazardsEnv()
+    state_dim = env.observation_space.shape
+    action_dim = env.action_space.shape[0]
+
+    experiment = ExperimentDDPG('AvoidHazards-v0', env, config)
+
+    agent = DDPGAerisForwardInverseModelAgent(state_dim, action_dim, config)
+    experiment.run_forward_inverse_model(agent, i)
+
+    env.close()
+
+
 def run_m2_model(config, i):
     env = gym_aeris.envs.AvoidHazardsEnv()
     state_dim = env.observation_space.shape
@@ -74,6 +88,7 @@ def run_m2_model(config, i):
     experiment.run_m2_model(agent, i)
 
     env.close()
+
 
 def run_rnd_forward_model(config, i):
     env = gym_aeris.envs.AvoidHazardsEnv()
@@ -110,20 +125,7 @@ def run_metalearner_model(config, i):
 
     experiment = ExperimentDDPG('AvoidHazards-v0', env, config)
 
-    actor = Actor(state_dim, action_dim, config)
-    critic = Critic(state_dim, action_dim, config)
-    memory = ExperienceReplayBuffer(config.memory_size)
-
-    agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)
-
-    if hasattr(config, 'metacritic_batch_size'):
-        metacritic = MetaCriticMotivation(MetaCritic(state_dim, action_dim, config), config.metacritic_lr, config.metacritic_eta,
-                                          memory, config.metacritic_batch_size)
-    else:
-        metacritic = MetaCriticMotivation(MetaCritic(state_dim, action_dim, config), config.metacritic_lr, config.metacritic_variant, config.metacritic_eta)
-
-    agent.add_motivation_module(metacritic)
-
+    agent = DDPGAerisGatedMetacriticModelAgent(state_dim, action_dim, config)
     experiment.run_metalearner_model(agent, i)
 
     env.close()
