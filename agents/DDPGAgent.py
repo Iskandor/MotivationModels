@@ -2,10 +2,11 @@ import torch
 
 from algorithms.DDPG2 import DDPG2
 from algorithms.ReplayBuffer import ExperienceReplayBuffer, M2ReplayBuffer
-from modules.DDPG_Modules import DDPGSimpleNetwork, DDPGAerisNetwork, DDPGAerisNetworkFM, DDPGAerisNetworkFME, DDPGAerisNetworkIM, DDPGAerisNetworkM2, DDPGAerisNetworkFIM
+from modules.DDPG_Modules import DDPGSimpleNetwork, DDPGAerisNetwork, DDPGAerisNetworkFM, DDPGAerisNetworkFME, DDPGAerisNetworkIM, DDPGAerisNetworkM2, DDPGAerisNetworkFIM, DDPGAerisNetworkSU
 from motivation.ForwardInverseModelMotivation import ForwardInverseModelMotivation
 from motivation.ForwardModelMotivation import ForwardModelMotivation
 from motivation.M2Motivation import M2Motivation
+from motivation.MateCriticMotivation import MetaCriticMotivation
 
 
 class DDPGAgent:
@@ -113,6 +114,21 @@ class DDPGAerisForwardInverseModelAgent(DDPGAgent):
         self.motivation = ForwardInverseModelMotivation(self.network.forward_model, config.forward_model_lr, self.network.inverse_model, config.forward_model_lr,
                                                         0.5, config.forward_model_eta,
                                                         config.forward_model_variant, self.memory, config.forward_model_batch_size, config.device)
+        self.algorithm = DDPG2(self.network, config.actor_lr, config.critic_lr, config.gamma, config.tau, self.memory, config.batch_size, self.motivation)
+
+    def train(self, state0, action0, state1, reward, mask):
+        self.memory.add(state0, action0, state1, reward, mask)
+        indices = self.memory.indices(self.batch_size)
+        self.algorithm.train_sample(indices)
+        self.motivation.train(indices)
+
+
+class DDPGAerisGatedMetacriticModelAgent(DDPGAgent):
+    def __init__(self, state_dim, action_dim, config):
+        super().__init__(state_dim, action_dim, config)
+        self.network = DDPGAerisNetworkSU(state_dim, action_dim, config)
+        self.memory = ExperienceReplayBuffer(config.memory_size)
+        self.motivation = MetaCriticMotivation(self.network, config.metacritic_lr, config.metacritic_variant, config.metacritic_eta, self.memory, config.metacritic_batch_size, config.device)
         self.algorithm = DDPG2(self.network, config.actor_lr, config.critic_lr, config.gamma, config.tau, self.memory, config.batch_size, self.motivation)
 
     def train(self, state0, action0, state1, reward, mask):

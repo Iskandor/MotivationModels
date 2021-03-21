@@ -531,22 +531,9 @@ class ExperimentDDPG:
     def run_metalearner_model(self, agent, trial):
         config = self._config
         trial = trial + config.shift
-        metacritic = agent.get_motivation_module()
 
         step_limit = int(config.steps * 1e6)
         steps = 0
-
-        states = None
-        if config.check('generate_states'):
-            states = []
-        if config.check('collect_stats'):
-            states = torch.tensor(numpy.load('./{0:s}_states.npy'.format(self._env_name)), dtype=torch.float32)
-
-        action_list = []
-        value_list = []
-        fm_error_list = []
-        mc_error_list = []
-        reward_list = []
 
         train_fm_errors = []
         train_mc_errors = []
@@ -559,14 +546,6 @@ class ExperimentDDPG:
         exploration = GaussianExploration(config.sigma, 0.01, config.steps * 1e6)
 
         while steps < step_limit:
-            if config.check('collect_stats'):
-                actions, values, fm_errors, mc_errors, rewards = self.su_activations(self._env, agent, forward_model, metacritic, states)
-                action_list.append(actions)
-                value_list.append(values)
-                fm_error_list.append(fm_errors)
-                mc_error_list.append(mc_errors)
-                reward_list.append(rewards)
-
             state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0)
             done = False
             train_ext_reward = 0
@@ -575,13 +554,11 @@ class ExperimentDDPG:
 
             while not done:
                 train_steps += 1
-                if config.check('generate_states'):
-                    states.append(state0.numpy())
                 action0 = exploration.explore(agent.get_action(state0))
                 next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
                 state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
 
-                pe_error, ps_error, pe_reward, ps_reward, int_reward = metacritic.raw_data(state0, action0, state1)
+                pe_error, ps_error, pe_reward, ps_reward, int_reward = agent.motivation.raw_data(state0, action0, state1)
                 train_ext_reward += reward
                 train_int_reward += int_reward.item()
                 train_fm_rewards.append(pe_reward.item())
@@ -590,7 +567,6 @@ class ExperimentDDPG:
                 train_mc_errors.append(ps_error.item())
 
                 agent.train(state0, action0, state1, reward, done)
-                metacritic.train(state0, action0, state1)
                 state0 = state1
 
             steps += train_steps
@@ -618,22 +594,6 @@ class ExperimentDDPG:
             'mcr': numpy.array(train_mc_rewards[:step_limit])
         }
         numpy.save('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
-
-        if config.check('generate_states'):
-            self.generate_states(states)
-
-        if config.check('collect_stats'):
-            action_list = torch.stack(action_list)
-            value_list = torch.stack(value_list)
-            fm_error_list = torch.stack(fm_error_list)
-            mc_error_list = torch.stack(mc_error_list)
-            reward_list = torch.stack(reward_list)
-
-            numpy.save('ddpg_{0}_{1}_{2:d}_actions'.format(config.name, config.model, trial), action_list)
-            numpy.save('ddpg_{0}_{1}_{2:d}_values'.format(config.name, config.model, trial), value_list)
-            numpy.save('ddpg_{0}_{1}_{2:d}_prediction_errors'.format(config.name, config.model, trial), fm_error_list)
-            numpy.save('ddpg_{0}_{1}_{2:d}_error_estimations'.format(config.name, config.model, trial), mc_error_list)
-            numpy.save('ddpg_{0}_{1}_{2:d}_rewards'.format(config.name, config.model, trial), reward_list)
 
     def run_m2_model(self, agent, trial):
         config = self._config
