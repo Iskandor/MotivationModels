@@ -68,10 +68,14 @@ class ForwardModelEncoderAeris(nn.Module):
             nn.Linear(self.feature_dim + self.action_dim, self.feature_dim * 2),
             nn.ReLU(),
             nn.Linear(self.feature_dim * 2, self.feature_dim),
+            nn.ReLU(),
+            nn.Linear(self.feature_dim, self.feature_dim),
             nn.Tanh()
         ]
 
         nn.init.xavier_uniform_(self.layers[0].weight)
+        nn.init.xavier_uniform_(self.layers[2].weight)
+        nn.init.xavier_uniform_(self.layers[4].weight)
 
         self.model = Sequential(*self.layers)
 
