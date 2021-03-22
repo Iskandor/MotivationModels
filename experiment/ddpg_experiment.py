@@ -149,7 +149,11 @@ class ExperimentDDPG:
         step_limit = int(config.steps * 1e6)
         steps = 0
 
+        state0 = torch.tensor(self._env.reset(), dtype=torch.float32)
+        mean = torch.zeros_like(state0).flatten()
+        states = []
         train_fm_errors = []
+        train_state_dist = []
         train_ext_rewards = []
         train_int_rewards = []
 
@@ -164,12 +168,17 @@ class ExperimentDDPG:
             train_steps = 0
 
             while not done:
-                train_steps += 1
                 action0 = exploration.explore(agent.get_action(state0))
                 next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
                 state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
 
+                sample = state1.flatten()
+                train_state_dist.append(torch.dist(sample, mean))
+                states.append(sample)
+                mean += (sample - mean) / len(states)
+
                 agent.train(state0, action0, state1, reward, done)
+                train_steps += 1
 
                 train_ext_reward += reward
                 train_int_reward += agent.motivation.reward(state0, action0, state1).item()
@@ -198,6 +207,7 @@ class ExperimentDDPG:
         save_data = {
             're': numpy.array(train_ext_rewards),
             'ri': numpy.array(train_int_rewards),
+            'sd': numpy.array(train_state_dist[:step_limit]),
             'fme': numpy.array(train_fm_errors[:step_limit])
         }
         numpy.save('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
@@ -614,7 +624,7 @@ class ExperimentDDPG:
 
         while steps < step_limit:
             state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0)
-            im0 = torch.zeros((1,1), dtype=torch.float32)
+            im0 = torch.zeros((1, 1), dtype=torch.float32)
             done = False
             train_ext_reward = 0
             train_int_reward = 0
@@ -665,7 +675,6 @@ class ExperimentDDPG:
             'm2w': numpy.array(train_m2_weight[:step_limit])
         }
         numpy.save('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
-
 
     @staticmethod
     def baseline_activations(agent, states):
