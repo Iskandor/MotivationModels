@@ -26,12 +26,12 @@ class ForwardModelAeris(nn.Module):
             nn.Conv1d(config.forward_model_kernels_count, channels, kernel_size=3, stride=1, padding=1)
         ]
 
-        nn.init.xavier_uniform_(self.layers[0].weight)
-        nn.init.xavier_uniform_(self.layers[2].weight)
-        nn.init.xavier_uniform_(self.layers[4].weight)
-        nn.init.xavier_uniform_(self.layers[6].weight)
-        nn.init.xavier_uniform_(self.layers[8].weight)
-        nn.init.uniform_(self.layers[10].weight, -0.3, 0.3)
+        nn.init.orthogonal_(self.layers[0].weight)
+        nn.init.orthogonal_(self.layers[2].weight)
+        nn.init.orthogonal_(self.layers[4].weight)
+        nn.init.orthogonal_(self.layers[6].weight)
+        nn.init.orthogonal_(self.layers[8].weight)
+        nn.init.orthogonal_(self.layers[10].weight)
 
         self.model = Sequential(*self.layers)
 
