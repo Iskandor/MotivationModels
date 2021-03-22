@@ -17,7 +17,7 @@ class ForwardModelAeris(nn.Module):
             nn.LeakyReLU(),
             nn.Conv1d(config.forward_model_kernels_count, config.forward_model_kernels_count, kernel_size=3, stride=1, padding=1),
             nn.LeakyReLU(),
-            nn.Conv1d(config.forward_model_kernels_count * 2, config.forward_model_kernels_count * 2, kernel_size=3, stride=1, padding=1),
+            nn.Conv1d(config.forward_model_kernels_count, config.forward_model_kernels_count * 2, kernel_size=3, stride=1, padding=1),
             nn.LeakyReLU(),
             nn.Conv1d(config.forward_model_kernels_count * 2, config.forward_model_kernels_count * 2, kernel_size=3, stride=1, padding=1),
             nn.LeakyReLU(),
