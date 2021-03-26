@@ -4,7 +4,7 @@ import gym
 import pybulletgym
 import numpy
 import torch
-import umap
+# import umap
 from etaprogress.progress import ProgressBar
 from gym.wrappers.monitoring.video_recorder import VideoRecorder
 from pyclustering.cluster.center_initializer import kmeans_plusplus_initializer
@@ -150,7 +150,6 @@ class ExperimentDDPG:
         step_limit = int(config.steps * 1e6)
         steps = 0
 
-        state0 = torch.tensor(self._env.reset(), dtype=torch.float32)
         train_fm_errors = []
         train_state_dist = []
         train_ext_rewards = []
@@ -159,12 +158,12 @@ class ExperimentDDPG:
         bar = ProgressBar(config.steps * 1e6, max_width=40)
         exploration = GaussianExploration(config.sigma, 0.01, config.steps * 1e6)
 
-        reducer = umap.UMAP()
+        # reducer = umap.UMAP()
 
         while steps < step_limit:
-            states = []
+            # states = []
             state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0)
-            start = state0.clone().flatten()
+            # start = state0.clone().flatten()
             done = False
             train_ext_reward = 0
             train_int_reward = 0
@@ -175,8 +174,8 @@ class ExperimentDDPG:
                 next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
                 state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
 
-                sample = state0.flatten()
-                states.append(sample.numpy())
+                # sample = state0.flatten()
+                # states.append(sample.numpy())
                 # train_state_dist.append(torch.dist(sample, start))
 
                 agent.train(state0, action0, state1, reward, done)
@@ -189,10 +188,10 @@ class ExperimentDDPG:
 
                 state0 = state1
 
-            start = time.time()
-            embedding = reducer.fit_transform(numpy.stack(states))
-            end = time.time()
-            print(end - start)
+            # start = time.time()
+            # embedding = reducer.fit_transform(numpy.stack(states))
+            # end = time.time()
+            # print(end - start)
 
             steps += train_steps
             if steps > step_limit:
