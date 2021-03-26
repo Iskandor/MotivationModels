@@ -4,6 +4,7 @@ import os
 import platform
 import subprocess
 import multiprocessing
+import torch.multiprocessing as mp
 
 import psutil
 import ray
@@ -206,6 +207,16 @@ def run_command_file():
             os.remove('./run.sh')
 
 
+def run_torch_parallel(args, experiment):
+    processes = []
+    for rank in range(experiment.trials):
+        p = mp.Process(target=run, args=(args.algorithm, args.env, experiment, rank))
+        p.start()
+        processes.append(p)
+    for p in processes:
+        p.join()
+
+
 if __name__ == '__main__':
     print(platform.system())
     print(torch.__config__.show())
@@ -246,12 +257,13 @@ if __name__ == '__main__':
         if args.parallel:
             num_cpus = psutil.cpu_count(logical=True)
             print('Running parallel on {0} CPUs'.format(num_cpus))
-            ray.init(num_cpus=num_cpus)
-            torch.set_num_threads(num_cpus // experiment.trials)
+            # ray.init(num_cpus=num_cpus)
+            # torch.set_num_threads(num_cpus // experiment.trials)
 
-            run_parallel(args, experiment)
+            # run_parallel(args, experiment)
             # write_command_file(args, experiment)
             # run_command_file()
+            run_torch_parallel(args, experiment)
         else:
             for i in range(experiment.trials):
                 run(args.algorithm, args.env, experiment, i)
