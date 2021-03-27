@@ -228,10 +228,10 @@ class DDPGAerisNetworkM2(DDPGAerisNetwork):
 
         self.encoder = EncoderAeris(input_shape, action_dim, config)
         self.forward_model = ForwardModelEncoderAeris(self.encoder, action_dim, config, encoder_loss=True)
-        self.gate = DDPGSimpleNetwork(1, 2, config)
+        self.gate = DDPGSimpleNetwork(2, 2, config)
 
-    def weight(self, im):
-        weight = self.gate.action(im)
+    def weight(self, gate_state):
+        weight = self.gate.action(gate_state)
         weight = nn.functional.softmax(weight, dim=1)
 
         return weight

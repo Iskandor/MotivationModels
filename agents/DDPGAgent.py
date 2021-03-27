@@ -146,8 +146,13 @@ class DDPGAerisM2ModelAgent(DDPGAgent):
         self.motivation = M2Motivation(self.network, config.forward_model_lr, config.gamma, config.tau, config.forward_model_eta, self.memory, config.forward_model_batch_size)
         self.algorithm = DDPG2(self.network, config.actor_lr, config.critic_lr, config.gamma, config.tau, self.memory, config.batch_size, self.motivation)
 
-    def train(self, state0, action0, state1, im0, weight, im1, reward, mask):
-        self.memory.add(state0, action0, state1, im0, weight, im1, reward, mask)
+    def train(self, state0, action0, state1, im0, error0, weight, im1, error1, reward, mask):
+        gate_state0 = self.compose_gate_state(im0, error0)
+        gate_state1 = self.compose_gate_state(im1, error1)
+        self.memory.add(state0, action0, state1, gate_state0, weight, gate_state1, reward, mask)
         indices = self.memory.indices(self.batch_size)
         self.algorithm.train_sample(indices)
         self.motivation.train(indices)
+
+    def compose_gate_state(self, im, error):
+        return torch.cat([im, error], dim=1)

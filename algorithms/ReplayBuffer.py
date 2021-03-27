@@ -5,7 +5,7 @@ from operator import itemgetter
 import torch
 
 MDP_Transition = namedtuple('MDP_Transition', ('state', 'action', 'next_state', 'reward', 'mask'))
-M2_Transition = namedtuple('M2_Transition', ('state', 'action', 'next_state', 'im', 'weight', 'next_im', 'reward', 'mask'))
+M2_Transition = namedtuple('M2_Transition', ('state', 'action', 'next_state', 'gate_state', 'weight', 'next_gate_state', 'reward', 'mask'))
 
 
 class ReplayBuffer(object):
@@ -38,11 +38,11 @@ class ExperienceReplayBuffer(ReplayBuffer):
 
 
 class M2ReplayBuffer(ReplayBuffer):
-    def add(self, state, action, next_state, im, weight, next_im, reward, mask):
+    def add(self, state, action, next_state, gate_state, weight, next_gate_state, reward, mask):
         if mask:
-            self.memory.append(M2_Transition(state, action, next_state, im, weight, next_im, torch.tensor([reward], dtype=torch.float32), torch.tensor([0], dtype=torch.float32)))
+            self.memory.append(M2_Transition(state, action, next_state, gate_state, weight, next_gate_state, torch.tensor([reward], dtype=torch.float32), torch.tensor([0], dtype=torch.float32)))
         else:
-            self.memory.append(M2_Transition(state, action, next_state, im, weight, next_im, torch.tensor([reward], dtype=torch.float32), torch.tensor([1], dtype=torch.float32)))
+            self.memory.append(M2_Transition(state, action, next_state, gate_state, weight, next_gate_state, torch.tensor([reward], dtype=torch.float32), torch.tensor([1], dtype=torch.float32)))
 
     def sample(self, indices):
         transitions = list(itemgetter(*indices)(self.memory))

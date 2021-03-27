@@ -631,6 +631,7 @@ class ExperimentDDPG:
         while steps < step_limit:
             state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0)
             im0 = torch.zeros((1, 1), dtype=torch.float32)
+            error0 = torch.zeros((1, 1), dtype=torch.float32)
             done = False
             train_ext_reward = 0
             train_int_reward = 0
@@ -643,19 +644,20 @@ class ExperimentDDPG:
                 next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
                 state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
 
-                weight = agent.motivation.weight(im0)
+                weight = agent.motivation.weight(agent.compose_gate_state(im0, error0))
                 im1 = agent.motivation.reward(state0, action0, weight, state1)
-
-                agent.train(state0, action0, state1, im0, weight, im1, reward, done)
 
                 train_ext_reward += reward
                 train_int_reward += im1.item()
-                train_fm_error = agent.network.forward_model.error(state0, action0, state1).item()
-                train_fm_errors.append(train_fm_error)
+                error1 = agent.network.forward_model.error(state0, action0, state1)
+                train_fm_errors.append(error1.item())
                 train_m2_weight.append(weight.squeeze(0).numpy())
+
+                agent.train(state0, action0, state1, im0, error0, weight, im1, error1, reward, done)
 
                 state0 = state1
                 im0 = im1
+                error0 = error1
 
             steps += train_steps
             if steps > step_limit:
