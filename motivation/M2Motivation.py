@@ -10,6 +10,7 @@ class M2Motivation:
         self.eta = eta
         self._memory = memory
         self._sample_size = sample_size
+        self._weight = torch.tensor([[0.9, 0.1]], dtype=torch.float32)
 
         self.gate_algorithm = DDPG2(self.network.gate, lr, lr, gamma, tau, memory, 32)
 
@@ -20,18 +21,18 @@ class M2Motivation:
             states = torch.stack(sample.state).squeeze(1)
             next_states = torch.stack(sample.next_state).squeeze(1)
             actions = torch.stack(sample.action).squeeze(1)
-            gate_state = torch.stack(sample.gate_state).squeeze(1)
-            next_gate_state = torch.stack(sample.next_gate_state).squeeze(1)
-            weights = torch.stack(sample.weight).squeeze(1)
-            rewards = torch.stack(sample.reward)
-            masks = torch.stack(sample.mask)
+            # gate_state = torch.stack(sample.gate_state).squeeze(1)
+            # next_gate_state = torch.stack(sample.next_gate_state).squeeze(1)
+            # weights = torch.stack(sample.weight).squeeze(1)
+            # rewards = torch.stack(sample.reward)
+            # masks = torch.stack(sample.mask)
 
             self._optimizer.zero_grad()
             loss = self.network.forward_model.loss_function(states, actions, next_states)
             loss.backward()
             self._optimizer.step()
 
-            self.gate_algorithm.train(gate_state, weights, next_gate_state, rewards, masks)
+            # self.gate_algorithm.train(gate_state, weights, next_gate_state, rewards, masks)
 
     def reward_sample(self, indices):
         sample = self._memory.sample(indices)
@@ -56,7 +57,8 @@ class M2Motivation:
 
     def weight(self, gate_state):
         with torch.no_grad():
-            weight = self.network.weight(gate_state)
+            # weight = self.network.weight(gate_state)
+            weight = self._weight.repeat(gate_state.shape[0], 1)
             return weight
 
     @staticmethod
