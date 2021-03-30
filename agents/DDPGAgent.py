@@ -16,7 +16,7 @@ class DDPGAgent:
         self.network = None
         self.algorithm = None
         self.memory = None
-        self.batch_size = config.batch_size
+        self.config = config
 
     def get_action(self, state):
         action = self.network.action(state)
@@ -41,7 +41,7 @@ class DDPGSimpleAgent(DDPGAgent):
 
     def train(self, state0, action0, state1, reward, mask):
         self.memory.add(state0, action0, state1, reward, mask)
-        indices = self.memory.indices(self.batch_size)
+        indices = self.memory.indices(self.config.batch_size)
         self.algorithm.train_sample(indices)
 
 
@@ -54,7 +54,7 @@ class DDPGAerisAgent(DDPGAgent):
 
     def train(self, state0, action0, state1, reward, mask):
         self.memory.add(state0, action0, state1, reward, mask)
-        indices = self.memory.indices(self.batch_size)
+        indices = self.memory.indices(self.config.batch_size)
         self.algorithm.train_sample(indices)
 
 
@@ -69,9 +69,8 @@ class DDPGAerisForwardModelAgent(DDPGAgent):
 
     def train(self, state0, action0, state1, reward, mask):
         self.memory.add(state0, action0, state1, reward, mask)
-        indices = self.memory.indices(self.batch_size)
-        self.algorithm.train_sample(indices)
-        self.motivation.train(indices)
+        self.algorithm.train_sample(self.memory.indices(self.config.batch_size))
+        self.motivation.train(self.memory.indices(self.config.forward_model_batch_size))
 
 
 class DDPGAerisForwardModelEncoderAgent(DDPGAgent):
@@ -85,9 +84,8 @@ class DDPGAerisForwardModelEncoderAgent(DDPGAgent):
 
     def train(self, state0, action0, state1, reward, mask):
         self.memory.add(state0, action0, state1, reward, mask)
-        indices = self.memory.indices(self.batch_size)
-        self.algorithm.train_sample(indices)
-        self.motivation.train(indices)
+        self.algorithm.train_sample(self.memory.indices(self.config.batch_size))
+        self.motivation.train(self.memory.indices(self.config.forward_model_batch_size))
 
 
 class DDPGAerisInverseModelAgent(DDPGAgent):
@@ -101,9 +99,8 @@ class DDPGAerisInverseModelAgent(DDPGAgent):
 
     def train(self, state0, action0, state1, reward, mask):
         self.memory.add(state0, action0, state1, reward, mask)
-        indices = self.memory.indices(self.batch_size)
-        self.algorithm.train_sample(indices)
-        self.motivation.train(indices)
+        self.algorithm.train_sample(self.memory.indices(self.config.batch_size))
+        self.motivation.train(self.memory.indices(self.config.forward_model_batch_size))
 
 
 class DDPGAerisForwardInverseModelAgent(DDPGAgent):
@@ -118,9 +115,8 @@ class DDPGAerisForwardInverseModelAgent(DDPGAgent):
 
     def train(self, state0, action0, state1, reward, mask):
         self.memory.add(state0, action0, state1, reward, mask)
-        indices = self.memory.indices(self.batch_size)
-        self.algorithm.train_sample(indices)
-        self.motivation.train(indices)
+        self.algorithm.train_sample(self.memory.indices(self.config.batch_size))
+        self.motivation.train(self.memory.indices(self.config.forward_model_batch_size))
 
 
 class DDPGAerisGatedMetacriticModelAgent(DDPGAgent):
@@ -133,9 +129,8 @@ class DDPGAerisGatedMetacriticModelAgent(DDPGAgent):
 
     def train(self, state0, action0, state1, reward, mask):
         self.memory.add(state0, action0, state1, reward, mask)
-        indices = self.memory.indices(self.batch_size)
-        self.algorithm.train_sample(indices)
-        self.motivation.train(indices)
+        self.algorithm.train_sample(self.memory.indices(self.config.batch_size))
+        self.motivation.train(self.memory.indices(self.config.forward_model_batch_size))
 
 
 class DDPGAerisM2ModelAgent(DDPGAgent):
@@ -150,9 +145,8 @@ class DDPGAerisM2ModelAgent(DDPGAgent):
         gate_state0 = self.compose_gate_state(im0, error0)
         gate_state1 = self.compose_gate_state(im1, error1)
         self.memory.add(state0, action0, state1, gate_state0, weight, gate_state1, reward, mask)
-        indices = self.memory.indices(self.batch_size)
-        self.algorithm.train_sample(indices)
-        self.motivation.train(indices)
+        self.algorithm.train_sample(self.memory.indices(self.config.batch_size))
+        self.motivation.train(self.memory.indices(self.config.forward_model_batch_size))
 
     def compose_gate_state(self, im, error):
         return torch.cat([im, error], dim=1)
