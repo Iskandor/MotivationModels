@@ -10,7 +10,7 @@ from modules.forward_models.RND_ForwardModel import RND_ForwardModel
 from modules.forward_models.VAE_ForwardModel import VAE_ForwardModel
 from modules.metacritic_models.MetacriticRobotic import MetaCriticRobotic
 from motivation.ForwardModelMotivation import ForwardModelMotivation
-from motivation.MateCriticMotivation import MetaCriticMotivation
+from motivation.MetaCriticMotivation import MetaCriticMotivation
 from motivation.VAE_ForwardModelMotivation import VAE_ForwardModelMotivation
 
 

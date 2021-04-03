@@ -7,7 +7,7 @@ from modules.DDPG_Modules import *
 from modules.forward_models.ForwardModel import ForwardModel
 from modules.metacritic_models.MetacriticRobotic import MetaCriticRobotic
 from motivation.ForwardModelMotivation import ForwardModelMotivation
-from motivation.MateCriticMotivation import MetaCriticMotivation
+from motivation.MetaCriticMotivation import MetaCriticMotivation
 
 
 def run_baseline(config, i):

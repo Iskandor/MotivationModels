@@ -10,7 +10,7 @@ from modules.NoisyLinear import NoisyLinear
 from modules.forward_models.ForwardModel import ForwardModel
 from modules.metacritic_models import MetaCritic
 from motivation.ForwardModelMotivation import ForwardModelMotivation
-from motivation.MateCriticMotivation import MetaCriticMotivation
+from motivation.MetaCriticMotivation import MetaCriticMotivation
 
 
 class Critic(DDPGCritic):

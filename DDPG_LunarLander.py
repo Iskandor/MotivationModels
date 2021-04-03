@@ -11,7 +11,7 @@ from modules.forward_models.ForwardModel import ForwardModel
 from modules.metacritic_models import MetaCritic
 from motivation.ForwardModelMotivation import ForwardModelMotivation
 from motivation.M2Motivation import M2Motivation
-from motivation.MateCriticMotivation import MetaCriticMotivation
+from motivation.MetaCriticMotivation import MetaCriticMotivation
 
 
 def run_baseline(config, i):

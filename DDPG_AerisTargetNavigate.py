@@ -2,7 +2,7 @@ import gym
 import gym_aeris.envs
 
 from agents.DDPGAgent import DDPGAerisAgent, DDPGAerisForwardModelAgent, DDPGAerisForwardModelEncoderAgent, DDPGAerisInverseModelAgent, DDPGAerisM2ModelAgent, DDPGAerisForwardInverseModelAgent, \
-    DDPGAerisGatedMetacriticModelAgent
+    DDPGAerisGatedMetacriticModelAgent, DDPGAerisM2SModelAgent
 from algorithms.DDPG import DDPG
 from algorithms.ReplayBuffer import ExperienceReplayBuffer
 from experiment.ddpg_experiment import ExperimentDDPG
@@ -85,6 +85,19 @@ def run_m2_model(config, i):
 
     agent = DDPGAerisM2ModelAgent(state_dim, action_dim, config)
     experiment.run_m2_model(agent, i)
+
+    env.close()
+
+
+def run_m2s_model(config, i):
+    env = gym_aeris.envs.TargetNavigateEnv()
+    state_dim = env.observation_space.shape
+    action_dim = env.action_space.shape[0]
+
+    experiment = ExperimentDDPG('TargetNavigate-v0', env, config)
+
+    agent = DDPGAerisM2SModelAgent(state_dim, action_dim, config)
+    experiment.run_forward_model(agent, i)
 
     env.close()
 
