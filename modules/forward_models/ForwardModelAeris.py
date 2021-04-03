@@ -19,19 +19,28 @@ class ForwardModelAeris(nn.Module):
             nn.LeakyReLU(),
             nn.Conv1d(config.forward_model_kernels_count, config.forward_model_kernels_count, kernel_size=3, stride=1, padding=1),
             nn.LeakyReLU(),
+            nn.Conv1d(config.forward_model_kernels_count, config.forward_model_kernels_count, kernel_size=2, stride=2, padding=0),
+            nn.LeakyReLU(),
             nn.Conv1d(config.forward_model_kernels_count, config.forward_model_kernels_count, kernel_size=3, stride=1, padding=1),
+            nn.LeakyReLU(),
+            nn.Conv1d(config.forward_model_kernels_count, config.forward_model_kernels_count, kernel_size=3, stride=1, padding=1),
+            nn.LeakyReLU(),
+            nn.ConvTranspose1d(config.forward_model_kernels_count, config.forward_model_kernels_count, kernel_size=2, stride=2, padding=0, output_padding=0),
             nn.LeakyReLU(),
             nn.ConvTranspose1d(config.forward_model_kernels_count, config.forward_model_kernels_count, kernel_size=8, stride=4, padding=2, output_padding=0),
             nn.LeakyReLU(),
             nn.Conv1d(config.forward_model_kernels_count, channels, kernel_size=3, stride=1, padding=1)
         ]
 
-        nn.init.orthogonal_(self.layers[0].weight)
-        nn.init.orthogonal_(self.layers[2].weight)
-        nn.init.orthogonal_(self.layers[4].weight)
-        nn.init.orthogonal_(self.layers[6].weight)
-        nn.init.orthogonal_(self.layers[8].weight)
-        nn.init.orthogonal_(self.layers[10].weight)
+        nn.init.xavier_uniform_(self.layers[0].weight)
+        nn.init.xavier_uniform_(self.layers[2].weight)
+        nn.init.xavier_uniform_(self.layers[4].weight)
+        nn.init.xavier_uniform_(self.layers[6].weight)
+        nn.init.xavier_uniform_(self.layers[8].weight)
+        nn.init.xavier_uniform_(self.layers[10].weight)
+        nn.init.xavier_uniform_(self.layers[12].weight)
+        nn.init.xavier_uniform_(self.layers[14].weight)
+        nn.init.xavier_uniform_(self.layers[16].weight)
 
         self.model = Sequential(*self.layers)
 
