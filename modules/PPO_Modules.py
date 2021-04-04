@@ -1,5 +1,6 @@
 import torch
-from torch import nn
+import torch.nn as nn
+import numpy as np
 from torch.distributions import Categorical, MultivariateNormal, Normal
 
 from agents import TYPE
@@ -149,59 +150,50 @@ class PPOAtariNetwork(torch.nn.Module):
         input_channels = self.input_shape[0]
         input_height = self.input_shape[1]
         input_width = self.input_shape[2]
-        self.feature_dim = 128 * (input_width // 16) * (input_height // 16)
+        self.feature_dim = 448
 
         self.layers_features = [
-            nn.Conv2d(input_channels, 64, kernel_size=3, stride=2, padding=1),
+            nn.Conv2d(input_channels, 32, kernel_size=8, stride=4),
             nn.ReLU(),
-
-            nn.Conv2d(64, 64, kernel_size=3, stride=2, padding=1),
+            nn.Conv2d(32, 64, kernel_size=4, stride=2),
             nn.ReLU(),
-
-            nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1),
             nn.ReLU(),
-            nn.AvgPool2d(kernel_size=2, stride=2, padding=0),
-
-            nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1),
+            nn.Flatten(),
+            nn.Linear(7 * 7 * 64, 256),
             nn.ReLU(),
-            nn.AvgPool2d(kernel_size=2, stride=2, padding=0),
-
-            nn.Flatten()
+            nn.Linear(256, self.feature_dim),
+            nn.ReLU()
         ]
+
+        self._init(self.layers_features[0], np.sqrt(2))
+        self._init(self.layers_features[2], np.sqrt(2))
+        self._init(self.layers_features[4], np.sqrt(2))
+        self._init(self.layers_features[7], np.sqrt(2))
+        self._init(self.layers_features[9], np.sqrt(2))
 
         self.layers_value = [
-            torch.nn.Linear(self.feature_dim, config.critic_h1),
+            torch.nn.Linear(self.feature_dim, self.feature_dim),
             torch.nn.ReLU(),
-            torch.nn.Linear(config.critic_h1, config.critic_h2),
-            torch.nn.ReLU(),
-            torch.nn.Linear(config.critic_h2, 1)
+            torch.nn.Linear(config.feature_dim, 1)
         ]
+
+        self._init(self.layers_value[0], 0.1)
+        self._init(self.layers_value[2], 0.01)
 
         self.layers_policy = [
-            torch.nn.Linear(self.feature_dim, config.actor_h1),
-            torch.nn.ReLU(),
-            torch.nn.Linear(config.actor_h1, config.actor_h2),
+            torch.nn.Linear(self.feature_dim, self.feature_dim),
             torch.nn.ReLU(),
         ]
 
+        self._init(self.layers_policy[0], 0.01)
+
         if head == TYPE.discrete:
-            self.layers_policy.append(DiscreteHead(config.actor_h2, action_dim))
+            self.layers_policy.append(DiscreteHead(self.feature_dim, action_dim))
         if head == TYPE.continuous:
-            self.layers_policy.append(ContinuousHead(config.actor_h2, action_dim))
+            self.layers_policy.append(ContinuousHead(self.feature_dim, action_dim))
         if head == TYPE.multibinary:
             pass
-
-        for i in range(len(self.layers_features)):
-            if hasattr(self.layers_features[i], "weight"):
-                torch.nn.init.xavier_uniform_(self.layers_features[i].weight)
-
-        for i in range(len(self.layers_value)):
-            if hasattr(self.layers_value[i], "weight"):
-                torch.nn.init.xavier_uniform_(self.layers_value[i].weight)
-
-        for i in range(len(self.layers_policy)):
-            if hasattr(self.layers_policy[i], "weight"):
-                torch.nn.init.xavier_uniform_(self.layers_policy[i].weight)
 
         self.features = nn.Sequential(*self.layers_features)
         self.critic = nn.Sequential(*self.layers_value)
@@ -214,78 +206,6 @@ class PPOAtariNetwork(torch.nn.Module):
 
         return value, action, probs
 
-
-class SegaPPONetwork(torch.nn.Module):
-    def __init__(self, input_shape, action_dim, action_space, config):
-        super(SegaPPONetwork, self).__init__()
-
-        self.input_shape = input_shape
-        self.action_dim = action_dim
-        input_channels = self.input_shape[2]
-        input_height = self.input_shape[0]
-        input_width = self.input_shape[1]
-        self.feature_dim = 128 * (input_width // 16) * (input_height // 16)
-
-        self.layers_features = [
-            nn.Conv2d(input_channels, 64, kernel_size=3, stride=2, padding=1),
-            nn.ReLU(),
-
-            nn.Conv2d(64, 64, kernel_size=3, stride=2, padding=1),
-            nn.ReLU(),
-
-            nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-            nn.AvgPool2d(kernel_size=2, stride=2, padding=0),
-
-            nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-            nn.AvgPool2d(kernel_size=2, stride=2, padding=0),
-
-            nn.Flatten()
-        ]
-
-        self.layers_value = [
-            torch.nn.Linear(self.feature_dim, config.critic_h1),
-            torch.nn.ReLU(),
-            torch.nn.Linear(config.critic_h1, config.critic_h2),
-            torch.nn.ReLU(),
-            torch.nn.Linear(config.critic_h2, 1)
-        ]
-
-        self.layers_policy = [
-            torch.nn.Linear(self.feature_dim, config.actor_h1),
-            torch.nn.ReLU(),
-            torch.nn.Linear(config.actor_h1, config.actor_h2),
-            torch.nn.ReLU(),
-            torch.nn.Linear(config.actor_h2, action_dim),
-        ]
-
-        for i in range(len(self.layers_features)):
-            if hasattr(self.layers_features[i], "weight"):
-                torch.nn.init.xavier_uniform_(self.layers_features[i].weight)
-
-        for i in range(len(self.layers_value)):
-            if hasattr(self.layers_value[i], "weight"):
-                torch.nn.init.xavier_uniform_(self.layers_value[i].weight)
-
-        for i in range(len(self.layers_policy)):
-            if hasattr(self.layers_policy[i], "weight"):
-                torch.nn.init.xavier_uniform_(self.layers_policy[i].weight)
-
-        self.features = nn.Sequential(*self.layers_features)
-        self.critic = nn.Sequential(*self.layers_value)
-        self.actor = nn.Sequential(*self.layers_policy)
-
-    def action(self, state):
-        if state.ndim == 3:
-            state = state.unsqueeze(0)
-        features = self.features(state)
-        policy = self.actor(features)
-        return policy
-
-    def value(self, state):
-        if state.ndim == 3:
-            state = state.unsqueeze(0)
-        features = self.features(state)
-        value = self.critic(features)
-        return value
+    def _init(self, layer, gain):
+        nn.init.orthogonal_(layer.weight, gain)
+        layer.bias.data.zero_()

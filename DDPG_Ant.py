@@ -6,7 +6,6 @@ from algorithms.ReplayBuffer import ExperienceReplayBuffer
 from experiment.ddpg_experiment import ExperimentDDPG
 from modules.DDPG_Modules import *
 from modules.forward_models.ForwardModel import ForwardModel
-from modules.forward_models.RND_ForwardModel import RND_ForwardModel
 from modules.forward_models.VAE_ForwardModel import VAE_ForwardModel
 from modules.metacritic_models.MetacriticRobotic import MetaCriticRobotic
 from motivation.ForwardModelMotivation import ForwardModelMotivation
@@ -78,35 +77,6 @@ def run_vae_forward_model(config, i):
     experiment.run_vae_forward_model(agent, i)
 
     env.close()
-
-
-def run_rnd_forward_model(config, i):
-    env = gym.make('AntBulletEnv-v0')
-    state_dim = env.observation_space.shape[0]
-    action_dim = env.action_space.shape[0]
-
-    experiment = ExperimentDDPG('AntBulletEnv-v0', env, config)
-
-    actor = Actor(state_dim, action_dim, config)
-    critic = Critic(state_dim, action_dim, config)
-    memory = ExperienceReplayBuffer(config.memory_size)
-
-    agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)
-
-    if hasattr(config, 'forward_model_batch_size'):
-        forward_model = ForwardModelMotivation(RND_ForwardModel(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
-                                               config.forward_model_variant, env.spec.max_episode_steps * 10,
-                                               memory, config.forward_model_batch_size)
-    else:
-        forward_model = ForwardModelMotivation(RND_ForwardModel(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
-                                               config.forward_model_variant, env.spec.max_episode_steps * 10)
-
-    agent.add_motivation_module(forward_model)
-
-    experiment.run_forward_model(agent, i)
-
-    env.close()
-
 
 def run_metalearner_model(config, i):
     env = gym.make('AntBulletEnv-v0')

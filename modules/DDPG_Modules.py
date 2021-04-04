@@ -7,6 +7,7 @@ from modules.encoders.EncoderAeris import EncoderAeris
 from modules.forward_models.ForwardModelAeris import ForwardModelAeris, ForwardModelEncoderAeris
 from modules.inverse_models.InverseModelAeris import InverseModelAeris
 from modules.metacritic_models.MetaCriticModelAeris import MetaCriticModelAeris
+from modules.rnd_models.RNDModelAeris import RNDModelAeris
 
 
 class Critic(nn.Module):
@@ -235,3 +236,9 @@ class DDPGAerisNetworkM2(DDPGAerisNetwork):
         weight = nn.functional.softmax(weight, dim=1)
 
         return weight
+
+
+class DDPGAerisNetworkRND(DDPGAerisNetwork):
+    def __init__(self, input_shape, action_dim, config):
+        super(DDPGAerisNetworkRND, self).__init__(input_shape, action_dim, config)
+        self.rnd_model = RNDModelAeris(input_shape, action_dim, config)
