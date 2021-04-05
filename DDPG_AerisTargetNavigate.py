@@ -2,7 +2,7 @@ import gym
 import gym_aeris.envs
 
 from agents.DDPGAgent import DDPGAerisAgent, DDPGAerisForwardModelAgent, DDPGAerisForwardModelEncoderAgent, DDPGAerisInverseModelAgent, DDPGAerisM2ModelAgent, DDPGAerisForwardInverseModelAgent, \
-    DDPGAerisGatedMetacriticModelAgent, DDPGAerisM2SModelAgent, DDPGAerisRNDModelAgent
+    DDPGAerisGatedMetacriticModelAgent, DDPGAerisM2SModelAgent, DDPGAerisRNDModelAgent, DDPGAerisMetaCriticRNDModelAgent
 from experiment.ddpg_experiment import ExperimentDDPG
 
 
@@ -119,5 +119,18 @@ def run_metalearner_model(config, i):
 
     agent = DDPGAerisGatedMetacriticModelAgent(state_dim, action_dim, config)
     experiment.run_metalearner_model(agent, i)
+
+    env.close()
+
+
+def run_metalearner_rnd_model(config, i):
+    env = gym_aeris.envs.TargetNavigateEnv()
+    state_dim = env.observation_space.shape
+    action_dim = env.action_space.shape[0]
+
+    experiment = ExperimentDDPG('TargetNavigate-v0', env, config)
+
+    agent = DDPGAerisMetaCriticRNDModelAgent(state_dim, action_dim, config)
+    experiment.run_metalearner_rnd_model(agent, i)
 
     env.close()

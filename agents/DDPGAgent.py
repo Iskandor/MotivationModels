@@ -3,11 +3,11 @@ import torch
 from algorithms.DDPG2 import DDPG2
 from algorithms.ReplayBuffer import ExperienceReplayBuffer, M2ReplayBuffer
 from modules.DDPG_Modules import DDPGSimpleNetwork, DDPGAerisNetwork, DDPGAerisNetworkFM, DDPGAerisNetworkFME, DDPGAerisNetworkIM, DDPGAerisNetworkM2, DDPGAerisNetworkFIM, DDPGAerisNetworkSU, \
-    DDPGAerisNetworkRND
+    DDPGAerisNetworkRND, DDPGAerisNetworkSURND
 from motivation.ForwardInverseModelMotivation import ForwardInverseModelMotivation
 from motivation.ForwardModelMotivation import ForwardModelMotivation
 from motivation.M2Motivation import M2Motivation
-from motivation.MetaCriticMotivation import MetaCriticMotivation
+from motivation.MetaCriticMotivation import MetaCriticMotivation, MetaCriticRNDMotivation
 from motivation.M2SMotivation import M2SMotivation
 from motivation.RNDMotivation import RNDMotivation
 
@@ -181,3 +181,17 @@ class DDPGAerisRNDModelAgent(DDPGAgent):
         self.memory.add(state0, action0, state1, reward, mask)
         self.algorithm.train_sample(self.memory.indices(self.config.batch_size))
         self.motivation.train(self.memory.indices(self.config.forward_model_batch_size))
+
+
+class DDPGAerisMetaCriticRNDModelAgent(DDPGAgent):
+    def __init__(self, state_dim, action_dim, config):
+        super().__init__(state_dim, action_dim, config)
+        self.network = DDPGAerisNetworkSURND(state_dim, action_dim, config)
+        self.memory = ExperienceReplayBuffer(config.memory_size)
+        self.motivation = MetaCriticRNDMotivation(self.network.metacritic_model, config.metacritic_lr, config.metacritic_variant, config.metacritic_eta, self.memory, config.metacritic_batch_size)
+        self.algorithm = DDPG2(self.network, config.actor_lr, config.critic_lr, config.gamma, config.tau, self.memory, config.batch_size, self.motivation)
+
+    def train(self, state0, action0, state1, reward, mask):
+        self.memory.add(state0, action0, state1, reward, mask)
+        self.algorithm.train_sample(self.memory.indices(self.config.batch_size))
+        self.motivation.train(self.memory.indices(self.config.metacritic_batch_size))

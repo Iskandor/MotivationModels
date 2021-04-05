@@ -171,6 +171,8 @@ def run(algorithm, env, experiment, id):
         env_class.run_metalearner_model(experiment, id)
     if experiment.model == 'su':
         env_class.run_metalearner_model(experiment, id)
+    if experiment.model == 'srnd':
+        env_class.run_metalearner_rnd_model(experiment, id)
     if experiment.model == 'm2':
         env_class.run_m2_model(experiment, id)
     if experiment.model == 'm2s':

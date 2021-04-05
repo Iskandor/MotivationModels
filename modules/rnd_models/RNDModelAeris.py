@@ -69,8 +69,11 @@ class RNDModelAeris(nn.Module):
 
         return error
 
-    def loss_function(self, state):
-        loss = nn.functional.mse_loss(self(state), self.encode(state).detach())
+    def loss_function(self, state, predicted_state=None):
+        if predicted_state is None:
+            loss = nn.functional.mse_loss(self(state), self.encode(state).detach())
+        else:
+            loss = nn.functional.mse_loss(predicted_state, self.encode(state).detach())
         return loss
 
     def _init(self, layer, gain):
