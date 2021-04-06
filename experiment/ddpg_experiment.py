@@ -24,9 +24,20 @@ class ExperimentDDPG:
         self._actor = None
         self._critic = None
         self._preprocess = None
+        self._reward_transform = None
 
     def add_preprocess(self, preprocess):
         self._preprocess = preprocess
+
+    def add_reward_transform(self, reward_transform):
+        self._reward_transform = reward_transform
+
+    def transform_reward(self, reward):
+        r = reward
+        if self._reward_transform is not None:
+            r = self._reward_transform(reward)
+
+        return r
 
     def test(self, env, agent, render=False, video=False):
         config = self._config
@@ -106,6 +117,7 @@ class ExperimentDDPG:
                     states.append(state0.numpy())
                 action0 = exploration.explore(agent.get_action(state0))
                 next_state, reward, done, _ = self._env.step(agent.convert_action(action0))
+                reward = self.transform_reward(reward)
                 train_ext_reward += reward
 
                 if self._preprocess is None:
@@ -177,6 +189,7 @@ class ExperimentDDPG:
             while not done:
                 action0 = exploration.explore(agent.get_action(state0))
                 next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
+                reward = self.transform_reward(reward)
                 state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
 
                 # sample = state0.flatten()
@@ -253,6 +266,7 @@ class ExperimentDDPG:
                 states.append(state0.squeeze(0))
                 action0 = exploration.explore(agent.get_action(state0))
                 next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
+                reward = self.transform_reward(reward)
                 state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
 
                 agent.train(state0, action0, state1, reward, done)
@@ -329,6 +343,7 @@ class ExperimentDDPG:
                 states.append(state0.squeeze(0))
                 action0 = exploration.explore(agent.get_action(state0))
                 next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
+                reward = self.transform_reward(reward)
                 state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
 
                 agent.train(state0, action0, state1, reward, done)
@@ -406,6 +421,7 @@ class ExperimentDDPG:
                 states.append(state0.squeeze(0))
                 action0 = exploration.explore(agent.get_action(state0))
                 next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
+                reward = self.transform_reward(reward)
                 state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
 
                 agent.train(state0, action0, state1, reward, done)
@@ -505,6 +521,7 @@ class ExperimentDDPG:
                     states.append(state0.numpy())
                 action0 = exploration.explore(agent.get_action(state0))
                 next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
+                reward = self.transform_reward(reward)
                 state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
 
                 agent.train(state0, action0, state1, reward, done)
@@ -587,6 +604,7 @@ class ExperimentDDPG:
                 train_steps += 1
                 action0 = exploration.explore(agent.get_action(state0))
                 next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
+                reward = self.transform_reward(reward)
                 state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
 
                 pe_error, ps_error, pe_reward, ps_reward, int_reward = agent.motivation.raw_data(state0, action0, state1)
@@ -656,6 +674,7 @@ class ExperimentDDPG:
                 train_steps += 1
                 action0 = exploration.explore(agent.get_action(state0))
                 next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
+                reward = self.transform_reward(reward)
                 state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
 
                 pe_error, ps_error, pe_reward, ps_reward, int_reward = agent.motivation.raw_data(state0)
@@ -728,6 +747,7 @@ class ExperimentDDPG:
                 states.append(state0.squeeze(0))
                 action0 = exploration.explore(agent.get_action(state0))
                 next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
+                reward = self.transform_reward(reward)
                 state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
 
                 weight = agent.motivation.weight(agent.compose_gate_state(im0, error0))
@@ -796,6 +816,7 @@ class ExperimentDDPG:
             while not done:
                 action0 = exploration.explore(agent.get_action(state0))
                 next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
+                reward = self.transform_reward(reward)
                 state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
 
                 agent.train(state0, action0, state1, reward, done)
