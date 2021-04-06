@@ -83,7 +83,7 @@ class ExperimentDDPG:
         reward_avg = RunningAverageWindow(100)
 
         bar = ProgressBar(config.steps * 1e6, max_width=40)
-        exploration = GaussianExploration(config.sigma, 0.01, config.steps * 1e6)
+        exploration = GaussianExploration(config.sigma, 0.01, config.steps * config.exploration_time * 1e6)
 
         while steps < step_limit:
             if config.check('collect_stats'):
@@ -161,7 +161,7 @@ class ExperimentDDPG:
         reward_avg = RunningAverageWindow(100)
 
         bar = ProgressBar(config.steps * 1e6, max_width=40)
-        exploration = GaussianExploration(config.sigma, 0.01, config.steps * 1e6)
+        exploration = GaussianExploration(config.sigma, 0.01, config.steps * config.exploration_time * 1e6)
 
         # reducer = umap.UMAP()
 
@@ -239,7 +239,7 @@ class ExperimentDDPG:
         reward_avg = RunningAverageWindow(100)
 
         bar = ProgressBar(config.steps * 1e6, max_width=40)
-        exploration = GaussianExploration(config.sigma, 0.01, config.steps * 1e6)
+        exploration = GaussianExploration(config.sigma, 0.01, config.steps * config.exploration_time * 1e6)
 
         while steps < step_limit:
             state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0)
@@ -315,7 +315,7 @@ class ExperimentDDPG:
         reward_avg = RunningAverageWindow(100)
 
         bar = ProgressBar(config.steps * 1e6, max_width=40)
-        exploration = GaussianExploration(config.sigma, 0.01, config.steps * 1e6)
+        exploration = GaussianExploration(config.sigma, 0.01, config.steps * config.exploration_time * 1e6)
 
         while steps < step_limit:
             state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0)
@@ -392,7 +392,7 @@ class ExperimentDDPG:
         reward_avg = RunningAverageWindow(100)
 
         bar = ProgressBar(config.steps * 1e6, max_width=40)
-        exploration = GaussianExploration(config.sigma, 0.01, config.steps * 1e6)
+        exploration = GaussianExploration(config.sigma, 0.01, config.steps * config.exploration_time * 1e6)
 
         while steps < step_limit:
             state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0)
@@ -482,7 +482,7 @@ class ExperimentDDPG:
         reward_avg = RunningAverageWindow(100)
 
         bar = ProgressBar(config.steps * 1e6, max_width=40)
-        exploration = GaussianExploration(config.sigma, 0.01, config.steps * 1e6)
+        exploration = GaussianExploration(config.sigma, 0.01, config.steps * config.exploration_time * 1e6)
 
         while steps < step_limit:
             if config.check('collect_stats'):
@@ -574,7 +574,7 @@ class ExperimentDDPG:
         reward_avg = RunningAverageWindow(100)
 
         bar = ProgressBar(config.steps * 1e6, max_width=40)
-        exploration = GaussianExploration(config.sigma, 0.01, config.steps * 1e6)
+        exploration = GaussianExploration(config.sigma, 0.01, config.steps * config.exploration_time * 1e6)
 
         while steps < step_limit:
             state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0)
@@ -643,7 +643,7 @@ class ExperimentDDPG:
         reward_avg = RunningAverageWindow(100)
 
         bar = ProgressBar(config.steps * 1e6, max_width=40)
-        exploration = GaussianExploration(config.sigma, 0.01, config.steps * 1e6)
+        exploration = GaussianExploration(config.sigma, 0.01, config.steps * config.exploration_time * 1e6)
 
         while steps < step_limit:
             state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0)
@@ -712,7 +712,7 @@ class ExperimentDDPG:
         reward_avg = RunningAverageWindow(100)
 
         bar = ProgressBar(config.steps * 1e6, max_width=40)
-        exploration = GaussianExploration(config.sigma, 0.01, config.steps * 1e6)
+        exploration = GaussianExploration(config.sigma, 0.01, config.steps * config.exploration_time * 1e6)
 
         while steps < step_limit:
             state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0)
@@ -729,7 +729,6 @@ class ExperimentDDPG:
                 action0 = exploration.explore(agent.get_action(state0))
                 next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
                 state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
-                reward_avg.update(reward)
 
                 weight = agent.motivation.weight(agent.compose_gate_state(im0, error0))
                 im1 = agent.motivation.reward(state0, action0, weight, state1)
@@ -752,6 +751,7 @@ class ExperimentDDPG:
             bar.numerator = steps
             exploration.update(steps)
 
+            reward_avg.update(reward)
             train_ext_rewards.append([train_steps, train_ext_reward])
             train_int_rewards.append([train_steps, train_int_reward])
 
@@ -784,7 +784,7 @@ class ExperimentDDPG:
         reward_avg = RunningAverageWindow(100)
 
         bar = ProgressBar(config.steps * 1e6, max_width=40)
-        exploration = GaussianExploration(config.sigma, 0.01, config.steps * 1e6)
+        exploration = GaussianExploration(config.sigma, 0.01, config.steps * config.exploration_time * 1e6)
 
         while steps < step_limit:
             state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0)
@@ -797,7 +797,6 @@ class ExperimentDDPG:
                 action0 = exploration.explore(agent.get_action(state0))
                 next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
                 state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
-                reward_avg.update(reward)
 
                 agent.train(state0, action0, state1, reward, done)
                 train_steps += 1
@@ -815,6 +814,7 @@ class ExperimentDDPG:
             bar.numerator = steps
             exploration.update(steps)
 
+            reward_avg.update(reward)
             train_ext_rewards.append([train_steps, train_ext_reward])
             train_int_rewards.append([train_steps, train_int_reward])
 
