@@ -13,7 +13,7 @@ from pyclustering.cluster.kmeans import kmeans, kmeans_visualizer
 
 from exploration.ContinuousExploration import GaussianExploration
 from utils import stratify_sampling
-from utils.RunningAverageWindow import RunningAverageWindow
+from utils.RunningAverage import RunningAverageWindow
 
 
 class ExperimentDDPG:
