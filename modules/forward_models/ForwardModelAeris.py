@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 from torch.nn import *
+import numpy as np
 
 
 class ForwardModelAeris(nn.Module):
@@ -12,37 +13,26 @@ class ForwardModelAeris(nn.Module):
 
         channels = input_shape[0]
 
-        self.layers = [
+        self.model = nn.Sequential(
             nn.Conv1d(channels + action_dim, config.forward_model_kernels_count, kernel_size=8, stride=4, padding=2),
             nn.LeakyReLU(),
-            nn.Conv1d(config.forward_model_kernels_count, config.forward_model_kernels_count, kernel_size=3, stride=1, padding=1),
+            nn.Conv1d(config.forward_model_kernels_count, config.forward_model_kernels_count * 2, kernel_size=4, stride=2, padding=1),
             nn.LeakyReLU(),
-            nn.Conv1d(config.forward_model_kernels_count, config.forward_model_kernels_count, kernel_size=3, stride=1, padding=1),
+            nn.Conv1d(config.forward_model_kernels_count * 2, config.forward_model_kernels_count * 2, kernel_size=3, stride=1, padding=0),
             nn.LeakyReLU(),
-            nn.Conv1d(config.forward_model_kernels_count, config.forward_model_kernels_count, kernel_size=2, stride=2, padding=0),
+            nn.ConvTranspose1d(config.forward_model_kernels_count * 2, config.forward_model_kernels_count * 2, kernel_size=3, stride=1, padding=0),
             nn.LeakyReLU(),
-            nn.Conv1d(config.forward_model_kernels_count, config.forward_model_kernels_count, kernel_size=3, stride=1, padding=1),
+            nn.ConvTranspose1d(config.forward_model_kernels_count * 2, config.forward_model_kernels_count, kernel_size=4, stride=2, padding=1),
             nn.LeakyReLU(),
-            nn.Conv1d(config.forward_model_kernels_count, config.forward_model_kernels_count, kernel_size=3, stride=1, padding=1),
-            nn.LeakyReLU(),
-            nn.ConvTranspose1d(config.forward_model_kernels_count, config.forward_model_kernels_count, kernel_size=2, stride=2, padding=0, output_padding=0),
-            nn.LeakyReLU(),
-            nn.ConvTranspose1d(config.forward_model_kernels_count, config.forward_model_kernels_count, kernel_size=8, stride=4, padding=2, output_padding=0),
-            nn.LeakyReLU(),
-            nn.Conv1d(config.forward_model_kernels_count, channels, kernel_size=3, stride=1, padding=1)
-        ]
+            nn.ConvTranspose1d(config.forward_model_kernels_count, channels, kernel_size=8, stride=4, padding=2)
+        )
 
-        nn.init.xavier_uniform_(self.layers[0].weight)
-        nn.init.xavier_uniform_(self.layers[2].weight)
-        nn.init.xavier_uniform_(self.layers[4].weight)
-        nn.init.xavier_uniform_(self.layers[6].weight)
-        nn.init.xavier_uniform_(self.layers[8].weight)
-        nn.init.xavier_uniform_(self.layers[10].weight)
-        nn.init.xavier_uniform_(self.layers[12].weight)
-        nn.init.xavier_uniform_(self.layers[14].weight)
-        nn.init.xavier_uniform_(self.layers[16].weight)
-
-        self.model = Sequential(*self.layers)
+        self._init(self.model[0], np.sqrt(2))
+        self._init(self.model[2], np.sqrt(2))
+        self._init(self.model[4], np.sqrt(2))
+        self._init(self.model[6], np.sqrt(2))
+        self._init(self.model[8], np.sqrt(2))
+        self._init(self.model[10], np.sqrt(2))
 
     def forward(self, state, action):
         a = action.unsqueeze(2).repeat(1, 1, state.shape[2])
@@ -62,6 +52,10 @@ class ForwardModelAeris(nn.Module):
     def loss_function(self, state, action, next_state):
         loss = nn.functional.mse_loss(self(state, action), next_state)
         return loss
+
+    def _init(self, layer, gain):
+        nn.init.orthogonal_(layer.weight, gain)
+        layer.bias.data.zero_()
 
 
 class ForwardModelEncoderAeris(nn.Module):
