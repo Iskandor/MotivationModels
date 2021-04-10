@@ -1829,9 +1829,9 @@
       "batch_size": 64,
       "memory_size": 100000,
       "actor_lr": 0.0001,
-      "actor_h": "64,64",
+      "actor_h": "32,32",
       "critic_lr": 0.0002,
-      "critic_h": "256,256"
+      "critic_h": "512,256"
     },
     "2": {
       "model": "baseline",
@@ -1847,7 +1847,7 @@
       "actor_lr": 0.0001,
       "actor_h": "32,32",
       "critic_lr": 0.0002,
-      "critic_h": "256,256"
+      "critic_h": "512,512"
     },
     "3": {
       "model": "baseline",
@@ -1861,9 +1861,9 @@
       "batch_size": 64,
       "memory_size": 100000,
       "actor_lr": 0.0001,
-      "actor_h": "64,64",
+      "actor_h": "32,32",
       "critic_lr": 0.0002,
-      "critic_h": "128,128"
+      "critic_h": "1024,512"
     },
     "4": {
       "model": "baseline",
@@ -1879,7 +1879,7 @@
       "actor_lr": 0.0001,
       "actor_h": "32,32",
       "critic_lr": 0.0002,
-      "critic_h": "128,128"
+      "critic_h": "1024,1024"
     },
     "5": {
       "model": "fm",
