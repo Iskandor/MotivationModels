@@ -5,8 +5,10 @@ from torch import nn
 
 from modules.encoders.EncoderAeris import EncoderAeris
 from modules.forward_models.ForwardModelAeris import ForwardModelAeris, ForwardModelEncoderAeris
+from modules.forward_models.ForwardModelBullet import ForwardModelBullet
 from modules.inverse_models.InverseModelAeris import InverseModelAeris
 from modules.metacritic_models.MetaCriticModelAeris import MetaCriticModelAeris, MetaCriticRNDModelAeris
+from modules.metacritic_models.MetaCriticModelBullet import MetaCriticModelBullet
 from modules.rnd_models.RNDModelAeris import RNDModelAeris
 
 
@@ -176,7 +178,13 @@ class DDPGBulletNetwork(DDPGNetwork):
 class DDPGBulletNetworkFM(DDPGBulletNetwork):
     def __init__(self, state_dim, action_dim, config):
         super(DDPGBulletNetworkFM, self).__init__(state_dim, action_dim, config)
-        self.forward_model = ForwardModelAeris(state_dim, action_dim, config)
+        self.forward_model = ForwardModelBullet(state_dim, action_dim, config)
+
+
+class DDPGBulletNetworkSU(DDPGBulletNetworkFM):
+    def __init__(self, state_dim, action_dim, config):
+        super(DDPGBulletNetworkSU, self).__init__(state_dim, action_dim, config)
+        self.metacritic_model = MetaCriticModelBullet(self.forward_model, state_dim, action_dim, config)
 
 
 class DDPGAerisNetwork(DDPGNetwork):
