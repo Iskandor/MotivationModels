@@ -148,14 +148,11 @@ class DDPGBulletNetwork(DDPGNetwork):
             nn.ReLU(),
             nn.Linear(critic_h[0], critic_h[1]),
             nn.ReLU(),
-            nn.Linear(critic_h[1], critic_h[2]),
-            nn.ReLU(),
-            nn.Linear(critic_h[2], 1))
+            nn.Linear(critic_h[1], 1))
 
         nn.init.xavier_uniform_(self.critic[0].weight)
         nn.init.xavier_uniform_(self.critic[2].weight)
-        nn.init.xavier_uniform_(self.critic[4].weight)
-        nn.init.uniform_(self.critic[6].weight, -0.003, 0.003)
+        nn.init.uniform_(self.critic[4].weight, -0.003, 0.003)
 
         actor_h = [int(x) for x in config.actor_h.split(',')]
 
@@ -164,19 +161,22 @@ class DDPGBulletNetwork(DDPGNetwork):
             nn.ReLU(),
             nn.Linear(actor_h[0], actor_h[1]),
             nn.ReLU(),
-            nn.Linear(actor_h[1], actor_h[2]),
-            nn.ReLU(),
-            nn.Linear(actor_h[2], action_dim),
+            nn.Linear(actor_h[1], action_dim),
             nn.Tanh())
 
         nn.init.xavier_uniform_(self.actor[0].weight)
         nn.init.xavier_uniform_(self.actor[2].weight)
-        nn.init.xavier_uniform_(self.actor[4].weight)
-        nn.init.uniform_(self.actor[6].weight, -0.3, 0.3)
+        nn.init.uniform_(self.actor[4].weight, -0.3, 0.3)
 
         self.critic_target = copy.deepcopy(self.critic)
         self.actor_target = copy.deepcopy(self.actor)
         self.hard_update()
+
+
+class DDPGBulletNetworkFM(DDPGBulletNetwork):
+    def __init__(self, state_dim, action_dim, config):
+        super(DDPGBulletNetworkFM, self).__init__(state_dim, action_dim, config)
+        self.forward_model = ForwardModelAeris(state_dim, action_dim, config)
 
 
 class DDPGAerisNetwork(DDPGNetwork):
