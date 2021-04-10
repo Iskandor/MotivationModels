@@ -260,9 +260,9 @@ if __name__ == '__main__':
             experiment.trials = 1
 
         if args.parallel:
+            num_cpus = psutil.cpu_count(logical=True)
+            print('Running parallel on {0} CPUs'.format(num_cpus))
             if args.parallel_backend == 'ray':
-                num_cpus = psutil.cpu_count(logical=True)
-                print('Running parallel on {0} CPUs'.format(num_cpus))
                 ray.init(num_cpus=num_cpus)
                 torch.set_num_threads(num_cpus // experiment.trials)
 
@@ -270,6 +270,7 @@ if __name__ == '__main__':
                 # write_command_file(args, experiment)
                 # run_command_file()
             elif args.parallel_backend == 'torch':
+                torch.set_num_threads(1)
                 run_torch_parallel(args, experiment)
         else:
             for i in range(experiment.trials):
