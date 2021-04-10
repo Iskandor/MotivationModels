@@ -237,7 +237,8 @@ if __name__ == '__main__':
     parser.add_argument('--gpus', help='device ids', default=None)
     parser.add_argument('--load', type=str, help='path to saved agent', default='')
     parser.add_argument('-s', '--shift', type=int, help='shift result id', default=0)
-    parser.add_argument('-p', '--parallel', action="store_true", help='run envs in parallel')
+    parser.add_argument('-p', '--parallel', action="store_true", help='run envs in parallel mode')
+    parser.add_argument('-pb', '--parallel_backend', type=str, default='ray', choices=['ray', 'torch'], help='parallel backend')
     parser.add_argument('-t', '--thread', action="store_true", help='do not use: technical parameter for parallel run')
 
     args = parser.parse_args()
@@ -252,22 +253,24 @@ if __name__ == '__main__':
     experiment.shift = args.shift
 
     if args.load != '':
-        env_class = set_env_class(args.env, experiment)
+        env_class = set_env_class(args.algorithm, args.env, experiment)
         env_class.test(experiment, args.load)
     else:
         if args.thread:
             experiment.trials = 1
 
         if args.parallel:
-            num_cpus = psutil.cpu_count(logical=True)
-            print('Running parallel on {0} CPUs'.format(num_cpus))
-            ray.init(num_cpus=num_cpus)
-            torch.set_num_threads(num_cpus // experiment.trials)
+            if args.parallel_backend == 'ray':
+                num_cpus = psutil.cpu_count(logical=True)
+                print('Running parallel on {0} CPUs'.format(num_cpus))
+                ray.init(num_cpus=num_cpus)
+                torch.set_num_threads(num_cpus // experiment.trials)
 
-            run_parallel(args, experiment)
-            # write_command_file(args, experiment)
-            # run_command_file()
-            # run_torch_parallel(args, experiment)
+                run_parallel(args, experiment)
+                # write_command_file(args, experiment)
+                # run_command_file()
+            elif args.parallel_backend == 'torch':
+                run_torch_parallel(args, experiment)
         else:
             for i in range(experiment.trials):
                 run(args.algorithm, args.env, experiment, i)

@@ -3,7 +3,7 @@ import torch
 from algorithms.DDPG2 import DDPG2
 from algorithms.ReplayBuffer import ExperienceReplayBuffer, M2ReplayBuffer
 from modules.DDPG_Modules import DDPGSimpleNetwork, DDPGAerisNetwork, DDPGAerisNetworkFM, DDPGAerisNetworkFME, DDPGAerisNetworkIM, DDPGAerisNetworkM2, DDPGAerisNetworkFIM, DDPGAerisNetworkSU, \
-    DDPGAerisNetworkRND, DDPGAerisNetworkSURND
+    DDPGAerisNetworkRND, DDPGAerisNetworkSURND, DDPGBulletNetwork
 from motivation.ForwardInverseModelMotivation import ForwardInverseModelMotivation
 from motivation.ForwardModelMotivation import ForwardModelMotivation
 from motivation.M2Motivation import M2Motivation
@@ -39,6 +39,19 @@ class DDPGSimpleAgent(DDPGAgent):
     def __init__(self, state_dim, action_dim, config):
         super().__init__(state_dim, action_dim, config)
         self.network = DDPGSimpleNetwork(state_dim, action_dim, config)
+        self.memory = ExperienceReplayBuffer(config.memory_size)
+        self.algorithm = DDPG2(self.network, config.actor_lr, config.critic_lr, config.gamma, config.tau, self.memory, config.batch_size)
+
+    def train(self, state0, action0, state1, reward, mask):
+        self.memory.add(state0, action0, state1, reward, mask)
+        indices = self.memory.indices(self.config.batch_size)
+        self.algorithm.train_sample(indices)
+
+
+class DDPGBulletAgent(DDPGAgent):
+    def __init__(self, state_dim, action_dim, config):
+        super().__init__(state_dim, action_dim, config)
+        self.network = DDPGBulletNetwork(state_dim, action_dim, config)
         self.memory = ExperienceReplayBuffer(config.memory_size)
         self.algorithm = DDPG2(self.network, config.actor_lr, config.critic_lr, config.gamma, config.tau, self.memory, config.batch_size)
 

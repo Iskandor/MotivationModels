@@ -91,7 +91,8 @@ class DDPGNetwork(nn.Module):
         self.actor_target = None
 
     def value(self, state, action):
-        value = self.critic(state, action)
+        x = torch.cat([state, action], dim=1)
+        value = self.critic(x)
         return value
 
     def action(self, state):
@@ -99,7 +100,8 @@ class DDPGNetwork(nn.Module):
         return policy
 
     def value_target(self, state, action):
-        value = self.critic_target(state, action)
+        x = torch.cat([state, action], dim=1)
+        value = self.critic_target(x)
         return value
 
     def action_target(self, state):
@@ -130,6 +132,48 @@ class DDPGSimpleNetwork(DDPGNetwork):
         super(DDPGSimpleNetwork, self).__init__()
         self.critic = Critic(input_shape, action_dim, config)
         self.actor = Actor(input_shape, action_dim, config)
+        self.critic_target = copy.deepcopy(self.critic)
+        self.actor_target = copy.deepcopy(self.actor)
+        self.hard_update()
+
+
+class DDPGBulletNetwork(DDPGNetwork):
+    def __init__(self, state_dim, action_dim, config):
+        super(DDPGBulletNetwork, self).__init__()
+
+        critic_h = [int(x) for x in config.critic_h.split(',')]
+
+        self.critic = nn.Sequential(
+            nn.Linear(state_dim + action_dim, critic_h[0]),
+            nn.ReLU(),
+            nn.Linear(critic_h[0], critic_h[1]),
+            nn.ReLU(),
+            nn.Linear(critic_h[1], critic_h[2]),
+            nn.ReLU(),
+            nn.Linear(critic_h[2], 1))
+
+        nn.init.xavier_uniform_(self.critic[0].weight)
+        nn.init.xavier_uniform_(self.critic[2].weight)
+        nn.init.xavier_uniform_(self.critic[4].weight)
+        nn.init.uniform_(self.critic[6].weight, -0.003, 0.003)
+
+        actor_h = [int(x) for x in config.actor_h.split(',')]
+
+        self.actor = nn.Sequential(
+            nn.Linear(state_dim, actor_h[0]),
+            nn.ReLU(),
+            nn.Linear(actor_h[0], actor_h[1]),
+            nn.ReLU(),
+            nn.Linear(actor_h[1], actor_h[2]),
+            nn.ReLU(),
+            nn.Linear(actor_h[2], action_dim),
+            nn.Tanh())
+
+        nn.init.xavier_uniform_(self.actor[0].weight)
+        nn.init.xavier_uniform_(self.actor[2].weight)
+        nn.init.xavier_uniform_(self.actor[4].weight)
+        nn.init.uniform_(self.actor[6].weight, -0.3, 0.3)
+
         self.critic_target = copy.deepcopy(self.critic)
         self.actor_target = copy.deepcopy(self.actor)
         self.hard_update()
