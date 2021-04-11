@@ -89,6 +89,7 @@ class DDPGBulletGatedMetacriticModelAgent(DDPGAgent):
         self.algorithm.train_sample(self.memory.indices(self.config.batch_size))
         self.motivation.train(self.memory.indices(self.config.motivation_batch_size))
 
+
 class DDPGAerisAgent(DDPGAgent):
     def __init__(self, state_dim, action_dim, config):
         super().__init__(state_dim, action_dim, config)
@@ -107,7 +108,8 @@ class DDPGAerisForwardModelAgent(DDPGAgent):
         super().__init__(state_dim, action_dim, config)
         self.network = DDPGAerisNetworkFM(state_dim, action_dim, config)
         self.memory = ExperienceReplayBuffer(config.memory_size)
-        self.motivation = ForwardModelMotivation(self.network.forward_model, config.forward_model_lr, config.forward_model_eta, config.forward_model_variant, self.memory, config.forward_model_batch_size,
+        self.motivation = ForwardModelMotivation(self.network.forward_model, config.forward_model_lr, config.forward_model_eta, config.forward_model_variant, self.memory,
+                                                 config.forward_model_batch_size,
                                                  config.device)
         self.algorithm = DDPG2(self.network, config.actor_lr, config.critic_lr, config.gamma, config.tau, self.memory, config.batch_size, self.motivation)
 
@@ -122,7 +124,8 @@ class DDPGAerisForwardModelEncoderAgent(DDPGAgent):
         super().__init__(state_dim, action_dim, config)
         self.network = DDPGAerisNetworkFME(state_dim, action_dim, config)
         self.memory = ExperienceReplayBuffer(config.memory_size)
-        self.motivation = ForwardModelMotivation(self.network.forward_model, config.forward_model_lr, config.forward_model_eta, config.forward_model_variant, self.memory, config.forward_model_batch_size,
+        self.motivation = ForwardModelMotivation(self.network.forward_model, config.forward_model_lr, config.forward_model_eta, config.forward_model_variant, self.memory,
+                                                 config.forward_model_batch_size,
                                                  config.device)
         self.algorithm = DDPG2(self.network, config.actor_lr, config.critic_lr, config.gamma, config.tau, self.memory, config.batch_size, self.motivation)
 
@@ -137,7 +140,8 @@ class DDPGAerisInverseModelAgent(DDPGAgent):
         super().__init__(state_dim, action_dim, config)
         self.network = DDPGAerisNetworkIM(state_dim, action_dim, config)
         self.memory = ExperienceReplayBuffer(config.memory_size)
-        self.motivation = ForwardModelMotivation(self.network.inverse_model, config.forward_model_lr, config.forward_model_eta, config.forward_model_variant, self.memory, config.forward_model_batch_size,
+        self.motivation = ForwardModelMotivation(self.network.inverse_model, config.forward_model_lr, config.forward_model_eta, config.forward_model_variant, self.memory,
+                                                 config.forward_model_batch_size,
                                                  config.device)
         self.algorithm = DDPG2(self.network, config.actor_lr, config.critic_lr, config.gamma, config.tau, self.memory, config.batch_size, self.motivation)
 
