@@ -148,8 +148,6 @@ class PPOAtariNetwork(torch.nn.Module):
         self.input_shape = input_shape
         self.action_dim = action_dim
         input_channels = self.input_shape[0]
-        input_height = self.input_shape[1]
-        input_width = self.input_shape[2]
         self.feature_dim = 448
 
         self.layers_features = [
@@ -160,7 +158,7 @@ class PPOAtariNetwork(torch.nn.Module):
             nn.Conv2d(64, 64, kernel_size=3, stride=1),
             nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(7 * 7 * 64, 256),
+            nn.Linear(8 * 8 * 64, 256),
             nn.ReLU(),
             nn.Linear(256, self.feature_dim),
             nn.ReLU()
@@ -175,7 +173,7 @@ class PPOAtariNetwork(torch.nn.Module):
         self.layers_value = [
             torch.nn.Linear(self.feature_dim, self.feature_dim),
             torch.nn.ReLU(),
-            torch.nn.Linear(config.feature_dim, 1)
+            torch.nn.Linear(self.feature_dim, 1)
         ]
 
         self._init(self.layers_value[0], 0.1)
