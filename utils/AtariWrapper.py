@@ -109,6 +109,7 @@ class EpisodicLifeEnv(gym.Wrapper):
 
     def step(self, action):
         obs, reward, done, info = self.env.step(action)
+        info['raw_score'] = reward
         self.was_real_done = done
 
         self.raw_score += reward

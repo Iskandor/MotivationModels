@@ -5,6 +5,8 @@ import torch
 from etaprogress.progress import ProgressBar
 from gym.wrappers.monitoring.video_recorder import VideoRecorder
 
+from utils.RunningAverage import RunningAverageWindow
+
 
 class ExperimentNEnvPPO:
     def __init__(self, env_name, env_list, config):
@@ -61,6 +63,7 @@ class ExperimentNEnvPPO:
         train_ext_rewards = []
         train_ext_reward = [0] * n_env
         train_steps = [0] * n_env
+        reward_avg = RunningAverageWindow(100)
 
         s = [None] * n_env
         v = [None] * n_env
@@ -82,7 +85,10 @@ class ExperimentNEnvPPO:
                 if done:
                     mask = 0
 
-                train_ext_reward[i] += reward
+                if 'raw_score' in info:
+                    train_ext_reward[i] += info['raw_score']
+                else:
+                    train_ext_reward[i] += reward
                 train_steps[i] += 1
                 ns[i] = next_state
                 r[i] = reward
@@ -96,7 +102,7 @@ class ExperimentNEnvPPO:
                     train_ext_rewards.append([train_steps[i], train_ext_reward[i]])
                     bar.numerator = steps
 
-                    print('Run {0:d} step {1:d} training [ext. reward {2:f} steps {3:d}]'.format(trial, steps, train_ext_reward[i], train_steps[i]))
+                    print('Run {0:d} step {1:d} training [ext. reward {2:f} steps {3:d}] avg. reward {4:f}'.format(trial, steps, train_ext_reward[i], train_steps[i], reward_avg.value()))
                     print(bar)
 
                     train_ext_reward[i] = 0
@@ -108,6 +114,7 @@ class ExperimentNEnvPPO:
 
             state1 = self.process_state(numpy.stack(ns))
             reward = torch.tensor(numpy.stack(r), dtype=torch.float32)
+            reward_avg.update(reward.mean())
             done = torch.tensor(numpy.stack(d), dtype=torch.float32)
 
             agent.train_n_env(state0, value, action0, probs0, state1, reward, done)

@@ -28,14 +28,18 @@ import DDPG_Noisy_LunarLander
 import DDPG_Noisy_Reacher
 import DDPG_Reacher
 import PPO_CartPole
+import PPO_Gravitar
 import PPO_LunarLander
 import PPO_MidnightResistance
 import PPO_Montezuma
 import PPO_MountainCar
 import PPO_Pacman
 import PPO_Pendulum
+import PPO_Pitfall
+import PPO_PrivateEye
 import PPO_QBert
 import PPO_Solaris
+import PPO_Venture
 from config import load_config_file
 from config.Config import Config
 
@@ -88,14 +92,23 @@ def set_env_class_ddpg(env, experiment):
 def set_env_class_ppo(env):
     env_class = None
 
+    if env == "gravitar":
+        env_class = PPO_Gravitar
+    if env == "montezuma":
+        env_class = PPO_Montezuma
+    if env == "pitfall":
+        env_class = PPO_Pitfall
+    if env == "private_eye":
+        env_class = PPO_PrivateEye
     if env == "solaris":
         env_class = PPO_Solaris
+    if env == "venture":
+        env_class = PPO_Venture
+
     if env == "qbert":
         env_class = PPO_QBert
     if env == "mspacman":
         env_class = PPO_Pacman
-    if env == "montezuma":
-        env_class = PPO_Montezuma
     if env == "midnight_resistance":
         env_class = PPO_MidnightResistance
     if env == "cart_pole":

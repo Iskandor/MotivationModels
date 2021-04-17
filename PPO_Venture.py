@@ -18,11 +18,11 @@ def encode_state(state):
 
 
 def test(config, path):
-    env = WrapperAtari(gym.make('MontezumaRevenge-v0'))
+    env = WrapperAtari(gym.make('Venture-v0'))
     input_shape = env.observation_space.shape
     action_dim = env.action_space.n
 
-    experiment = ExperimentPPO('MontezumaRevenge-v0', env, config)
+    experiment = ExperimentPPO('Venture-v0', env, config)
     experiment.add_preprocess(encode_state)
 
     agent = PPOAtariAgent(input_shape, action_dim, config, TYPE.discrete)
@@ -33,7 +33,7 @@ def test(config, path):
 
 
 def run_baseline(config, trial):
-    env = WrapperAtari(gym.make('MontezumaRevenge-v0'))
+    env = WrapperAtari(gym.make('Venture-v0'))
     input_shape = env.observation_space.shape
     action_dim = env.action_space.n
 
@@ -41,12 +41,12 @@ def run_baseline(config, trial):
         env_list = []
         print('Creating {0:d} environments'.format(config.n_env))
         for i in range(config.n_env):
-            env_list.append(WrapperAtari(gym.make('MontezumaRevenge-v0')))
+            env_list.append(WrapperAtari(gym.make('Venture-v0')))
 
         print('Start training')
-        experiment = ExperimentNEnvPPO('MontezumaRevenge-v0', env_list, config)
+        experiment = ExperimentNEnvPPO('Venture-v0', env_list, config)
     else:
-        experiment = ExperimentPPO('MontezumaRevenge-v0', env, config)
+        experiment = ExperimentPPO('Venture-v0', env, config)
         experiment.add_preprocess(encode_state)
 
     agent = PPOAtariAgent(input_shape, action_dim, config, TYPE.discrete)

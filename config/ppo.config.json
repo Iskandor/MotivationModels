@@ -187,7 +187,7 @@
       "model": "baseline",
       "n_env": 8,
       "trials": 1,
-      "steps": 0.25,
+      "steps": 1,
       "gamma": 0.99,
       "beta": 0.001,
       "batch_size": 128,
@@ -202,6 +202,24 @@
       "critic_h2": 128
     },
     "2": {
+      "model": "baseline",
+      "n_env": 64,
+      "trials": 1,
+      "steps": 0.125,
+      "gamma": 0.99,
+      "beta": 0.001,
+      "batch_size": 16,
+      "trajectory_size": 128,
+      "ppo_epochs": 4,
+      "lr": 0.0002,
+      "actor_loss_weight": 0.5,
+      "actor_h1": 256,
+      "actor_h2": 128,
+      "critic_loss_weight": 1,
+      "critic_h1": 256,
+      "critic_h2": 128
+    },
+    "3": {
       "model": "fm",
       "n_env": 64,
       "trials": 1,
@@ -225,7 +243,7 @@
       "forward_model_variant": "A",
       "forward_model_batch_size": 32
     },
-    "3": {
+    "4": {
       "descriptor": "with priors",
       "model": "fm",
       "n_env": 64,
@@ -249,80 +267,6 @@
       "forward_model_eta": 1,
       "forward_model_variant": "A",
       "forward_model_batch_size": 32
-    }
-  },
-  "montezuma": {
-    "1": {
-      "model": "baseline",
-      "n_env": 128,
-      "trials": 1,
-      "steps": 1,
-      "gamma": 0.99,
-      "beta": 0.001,
-      "batch_size": 8,
-      "trajectory_size": 128,
-      "ppo_epochs": 4,
-      "lr": 0.0002,
-      "actor_loss_weight": 0.5,
-      "actor_h1": 64,
-      "actor_h2": 32,
-      "critic_loss_weight": 1,
-      "critic_h1": 256,
-      "critic_h2": 128
-    },
-    "2": {
-      "model": "baseline",
-      "n_env": 128,
-      "trials": 1,
-      "steps": 1,
-      "gamma": 0.99,
-      "beta": 0.001,
-      "batch_size": 8,
-      "trajectory_size": 128,
-      "ppo_epochs": 4,
-      "lr": 0.0002,
-      "actor_loss_weight": 0.5,
-      "actor_h1": 64,
-      "actor_h2": 32,
-      "critic_loss_weight": 1,
-      "critic_h1": 256,
-      "critic_h2": 256
-    },
-    "3": {
-      "model": "baseline",
-      "n_env": 128,
-      "trials": 1,
-      "steps": 1,
-      "gamma": 0.99,
-      "beta": 0.001,
-      "batch_size": 8,
-      "trajectory_size": 128,
-      "ppo_epochs": 4,
-      "lr": 0.0002,
-      "actor_loss_weight": 0.5,
-      "actor_h1": 64,
-      "actor_h2": 32,
-      "critic_loss_weight": 1,
-      "critic_h1": 256,
-      "critic_h2": 512
-    },
-    "4": {
-      "model": "baseline",
-      "n_env": 128,
-      "trials": 1,
-      "steps": 1,
-      "gamma": 0.99,
-      "beta": 0.001,
-      "batch_size": 8,
-      "trajectory_size": 128,
-      "ppo_epochs": 4,
-      "lr": 0.0002,
-      "actor_loss_weight": 0.5,
-      "actor_h1": 64,
-      "actor_h2": 32,
-      "critic_loss_weight": 1,
-      "critic_h1": 512,
-      "critic_h2": 512
     }
   },
   "qbert": {
@@ -414,6 +358,102 @@
       "critic_loss_weight": 1,
       "critic_h1": 64,
       "critic_h2": 32
+    }
+  },
+  "gravitar": {
+    "1": {
+      "model": "baseline",
+      "n_env": 128,
+      "trials": 1,
+      "steps": 0.5,
+      "gamma": 0.99,
+      "beta": 0.001,
+      "batch_size": 8,
+      "trajectory_size": 128,
+      "ppo_epochs": 4,
+      "lr": 0.0002,
+      "actor_loss_weight": 0.5,
+      "critic_loss_weight": 1
+    }
+  },
+  "montezuma": {
+    "1": {
+      "model": "baseline",
+      "n_env": 128,
+      "trials": 1,
+      "steps": 0.5,
+      "gamma": 0.99,
+      "beta": 0.001,
+      "batch_size": 8,
+      "trajectory_size": 128,
+      "ppo_epochs": 4,
+      "lr": 0.0002,
+      "actor_loss_weight": 0.5,
+      "critic_loss_weight": 1
+    }
+  },
+  "private_eye": {
+    "1": {
+      "model": "baseline",
+      "n_env": 128,
+      "trials": 1,
+      "steps": 0.5,
+      "gamma": 0.99,
+      "beta": 0.001,
+      "batch_size": 8,
+      "trajectory_size": 128,
+      "ppo_epochs": 4,
+      "lr": 0.0002,
+      "actor_loss_weight": 0.5,
+      "critic_loss_weight": 1
+    }
+  },
+  "pitfall": {
+    "1": {
+      "model": "baseline",
+      "n_env": 128,
+      "trials": 1,
+      "steps": 0.5,
+      "gamma": 0.99,
+      "beta": 0.001,
+      "batch_size": 8,
+      "trajectory_size": 128,
+      "ppo_epochs": 4,
+      "lr": 0.0002,
+      "actor_loss_weight": 0.5,
+      "critic_loss_weight": 1
+    }
+  },
+  "solaris": {
+    "1": {
+      "model": "baseline",
+      "n_env": 128,
+      "trials": 1,
+      "steps": 0.5,
+      "gamma": 0.99,
+      "beta": 0.001,
+      "batch_size": 8,
+      "trajectory_size": 128,
+      "ppo_epochs": 4,
+      "lr": 0.0002,
+      "actor_loss_weight": 0.5,
+      "critic_loss_weight": 1
+    }
+  },
+  "venture": {
+    "1": {
+      "model": "baseline",
+      "n_env": 128,
+      "trials": 1,
+      "steps": 0.5,
+      "gamma": 0.99,
+      "beta": 0.001,
+      "batch_size": 8,
+      "trajectory_size": 128,
+      "ppo_epochs": 4,
+      "lr": 0.0002,
+      "actor_loss_weight": 0.5,
+      "critic_loss_weight": 1
     }
   }
 }
