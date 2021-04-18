@@ -114,14 +114,14 @@ class PPO:
                 intrinsic_reward = None
                 if self._motivation:
                     next_states = torch.stack(next_states).squeeze(1)
-                    next_states_t.append(next_states)
+                    next_states_t.append(next_states[:-1])
                     intrinsic_reward = self.calc_int_reward(states, actions, next_states)
 
                 adv_values, ref_values = self.calc_advantage(values, rewards, dones, intrinsic_reward)
 
-                states_t.append(states)
-                actions_t.append(actions)
-                probs_t.append(probs)
+                states_t.append(states[:-1])
+                actions_t.append(actions[:-1])
+                probs_t.append(probs[:-1])
                 adv_values_t.append(adv_values)
                 ref_values_t.append(ref_values)
 
@@ -141,19 +141,19 @@ class PPO:
     def _train(self, states, next_states, actions, probs, adv_values, ref_values):
         adv_values = (adv_values - torch.mean(adv_values)) / torch.std(adv_values)
 
-        trajectory = self._trajectory[:-1]
+        trajectory_size = self._trajectory_size - self._n_env
 
         if self._motivation:
-            for batch_ofs in range(0, len(trajectory), self._batch_size):
-                batch_l = min(batch_ofs + self._batch_size, len(trajectory))
+            for batch_ofs in range(0, trajectory_size, self._batch_size):
+                batch_l = min(batch_ofs + self._batch_size, trajectory_size)
                 states_v = states[batch_ofs:batch_l]
                 actions_v = actions[batch_ofs:batch_l]
                 next_states_v = next_states[batch_ofs:batch_l]
                 self._motivation.train(states_v, actions_v, next_states_v)
 
         for epoch in range(self._ppo_epochs):
-            for batch_ofs in range(0, len(trajectory), self._batch_size):
-                batch_l = min(batch_ofs + self._batch_size, len(trajectory))
+            for batch_ofs in range(0, trajectory_size, self._batch_size):
+                batch_l = min(batch_ofs + self._batch_size, trajectory_size)
                 states_v = states[batch_ofs:batch_l]
                 actions_v = actions[batch_ofs:batch_l]
                 probs_v = probs[batch_ofs:batch_l]

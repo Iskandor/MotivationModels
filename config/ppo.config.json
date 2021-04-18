@@ -3,7 +3,7 @@
     "1": {
       "model": "baseline",
       "n_env": 1,
-      "trials": 15,
+      "trials": 1,
       "steps": 0.1,
       "gamma": 0.99,
       "beta": 0.001,
