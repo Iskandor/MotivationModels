@@ -5,6 +5,8 @@ import torch
 from etaprogress.progress import ProgressBar
 from gym.wrappers.monitoring.video_recorder import VideoRecorder
 
+from utils.RunningAverage import RunningAverageWindow
+
 
 class ExperimentPPO:
     def __init__(self, env_name, env, config):
@@ -49,8 +51,7 @@ class ExperimentPPO:
         bar = ProgressBar(step_limit, max_width=40)
 
         train_ext_rewards = []
-        reward_buffer = numpy.zeros(100)
-        reward_buffer_index = 0
+        reward_avg = RunningAverageWindow(100)
 
         while steps < step_limit:
             state0 = self.process_state(self._env.reset())
@@ -81,13 +82,9 @@ class ExperimentPPO:
             bar.numerator = steps
 
             train_ext_rewards.append([train_steps, train_ext_reward])
+            reward_avg.update(train_ext_reward)
 
-            reward_buffer[reward_buffer_index] = train_ext_reward
-            reward_buffer_index += 1
-            if reward_buffer_index == 100:
-                reward_buffer_index = 0
-
-            print('Run {0:d} step {1:d} training [ext. reward {2:f} steps {3:d} mean reward {4:f}]'.format(trial, steps, train_ext_reward, train_steps, reward_buffer.mean()))
+            print('Run {0:d} step {1:d} training [ext. reward {2:f} steps {3:d} mean reward {4:f}]'.format(trial, steps, train_ext_reward, train_steps, reward_avg.value()))
             print(bar)
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))

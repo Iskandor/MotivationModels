@@ -101,6 +101,7 @@ class ExperimentNEnvPPO:
                     steps += train_steps[i]
 
                     train_ext_rewards.append([train_steps[i], train_ext_reward[i]])
+                    reward_avg.update(train_ext_reward[i])
                     bar.numerator = steps
 
                     print('Run {0:d} step {1:d} training [ext. reward {2:f} steps {3:d}] avg. reward {4:f}'.format(trial, steps, train_ext_reward[i], train_steps[i], reward_avg.value()))
@@ -115,7 +116,6 @@ class ExperimentNEnvPPO:
 
             state1 = self.process_state(numpy.stack(ns))
             reward = torch.tensor(numpy.stack(r), dtype=torch.float32)
-            reward_avg.update(reward.mean())
             done = torch.tensor(numpy.stack(d), dtype=torch.float32)
 
             agent.train_n_env(state0, value, action0, probs0, state1, reward, done)

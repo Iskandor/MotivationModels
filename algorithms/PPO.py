@@ -213,7 +213,7 @@ class PPO:
             last_gae = d + gl * last_gae
             adv_v.append(last_gae)
 
-        adv_v = torch.tensor(adv_v, dtype=torch.float32).flip(0)
+        adv_v = torch.tensor(adv_v, dtype=torch.float32, device=val.device).flip(0)
         ref_v = adv_v + val.flip(0)
 
         return adv_v, ref_v
