@@ -45,7 +45,7 @@ class PPOAgent:
         self.algorithm.train(state0, value, action0, probs0, state1, reward, mask)
 
     def train_n_env(self, state0, value, action0, probs0, state1, reward, mask):
-        self.algorithm.train_n_env(state0, value, action0, probs0, state1, reward, mask)
+        self.algorithm.train_n_env(state0.cpu(), value.cpu(), action0.cpu(), probs0.cpu(), state1.cpu(), reward, mask)
 
     def save(self, path):
         torch.save(self.network.state_dict(), path + '.pth')

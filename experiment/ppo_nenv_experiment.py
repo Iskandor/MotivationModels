@@ -85,10 +85,11 @@ class ExperimentNEnvPPO:
                 if done:
                     mask = 0
 
-                if 'raw_score' in info:
-                    train_ext_reward[i] += info['raw_score']
-                else:
-                    train_ext_reward[i] += reward
+                # if 'raw_score' in info:
+                #     train_ext_reward[i] += info['raw_score']
+                # else:
+                #     train_ext_reward[i] += reward
+                train_ext_reward[i] += reward
                 train_steps[i] += 1
                 ns[i] = next_state
                 r[i] = reward

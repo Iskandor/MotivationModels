@@ -31,58 +31,115 @@ class PPO:
         self._trajectory.append((state0, value, action, prob, state1, reward, done))
 
         if len(self._trajectory) == self._trajectory_size:
-            self._train()
+            start = time.time()
+            states = []
+            values = []
+            actions = []
+            probs = []
+            next_states = []
+            rewards = []
+            dones = []
+
+            for state, value, action, prob, next_state, reward, done in self._trajectory:
+                states.append(state)
+                values.append(value)
+                actions.append(action)
+                probs.append(prob)
+                next_states.append(next_state)
+                rewards.append(reward)
+                dones.append(done)
+
+            states = torch.stack(states).squeeze(1)
+            values = torch.stack(values).squeeze(1)
+            actions = torch.stack(actions).squeeze(1)
+            probs = torch.stack(probs).squeeze(1)
+            rewards = torch.tensor(rewards, dtype=torch.float32, device=self._device)
+            dones = torch.tensor(dones, dtype=torch.float32, device=self._device)
+            del self._trajectory[:]
+
+            intrinsic_reward = None
+            if self._motivation:
+                next_states = torch.stack(next_states).squeeze(1)
+                intrinsic_reward = self.calc_int_reward(states, actions, next_states)
+
+            adv_values, ref_values = self.calc_advantage(values, rewards, dones, intrinsic_reward)
+            self._train(states, next_states, actions, probs, adv_values, ref_values)
+
+            end = time.time()
+            print("Trajectory {0:d} batch size {1:d} epochs {2:d} training time {3:.2f}s".format(self._trajectory_size, self._batch_size, self._ppo_epochs, end - start))
 
     def train_n_env(self, state0, value, action, prob, state1, reward, done):
         trajectory_size_1_env = self._trajectory_size // self._n_env
-
-        if len(self._trajectories[0]) == trajectory_size_1_env - 1:
-            done = torch.zeros_like(done)
 
         for i in range(self._n_env):
             self._trajectories[i].append((state0[i].unsqueeze(0), value[i].unsqueeze(0), action[i].unsqueeze(0), prob[i].unsqueeze(0), state1[i].unsqueeze(0), reward[i], done[i]))
 
         if len(self._trajectories[0]) == trajectory_size_1_env:
+            start = time.time()
+
+            states_t = []
+            next_states_t = []
+            actions_t = []
+            probs_t = []
+            adv_values_t = []
+            ref_values_t = []
+
             for i in range(self._n_env):
-                self._trajectory += self._trajectories[i]
+                start = time.time()
+                states = []
+                values = []
+                actions = []
+                probs = []
+                next_states = []
+                rewards = []
+                dones = []
+
+                for state, value, action, prob, next_state, reward, done in self._trajectories[i]:
+                    states.append(state)
+                    values.append(value)
+                    actions.append(action)
+                    probs.append(prob)
+                    next_states.append(next_state)
+                    rewards.append(reward)
+                    dones.append(done)
+
+                states = torch.stack(states).squeeze(1)
+                values = torch.stack(values).squeeze(1)
+                actions = torch.stack(actions).squeeze(1)
+                probs = torch.stack(probs).squeeze(1)
+                rewards = torch.tensor(rewards, dtype=torch.float32)
+                dones = torch.tensor(dones, dtype=torch.float32)
                 self._trajectories[i].clear()
 
-            self._train()
+                intrinsic_reward = None
+                if self._motivation:
+                    next_states = torch.stack(next_states).squeeze(1)
+                    next_states_t.append(next_states)
+                    intrinsic_reward = self.calc_int_reward(states, actions, next_states)
 
-    def _train(self):
-        start = time.time()
+                adv_values, ref_values = self.calc_advantage(values, rewards, dones, intrinsic_reward)
 
-        states = []
-        values = []
-        actions = []
-        probs = []
-        next_states = []
-        rewards = []
-        dones = []
+                states_t.append(states)
+                actions_t.append(actions)
+                probs_t.append(probs)
+                adv_values_t.append(adv_values)
+                ref_values_t.append(ref_values)
 
-        for state, value, action, prob, next_state, reward, done in self._trajectory:
-            states.append(state)
-            values.append(value)
-            actions.append(action)
-            probs.append(prob)
-            next_states.append(next_state)
-            rewards.append(reward)
-            dones.append(done)
+            states_t = torch.cat(states_t, dim=0).to(self._device)
+            if len(next_states_t) > 0:
+                next_states_t = torch.cat(next_states_t, dim=0).to(self._device)
+            actions_t = torch.cat(actions_t, dim=0).to(self._device)
+            probs_t = torch.cat(probs_t, dim=0).to(self._device)
+            adv_values_t = torch.cat(adv_values_t, dim=0).to(self._device)
+            ref_values_t = torch.cat(ref_values_t, dim=0).to(self._device)
 
-        states = torch.stack(states).squeeze(1)
-        values = torch.stack(values).squeeze(1)
-        actions = torch.stack(actions).squeeze(1)
-        probs = torch.stack(probs).squeeze(1)
-        rewards = torch.tensor(rewards, dtype=torch.float32, device=self._device)
-        dones = torch.tensor(dones, dtype=torch.float32, device=self._device)
+            self._train(states_t, next_states_t, actions_t, probs_t, adv_values_t, ref_values_t)
 
-        intrinsic_reward = None
-        if self._motivation:
-            next_states = torch.stack(next_states).squeeze(1)
-            intrinsic_reward = self.calc_int_reward(states, actions, next_states)
+            end = time.time()
+            print("Trajectory {0:d} batch size {1:d} epochs {2:d} training time {3:.2f}s".format(self._trajectory_size, self._batch_size, self._ppo_epochs, end - start))
 
-        traj_adv_v, traj_ref_v = self.calc_advantage(values, rewards, dones, intrinsic_reward)
-        traj_adv_v = (traj_adv_v - torch.mean(traj_adv_v)) / torch.std(traj_adv_v)
+    def _train(self, states, next_states, actions, probs, adv_values, ref_values):
+        adv_values = (adv_values - torch.mean(adv_values)) / torch.std(adv_values)
 
         trajectory = self._trajectory[:-1]
 
@@ -100,18 +157,13 @@ class PPO:
                 states_v = states[batch_ofs:batch_l]
                 actions_v = actions[batch_ofs:batch_l]
                 probs_v = probs[batch_ofs:batch_l]
-                batch_adv_v = traj_adv_v[batch_ofs:batch_l].unsqueeze(-1)
-                batch_ref_v = traj_ref_v[batch_ofs:batch_l].unsqueeze(-1)
+                batch_adv_v = adv_values[batch_ofs:batch_l].unsqueeze(-1)
+                batch_ref_v = ref_values[batch_ofs:batch_l].unsqueeze(-1)
 
                 self._optimizer.zero_grad()
                 loss = self.calc_loss(states_v, batch_ref_v, batch_adv_v, actions_v, probs_v)
                 loss.backward()
                 self._optimizer.step()
-
-        del self._trajectory[:]
-
-        end = time.time()
-        print("Trajectory {0:d} batch size {1:d} epochs {2:d} training time {3:.2f}s".format(self._trajectory_size, self._batch_size, self._ppo_epochs, end - start))
 
     def calc_loss(self, states, ref_value, adv_value, old_actions, old_probs):
         values, _, probs = self._network(states)
@@ -161,7 +213,7 @@ class PPO:
             last_gae = d + gl * last_gae
             adv_v.append(last_gae)
 
-        adv_v = torch.tensor(adv_v, dtype=torch.float32, device=self._device).flip(0)
+        adv_v = torch.tensor(adv_v, dtype=torch.float32).flip(0)
         ref_v = adv_v + val.flip(0)
 
         return adv_v, ref_v
