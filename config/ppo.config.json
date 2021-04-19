@@ -3,7 +3,7 @@
     "1": {
       "model": "baseline",
       "n_env": 1,
-      "trials": 1,
+      "trials": 15,
       "steps": 0.1,
       "gamma": 0.99,
       "beta": 0.001,
@@ -363,12 +363,12 @@
   "gravitar": {
     "1": {
       "model": "baseline",
-      "n_env": 128,
-      "trials": 1,
+      "n_env": 64,
+      "trials": 15,
       "steps": 0.5,
       "gamma": 0.99,
       "beta": 0.001,
-      "batch_size": 8,
+      "batch_size": 16,
       "trajectory_size": 128,
       "ppo_epochs": 4,
       "lr": 0.0002,

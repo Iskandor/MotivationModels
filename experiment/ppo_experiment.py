@@ -73,7 +73,11 @@ class ExperimentPPO:
                 agent.train(state0, value, action0, probs0, state1, reward, mask)
                 state0 = state1
 
-                train_ext_reward += reward
+                if 'raw_score' in info:
+                    train_ext_reward += info['raw_score']
+                else:
+                    train_ext_reward += reward
+                # train_ext_reward += reward
                 train_steps += 1
 
             if steps + train_steps > step_limit:
