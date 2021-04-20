@@ -1,3 +1,4 @@
+import copy
 import time
 
 import numpy
@@ -13,7 +14,7 @@ class ExperimentNEnvPPO:
         self._env_name = env_name
         self._env = env_list[0]
         self._env_list = env_list
-        self._config = config
+        self._config = copy.deepcopy(config)
         self._preprocess = None
 
         self._config.steps *= self._config.n_env
