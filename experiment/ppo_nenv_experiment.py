@@ -47,86 +47,6 @@ class ExperimentNEnvPPO:
                 state0 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0).to(config.device)
             video_recorder.close()
 
-    def run_baseline(self, agent, trial):
-        config = self._config
-        n_env = config.n_env
-        trial = trial + config.shift
-        step_limit = int(config.steps * 1e6)
-        steps = 0
-        bar = ProgressBar(step_limit, max_width=40)
-
-        train_ext_rewards = []
-        train_ext_reward = [0] * n_env
-        train_steps = [0] * n_env
-        reward_avg = RunningAverageWindow(100)
-
-        s = [None] * n_env
-        v = [None] * n_env
-        ns = [None] * n_env
-        r = [None] * n_env
-        d = [None] * n_env
-
-        for i in range(n_env):
-            s[i] = self._env_list[i].reset()
-
-        state0 = self.process_state(numpy.stack(s))
-
-        while steps < step_limit:
-            value, action0, probs0 = agent.get_action(state0)
-
-            start = time.time()
-            for i in range(n_env):
-                next_state, reward, done, info = self._env_list[i].step(agent.convert_action(action0[i]))
-                mask = 1
-                if done:
-                    mask = 0
-
-                if 'raw_score' in info:
-                    train_ext_reward[i] += info['raw_score']
-                else:
-                    train_ext_reward[i] += reward
-                train_steps[i] += 1
-                ns[i] = next_state
-                r[i] = reward
-                d[i] = mask
-
-                if done:
-                    if steps + train_steps[i] > step_limit:
-                        train_steps[i] = step_limit - steps
-                    steps += train_steps[i]
-
-                    train_ext_rewards.append([train_steps[i], train_ext_reward[i]])
-                    reward_avg.update(train_ext_reward[i])
-                    bar.numerator = steps
-
-                    print('Run {0:d} step {1:d} training [ext. reward {2:f} steps {3:d}] avg. reward {4:f}'.format(trial, steps, train_ext_reward[i], train_steps[i], reward_avg.value()))
-                    print(bar)
-
-                    train_ext_reward[i] = 0
-                    train_steps[i] = 0
-
-                    s[i] = self._env_list[i].reset()
-                else:
-                    s[i] = next_state
-            end = time.time()
-            print("{0:f}".format(end - start))
-
-            state1 = self.process_state(numpy.stack(ns))
-            reward = torch.tensor(numpy.stack(r), dtype=torch.float32)
-            done = torch.tensor(numpy.stack(d), dtype=torch.float32)
-
-            agent.train_n_env(state0, value, action0, probs0, state1, reward, done)
-
-            state0 = self.process_state(numpy.stack(s))
-
-        agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
-
-        print('Saving data...')
-        save_data = {
-            're': numpy.array(train_ext_rewards)
-        }
-        numpy.save('ppo_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
-
     def one_step(self, params):
         i, trial, agent, action0, train_ext_reward, train_steps, s, ns, r, d, steps, step_limit, train_ext_rewards, reward_avg, bar = params
         next_state, reward, done, info = self._env_list[i].step(agent.convert_action(action0[i]))
@@ -150,7 +70,6 @@ class ExperimentNEnvPPO:
 
             train_ext_rewards.append([train_steps[i], train_ext_reward[i]])
             reward_avg.update(train_ext_reward[i])
-            bar.numerator = steps
 
             print('Run {0:d} step {1:d} training [ext. reward {2:f} steps {3:d}] avg. reward {4:f}'.format(trial, steps, train_ext_reward[i], train_steps[i], reward_avg.value()))
             print(bar)
@@ -162,7 +81,7 @@ class ExperimentNEnvPPO:
         else:
             s[i] = next_state
 
-    def run_baseline_parallel(self, agent, trial):
+    def run_baseline(self, agent, trial):
         config = self._config
         n_env = config.n_env
         trial = trial + config.shift
@@ -190,18 +109,19 @@ class ExperimentNEnvPPO:
             s[i] = self._env_list[i].reset()
 
         state0 = self.process_state(numpy.stack(s))
+        bar_steps = 0
 
         while steps < step_limit:
             value, action0, probs0 = agent.get_action(state0)
 
-            start = time.time()
             for i in range(n_env):
                 a[i] = action0[i]
 
             with ThreadPoolExecutor(max_workers=4) as executor:
                 executor.map(self.one_step, inputs)
-            end = time.time()
-            print("{0:f}".format(end - start))
+
+            bar_steps += n_env
+            bar.numerator = bar_steps
 
             state1 = self.process_state(numpy.stack(ns))
             reward = torch.tensor(numpy.stack(r), dtype=torch.float32)
