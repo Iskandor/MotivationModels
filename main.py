@@ -161,6 +161,10 @@ def run_thread_ray(thread_params):
 
 def run_thread(thread_params):
     algorithm, env, experiment, i = thread_params
+
+    if experiment.gpus:
+        torch.cuda.set_device(experiment.gpus[0])
+
     run(i, algorithm, env, experiment)
 
 
