@@ -3,8 +3,9 @@ import json
 import os
 import platform
 import subprocess
-import multiprocessing
-import torch.multiprocessing as mp
+
+from torch import multiprocessing
+from torch.multiprocessing import Pool
 
 import psutil
 import ray
@@ -145,21 +146,25 @@ def set_env_class(algorithm, env, experiment):
     return env_class
 
 
-def run_parallel(args, experiment):
+def run_ray_parallel(args, experiment):
     thread_params = []
     for i in range(experiment.trials):
         thread_params.append((args.algorithm, args.env, experiment, i))
 
-    ray.get([run_thread.remote(tp) for tp in thread_params])
+    ray.get([run_thread_ray.remote(tp) for tp in thread_params])
 
 
 @ray.remote
+def run_thread_ray(thread_params):
+    run_thread(thread_params)
+
+
 def run_thread(thread_params):
     algorithm, env, experiment, i = thread_params
-    run(algorithm, env, experiment, i)
+    run(i, algorithm, env, experiment)
 
 
-def run(algorithm, env, experiment, id):
+def run(id, algorithm, env, experiment):
     print('Starting experiment {0} on env {1} learning algorithm {2} model {3}'.format(id + experiment.shift, env, algorithm, experiment.model))
 
     env_class = set_env_class(algorithm, env, experiment)
@@ -225,13 +230,13 @@ def run_command_file():
 
 
 def run_torch_parallel(args, experiment):
-    processes = []
-    for rank in range(experiment.trials):
-        p = mp.Process(target=run, args=(args.algorithm, args.env, experiment, rank))
-        p.start()
-        processes.append(p)
-    for p in processes:
-        p.join()
+    multiprocessing.set_start_method('spawn')
+    thread_params = []
+    for i in range(experiment.trials):
+        thread_params.append((args.algorithm, args.env, experiment, i))
+
+    with Pool(args.num_workers) as p:
+        p.map(run_thread, thread_params)
 
 
 def update_config(args, experiment):
@@ -287,12 +292,14 @@ if __name__ == '__main__':
             else:
                 num_cpus = min(psutil.cpu_count(logical=True), args.num_workers)
             print('Running parallel {0} trainings'.format(num_cpus))
+            print('Using {0} parallel backend'.format(args.parallel_backend))
 
             if args.parallel_backend == 'ray':
+
                 ray.init(num_cpus=num_cpus)
                 torch.set_num_threads(max(1, num_cpus // experiment.trials))
 
-                run_parallel(args, experiment)
+                run_ray_parallel(args, experiment)
                 # write_command_file(args, experiment)
                 # run_command_file()
             elif args.parallel_backend == 'torch':
@@ -300,4 +307,4 @@ if __name__ == '__main__':
                 run_torch_parallel(args, experiment)
         else:
             for i in range(experiment.trials):
-                run(args.algorithm, args.env, experiment, i)
+                run(i, args.algorithm, args.env, experiment)
