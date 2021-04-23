@@ -4,7 +4,7 @@ import torch
 from etaprogress.progress import ProgressBar
 from gym.wrappers.monitoring.video_recorder import VideoRecorder
 
-from utils.RunningAverage import RunningAverageWindow
+from utils.RunningAverage import RunningAverageWindow, StepCounter
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 
 class ExperimentNEnvPPO:
@@ -48,7 +48,7 @@ class ExperimentNEnvPPO:
             video_recorder.close()
 
     def one_step(self, params):
-        i, trial, agent, action0, train_ext_reward, train_steps, s, ns, r, d, steps, step_limit, train_ext_rewards, reward_avg, bar = params
+        i, trial, agent, action0, train_ext_reward, train_steps, s, ns, r, d, step_counter, train_ext_rewards, reward_avg = params
         next_state, reward, done, info = self._env_list[i].step(agent.convert_action(action0[i]))
         mask = 1
         if done:
@@ -64,15 +64,15 @@ class ExperimentNEnvPPO:
         d[i] = mask
 
         if done:
-            if steps + train_steps[i] > step_limit:
-                train_steps[i] = step_limit - steps
-            steps += train_steps[i]
+            if step_counter.steps + train_steps[i] > step_counter.limit:
+                train_steps[i] = step_counter.limit - step_counter.steps
+            step_counter.update(train_steps[i])
 
             train_ext_rewards.append([train_steps[i], train_ext_reward[i]])
             reward_avg.update(train_ext_reward[i])
 
-            print('Run {0:d} step {1:d} training [ext. reward {2:f} steps {3:d}] avg. reward {4:f}'.format(trial, steps, train_ext_reward[i], train_steps[i], reward_avg.value()))
-            print(bar)
+            print('Run {0:d} step {1:d} training [ext. reward {2:f} steps {3:d}] avg. reward {4:f}'.format(trial, step_counter.steps, train_ext_reward[i], train_steps[i], reward_avg.value()))
+            step_counter.print()
 
             train_ext_reward[i] = 0
             train_steps[i] = 0
@@ -85,9 +85,7 @@ class ExperimentNEnvPPO:
         config = self._config
         n_env = config.n_env
         trial = trial + config.shift
-        step_limit = int(config.steps * 1e6)
-        steps = 0
-        bar = ProgressBar(step_limit, max_width=40)
+        step_counter = StepCounter(int(config.steps * 1e6))
 
         train_ext_rewards = []
         train_ext_reward = [0] * n_env
@@ -103,15 +101,14 @@ class ExperimentNEnvPPO:
 
         inputs = []
         for i in range(n_env):
-            inputs.append((i, trial, agent, a, train_ext_reward, train_steps, s, ns, r, d, steps, step_limit, train_ext_rewards, reward_avg, bar))
+            inputs.append((i, trial, agent, a, train_ext_reward, train_steps, s, ns, r, d, step_counter, train_ext_rewards, reward_avg))
 
         for i in range(n_env):
             s[i] = self._env_list[i].reset()
 
         state0 = self.process_state(numpy.stack(s))
-        bar_steps = 0
 
-        while steps < step_limit:
+        while step_counter.running():
             value, action0, probs0 = agent.get_action(state0)
 
             for i in range(n_env):
@@ -119,9 +116,6 @@ class ExperimentNEnvPPO:
 
             with ThreadPoolExecutor(max_workers=4) as executor:
                 executor.map(self.one_step, inputs)
-
-            bar_steps += n_env
-            bar.numerator = bar_steps
 
             state1 = self.process_state(numpy.stack(ns))
             reward = torch.tensor(numpy.stack(r), dtype=torch.float32)

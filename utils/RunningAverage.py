@@ -1,4 +1,5 @@
 import numpy as np
+from etaprogress.progress import ProgressBar
 
 
 class RunningAverage:
@@ -28,3 +29,20 @@ class RunningAverageWindow:
 
     def value(self):
         return self._cma.mean()
+
+
+class StepCounter:
+    def __init__(self, limit):
+        self.limit = limit
+        self.steps = 0
+        self.bar = ProgressBar(limit, max_width=40)
+
+    def update(self, value):
+        self.steps += value
+        self.bar.numerator = self.steps
+
+    def print(self):
+        print(self.bar)
+
+    def running(self):
+        return self.steps < self.limit

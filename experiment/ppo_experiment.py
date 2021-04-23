@@ -29,7 +29,7 @@ class ExperimentPPO:
     def test(self, agent):
         config = self._config
 
-        for i in range(3):
+        for i in range(1):
             video_path = 'ppo_{0}_{1}_{2:d}.mp4'.format(config.name, config.model, i)
             video_recorder = VideoRecorder(self._env, video_path, enabled=video_path is not None, fps=15)
             state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0).to(config.device)
@@ -38,7 +38,7 @@ class ExperimentPPO:
             while not done:
                 self._env.render()
                 video_recorder.capture_frame()
-                action0 = agent.get_action(state0, True)
+                _, action0, _ = agent.get_action(state0)
                 next_state, reward, done, info = self._env.step(action0.item())
                 state0 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0).to(config.device)
             video_recorder.close()

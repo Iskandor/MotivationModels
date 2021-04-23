@@ -51,7 +51,7 @@ class PPOAgent:
         torch.save(self.network.state_dict(), path + '.pth')
 
     def load(self, path):
-        self.network.load_state_dict(torch.load(path + '.pth'))
+        self.network.load_state_dict(torch.load(path + '.pth', map_location='cpu'))
 
     @staticmethod
     def log_prob_discrete(probs, actions):
