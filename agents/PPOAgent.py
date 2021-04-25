@@ -4,6 +4,7 @@ from torch.distributions import Categorical, Normal
 
 from agents import TYPE
 from algorithms.PPO import PPO
+from algorithms.ReplayBuffer import PPOTrajectoryBuffer
 from modules.PPO_Modules import PPOSimpleNetwork, PPOAerisNetwork, PPOAtariNetwork
 
 
@@ -12,18 +13,20 @@ class PPOAgent:
         self.state_dim = state_dim
         self.action_dim = action_dim
         self.network = network.to(config.device)
+        self.memory = PPOTrajectoryBuffer(config.trajectory_size, config.n_env)
+
         if config.gpus and len(config.gpus) > 1:
             config.batch_size *= len(config.gpus)
             self.network = nn.DataParallel(self.network, config.gpus)
 
         if action_type == TYPE.discrete:
-            self.algorithm = PPO(self.network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size, config.beta, config.gamma,
+            self.algorithm = PPO(self.network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size, self.memory, config.beta, config.gamma,
                                  self.log_prob_discrete, self.entropy_discrete, ppo_epochs=config.ppo_epochs, n_env=config.n_env, device=config.device)
         if action_type == TYPE.continuous:
-            self.algorithm = PPO(self.network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size, config.beta, config.gamma,
+            self.algorithm = PPO(self.network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size, self.memory, config.beta, config.gamma,
                                  self.log_prob_continuous, self.entropy_continuous, ppo_epochs=config.ppo_epochs, n_env=config.n_env, device=config.device)
         if action_type == TYPE.multibinary:
-            self.algorithm = PPO(self.network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size, config.beta, config.gamma,
+            self.algorithm = PPO(self.network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size, self.memory, config.beta, config.gamma,
                                  self.log_prob_discrete, self.entropy_discrete, ppo_epochs=config.ppo_epochs, n_env=config.n_env, device=config.device)
 
         self.action_type = action_type
@@ -42,10 +45,9 @@ class PPOAgent:
             return action.squeeze(0).item()
 
     def train(self, state0, value, action0, probs0, state1, reward, mask):
-        self.algorithm.train(state0, value, action0, probs0, state1, reward, mask)
-
-    def train_n_env(self, state0, value, action0, probs0, state1, reward, mask):
-        self.algorithm.train_n_env(state0.cpu(), value.cpu(), action0.cpu(), probs0.cpu(), state1.cpu(), reward, mask)
+        self.memory.add(state0.cpu(), value.cpu(), action0.cpu(), probs0.cpu(), state1.cpu(), reward.cpu(), mask.cpu())
+        indices = self.memory.indices()
+        self.algorithm.train(indices)
 
     def save(self, path):
         torch.save(self.network.state_dict(), path + '.pth')

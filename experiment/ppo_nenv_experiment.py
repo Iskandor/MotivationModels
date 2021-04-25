@@ -5,7 +5,8 @@ from etaprogress.progress import ProgressBar
 from gym.wrappers.monitoring.video_recorder import VideoRecorder
 
 from utils.RunningAverage import RunningAverageWindow, StepCounter
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
+
 
 class ExperimentNEnvPPO:
     def __init__(self, env_name, env_list, config):
@@ -121,7 +122,7 @@ class ExperimentNEnvPPO:
             reward = torch.tensor(numpy.stack(r), dtype=torch.float32)
             done = torch.tensor(numpy.stack(d), dtype=torch.float32)
 
-            agent.train_n_env(state0, value, action0, probs0, state1, reward, done)
+            agent.train(state0, value, action0, probs0, state1, reward, done)
 
             state0 = self.process_state(numpy.stack(s))
 
@@ -211,7 +212,7 @@ class ExperimentNEnvPPO:
             reward = torch.tensor(numpy.stack(r), dtype=torch.float32)
             done = torch.tensor(numpy.stack(d), dtype=torch.float32)
 
-            agent.train_n_env(state0, action0, state1, reward, done)
+            agent.train(state0, action0, state1, reward, done)
 
             state0 = self.process_state(numpy.stack(s))
 

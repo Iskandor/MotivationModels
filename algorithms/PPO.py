@@ -3,7 +3,7 @@ from utils import *
 
 
 class PPO:
-    def __init__(self, network, lr, actor_loss_weight, critic_loss_weight, batch_size, trajectory_size, p_beta, p_gamma, log_prob_fn, entropy_fn,
+    def __init__(self, network, lr, actor_loss_weight, critic_loss_weight, batch_size, trajectory_size, memory, p_beta, p_gamma, log_prob_fn, entropy_fn,
                  ppo_epochs=10, p_epsilon=0.2, p_lambda=0.95, weight_decay=0, device='cpu', n_env=1):
         self._network = network
         self._optimizer = torch.optim.Adam(self._network.parameters(), lr=lr, weight_decay=weight_decay)
@@ -24,58 +24,15 @@ class PPO:
         self._motivation = None
         self._n_env = n_env
 
+        self._memory = memory
+
         if self._n_env > 1:
             self._trajectories = [[] for _ in range(self._n_env)]
 
-    def train(self, state0, value, action, prob, state1, reward, done):
-        self._trajectory.append((state0, value, action, prob, state1, reward, done))
-
-        if len(self._trajectory) == self._trajectory_size:
+    def train(self, indices):
+        if indices:
             start = time.time()
-            states = []
-            values = []
-            actions = []
-            probs = []
-            next_states = []
-            rewards = []
-            dones = []
-
-            for state, value, action, prob, next_state, reward, done in self._trajectory:
-                states.append(state)
-                values.append(value)
-                actions.append(action)
-                probs.append(prob)
-                next_states.append(next_state)
-                rewards.append(reward)
-                dones.append(done)
-
-            states = torch.stack(states).squeeze(1)
-            values = torch.stack(values).squeeze(1)
-            actions = torch.stack(actions).squeeze(1)
-            probs = torch.stack(probs).squeeze(1)
-            rewards = torch.tensor(rewards, dtype=torch.float32, device=self._device)
-            dones = torch.tensor(dones, dtype=torch.float32, device=self._device)
-            del self._trajectory[:]
-
-            intrinsic_reward = None
-            if self._motivation:
-                next_states = torch.stack(next_states).squeeze(1)
-                intrinsic_reward = self.calc_int_reward(states, actions, next_states)
-
-            adv_values, ref_values = self.calc_advantage(values, rewards, dones, intrinsic_reward)
-            self._train(states, next_states, actions, probs, adv_values, ref_values)
-
-            end = time.time()
-            print("Trajectory {0:d} batch size {1:d} epochs {2:d} training time {3:.2f}s".format(self._trajectory_size, self._batch_size, self._ppo_epochs, end - start))
-
-    def train_n_env(self, state0, value, action, prob, state1, reward, done):
-        trajectory_size_1_env = self._trajectory_size // self._n_env
-
-        for i in range(self._n_env):
-            self._trajectories[i].append((state0[i].unsqueeze(0), value[i].unsqueeze(0), action[i].unsqueeze(0), prob[i].unsqueeze(0), state1[i].unsqueeze(0), reward[i], done[i]))
-
-        if len(self._trajectories[0]) == trajectory_size_1_env:
-            start = time.time()
+            sample = self._memory.sample(indices)
 
             states_t = []
             next_states_t = []
@@ -84,50 +41,36 @@ class PPO:
             adv_values_t = []
             ref_values_t = []
 
+            trajectory_size_1_env = self._trajectory_size // self._n_env
+
             for i in range(self._n_env):
-                start = time.time()
-                states = []
-                values = []
-                actions = []
-                probs = []
-                next_states = []
-                rewards = []
-                dones = []
+                start_batch = i * trajectory_size_1_env
+                end_batch = (i+1) * trajectory_size_1_env
 
-                for state, value, action, prob, next_state, reward, done in self._trajectories[i]:
-                    states.append(state)
-                    values.append(value)
-                    actions.append(action)
-                    probs.append(prob)
-                    next_states.append(next_state)
-                    rewards.append(reward)
-                    dones.append(done)
-
-                states = torch.stack(states).squeeze(1)
-                values = torch.stack(values).squeeze(1)
-                actions = torch.stack(actions).squeeze(1)
-                probs = torch.stack(probs).squeeze(1)
-                rewards = torch.tensor(rewards, dtype=torch.float32)
-                dones = torch.tensor(dones, dtype=torch.float32)
-                self._trajectories[i].clear()
+                states = torch.stack(sample.state[start_batch:end_batch])
+                values = torch.stack(sample.value[start_batch:end_batch])
+                actions = torch.stack(sample.action[start_batch:end_batch])
+                probs = torch.stack(sample.prob[start_batch:end_batch])
+                next_states = torch.stack(sample.next_state[start_batch:end_batch])
+                rewards = torch.stack(sample.reward[start_batch:end_batch])
+                dones = torch.stack(sample.mask[start_batch:end_batch])
 
                 intrinsic_reward = None
                 if self._motivation:
-                    next_states = torch.stack(next_states).squeeze(1)
-                    next_states_t.append(next_states[:-1])
                     intrinsic_reward = self.calc_int_reward(states, actions, next_states)
 
-                adv_values, ref_values = self.calc_advantage(values, rewards, dones, intrinsic_reward)
+                adv_values, ref_values = self.calc_advantage(values.squeeze(), rewards.squeeze(), dones.squeeze(), intrinsic_reward)
 
                 states_t.append(states[:-1])
+                next_states_t.append(next_states[:-1])
                 actions_t.append(actions[:-1])
                 probs_t.append(probs[:-1])
                 adv_values_t.append(adv_values)
                 ref_values_t.append(ref_values)
 
+            self._memory.clear()
             states_t = torch.cat(states_t, dim=0).to(self._device)
-            if len(next_states_t) > 0:
-                next_states_t = torch.cat(next_states_t, dim=0).to(self._device)
+            next_states_t = torch.cat(next_states_t, dim=0).to(self._device)
             actions_t = torch.cat(actions_t, dim=0).to(self._device)
             probs_t = torch.cat(probs_t, dim=0).to(self._device)
             adv_values_t = torch.cat(adv_values_t, dim=0).to(self._device)
@@ -196,7 +139,6 @@ class PPO:
     def calc_advantage(self, values, rewards, dones, intrinsic_reward):
         dones = dones[:-1].flip(0)
         rewards = rewards[:-1].flip(0)
-        values = values.squeeze()
 
         val = values[:-1].flip(0)
         next_val = values[1:].flip(0) * self._gamma * dones
@@ -213,7 +155,7 @@ class PPO:
             last_gae = d + gl * last_gae
             adv_v.append(last_gae)
 
-        adv_v = torch.tensor(adv_v, dtype=torch.float32, device=val.device).flip(0)
+        adv_v = torch.tensor(adv_v, dtype=torch.float32, device=values.device).flip(0)
         ref_v = adv_v + val.flip(0)
 
         return adv_v, ref_v
