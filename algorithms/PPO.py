@@ -4,7 +4,7 @@ from utils import *
 
 class PPO:
     def __init__(self, network, lr, actor_loss_weight, critic_loss_weight, batch_size, trajectory_size, memory, p_beta, p_gamma, log_prob_fn, entropy_fn,
-                 ppo_epochs=10, p_epsilon=0.2, p_lambda=0.95, weight_decay=0, device='cpu', n_env=1):
+                 ppo_epochs=10, p_epsilon=0.2, p_lambda=0.95, weight_decay=0, device='cpu', n_env=1, motivation=None):
         self._network = network
         self._optimizer = torch.optim.Adam(self._network.parameters(), lr=lr, weight_decay=weight_decay)
         self._beta = p_beta
@@ -21,7 +21,7 @@ class PPO:
 
         self._trajectory = []
         self._ppo_epochs = ppo_epochs
-        self._motivation = None
+        self._motivation = motivation
         self._n_env = n_env
 
         self._memory = memory
@@ -35,7 +35,6 @@ class PPO:
             sample = self._memory.sample(indices)
 
             states_t = []
-            next_states_t = []
             actions_t = []
             probs_t = []
             adv_values_t = []
@@ -45,54 +44,45 @@ class PPO:
 
             for i in range(self._n_env):
                 start_batch = i * trajectory_size_1_env
-                end_batch = (i+1) * trajectory_size_1_env
+                end_batch = (i + 1) * trajectory_size_1_env
 
                 states = torch.stack(sample.state[start_batch:end_batch])
                 values = torch.stack(sample.value[start_batch:end_batch])
                 actions = torch.stack(sample.action[start_batch:end_batch])
                 probs = torch.stack(sample.prob[start_batch:end_batch])
-                next_states = torch.stack(sample.next_state[start_batch:end_batch])
                 rewards = torch.stack(sample.reward[start_batch:end_batch])
                 dones = torch.stack(sample.mask[start_batch:end_batch])
 
-                intrinsic_reward = None
                 if self._motivation:
-                    intrinsic_reward = self.calc_int_reward(states, actions, next_states)
-
-                adv_values, ref_values = self.calc_advantage(values.squeeze(), rewards.squeeze(), dones.squeeze(), intrinsic_reward)
+                    ext_adv_values, ext_ref_values = self.calc_advantage(values[:, 0], rewards[:, 0], dones.squeeze())
+                    int_adv_values, int_ref_values = self.calc_advantage(values[:, 1], rewards[:, 1], dones.squeeze())
+                    adv_values = ext_adv_values + int_adv_values
+                    ref_values = torch.stack([ext_ref_values, int_ref_values], dim=1)
+                else:
+                    adv_values, ref_values = self.calc_advantage(values.squeeze(), rewards.squeeze(), dones.squeeze())
 
                 states_t.append(states[:-1])
-                next_states_t.append(next_states[:-1])
                 actions_t.append(actions[:-1])
                 probs_t.append(probs[:-1])
                 adv_values_t.append(adv_values)
                 ref_values_t.append(ref_values)
 
-            self._memory.clear()
             states_t = torch.cat(states_t, dim=0).to(self._device)
-            next_states_t = torch.cat(next_states_t, dim=0).to(self._device)
             actions_t = torch.cat(actions_t, dim=0).to(self._device)
             probs_t = torch.cat(probs_t, dim=0).to(self._device)
             adv_values_t = torch.cat(adv_values_t, dim=0).to(self._device)
             ref_values_t = torch.cat(ref_values_t, dim=0).to(self._device)
 
-            self._train(states_t, next_states_t, actions_t, probs_t, adv_values_t, ref_values_t)
+            self._train(states_t, actions_t, probs_t, adv_values_t, ref_values_t)
 
             end = time.time()
             print("Trajectory {0:d} batch size {1:d} epochs {2:d} training time {3:.2f}s".format(self._trajectory_size, self._batch_size, self._ppo_epochs, end - start))
 
-    def _train(self, states, next_states, actions, probs, adv_values, ref_values):
-        adv_values = (adv_values - torch.mean(adv_values)) / torch.std(adv_values)
+    def _train(self, states, actions, probs, adv_values, ref_values):
+        if self._motivation is None:
+            adv_values = (adv_values - torch.mean(adv_values)) / torch.std(adv_values)
 
         trajectory_size = self._trajectory_size - self._n_env
-
-        if self._motivation:
-            for batch_ofs in range(0, trajectory_size, self._batch_size):
-                batch_l = min(batch_ofs + self._batch_size, trajectory_size)
-                states_v = states[batch_ofs:batch_l]
-                actions_v = actions[batch_ofs:batch_l]
-                next_states_v = next_states[batch_ofs:batch_l]
-                self._motivation.train(states_v, actions_v, next_states_v)
 
         for epoch in range(self._ppo_epochs):
             for batch_ofs in range(0, trajectory_size, self._batch_size):
@@ -111,7 +101,13 @@ class PPO:
     def calc_loss(self, states, ref_value, adv_value, old_actions, old_probs):
         values, _, probs = self._network(states)
 
-        loss_value = torch.nn.functional.mse_loss(values, ref_value)
+        if self._motivation:
+            ref_value = ref_value.squeeze(-1)
+            loss_ext_value = torch.nn.functional.mse_loss(values[:, 0], ref_value[:, 0])
+            loss_int_value = torch.nn.functional.mse_loss(values[:, 1], ref_value[:, 1])
+            loss_value = loss_ext_value + loss_int_value
+        else:
+            loss_value = torch.nn.functional.mse_loss(values, ref_value)
 
         log_probs = self._log_prob_fn(probs, old_actions)
         old_logprobs = self._log_prob_fn(old_probs, old_actions)
@@ -127,16 +123,10 @@ class PPO:
         return loss
 
     def calc_int_reward(self, states, actions, next_states):
-        int_reward = self._motivation.reward(states[0:self._batch_size], actions[0:self._batch_size], next_states[0:self._batch_size]).detach()
-
-        for batch_ofs in range(self._batch_size, self._trajectory_size, self._batch_size):
-            batch_l = min(batch_ofs + self._batch_size, self._trajectory_size)
-            int_reward = torch.cat([int_reward, self._motivation.reward(states[batch_ofs:batch_l], actions[batch_ofs:batch_l], next_states[batch_ofs:batch_l]).detach()], dim=0)
-        int_reward = int_reward.squeeze()
-
+        int_reward = self._motivation.reward(states, actions, next_states)
         return int_reward
 
-    def calc_advantage(self, values, rewards, dones, intrinsic_reward):
+    def calc_advantage(self, values, rewards, dones):
         dones = dones[:-1].flip(0)
         rewards = rewards[:-1].flip(0)
 
@@ -144,9 +134,6 @@ class PPO:
         next_val = values[1:].flip(0) * self._gamma * dones
         delta = rewards + next_val - val
         gamma_lambda = self._gamma * self._lambda * dones
-
-        if intrinsic_reward is not None:
-            delta += intrinsic_reward[:-1].flip(0)
 
         last_gae = 0.0
         adv_v = []
@@ -159,9 +146,3 @@ class PPO:
         ref_v = adv_v + val.flip(0)
 
         return adv_v, ref_v
-
-    def add_motivation_module(self, motivation):
-        self._motivation = motivation
-
-    def get_motivation_module(self):
-        return self._motivation

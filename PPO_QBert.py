@@ -1,25 +1,15 @@
-import gym
-import torch
+import PPO_AtariGame
 
-from agents import TYPE
-from agents.PPOAgent import PPOAtariAgent
-from experiment.ppo_experiment import ExperimentPPO
-from utils.AtariWrapper import WrapperAtari
+env_name = 'Qbert-v0'
 
 
-def encode_state(state):
-    return torch.tensor(state, dtype=torch.float32).unsqueeze(0)
+def test(config, path):
+    PPO_AtariGame.test(config, path, env_name)
 
 
-def run_baseline(config, i):
-    env = WrapperAtari(gym.make('Qbert-v0'))
-    input_shape = env.observation_space.shape
-    action_dim = env.action_space.n
+def run_baseline(config, trial):
+    PPO_AtariGame.run_baseline(config, trial, env_name)
 
-    experiment = ExperimentPPO('Qbert-v0', env, config)
-    experiment.add_preprocess(encode_state)
 
-    agent = PPOAtariAgent(input_shape, action_dim, config, TYPE.discrete)
-    experiment.run_baseline(agent, i)
-
-    env.close()
+def run_forward_model(config, trial):
+    PPO_AtariGame.run_forward_model(config, trial, env_name)

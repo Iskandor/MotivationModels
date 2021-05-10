@@ -4,17 +4,20 @@ import torch
 from etaprogress.progress import ProgressBar
 from gym.wrappers.monitoring.video_recorder import VideoRecorder
 
+from utils import one_hot_code
 from utils.RunningAverage import RunningAverageWindow, StepCounter
 from concurrent.futures import ThreadPoolExecutor
 
 
 class ExperimentNEnvPPO:
-    def __init__(self, env_name, env_list, config):
+    def __init__(self, env_name, env_list, config, input_shape, action_shape):
         self._env_name = env_name
         self._env = env_list[0]
         self._env_list = env_list
         self._config = config
         self._preprocess = None
+        self._input_shape = input_shape
+        self._action_shape = action_shape
 
         print('Total steps: {0:.2f}M'.format(self._config.steps))
         print('Total batch size: {0:d}'.format(self._config.batch_size))
@@ -48,9 +51,9 @@ class ExperimentNEnvPPO:
                 state0 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0).to(config.device)
             video_recorder.close()
 
-    def one_step(self, params):
+    def one_step_baseline(self, params):
         i, trial, agent, action0, train_ext_reward, train_steps, s, ns, r, d, step_counter, train_ext_rewards, reward_avg = params
-        next_state, reward, done, info = self._env_list[i].step(agent.convert_action(action0[i]))
+        next_state, reward, done, info = self._env_list[i].step(action0[i])
         mask = 1
         if done:
             mask = 0
@@ -64,7 +67,7 @@ class ExperimentNEnvPPO:
         r[i] = reward
         d[i] = mask
 
-        if done:
+        if d[i] == 0:
             if step_counter.steps + train_steps[i] > step_counter.limit:
                 train_steps[i] = step_counter.limit - step_counter.steps
             step_counter.update(train_steps[i])
@@ -80,7 +83,47 @@ class ExperimentNEnvPPO:
 
             s[i] = self._env_list[i].reset()
         else:
-            s[i] = next_state
+            s[i] = ns[i]
+
+    def one_step_forward_model(self, params):
+        i, trial, agent, action0, train_ext_reward, train_int_reward, train_fm_error, \
+        train_steps, s, ns, r, d, step_counter, train_ext_rewards, train_int_rewards, train_fm_errors, reward_avg = params
+
+        next_state, reward, done, info = self._env_list[i].step(action0[i])
+        mask = 1.
+        if done:
+            mask = 0.
+
+        if 'raw_score' in info:
+            train_ext_reward[i] += info['raw_score']
+        else:
+            train_ext_reward[i] += reward
+        train_steps[i] += 1
+        ns[i] = next_state
+        r[i] = reward
+        d[i] = mask
+
+        if d[i] == 0:
+            if step_counter.steps + train_steps[i] > step_counter.limit:
+                train_steps[i] = step_counter.limit - step_counter.steps
+            step_counter.update(train_steps[i])
+
+            train_ext_rewards.append([train_steps[i], train_ext_reward[i]])
+            train_int_rewards.append([train_steps[i], train_int_reward[i]])
+            train_fm_errors += train_fm_error[i]
+
+            print('Run {0:d} step {1:d} training [ext. reward {2:f} c int. reward {3:f} c fm. error {4:f} ps steps {5:d}]'.format(
+                trial, step_counter.steps, train_ext_reward[i], train_int_reward[i], numpy.array(train_fm_error[i]).mean(), train_steps[i]))
+            step_counter.print()
+
+            train_ext_reward[i] = 0
+            train_int_reward[i] = 0
+            train_steps[i] = 0
+            train_fm_error[i].clear()
+
+            s[i] = self._env_list[i].reset()
+        else:
+            s[i] = ns[i]
 
     def run_baseline(self, agent, trial):
         config = self._config
@@ -92,13 +135,13 @@ class ExperimentNEnvPPO:
         train_ext_reward = [0] * n_env
         train_steps = [0] * n_env
         reward_avg = RunningAverageWindow(100)
+        time_avg = RunningAverageWindow(100)
 
-        s = [None] * n_env
+        s = numpy.zeros((n_env,) + self._input_shape, dtype=numpy.float32)
         a = [None] * n_env
-        v = [None] * n_env
-        ns = [None] * n_env
-        r = [None] * n_env
-        d = [None] * n_env
+        ns = numpy.zeros((n_env,) + self._input_shape, dtype=numpy.float32)
+        r = numpy.zeros((n_env, 1), dtype=numpy.float32)
+        d = numpy.zeros((n_env, 1), dtype=numpy.float32)
 
         inputs = []
         for i in range(n_env):
@@ -107,24 +150,29 @@ class ExperimentNEnvPPO:
         for i in range(n_env):
             s[i] = self._env_list[i].reset()
 
-        state0 = self.process_state(numpy.stack(s))
+        state0 = self.process_state(s)
 
         while step_counter.running():
             value, action0, probs0 = agent.get_action(state0)
 
             for i in range(n_env):
-                a[i] = action0[i]
+                a[i] = agent.convert_action(action0[i])
 
+            start = time.time()
             with ThreadPoolExecutor(max_workers=4) as executor:
-                executor.map(self.one_step, inputs)
+                executor.map(self.one_step_baseline, inputs)
 
-            state1 = self.process_state(numpy.stack(ns))
-            reward = torch.tensor(numpy.stack(r), dtype=torch.float32)
-            done = torch.tensor(numpy.stack(d), dtype=torch.float32)
+            end = time.time()
+            time_avg.update(end - start)
+            print('Duration {0:.3f}s'.format(time_avg.value()))
+
+            state1 = self.process_state(ns)
+            reward = torch.tensor(r, dtype=torch.float32)
+            done = torch.tensor(d, dtype=torch.float32)
 
             agent.train(state0, value, action0, probs0, state1, reward, done)
 
-            state0 = self.process_state(numpy.stack(s))
+            state0 = self.process_state(s)
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
 
@@ -138,11 +186,9 @@ class ExperimentNEnvPPO:
         config = self._config
         n_env = config.n_env
         trial = trial + config.shift
-        step_limit = int(config.steps * 1e6)
-        steps = 0
-        bar = ProgressBar(step_limit, max_width=40)
-
-        forward_model = agent.get_motivation_module()
+        step_counter = StepCounter(int(config.steps * 1e6))
+        reward_avg = RunningAverageWindow(100)
+        time_avg = RunningAverageWindow(100)
 
         train_ext_rewards = []
         train_ext_reward = [0] * n_env
@@ -152,79 +198,61 @@ class ExperimentNEnvPPO:
         train_fm_error = [[] for _ in range(n_env)]
         train_steps = [0] * n_env
 
-        s = [None] * n_env
-        ns = [None] * n_env
-        r = [None] * n_env
-        d = [None] * n_env
+        s = numpy.zeros((n_env,) + self._input_shape, dtype=numpy.float32)
+        a = [None] * n_env
+        ns = numpy.zeros((n_env,) + self._input_shape, dtype=numpy.float32)
+        r = numpy.zeros((n_env, 1), dtype=numpy.float32)
+        d = numpy.zeros((n_env, 1), dtype=numpy.float32)
+
+        inputs = []
+        for i in range(n_env):
+            inputs.append(
+                (i, trial, agent, a, train_ext_reward, train_int_reward, train_fm_error, train_steps, s, ns, r, d, step_counter, train_ext_rewards, train_int_rewards, train_fm_errors, reward_avg))
 
         for i in range(n_env):
             s[i] = self._env_list[i].reset()
 
-        state0 = self.process_state(numpy.stack(s))
+        state0 = self.process_state(s)
 
-        while steps < step_limit:
-            action0 = agent.get_action(state0)
+        while step_counter.running():
+            value, action0, probs0 = agent.get_action(state0)
 
             for i in range(n_env):
-                next_state, reward, done, info = self._env_list[i].step(action0[i].item())
-                mask = 1.
-                if done:
-                    mask = 0.
+                a[i] = agent.convert_action(action0[i])
 
-                train_ext_reward[i] += reward
-                train_steps[i] += 1
-                ns[i] = next_state
-                r[i] = reward
-                d[i] = mask
+            start = time.time()
+            with ThreadPoolExecutor(max_workers=4) as executor:
+                executor.map(self.one_step_forward_model, inputs)
 
-            state1 = self.process_state(numpy.stack(ns))
+            end = time.time()
+            time_avg.update(end - start)
+            print('Duration {0:.3f}s'.format(time_avg.value()))
 
-            fm_error = forward_model.error(state0, action0, state1)
-            fm_reward = forward_model.reward(error=fm_error)
+            state1 = self.process_state(ns)
+
+            fm_error = agent.motivation.error(state0, action0, state1)
+            fm_reward = agent.motivation.reward(error=fm_error)
 
             for i in range(n_env):
                 train_int_reward[i] += fm_reward[i].item()
                 train_fm_error[i].append(fm_error[i].item())
 
-                if d[i] == 0:
-                    if steps + train_steps[i] > step_limit:
-                        train_steps[i] = step_limit - steps
-                    steps += train_steps[i]
+            reward = torch.stack([torch.tensor(r, dtype=torch.float32), fm_reward.cpu()], dim=1).squeeze(-1)
+            done = torch.tensor(d, dtype=torch.float32)
 
-                    train_ext_rewards.append([train_steps[i], train_ext_reward[i]])
-                    train_int_rewards.append([train_steps[i], train_int_reward[i]])
-                    train_fm_errors += train_fm_error[i]
-                    bar.numerator = steps
+            agent.train(state0, value, action0, probs0, state1, reward, done)
 
-                    print('Run {0:d} step {1:d} training [ext. reward {2:f} c int. reward {3:f} c fm. error {4:f} ps steps {5:d}]'.format(
-                        trial, steps, train_ext_reward[i], train_int_reward[i], numpy.array(train_fm_error[i]).mean(), train_steps[i]))
-                    print(bar)
-
-                    train_ext_reward[i] = 0
-                    train_int_reward[i] = 0
-                    train_steps[i] = 0
-                    train_fm_error[i].clear()
-
-                    s[i] = self._env_list[i].reset()
-                else:
-                    s[i] = ns[i]
-
-            reward = torch.tensor(numpy.stack(r), dtype=torch.float32)
-            done = torch.tensor(numpy.stack(d), dtype=torch.float32)
-
-            agent.train(state0, action0, state1, reward, done)
-
-            state0 = self.process_state(numpy.stack(s))
+            state0 = self.process_state(s)
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
         numpy.save('ppo_{0}_{1}_{2:d}_re'.format(config.name, config.model, trial), numpy.array(train_ext_rewards))
         numpy.save('ppo_{0}_{1}_{2:d}_ri'.format(config.name, config.model, trial), numpy.array(train_int_rewards))
-        numpy.save('ppo_{0}_{1}_{2:d}_fme'.format(config.name, config.model, trial), numpy.array(train_fm_errors[:step_limit]))
+        numpy.save('ppo_{0}_{1}_{2:d}_fme'.format(config.name, config.model, trial), numpy.array(train_fm_errors[:step_counter.limit]))
 
         print('Saving data...')
         save_data = {
             're': numpy.array(train_ext_rewards),
             'ri': numpy.array(train_int_rewards),
-            'fme': numpy.array(train_fm_errors[:step_limit])
+            'fme': numpy.array(train_fm_errors[:step_counter.limit])
         }
         numpy.save('ppo_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)

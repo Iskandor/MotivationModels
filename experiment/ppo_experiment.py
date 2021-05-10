@@ -29,7 +29,7 @@ class ExperimentPPO:
     def test(self, agent):
         config = self._config
 
-        for i in range(1):
+        for i in range(3):
             video_path = 'ppo_{0}_{1}_{2:d}.mp4'.format(config.name, config.model, i)
             video_recorder = VideoRecorder(self._env, video_path, enabled=video_path is not None, fps=15)
             state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0).to(config.device)
@@ -65,11 +65,12 @@ class ExperimentPPO:
 
                 if isinstance(reward, numpy.ndarray):
                     reward = reward[0]
+                reward = torch.tensor([reward], dtype=torch.float32)
 
                 state1 = self.process_state(next_state)
-                mask = 1
+                mask = torch.tensor([1], dtype=torch.float32)
                 if done:
-                    mask = 0
+                    mask[0] = 0
                 agent.train(state0, value, action0, probs0, state1, reward, mask)
                 state0 = state1
 

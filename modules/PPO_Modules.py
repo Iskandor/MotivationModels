@@ -4,6 +4,8 @@ import numpy as np
 from torch.distributions import Categorical, MultivariateNormal, Normal
 
 from agents import TYPE
+from modules import init
+from modules.forward_models.ForwardModelAtari import ForwardModelAtari
 
 
 class DiscreteHead(nn.Module):
@@ -48,6 +50,21 @@ class ContinuousHead(nn.Module):
         action = dist.sample()
 
         return action, torch.cat([mu, var], dim=1)
+
+
+class Critic2Heads(nn.Module):
+    def __init__(self, input_dim):
+        super(Critic2Heads, self).__init__()
+        self.ext = nn.Linear(input_dim, 1)
+        self.int = nn.Linear(input_dim, 1)
+
+        init(self.ext, 0.01)
+        init(self.int, 0.01)
+
+    def forward(self, x):
+        ext_value = self.ext(x)
+        int_value = self.int(x)
+        return torch.stack([ext_value, int_value], dim=1).squeeze(-1)
 
 
 class PPOSimpleNetwork(torch.nn.Module):
@@ -148,27 +165,24 @@ class PPOAtariNetwork(torch.nn.Module):
         self.input_shape = input_shape
         self.action_dim = action_dim
         input_channels = self.input_shape[0]
-        self.feature_dim = 448
+        self.feature_dim = 512
 
         self.layers_features = [
-            nn.Conv2d(input_channels, 32, kernel_size=8, stride=4),
+            nn.Conv2d(input_channels, 32, kernel_size=8, stride=4, padding=2),
             nn.ReLU(),
-            nn.Conv2d(32, 64, kernel_size=4, stride=2),
+            nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=1),
             nn.ReLU(),
-            nn.Conv2d(64, 64, kernel_size=3, stride=1),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(8 * 8 * 64, 256),
-            nn.ReLU(),
-            nn.Linear(256, self.feature_dim),
+            nn.Linear(12 * 12 * 64, self.feature_dim),
             nn.ReLU()
         ]
 
-        self._init(self.layers_features[0], np.sqrt(2))
-        self._init(self.layers_features[2], np.sqrt(2))
-        self._init(self.layers_features[4], np.sqrt(2))
-        self._init(self.layers_features[7], np.sqrt(2))
-        self._init(self.layers_features[9], np.sqrt(2))
+        init(self.layers_features[0], np.sqrt(2))
+        init(self.layers_features[2], np.sqrt(2))
+        init(self.layers_features[4], np.sqrt(2))
+        init(self.layers_features[7], np.sqrt(2))
 
         self.layers_value = [
             torch.nn.Linear(self.feature_dim, self.feature_dim),
@@ -176,15 +190,15 @@ class PPOAtariNetwork(torch.nn.Module):
             torch.nn.Linear(self.feature_dim, 1)
         ]
 
-        self._init(self.layers_value[0], 0.1)
-        self._init(self.layers_value[2], 0.01)
+        init(self.layers_value[0], 0.1)
+        init(self.layers_value[2], 0.01)
 
         self.layers_policy = [
             torch.nn.Linear(self.feature_dim, self.feature_dim),
             torch.nn.ReLU(),
         ]
 
-        self._init(self.layers_policy[0], 0.01)
+        init(self.layers_policy[0], 0.01)
 
         if head == TYPE.discrete:
             self.layers_policy.append(DiscreteHead(self.feature_dim, action_dim))
@@ -204,6 +218,68 @@ class PPOAtariNetwork(torch.nn.Module):
 
         return value, action, probs
 
-    def _init(self, layer, gain):
-        nn.init.orthogonal_(layer.weight, gain)
-        layer.bias.data.zero_()
+
+class PPOAtariMotivationNetwork(torch.nn.Module):
+    def __init__(self, input_shape, action_dim, config, head):
+        super(PPOAtariMotivationNetwork, self).__init__()
+
+        self.input_shape = input_shape
+        self.action_dim = action_dim
+        input_channels = self.input_shape[0]
+        self.feature_dim = 512
+
+        self.layers_features = [
+            nn.Conv2d(input_channels, 32, kernel_size=8, stride=4, padding=2),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(12 * 12 * 64, self.feature_dim),
+            nn.ReLU()
+        ]
+
+        init(self.layers_features[0], np.sqrt(2))
+        init(self.layers_features[2], np.sqrt(2))
+        init(self.layers_features[4], np.sqrt(2))
+        init(self.layers_features[7], np.sqrt(2))
+
+        self.layers_value = [
+            torch.nn.Linear(self.feature_dim, self.feature_dim),
+            torch.nn.ReLU(),
+            Critic2Heads(self.feature_dim)
+        ]
+
+        init(self.layers_value[0], 0.1)
+
+        self.layers_policy = [
+            torch.nn.Linear(self.feature_dim, self.feature_dim),
+            torch.nn.ReLU(),
+        ]
+
+        init(self.layers_policy[0], 0.01)
+
+        if head == TYPE.discrete:
+            self.layers_policy.append(DiscreteHead(self.feature_dim, action_dim))
+        if head == TYPE.continuous:
+            self.layers_policy.append(ContinuousHead(self.feature_dim, action_dim))
+        if head == TYPE.multibinary:
+            pass
+
+        self.features = nn.Sequential(*self.layers_features)
+        self.critic = nn.Sequential(*self.layers_value)
+        self.actor = nn.Sequential(*self.layers_policy)
+
+    def forward(self, state):
+        features = self.features(state)
+        value = self.critic(features)
+        action, probs = self.actor(features)
+
+        return value, action, probs
+
+
+class PPOAtariNetworkFM(PPOAtariMotivationNetwork):
+    def __init__(self, input_shape, action_dim, config, head):
+        super(PPOAtariNetworkFM, self).__init__(input_shape, action_dim, config, head)
+        self.forward_model = ForwardModelAtari(self.features, self.feature_dim, self.action_dim)

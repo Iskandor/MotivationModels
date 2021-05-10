@@ -408,6 +408,23 @@
       "lr": 0.0002,
       "actor_loss_weight": 0.5,
       "critic_loss_weight": 1
+    },
+    "2": {
+      "model": "fm",
+      "n_env": 64,
+      "trials": 15,
+      "steps": 0.5,
+      "gamma": 0.99,
+      "beta": 0.001,
+      "batch_size": 16,
+      "trajectory_size": 128,
+      "ppo_epochs": 4,
+      "lr": 0.0002,
+      "actor_loss_weight": 0.5,
+      "critic_loss_weight": 1,
+      "forward_model_lr": 0.0001,
+      "forward_model_eta": 1,
+      "forward_model_variant": "A"
     }
   },
   "private_eye": {

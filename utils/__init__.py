@@ -2,8 +2,8 @@ import torch
 import numpy as np
 
 
-def one_hot_code(values, value_dim, device):
-    code = torch.zeros((values.shape[0], value_dim), dtype=torch.float32, device=device)
+def one_hot_code(values, value_dim):
+    code = torch.zeros((values.shape[0], value_dim), dtype=torch.float32, device=values.device)
     code = code.scatter(1, values, 1.0)
     return code
 
