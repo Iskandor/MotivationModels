@@ -770,7 +770,7 @@ class ExperimentDDPG:
             bar.numerator = steps
             exploration.update(steps)
 
-            reward_avg.update(reward)
+            reward_avg.update(train_ext_reward)
             train_ext_rewards.append([train_steps, train_ext_reward])
             train_int_rewards.append([train_steps, train_int_reward])
 
@@ -834,7 +834,7 @@ class ExperimentDDPG:
             bar.numerator = steps
             exploration.update(steps)
 
-            reward_avg.update(reward)
+            reward_avg.update(train_ext_reward)
             train_ext_rewards.append([train_steps, train_ext_reward])
             train_int_rewards.append([train_steps, train_int_reward])
 
