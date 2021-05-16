@@ -164,13 +164,13 @@ class ExperimentNEnvPPO:
             for i in range(n_env):
                 a[i] = agent.convert_action(action0[i])
 
-            # start = time.time()
-            with ThreadPoolExecutor(max_workers=4) as executor:
+            start = time.time()
+            with ThreadPoolExecutor(max_workers=config.num_threads) as executor:
                 executor.map(self.one_step_baseline, inputs)
 
-            # end = time.time()
-            # time_avg.update(end - start)
-            # print('Duration {0:.3f}s'.format(time_avg.value()))
+            end = time.time()
+            time_avg.update(end - start)
+            print('Duration {0:.3f}s'.format(time_avg.value()))
 
             state1 = self.process_state(ns)
             reward = torch.tensor(r, dtype=torch.float32)
@@ -228,7 +228,7 @@ class ExperimentNEnvPPO:
                 a[i] = agent.convert_action(action0[i])
 
             # start = time.time()
-            with ThreadPoolExecutor(max_workers=4) as executor:
+            with ThreadPoolExecutor(max_workers=config.num_threads) as executor:
                 executor.map(self.one_step_forward_model, inputs)
 
             # end = time.time()

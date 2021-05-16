@@ -247,6 +247,10 @@ def update_config(args, experiment):
     experiment.device = args.device
     experiment.gpus = args.gpus
     experiment.shift = args.shift
+    if args.num_threads == 0:
+        experiment.num_threads = psutil.cpu_count(logical=True)
+    else:
+        experiment.num_threads = args.num_threads
     if args.algorithm == 'ppo':
         experiment.steps *= experiment.n_env
         experiment.batch_size *= experiment.n_env
@@ -271,7 +275,8 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--shift', type=int, help='shift result id', default=0)
     parser.add_argument('-p', '--parallel', action="store_true", help='run envs in parallel mode')
     parser.add_argument('-pb', '--parallel_backend', type=str, default='ray', choices=['ray', 'torch'], help='parallel backend')
-    parser.add_argument('--num_workers', type=int, help='number of parallel processes started in parallel mode (0=automatic number of cpus)', default=0)
+    parser.add_argument('--num_processes', type=int, help='number of parallel processes started in parallel mode (0=automatic number of cpus)', default=0)
+    parser.add_argument('--num_threads', type=int, help='number of parallel threads running in PPO (0=automatic number of cpus)', default=0)
     parser.add_argument('-t', '--thread', action="store_true", help='do not use: technical parameter for parallel run')
 
     args = parser.parse_args()
@@ -291,10 +296,10 @@ if __name__ == '__main__':
             experiment.trials = 1
 
         if args.parallel:
-            if args.num_workers == 0:
+            if args.num_processes == 0:
                 num_cpus = psutil.cpu_count(logical=True)
             else:
-                num_cpus = min(psutil.cpu_count(logical=True), args.num_workers)
+                num_cpus = min(psutil.cpu_count(logical=True), args.num_processes)
             print('Running parallel {0} trainings'.format(num_cpus))
             print('Using {0} parallel backend'.format(args.parallel_backend))
 
