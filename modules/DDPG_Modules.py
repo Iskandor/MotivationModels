@@ -8,7 +8,7 @@ from modules.forward_models.ForwardModelAeris import ForwardModelAeris, ForwardM
 from modules.forward_models.ForwardModelBullet import ForwardModelBullet
 from modules.inverse_models.InverseModelAeris import InverseModelAeris
 from modules.metacritic_models.MetaCriticModelAeris import MetaCriticModelAeris, MetaCriticRNDModelAeris
-from modules.metacritic_models.MetaCriticModelBullet import MetaCriticModelBullet
+from modules.metacritic_models.MetaCriticModelBullet import MetaCriticModelBullet, MetaCriticRNDModelBullet
 from modules.rnd_models.RNDModelAeris import RNDModelAeris
 from modules.rnd_models.RNDModelBullet import RNDModelBullet
 
@@ -192,6 +192,13 @@ class DDPGBulletNetworkRND(DDPGBulletNetwork):
     def __init__(self, state_dim, action_dim, config):
         super(DDPGBulletNetworkRND, self).__init__(state_dim, action_dim, config)
         self.rnd_model = RNDModelBullet(state_dim, action_dim, config)
+
+
+class DDPGBulletNetworkSURND(DDPGBulletNetwork):
+    def __init__(self, state_dim, action_dim, config):
+        super(DDPGBulletNetworkSURND, self).__init__(state_dim, action_dim, config)
+        self.rnd_model = RNDModelBullet(state_dim, action_dim, config)
+        self.metacritic_model = MetaCriticRNDModelBullet(self.rnd_model, state_dim, action_dim, config)
 
 
 class DDPGAerisNetwork(DDPGNetwork):
