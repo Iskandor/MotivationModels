@@ -47,7 +47,7 @@ class RNDModelBullet(nn.Module):
         with torch.no_grad():
             prediction = self(state)
             target = self.encode(state)
-            error = torch.sum(torch.pow(prediction - target, 2), dim=1)
+            error = torch.mean(torch.pow(prediction - target, 2), dim=1)
 
         return error
 
