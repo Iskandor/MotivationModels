@@ -10,7 +10,7 @@ from modules.inverse_models.InverseModelAeris import InverseModelAeris
 from modules.metacritic_models.MetaCriticModelAeris import MetaCriticModelAeris, MetaCriticRNDModelAeris
 from modules.metacritic_models.MetaCriticModelBullet import MetaCriticModelBullet, MetaCriticRNDModelBullet
 from modules.rnd_models.RNDModelAeris import RNDModelAeris
-from modules.rnd_models.RNDModelBullet import RNDModelBullet
+from modules.rnd_models.RNDModelBullet import RNDModelBullet, QRNDModelBullet
 
 
 class Critic(nn.Module):
@@ -192,6 +192,12 @@ class DDPGBulletNetworkRND(DDPGBulletNetwork):
     def __init__(self, state_dim, action_dim, config):
         super(DDPGBulletNetworkRND, self).__init__(state_dim, action_dim, config)
         self.rnd_model = RNDModelBullet(state_dim, action_dim, config)
+
+
+class DDPGBulletNetworkQRND(DDPGBulletNetwork):
+    def __init__(self, state_dim, action_dim, config):
+        super(DDPGBulletNetworkQRND, self).__init__(state_dim, action_dim, config)
+        self.qrnd_model = QRNDModelBullet(state_dim, action_dim, config)
 
 
 class DDPGBulletNetworkSURND(DDPGBulletNetwork):

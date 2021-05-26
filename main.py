@@ -189,6 +189,8 @@ def run(id, algorithm, env, experiment):
         env_class.run_vae_forward_model(experiment, id)
     if experiment.model == 'rnd':
         env_class.run_rnd_model(experiment, id)
+    if experiment.model == 'qrnd':
+        env_class.run_qrnd_model(experiment, id)
     if experiment.model == 's':
         env_class.run_metalearner_model(experiment, id)
     if experiment.model == 'su':

@@ -853,6 +853,69 @@ class ExperimentDDPG:
         }
         numpy.save('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
 
+    def run_qrnd_model(self, agent, trial):
+        config = self._config
+        trial = trial + config.shift
+
+        step_limit = int(config.steps * 1e6)
+        steps = 0
+
+        train_fm_errors = []
+        train_ext_rewards = []
+        train_int_rewards = []
+        reward_avg = RunningAverageWindow(100)
+
+        bar = ProgressBar(config.steps * 1e6, max_width=40)
+        exploration = GaussianExploration(config.sigma, 0.01, config.steps * config.exploration_time * 1e6)
+
+        while steps < step_limit:
+            state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0)
+            done = False
+            train_ext_reward = 0
+            train_int_reward = 0
+            train_steps = 0
+
+            while not done:
+                action0 = exploration.explore(agent.get_action(state0))
+                next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
+                reward = self.transform_reward(reward)
+                state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
+
+                agent.train(state0, action0, state1, reward, done)
+                train_steps += 1
+
+                train_ext_reward += reward
+                train_int_reward += agent.motivation.reward(state0, action0).item()
+                train_fm_error = agent.motivation.error(state0, action0).item()
+                train_fm_errors.append(train_fm_error)
+
+                state0 = state1
+
+            steps += train_steps
+            if steps > step_limit:
+                train_steps -= steps - step_limit
+            bar.numerator = steps
+            exploration.update(steps)
+
+            reward_avg.update(train_ext_reward)
+            train_ext_rewards.append([train_steps, train_ext_reward])
+            train_int_rewards.append([train_steps, train_int_reward])
+
+            print('Run {0:d} step {1:d} sigma {2:f} training [ext. reward {3:f} int. reward {4:f} steps {5:d}] avg. ext. reward {6:f}'.format(trial, steps, exploration.sigma,
+                                                                                                                       train_ext_reward, train_int_reward,
+                                                                                                                       train_steps, reward_avg.value()))
+            print(bar)
+
+        agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
+
+        print('Saving data...')
+        save_data = {
+            're': numpy.array(train_ext_rewards),
+            'ri': numpy.array(train_int_rewards),
+            'fme': numpy.array(train_fm_errors[:step_limit])
+        }
+        numpy.save('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
+
     @staticmethod
     def baseline_activations(agent, states):
         actions = agent.get_action(states)

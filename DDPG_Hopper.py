@@ -1,7 +1,7 @@
 import gym
 import pybullet_envs
 
-from agents.DDPGAgent import DDPGBulletAgent, DDPGBulletForwardModelAgent, DDPGBulletGatedMetacriticModelAgent, DDPGBulletRNDModelAgent, DDPGBulletMetaCriticRNDModelAgent
+from agents.DDPGAgent import DDPGBulletAgent, DDPGBulletForwardModelAgent, DDPGBulletGatedMetacriticModelAgent, DDPGBulletRNDModelAgent, DDPGBulletMetaCriticRNDModelAgent, DDPGBulletQRNDModelAgent
 from experiment.ddpg_experiment import ExperimentDDPG
 
 
@@ -55,6 +55,17 @@ def run_rnd_model(config, i):
 
     env.close()
 
+
+def run_qrnd_model(config, i):
+    env = gym.make('HopperBulletEnv-v0')
+    state_dim = env.observation_space.shape[0]
+    action_dim = env.action_space.shape[0]
+
+    experiment = ExperimentDDPG('HopperBulletEnv-v0', env, config)
+    agent = DDPGBulletQRNDModelAgent(state_dim, action_dim, config)
+    experiment.run_qrnd_model(agent, i)
+
+    env.close()
 
 def run_metalearner_rnd_model(config, i):
     env = gym.make('HopperBulletEnv-v0')
