@@ -161,10 +161,10 @@ class DOPModelBullet(nn.Module):
         return self.motivator.error(state, action)
 
     def motivator_loss_function(self, state, action, prediction=None):
-        return self.motivator.loss_function(state, self.generator(state).detach(), prediction)
+        return self.motivator.loss_function(state, action, prediction)
 
-    def generator_loss_function(self, state):
-        loss = -self.motivator.loss_function(state, self.generator(state))
+    def generator_loss_function(self, state, action):
+        loss = -self.motivator.loss_function(state, action + self.generator(state))
         return loss
 
     def _init(self, layer, gain):

@@ -6,6 +6,7 @@ from operator import itemgetter
 import torch
 
 MDP_Transition = namedtuple('MDP_Transition', ('state', 'action', 'next_state', 'reward', 'mask'))
+MDP_DOP_Transition = namedtuple('MDP_DOP_Transition', ('state', 'action', 'noise', 'next_state', 'reward', 'mask'))
 M2_Transition = namedtuple('M2_Transition', ('state', 'action', 'next_state', 'gate_state', 'weight', 'next_gate_state', 'reward', 'mask'))
 PPO_Transition = namedtuple('PPO_Transition', ('state', 'value', 'action', 'prob', 'next_state', 'reward', 'mask'))
 
@@ -35,6 +36,23 @@ class ExperienceReplayBuffer(ReplayBuffer):
     def sample(self, indices):
         transitions = list(itemgetter(*indices)(self.memory))
         batch = MDP_Transition(*zip(*transitions))
+
+        return batch
+
+    def sample_batches(self, indices):
+        return [self.sample(indices)]
+
+
+class DOPReplayBuffer(ReplayBuffer):
+    def add(self, state, action, noise, next_state, reward, mask):
+        if mask:
+            self.memory.append(MDP_DOP_Transition(state, action, noise, next_state, torch.tensor([reward], dtype=torch.float32), torch.tensor([0], dtype=torch.float32)))
+        else:
+            self.memory.append(MDP_DOP_Transition(state, action, noise, next_state, torch.tensor([reward], dtype=torch.float32), torch.tensor([1], dtype=torch.float32)))
+
+    def sample(self, indices):
+        transitions = list(itemgetter(*indices)(self.memory))
+        batch = MDP_DOP_Transition(*zip(*transitions))
 
         return batch
 

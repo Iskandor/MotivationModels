@@ -89,6 +89,7 @@ class DOPMotivation:
 
             states = torch.stack(sample.state).squeeze(1)
             actions = torch.stack(sample.action).squeeze(1)
+            noises = torch.stack(sample.noise).squeeze(1)
 
             self._motivator_optimizer.zero_grad()
             loss = self._network.motivator_loss_function(states, actions)
@@ -96,7 +97,7 @@ class DOPMotivation:
             self._motivator_optimizer.step()
 
             self._generator_optimizer.zero_grad()
-            loss = self._network.generator_loss_function(states)
+            loss = self._network.generator_loss_function(states, actions - noises)
             loss.backward()
             self._generator_optimizer.step()
 
