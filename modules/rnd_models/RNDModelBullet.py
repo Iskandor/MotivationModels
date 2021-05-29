@@ -123,3 +123,50 @@ class QRNDModelBullet(nn.Module):
     def _init(self, layer, gain):
         nn.init.orthogonal_(layer.weight, gain)
         layer.bias.data.zero_()
+
+
+class DOPModelBullet(nn.Module):
+    def __init__(self, state_dim, action_dim, config):
+        super(DOPModelBullet, self).__init__()
+
+        self.state_dim = state_dim
+        self.action_dim = action_dim
+
+        self.motivator = QRNDModelBullet(state_dim, action_dim, config)
+
+        fm_h = [int(x) for x in config.fm_h.split(',')]
+
+        self.generator = nn.Sequential(
+            nn.Linear(state_dim, fm_h[0]),
+            nn.ReLU(),
+            nn.Linear(fm_h[0], fm_h[1]),
+            nn.ReLU(),
+            nn.Linear(fm_h[1], action_dim),
+            nn.Tanh()
+        )
+
+        self._init(self.generator[0], np.sqrt(2))
+        self._init(self.generator[2], np.sqrt(2))
+        self._init(self.generator[4], np.sqrt(2))
+
+    def noise(self, state):
+        noise = self.generator(state)
+        return noise
+
+    def forward(self, state, action):
+        predicted_code = self.motivator(state, action)
+        return predicted_code
+
+    def error(self, state, action):
+        return self.motivator.error(state, action)
+
+    def motivator_loss_function(self, state, action, prediction=None):
+        return self.motivator.loss_function(state, self.generator(state).detach(), prediction)
+
+    def generator_loss_function(self, state):
+        loss = -self.motivator.loss_function(state, self.generator(state))
+        return loss
+
+    def _init(self, layer, gain):
+        nn.init.orthogonal_(layer.weight, gain)
+        layer.bias.data.zero_()

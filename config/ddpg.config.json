@@ -2564,6 +2564,27 @@
       "motivation_lr": 0.0001,
       "motivation_batch_size": 32,
       "fm_h": "128,64"
+    },
+    "36": {
+      "model": "dop",
+      "noisy": false,
+      "sigma": 0.01,
+      "exploration_time": 1,
+      "trials": 15,
+      "steps": 2,
+      "gamma": 0.99,
+      "tau ": 0.005,
+      "batch_size": 64,
+      "memory_size": 100000,
+      "actor_lr": 0.0001,
+      "actor_h": "64,32",
+      "critic_lr": 0.0002,
+      "critic_h": "256,256",
+      "motivation_eta": 1,
+      "motivation_variant": "A",
+      "motivation_lr": 0.0001,
+      "motivation_batch_size": 32,
+      "fm_h": "128,64"
     }
   },
   "reacher": {

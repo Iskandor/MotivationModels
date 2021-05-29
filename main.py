@@ -191,6 +191,8 @@ def run(id, algorithm, env, experiment):
         env_class.run_rnd_model(experiment, id)
     if experiment.model == 'qrnd':
         env_class.run_qrnd_model(experiment, id)
+    if experiment.model == 'dop':
+        env_class.run_dop_model(experiment, id)
     if experiment.model == 's':
         env_class.run_metalearner_model(experiment, id)
     if experiment.model == 'su':
@@ -263,6 +265,8 @@ if __name__ == '__main__':
     print(platform.system())
     print(torch.__config__.show())
     print(torch.__config__.parallel_info())
+    torch.autograd.set_detect_anomaly(True)
+
     parser = argparse.ArgumentParser(description='Motivation models learning platform.')
 
     if not os.path.exists('./models'):
