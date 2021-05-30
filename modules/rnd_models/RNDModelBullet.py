@@ -131,27 +131,44 @@ class DOPModelBullet(nn.Module):
 
         self.state_dim = state_dim
         self.action_dim = action_dim
+        self.G = 16
 
         self.motivator = QRNDModelBullet(state_dim, action_dim, config)
 
         fm_h = [int(x) for x in config.fm_h.split(',')]
 
-        self.generator = nn.Sequential(
-            nn.Linear(state_dim, fm_h[0]),
-            nn.ReLU(),
-            nn.Linear(fm_h[0], fm_h[1]),
-            nn.ReLU(),
-            nn.Linear(fm_h[1], action_dim),
-            nn.Tanh()
-        )
+        self.generator = []
 
-        self._init(self.generator[0], np.sqrt(2))
-        self._init(self.generator[2], np.sqrt(2))
-        self._init(self.generator[4], np.sqrt(2))
+        for i in range(self.G):
+            g = nn.Sequential(
+                nn.Linear(state_dim, fm_h[0]),
+                nn.ReLU(),
+                nn.Linear(fm_h[0], fm_h[1]),
+                nn.ReLU(),
+                nn.Linear(fm_h[1], action_dim),
+                nn.Tanh()
+            )
 
-    def noise(self, state):
-        noise = self.generator(state)
-        return noise
+            self._init(g[0], np.sqrt(2))
+            self._init(g[2], np.sqrt(2))
+            self._init(g[4], np.sqrt(2))
+
+            self.generator.append(g)
+
+    def noise(self, state, action):
+        noise = []
+        motivation = []
+        for i in range(self.G):
+            n = self.generator[i](state)
+            noise.append(n)
+            m = self.error(state, action + n)
+            motivation.append(m)
+
+        motivation = torch.stack(motivation)
+
+        index = motivation.argmax(dim=0)
+
+        return noise[index.item()], index
 
     def forward(self, state, action):
         predicted_code = self.motivator(state, action)
@@ -163,8 +180,8 @@ class DOPModelBullet(nn.Module):
     def motivator_loss_function(self, state, action, prediction=None):
         return self.motivator.loss_function(state, action, prediction)
 
-    def generator_loss_function(self, state, action):
-        loss = -self.motivator.loss_function(state, action + self.generator(state))
+    def generator_loss_function(self, state, action, index):
+        loss = -self.motivator.loss_function(state, action + self.generator[index](state))
         return loss
 
     def _init(self, layer, gain):

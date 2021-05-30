@@ -958,13 +958,13 @@ class ExperimentDDPG:
             train_steps = 0
 
             while not done:
-                action0, noise = agent.get_action(state0)
+                action0, noise, index = agent.get_action(state0)
                 action0 += noise
                 next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
                 reward = self.transform_reward(reward)
                 state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
 
-                agent.train(state0, action0, noise, state1, reward, done)
+                agent.train(state0, action0, noise, index, state1, reward, done)
                 train_steps += 1
 
                 train_ext_reward += reward

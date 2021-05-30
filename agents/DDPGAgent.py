@@ -126,12 +126,12 @@ class DDPGBulletDOPModelAgent(DDPGAgent):
         self.algorithm = DDPG2(self.network, config.actor_lr, config.critic_lr, config.gamma, config.tau, self.memory, config.batch_size)
 
     def get_action(self, state):
-        action = self.network.action(state).detach()
-        noise = self.network.noise(state).detach()
-        return action, noise
+        action = self.network.action(state)
+        noise, index = self.network.noise(state, action)
+        return action.detach(), noise.detach(), index.detach()
 
-    def train(self, state0, action0, noise0, state1, reward, mask):
-        self.memory.add(state0, action0, noise0, state1, reward, mask)
+    def train(self, state0, action0, noise0, index, state1, reward, mask):
+        self.memory.add(state0, action0, noise0, index, state1, reward, mask)
         self.algorithm.train_sample(self.memory.indices(self.config.batch_size))
         self.motivation.train(self.memory.indices(self.config.motivation_batch_size))
 

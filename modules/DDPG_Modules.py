@@ -205,8 +205,8 @@ class DDPGBulletNetworkDOP(DDPGBulletNetwork):
         super(DDPGBulletNetworkDOP, self).__init__(state_dim, action_dim, config)
         self.dop_model = DOPModelBullet(state_dim, action_dim, config)
 
-    def noise(self, state):
-        return self.dop_model.noise(state)
+    def noise(self, state, action):
+        return self.dop_model.noise(state, action)
 
 
 class DDPGBulletNetworkSURND(DDPGBulletNetwork):
