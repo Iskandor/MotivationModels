@@ -958,20 +958,19 @@ class ExperimentDDPG:
             train_steps = 0
 
             while not done:
-                action0, noise, index = agent.get_action(state0)
-                action0 += noise
+                base_action, action0, index = agent.get_action(state0)
                 next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
                 reward = self.transform_reward(reward)
                 state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
 
-                agent.train(state0, action0, noise, index, state1, reward, done)
+                agent.train(state0, action0, base_action, index, state1, reward, done)
                 train_steps += 1
 
                 train_ext_reward += reward
                 train_int_reward += agent.motivation.reward(state0, action0).item()
                 train_fm_error = agent.motivation.error(state0, action0).item()
                 train_fm_errors.append(train_fm_error)
-                train_noises.append(noise.squeeze(0).numpy())
+                # train_noises.append(noise.squeeze(0).numpy())
 
                 state0 = state1
 
@@ -996,7 +995,7 @@ class ExperimentDDPG:
             're': numpy.array(train_ext_rewards),
             'ri': numpy.array(train_int_rewards),
             'fme': numpy.array(train_fm_errors[:step_limit]),
-            'noise': numpy.stack(train_noises[:step_limit])
+            # 'noise': numpy.stack(train_noises[:step_limit])
         }
         numpy.save('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
 

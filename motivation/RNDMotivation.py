@@ -99,7 +99,7 @@ class DOPMotivation:
 
             for i in index.tolist():
                 self._generator_optimizer[i].zero_grad()
-                loss = self._network.generator_loss_function(states, actions - noises, i)
+                loss = self._network.generator_loss_function(states, noises, i)
                 loss.backward()
                 self._generator_optimizer[i].step()
 

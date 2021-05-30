@@ -141,7 +141,7 @@ class DOPModelBullet(nn.Module):
 
         for i in range(self.G):
             g = nn.Sequential(
-                nn.Linear(state_dim, fm_h[0]),
+                nn.Linear(action_dim, fm_h[0]),
                 nn.ReLU(),
                 nn.Linear(fm_h[0], fm_h[1]),
                 nn.ReLU(),
@@ -159,9 +159,9 @@ class DOPModelBullet(nn.Module):
         noise = []
         motivation = []
         for i in range(self.G):
-            n = self.generator[i](state)
-            noise.append(n)
-            m = self.error(state, action + n)
+            new_action = self.generator[i](action.detach())
+            noise.append(new_action)
+            m = self.error(state, new_action)
             motivation.append(m)
 
         motivation = torch.stack(motivation)
@@ -181,7 +181,7 @@ class DOPModelBullet(nn.Module):
         return self.motivator.loss_function(state, action, prediction)
 
     def generator_loss_function(self, state, action, index):
-        loss = -self.motivator.loss_function(state, action + self.generator[index](state))
+        loss = -self.motivator.loss_function(state, self.generator[index](action))
         return loss
 
     def _init(self, layer, gain):
