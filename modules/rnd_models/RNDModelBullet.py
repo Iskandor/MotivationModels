@@ -125,6 +125,35 @@ class QRNDModelBullet(nn.Module):
         layer.bias.data.zero_()
 
 
+class DOPSimpleModelBullet(nn.Module):
+    def __init__(self, state_dim, action_dim, config, actor):
+        super(DOPSimpleModelBullet, self).__init__()
+
+        self.state_dim = state_dim
+        self.action_dim = action_dim
+
+        self.motivator = QRNDModelBullet(state_dim, action_dim, config)
+        self.actor = actor
+
+    def forward(self, state, action):
+        predicted_code = self.motivator(state, action)
+        return predicted_code
+
+    def error(self, state, action):
+        return self.motivator.error(state, action)
+
+    def motivator_loss_function(self, state, action, prediction=None):
+        return self.motivator.loss_function(state, action, prediction)
+
+    def generator_loss_function(self, state):
+        loss = -self.motivator.loss_function(state, self.actor(state)) * 1e2
+        return loss
+
+    def _init(self, layer, gain):
+        nn.init.orthogonal_(layer.weight, gain)
+        layer.bias.data.zero_()
+
+
 class DOPModelBullet(nn.Module):
     def __init__(self, state_dim, action_dim, config):
         super(DOPModelBullet, self).__init__()

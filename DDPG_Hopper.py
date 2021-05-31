@@ -2,7 +2,7 @@ import gym
 import pybullet_envs
 
 from agents.DDPGAgent import DDPGBulletAgent, DDPGBulletForwardModelAgent, DDPGBulletGatedMetacriticModelAgent, DDPGBulletRNDModelAgent, DDPGBulletMetaCriticRNDModelAgent, DDPGBulletQRNDModelAgent, \
-    DDPGBulletDOPModelAgent
+    DDPGBulletDOPModelAgent, DDPGBulletDOPSimpleModelAgent
 from experiment.ddpg_experiment import ExperimentDDPG
 
 
@@ -75,8 +75,8 @@ def run_dop_model(config, i):
     action_dim = env.action_space.shape[0]
 
     experiment = ExperimentDDPG('HopperBulletEnv-v0', env, config)
-    agent = DDPGBulletDOPModelAgent(state_dim, action_dim, config)
-    experiment.run_dop_model(agent, i)
+    agent = DDPGBulletDOPSimpleModelAgent(state_dim, action_dim, config)
+    experiment.run_dop_simple_model(agent, i)
 
     env.close()
 
