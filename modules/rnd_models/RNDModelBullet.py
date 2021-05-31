@@ -115,9 +115,9 @@ class QRNDModelBullet(nn.Module):
 
     def loss_function(self, state, action, prediction=None):
         if prediction is None:
-            loss = nn.functional.mse_loss(self(state, action), self.encode(state, action).detach())
+            loss = nn.functional.mse_loss(self(state, action), self.encode(state, action).detach(), reduction='sum')
         else:
-            loss = nn.functional.mse_loss(prediction, self.encode(state, action).detach())
+            loss = nn.functional.mse_loss(prediction, self.encode(state, action).detach(), reduction='sum')
         return loss
 
     def _init(self, layer, gain):
@@ -146,7 +146,7 @@ class DOPSimpleModelBullet(nn.Module):
         return self.motivator.loss_function(state, action, prediction)
 
     def generator_loss_function(self, state):
-        loss = -self.motivator.loss_function(state, self.actor(state)) * 1e2
+        loss = -self.motivator.loss_function(state, self.actor(state))
         return loss
 
     def _init(self, layer, gain):
