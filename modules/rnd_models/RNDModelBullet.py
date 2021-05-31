@@ -75,11 +75,14 @@ class QRNDModelBullet(nn.Module):
         self.target_model = nn.Sequential(
             nn.Linear(state_dim + action_dim, fm_h[0]),
             nn.ReLU(),
-            nn.Linear(fm_h[0], state_dim + action_dim)
+            nn.Linear(fm_h[0], fm_h[1]),
+            nn.ReLU(),
+            nn.Linear(fm_h[1], state_dim + action_dim)
         )
 
         self._init(self.target_model[0], np.sqrt(2))
         self._init(self.target_model[2], np.sqrt(2))
+        self._init(self.target_model[4], np.sqrt(2))
 
         for param in self.target_model.parameters():
             param.requires_grad = False
@@ -87,14 +90,12 @@ class QRNDModelBullet(nn.Module):
         self.model = nn.Sequential(
             nn.Linear(state_dim + action_dim, fm_h[0]),
             nn.ReLU(),
-            nn.Linear(fm_h[0], fm_h[1]),
-            nn.ReLU(),
-            nn.Linear(fm_h[1], state_dim + action_dim)
+            nn.Linear(fm_h[0], state_dim + action_dim)
         )
 
         self._init(self.model[0], np.sqrt(2))
         self._init(self.model[2], np.sqrt(2))
-        self._init(self.model[4], np.sqrt(2))
+        # self._init(self.model[4], np.sqrt(2))
 
     def forward(self, state, action):
         x = torch.cat([state, action], dim=1)
