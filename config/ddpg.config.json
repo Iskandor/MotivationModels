@@ -2582,7 +2582,7 @@
       "critic_h": "256,256",
       "motivation_eta": 1,
       "motivation_variant": "A",
-      "motivation_lr": 0.0001,
+      "motivation_lr": 0.000001,
       "motivation_batch_size": 32,
       "fm_h": "128,64"
     }
