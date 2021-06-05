@@ -141,7 +141,7 @@ class ExperimentDDPG:
             're': numpy.array(train_ext_rewards)
         }
         numpy.save('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
-        analytic.generate_grid()
+        analytic.generate_grid(trial)
 
 
     def run_forward_model(self, agent, trial):

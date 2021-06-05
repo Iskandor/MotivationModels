@@ -57,13 +57,13 @@ class RNDAnalytic:
 
         imageio.mimsave(filename + '.mp4', self.images, fps=5)
 
-    def generate_grid(self, k=1000):
+    def generate_grid(self, trial, k=1000):
         self.states = np.stack(self.states)
         self.actions = np.stack(self.actions)
 
         grid, _ = kmeans(whiten(np.concatenate([self.states, self.actions], axis=1)), k)
 
-        np.save('grid_{0}_{1}'.format(self.config.name, self.config.model), grid)
+        np.save('grid_{0}_{1}_{2}'.format(self.config.name, self.config.model, trial), grid)
 
     def render_frame(self, i, reducer, grid_embedding, states, actions, error):
         figure = plt.figure(figsize=(5.12, 5.12))
