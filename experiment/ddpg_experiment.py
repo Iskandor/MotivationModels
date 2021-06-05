@@ -932,6 +932,7 @@ class ExperimentDDPG:
         train_int_rewards = []
         reward_avg = RunningAverageWindow(100)
         step_avg = RunningAverageWindow(100)
+        analytic = RNDAnalytic(config, motivation=agent.motivation, grid='grid_mountain_car_1_baseline.npy')
 
         bar = ProgressBar(config.steps * 1e6, max_width=40)
 
@@ -944,6 +945,7 @@ class ExperimentDDPG:
 
             while not done:
                 action0 = agent.get_action(state0)
+                analytic.collect(state0, action0)
                 next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
                 reward = self.transform_reward(reward)
                 state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
@@ -958,6 +960,7 @@ class ExperimentDDPG:
 
                 state0 = state1
 
+            analytic.end_trajectory()
             steps += train_steps
             if steps > step_limit:
                 train_steps -= steps - step_limit
@@ -981,6 +984,7 @@ class ExperimentDDPG:
             'fme': numpy.array(train_fm_errors[:step_limit])
         }
         numpy.save('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
+        analytic.render_video('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial))
 
     def run_dop_model(self, agent, trial):
         config = self._config
