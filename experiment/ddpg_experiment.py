@@ -11,6 +11,7 @@ from pyclustering.cluster.center_initializer import kmeans_plusplus_initializer
 from scipy.spatial.distance import cdist
 from pyclustering.cluster.kmeans import kmeans, kmeans_visualizer
 
+from analytic.RNDAnalytic import RNDAnalytic
 from exploration.ContinuousExploration import GaussianExploration
 from utils import stratify_sampling
 from utils.RunningAverage import RunningAverageWindow
@@ -82,12 +83,6 @@ class ExperimentDDPG:
         step_limit = int(config.steps * 1e6)
         steps = 0
 
-        states = None
-        if config.check('generate_states'):
-            states = []
-        if config.check('collect_stats'):
-            states = torch.tensor(numpy.load('./{0:s}_states.npy'.format(self._env_name)), dtype=torch.float32)
-
         action_list = []
         value_list = []
         train_ext_rewards = []
@@ -97,12 +92,9 @@ class ExperimentDDPG:
         bar = ProgressBar(config.steps * 1e6, max_width=40)
         exploration = GaussianExploration(config.sigma, 0.01, config.steps * config.exploration_time * 1e6)
 
-        while steps < step_limit:
-            if config.check('collect_stats'):
-                actions, values = self.baseline_activations(agent, states)
-                action_list.append(actions)
-                value_list.append(values)
+        analytic = RNDAnalytic(config)
 
+        while steps < step_limit:
             if self._preprocess is None:
                 state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0)
             else:
@@ -114,9 +106,8 @@ class ExperimentDDPG:
 
             while not done:
                 train_steps += 1
-                if config.check('generate_states'):
-                    states.append(state0.numpy())
                 action0 = exploration.explore(agent.get_action(state0))
+                analytic.collect(state0, action0)
                 next_state, reward, done, _ = self._env.step(agent.convert_action(action0))
                 reward = self.transform_reward(reward)
                 train_ext_reward += reward
@@ -150,16 +141,8 @@ class ExperimentDDPG:
             're': numpy.array(train_ext_rewards)
         }
         numpy.save('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
+        analytic.generate_grid()
 
-        if config.check('generate_states'):
-            self.generate_states(states)
-
-        if config.check('collect_stats'):
-            action_list = torch.stack(action_list)
-            value_list = torch.stack(value_list)
-
-            numpy.save('ddpg_{0}_{1}_{2:d}_actions'.format(config.name, config.model, trial), action_list)
-            numpy.save('ddpg_{0}_{1}_{2:d}_values'.format(config.name, config.model, trial), value_list)
 
     def run_forward_model(self, agent, trial):
         config = self._config
