@@ -33,16 +33,29 @@ class RNDAnalytic:
             self.errors.append(self.motivation.error(self.grid_state, self.grid_action))
 
     def end_trajectory(self):
-        states = torch.tensor(np.stack(self.states), dtype=torch.float32, device='cpu')
-        actions = torch.tensor(np.stack(self.actions), dtype=torch.float32, device='cpu')
+        states = np.stack(self.states)
+        actions = np.stack(self.actions)
         errors = torch.sum(torch.stack(self.errors), dim=0).numpy()
         if self.error_min > errors.min():
             self.error_min = errors.min()
         if self.error_max < errors.max():
             self.error_max = errors.max()
 
+        del self.states[:]
+        del self.actions[:]
+
         trajectory = (states, actions, errors)
         self.trajectory.append(trajectory)
+
+    def save_data(self, filename):
+        reducer = umap.UMAP()
+        grid_embedding = reducer.fit_transform(self.grid.numpy())
+
+        data = {
+            'grid_embedding': grid_embedding,
+            'trajectories': self.trajectory
+        }
+        np.save('analytic_{0}'.format(filename), data)
 
     def render_video(self, filename):
         print('Rendering video {0:s}.mp4'.format(filename))

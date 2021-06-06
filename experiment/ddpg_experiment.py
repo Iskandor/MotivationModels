@@ -984,7 +984,8 @@ class ExperimentDDPG:
             'fme': numpy.array(train_fm_errors[:step_limit])
         }
         numpy.save('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
-        analytic.render_video('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial))
+        analytic.save_data('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial))
+        # analytic.render_video('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial))
 
     def run_dop_model(self, agent, trial):
         config = self._config
