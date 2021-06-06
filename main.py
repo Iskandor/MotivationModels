@@ -265,7 +265,7 @@ if __name__ == '__main__':
     print(platform.system())
     print(torch.__config__.show())
     print(torch.__config__.parallel_info())
-    torch.autograd.set_detect_anomaly(True)
+    # torch.autograd.set_detect_anomaly(True)
 
     parser = argparse.ArgumentParser(description='Motivation models learning platform.')
 
