@@ -77,7 +77,7 @@ class DOPSimpleMotivation:
     def __init__(self, network, lr, eta=1, memory_buffer=None, sample_size=0, device='cpu'):
         self._network = network
         self._motivator_optimizer = torch.optim.Adam(self._network.motivator.parameters(), lr=lr)
-        self._generator_optimizer = torch.optim.Adam(self._network.actor.parameters(), lr=lr * 1e3)
+        self._generator_optimizer = torch.optim.Adam(self._network.actor.parameters(), lr=lr * 10)
         self._memory = memory_buffer
         self._sample_size = sample_size
         self._eta = eta
@@ -99,7 +99,7 @@ class DOPSimpleMotivation:
             loss = self._network.generator_loss_function(states)
             loss.backward()
             self._generator_optimizer.step()
-
+            # print(loss)
 
     def error(self, state0, action0):
         return self._network.error(state0, action0)

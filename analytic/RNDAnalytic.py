@@ -29,7 +29,7 @@ class RNDAnalytic:
     def end_trajectory(self):
         states = np.stack(self.states)
         actions = np.stack(self.actions)
-        errors = torch.sum(torch.stack(self.errors), dim=0).numpy()
+        errors = torch.mean(torch.stack(self.errors), dim=0).numpy()
 
         if self.error_max < errors.max():
             self.error_max = errors.max()

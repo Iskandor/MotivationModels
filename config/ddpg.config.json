@@ -6,7 +6,7 @@
       "sigma": 1,
       "exploration_time": 0.8,
       "trials": 15,
-      "steps": 1,
+      "steps": 0.5,
       "gamma": 0.99,
       "tau ": 0.005,
       "batch_size": 64,
@@ -22,7 +22,7 @@
       "sigma": 0,
       "exploration_time": 1,
       "trials": 15,
-      "steps": 1,
+      "steps": 0.5,
       "gamma": 0.99,
       "tau ": 0.005,
       "batch_size": 64,
@@ -33,7 +33,7 @@
       "critic_h": "64,32",
       "motivation_eta": 1,
       "motivation_variant": "A",
-      "motivation_lr": 0.000001,
+      "motivation_lr": 0.0001,
       "motivation_batch_size": 32,
       "fm_h": "64,64"
     }
