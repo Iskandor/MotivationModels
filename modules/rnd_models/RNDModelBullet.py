@@ -95,11 +95,11 @@ class QRNDModelBullet(nn.Module):
             nn.Linear(fm_h[1], state_dim + action_dim)
         )
 
-        nn.init.xavier_normal(self.model[0])
+        nn.init.xavier_normal_(self.model[0].weight)
         self.model[0].bias.data.zero_()
-        nn.init.xavier_normal(self.model[2])
+        nn.init.xavier_normal_(self.model[2].weight)
         self.model[2].bias.data.zero_()
-        nn.init.xavier_normal(self.model[4])
+        nn.init.xavier_normal_(self.model[4].weight)
         self.model[4].bias.data.zero_()
 
     def forward(self, state, action):
