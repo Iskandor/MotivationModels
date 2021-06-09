@@ -933,6 +933,7 @@ class ExperimentDDPG:
         reward_avg = RunningAverageWindow(100)
         step_avg = RunningAverageWindow(100)
         analytic = RNDAnalytic(config, motivation=agent.motivation, grid='grid_mountain_car_1_baseline.npy')
+        # analytic.initialization_test(config)
 
         bar = ProgressBar(config.steps * 1e6, max_width=40)
 
@@ -960,7 +961,7 @@ class ExperimentDDPG:
 
                 state0 = state1
 
-            analytic.end_trajectory()
+            analytic.end_trajectory(train_ext_reward)
             steps += train_steps
             if steps > step_limit:
                 train_steps -= steps - step_limit

@@ -73,16 +73,165 @@ class QRNDModelBullet(nn.Module):
         fm_h = [int(x) for x in config.fm_h.split(',')]
 
         self.target_model = nn.Sequential(
-            nn.Linear(state_dim + action_dim, fm_h[0]),
+            nn.Linear(state_dim + action_dim, fm_h[0] // 2),
             nn.ReLU(),
-            nn.Linear(fm_h[0], fm_h[1] // 2),
+            nn.Linear(fm_h[0] // 2, fm_h[1] // 2),
             nn.ReLU(),
-            nn.Linear(fm_h[1] // 2, state_dim + action_dim)
+            nn.Linear(fm_h[1] // 2, (state_dim + action_dim))
         )
 
-        self._init(self.target_model[0], np.sqrt(2))
-        self._init(self.target_model[2], np.sqrt(2))
-        self._init(self.target_model[4], np.sqrt(2))
+        gain = 1
+        self._init(self.target_model[0], gain)
+        self._init(self.target_model[2], gain)
+        self._init(self.target_model[4], gain)
+
+        for param in self.target_model.parameters():
+            param.requires_grad = False
+
+        self.model = nn.Sequential(
+            nn.Linear(state_dim + action_dim, fm_h[0]),
+            nn.ReLU(),
+            nn.Linear(fm_h[0], fm_h[0]),
+            nn.ReLU(),
+            nn.Linear(fm_h[0], fm_h[1]),
+            nn.ReLU(),
+            nn.Linear(fm_h[1], fm_h[1]),
+            nn.ReLU(),
+            nn.Linear(fm_h[1], (state_dim + action_dim))
+        )
+
+        gain = 0.1
+        nn.init.xavier_uniform_(self.model[0].weight, gain)
+        self.model[0].bias.data.zero_()
+        nn.init.xavier_uniform_(self.model[2].weight, gain)
+        self.model[2].bias.data.zero_()
+        nn.init.xavier_uniform_(self.model[4].weight, gain)
+        self.model[4].bias.data.zero_()
+
+    def forward(self, state, action):
+        x = torch.cat([state, action], dim=1)
+        predicted_code = self.model(x)
+        return predicted_code
+
+    def encode(self, state, action):
+        x = torch.cat([state, action], dim=1)
+        return self.target_model(x)
+
+    def error(self, state, action):
+        with torch.no_grad():
+            prediction = self(state, action)
+            target = self.encode(state, action)
+            error = torch.mean(torch.pow(prediction - target, 2), dim=1)
+
+        return error
+
+    def loss_function(self, state, action, prediction=None):
+        if prediction is None:
+            loss = nn.functional.mse_loss(self(state, action), self.encode(state, action).detach(), reduction='sum')
+        else:
+            loss = nn.functional.mse_loss(prediction, self.encode(state, action).detach(), reduction='sum')
+        return loss
+
+    def _init(self, layer, gain):
+        nn.init.orthogonal_(layer.weight, gain)
+        layer.bias.data.zero_()
+
+
+class QRNDModelBullet1(nn.Module):
+    def __init__(self, state_dim, action_dim, config):
+        super(QRNDModelBullet1, self).__init__()
+
+        self.state_dim = state_dim
+        self.action_dim = action_dim
+
+        fm_h = [int(x) for x in config.fm_h.split(',')]
+
+        self.target_model = nn.Sequential(
+            nn.Linear(state_dim + action_dim, fm_h[0] // 2),
+            nn.ReLU(),
+            nn.Linear(fm_h[0] // 2, fm_h[1] // 2),
+            nn.ReLU(),
+            nn.Linear(fm_h[1] // 2, (state_dim + action_dim))
+        )
+
+        gain = 1
+        self._init(self.target_model[0], gain)
+        self._init(self.target_model[2], gain)
+        self._init(self.target_model[4], gain)
+
+        for param in self.target_model.parameters():
+            param.requires_grad = False
+
+        self.model = nn.Sequential(
+            nn.Linear(state_dim + action_dim, fm_h[0]),
+            nn.ReLU(),
+            nn.Linear(fm_h[0], fm_h[0]),
+            nn.ReLU(),
+            nn.Linear(fm_h[0], fm_h[1]),
+            nn.ReLU(),
+            nn.Linear(fm_h[1], fm_h[1]),
+            nn.ReLU(),
+            nn.Linear(fm_h[1], (state_dim + action_dim))
+        )
+
+        gain = 0.1
+        nn.init.xavier_uniform_(self.model[0].weight, gain)
+        self.model[0].bias.data.zero_()
+        nn.init.xavier_uniform_(self.model[2].weight, gain)
+        self.model[2].bias.data.zero_()
+        nn.init.xavier_uniform_(self.model[4].weight, gain)
+        self.model[4].bias.data.zero_()
+
+    def forward(self, state, action):
+        x = torch.cat([state, action], dim=1)
+        predicted_code = self.model(x)
+        return predicted_code
+
+    def encode(self, state, action):
+        x = torch.cat([state, action], dim=1)
+        return self.target_model(x)
+
+    def error(self, state, action):
+        with torch.no_grad():
+            prediction = self(state, action)
+            target = self.encode(state, action)
+            error = torch.mean(torch.pow(prediction - target, 2), dim=1)
+
+        return error
+
+    def loss_function(self, state, action, prediction=None):
+        if prediction is None:
+            loss = nn.functional.mse_loss(self(state, action), self.encode(state, action).detach(), reduction='sum')
+        else:
+            loss = nn.functional.mse_loss(prediction, self.encode(state, action).detach(), reduction='sum')
+        return loss
+
+    def _init(self, layer, gain):
+        nn.init.orthogonal_(layer.weight, gain)
+        layer.bias.data.zero_()
+
+
+class QRNDModelBullet2(nn.Module):
+    def __init__(self, state_dim, action_dim, config):
+        super(QRNDModelBullet2, self).__init__()
+
+        self.state_dim = state_dim
+        self.action_dim = action_dim
+
+        fm_h = [int(x) for x in config.fm_h.split(',')]
+
+        self.target_model = nn.Sequential(
+            nn.Linear(state_dim + action_dim, fm_h[0]),
+            nn.ReLU(),
+            nn.Linear(fm_h[0], fm_h[1]),
+            nn.ReLU(),
+            nn.Linear(fm_h[1], (state_dim + action_dim))
+        )
+
+        gain = 1
+        self._init(self.target_model[0], gain)
+        self._init(self.target_model[2], gain)
+        self._init(self.target_model[4], gain)
 
         for param in self.target_model.parameters():
             param.requires_grad = False
@@ -92,14 +241,15 @@ class QRNDModelBullet(nn.Module):
             nn.ReLU(),
             nn.Linear(fm_h[0], fm_h[1]),
             nn.ReLU(),
-            nn.Linear(fm_h[1], state_dim + action_dim)
+            nn.Linear(fm_h[1], (state_dim + action_dim))
         )
 
-        nn.init.xavier_normal_(self.model[0].weight)
+        gain = 0.1
+        nn.init.xavier_uniform_(self.model[0].weight, gain)
         self.model[0].bias.data.zero_()
-        nn.init.xavier_normal_(self.model[2].weight)
+        nn.init.xavier_uniform_(self.model[2].weight, gain)
         self.model[2].bias.data.zero_()
-        nn.init.xavier_normal_(self.model[4].weight)
+        nn.init.xavier_uniform_(self.model[4].weight, gain)
         self.model[4].bias.data.zero_()
 
     def forward(self, state, action):

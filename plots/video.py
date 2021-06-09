@@ -14,11 +14,17 @@ import matplotlib.pyplot as plt
 
 
 class VideoRenderer:
-    def __init__(self, data):
-        self.grid = data['grid_embedding']
-        self.trajectory = data['trajectories']
-        self.error_max = data['error_max']
-        self.images = [None] * len(self.trajectory)
+    def __init__(self, data=None):
+        if data is not None:
+            self.grid = data['grid_embedding']
+            self.trajectory = data['trajectories']
+            self.error_max = data['error_max']
+            self.images = [None] * len(self.trajectory)
+        else:
+            self.grid = None
+            self.trajectory = None
+            self.error_max = None
+            self.images = None
         self.trajectory_embedding = []
 
     def render_video(self, filename):
@@ -67,6 +73,20 @@ class VideoRenderer:
         figure.canvas.draw()
         image = np.frombuffer(figure.canvas.tostring_rgb(), dtype='uint8')
         self.images[i] = image.reshape(figure.canvas.get_width_height()[::-1] + (3,))
+        plt.show()
+        plt.close()
+
+    def render_error(self, index, grid_embedding, error):
+        figure = plt.figure(figsize=(5.12, 5.12))
+        figure.suptitle('QRND Error')
+
+        plt.subplot(1, 1, 1)
+        plt.scatter(grid_embedding[:, 0], grid_embedding[:, 1], marker='o', c=error, cmap='coolwarm', s=8)
+        m = plt.cm.ScalarMappable(cmap='coolwarm')
+        m.set_array(error)
+        plt.colorbar(m)
+
+        plt.savefig('initialization_test_{0:d}.png'.format(index))
         plt.close()
 
 

@@ -33,9 +33,9 @@
       "critic_h": "64,32",
       "motivation_eta": 1,
       "motivation_variant": "A",
-      "motivation_lr": 0.0001,
+      "motivation_lr": 0.00001,
       "motivation_batch_size": 32,
-      "fm_h": "64,64"
+      "fm_h": "128,64"
     }
   },
   "aeris_navigate": {
