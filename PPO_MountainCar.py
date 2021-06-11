@@ -1,7 +1,7 @@
 import gym
 
 from agents import TYPE
-from agents.PPOAgent import PPOAgent
+from agents.PPOAgent import PPOSimpleAgent
 from experiment.ppo_experiment import ExperimentPPO
 from modules import ARCH
 from modules.DDPG_Modules import *
@@ -21,7 +21,7 @@ def run_baseline(config, i):
 
     experiment = ExperimentPPO('MountainCarContinuous-v0', env, config)
 
-    agent = PPOAgent(state_dim, action_dim, config, TYPE.continuous)
+    agent = PPOSimpleAgent(state_dim, action_dim, config, TYPE.continuous)
     experiment.run_baseline(agent, i)
 
     env.close()

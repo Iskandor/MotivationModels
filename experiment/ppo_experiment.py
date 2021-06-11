@@ -77,7 +77,7 @@ class ExperimentPPO:
                 if 'raw_score' in info:
                     train_ext_reward += info['raw_score']
                 else:
-                    train_ext_reward += reward
+                    train_ext_reward += reward.item()
                 # train_ext_reward += reward
                 train_steps += 1
 
