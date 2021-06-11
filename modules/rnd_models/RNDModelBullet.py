@@ -77,11 +77,11 @@ class QRNDModelBullet(nn.Module):
             nn.ELU(),
             nn.Linear(fm_h[0], fm_h[1]),
             nn.ELU(),
-            nn.Linear(fm_h[1], (state_dim + action_dim)),
+            nn.Linear(fm_h[1], 1),
             nn.Tanh()
         )
 
-        gain = 1
+        gain = np.sqrt(2)
         self._init(self.target_model[0], gain)
         self._init(self.target_model[2], gain)
         self._init(self.target_model[4], gain)
@@ -90,9 +90,9 @@ class QRNDModelBullet(nn.Module):
             param.requires_grad = False
 
         self.model = nn.Sequential(
-            nn.Linear(state_dim + action_dim, fm_h[0]),
+            nn.Linear(state_dim + action_dim, fm_h[1]),
             nn.ELU(),
-            nn.Linear(fm_h[0], (state_dim + action_dim)),
+            nn.Linear(fm_h[1], 1),
             nn.Tanh()
         )
 
@@ -145,11 +145,11 @@ class QRNDModelBullet1(nn.Module):
             nn.ELU(),
             nn.Linear(fm_h[0], fm_h[1]),
             nn.ELU(),
-            nn.Linear(fm_h[1], (state_dim + action_dim)),
+            nn.Linear(fm_h[1], 1),
             nn.Tanh()
         )
 
-        gain = 1
+        gain = np.sqrt(2)
         self._init(self.target_model[0], gain)
         self._init(self.target_model[2], gain)
         self._init(self.target_model[4], gain)
@@ -158,9 +158,9 @@ class QRNDModelBullet1(nn.Module):
             param.requires_grad = False
 
         self.model = nn.Sequential(
-            nn.Linear(state_dim + action_dim, fm_h[0]),
+            nn.Linear(state_dim + action_dim, fm_h[1]),
             nn.ELU(),
-            nn.Linear(fm_h[0], (state_dim + action_dim)),
+            nn.Linear(fm_h[1], 1),
             nn.Tanh()
         )
 
@@ -210,10 +210,11 @@ class QRNDModelBullet2(nn.Module):
 
         self.target_model = nn.Sequential(
             nn.Linear(state_dim + action_dim, fm_h[0]),
-            nn.ReLU(),
+            nn.ELU(),
             nn.Linear(fm_h[0], fm_h[1]),
-            nn.ReLU(),
-            nn.Linear(fm_h[1], (state_dim + action_dim))
+            nn.ELU(),
+            nn.Linear(fm_h[1], (state_dim + action_dim)),
+            nn.Tanh()
         )
 
         gain = 1
@@ -226,19 +227,16 @@ class QRNDModelBullet2(nn.Module):
 
         self.model = nn.Sequential(
             nn.Linear(state_dim + action_dim, fm_h[0]),
-            nn.ReLU(),
-            nn.Linear(fm_h[0], fm_h[1]),
-            nn.ReLU(),
-            nn.Linear(fm_h[1], (state_dim + action_dim))
+            nn.ELU(),
+            nn.Linear(fm_h[0], (state_dim + action_dim)),
+            nn.Tanh()
         )
 
-        gain = 0.1
+        gain = 1
         nn.init.xavier_uniform_(self.model[0].weight, gain)
         self.model[0].bias.data.zero_()
         nn.init.xavier_uniform_(self.model[2].weight, gain)
         self.model[2].bias.data.zero_()
-        nn.init.xavier_uniform_(self.model[4].weight, gain)
-        self.model[4].bias.data.zero_()
 
     def forward(self, state, action):
         x = torch.cat([state, action], dim=1)
