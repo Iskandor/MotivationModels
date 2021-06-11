@@ -74,7 +74,7 @@ class ExperimentPPO:
                 agent.train(state0, value, action0, probs0, state1, reward, mask)
                 state0 = state1
 
-                if 'raw_score' in info:
+                if info is not None and 'raw_score' in info:
                     train_ext_reward += info['raw_score']
                 else:
                     train_ext_reward += reward.item()

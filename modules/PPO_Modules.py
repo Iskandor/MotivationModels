@@ -123,9 +123,9 @@ class PPOAerisNetwork(torch.nn.Module):
             nn.ReLU(),
             nn.Linear(config.critic_h1, 1))
 
-        nn.init.xavier_uniform_(self.layers[0].weight)
-        nn.init.xavier_uniform_(self.layers[3].weight)
-        nn.init.uniform_(self.layers[5].weight, -0.003, 0.003)
+        nn.init.xavier_uniform_(self.critic[0].weight)
+        nn.init.xavier_uniform_(self.critic[3].weight)
+        nn.init.uniform_(self.critic[5].weight, -0.003, 0.003)
 
         self.channels = input_shape[0]
         self.width = input_shape[1]
@@ -140,14 +140,14 @@ class PPOAerisNetwork(torch.nn.Module):
             nn.ReLU()]
 
         if head == TYPE.discrete:
-            self.layers_actor.append(DiscreteHead(config.actor_h2, action_dim))
+            self.layers_actor.append(DiscreteHead(config.actor_h1, action_dim))
         if head == TYPE.continuous:
-            self.layers_actor.append(ContinuousHead(config.actor_h2, action_dim))
+            self.layers_actor.append(ContinuousHead(config.actor_h1, action_dim))
         if head == TYPE.multibinary:
             pass
 
-        nn.init.xavier_uniform_(self.layers[0].weight)
-        nn.init.xavier_uniform_(self.layers[3].weight)
+        nn.init.xavier_uniform_(self.layers_actor[0].weight)
+        nn.init.xavier_uniform_(self.layers_actor[3].weight)
 
         self.actor = nn.Sequential(*self.layers_actor)
 

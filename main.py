@@ -28,6 +28,9 @@ import DDPG_Noisy_Hopper
 import DDPG_Noisy_LunarLander
 import DDPG_Noisy_Reacher
 import DDPG_Reacher
+import PPO_AerisAvoidFragiles
+import PPO_AerisAvoidHazards
+import PPO_AerisNavigate
 import PPO_CartPole
 import PPO_Gravitar
 import PPO_LunarLander
@@ -92,6 +95,13 @@ def set_env_class_ddpg(env, experiment):
 
 def set_env_class_ppo(env):
     env_class = None
+
+    if env == 'aeris_navigate':
+        env_class = PPO_AerisNavigate
+    if env == 'aeris_hazards':
+        env_class = PPO_AerisAvoidHazards
+    if env == 'aeris_fragiles':
+        env_class = PPO_AerisAvoidFragiles
 
     if env == "gravitar":
         env_class = PPO_Gravitar
