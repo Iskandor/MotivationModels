@@ -115,17 +115,27 @@ class PPOAerisNetwork(torch.nn.Module):
 
         fc_count = config.critic_kernels_count * self.width // 4
 
-        self.critic = nn.Sequential(
+        self.features = nn.Sequential(
             nn.Conv1d(self.channels, config.critic_kernels_count, kernel_size=8, stride=4, padding=2),
-            nn.ReLU(),
-            nn.Flatten(),
+            nn.ELU(),
+            nn.Conv1d(config.critic_kernels_count, config.critic_kernels_count * 2, kernel_size=4, stride=2, padding=1),
+            nn.ELU(),
+            nn.Conv1d(config.critic_kernels_count * 2, config.critic_kernels_count * 2, kernel_size=3, stride=1, padding=1),
+            nn.ELU(),
+            nn.Flatten()
+        )
+
+        nn.init.orthogonal_(self.features[0].weight)
+        nn.init.orthogonal_(self.features[2].weight)
+        nn.init.orthogonal_(self.features[4].weight)
+
+        self.critic = nn.Sequential(
             nn.Linear(fc_count, config.critic_h1),
             nn.ReLU(),
             nn.Linear(config.critic_h1, 1))
 
         nn.init.xavier_uniform_(self.critic[0].weight)
-        nn.init.xavier_uniform_(self.critic[3].weight)
-        nn.init.uniform_(self.critic[5].weight, -0.003, 0.003)
+        nn.init.uniform_(self.critic[2].weight, -0.003, 0.003)
 
         self.channels = input_shape[0]
         self.width = input_shape[1]
@@ -133,9 +143,6 @@ class PPOAerisNetwork(torch.nn.Module):
         fc_count = config.actor_kernels_count * self.width // 4
 
         self.layers_actor = [
-            nn.Conv1d(self.channels, config.actor_kernels_count, kernel_size=8, stride=4, padding=2),
-            nn.ReLU(),
-            nn.Flatten(),
             nn.Linear(fc_count, config.actor_h1),
             nn.ReLU()]
 
@@ -147,13 +154,13 @@ class PPOAerisNetwork(torch.nn.Module):
             pass
 
         nn.init.xavier_uniform_(self.layers_actor[0].weight)
-        nn.init.xavier_uniform_(self.layers_actor[3].weight)
 
         self.actor = nn.Sequential(*self.layers_actor)
 
     def forward(self, state):
-        value = self.critic(state)
-        action, probs = self.actor(state)
+        x = self.features(state)
+        value = self.critic(x)
+        action, probs = self.actor(x)
 
         return value, action, probs
 

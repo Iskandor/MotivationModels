@@ -1,0 +1,36 @@
+import os
+
+from plots.dataloader import prepare_data
+from plots.chart import plot_multiple_models, plot_baseline_details
+
+root = 'C:/GIT/Experiments/plots'
+
+
+def plot_aeris(config, plot_overview=True, plot_details=False, window=1000):
+    data = prepare_data(config)
+    env = config[0]['env']
+    legend = [key['model'] for key in config]
+
+    if plot_overview:
+        path = os.path.join(root, env, env)
+        plot_multiple_models(
+            data,
+            legend,
+            ['blue', 'red', 'green', 'orchid', 'yellow', 'orange', 'darkcyan', 'brown', 'slategray', 'lime'],
+            path,
+            window)
+
+    if plot_details:
+        for index, key in enumerate(config):
+            d = data[index]
+            model = key['model']
+            id = key['id']
+
+            path = os.path.join(root, env, model)
+            if not os.path.exists(path):
+                os.mkdir(path)
+            path = os.path.join(path, id)
+            if not os.path.exists(path):
+                os.mkdir(path)
+            path = os.path.join(path, '{0:s}_{1:s}'.format(env, model))
+            plot_baseline_details(d, path, window=window)
