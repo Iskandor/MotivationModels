@@ -6,6 +6,7 @@ from torch.distributions import Categorical, MultivariateNormal, Normal
 from agents import TYPE
 from modules import init
 from modules.forward_models.ForwardModelAtari import ForwardModelAtari
+from modules.rnd_models.RNDModelAeris import RNDModelAeris
 
 
 class DiscreteHead(nn.Module):
@@ -140,7 +141,61 @@ class PPOAerisNetwork(torch.nn.Module):
         self.channels = input_shape[0]
         self.width = input_shape[1]
 
-        fc_count = config.actor_kernels_count * self.width // 4
+        self.layers_actor = [
+            nn.Linear(fc_count, config.actor_h1),
+            nn.ReLU()]
+
+        if head == TYPE.discrete:
+            self.layers_actor.append(DiscreteHead(config.actor_h1, action_dim))
+        if head == TYPE.continuous:
+            self.layers_actor.append(ContinuousHead(config.actor_h1, action_dim))
+        if head == TYPE.multibinary:
+            pass
+
+        nn.init.xavier_uniform_(self.layers_actor[0].weight)
+
+        self.actor = nn.Sequential(*self.layers_actor)
+
+    def forward(self, state):
+        x = self.features(state)
+        value = self.critic(x)
+        action, probs = self.actor(x)
+
+        return value, action, probs
+
+
+class PPOAerisMotivationNetwork(torch.nn.Module):
+    def __init__(self, input_shape, action_dim, config, head):
+        super(PPOAerisMotivationNetwork, self).__init__()
+
+        self.channels = input_shape[0]
+        self.width = input_shape[1]
+
+        fc_count = config.critic_kernels_count * self.width // 4
+
+        self.features = nn.Sequential(
+            nn.Conv1d(self.channels, config.critic_kernels_count, kernel_size=8, stride=4, padding=2),
+            nn.ELU(),
+            nn.Conv1d(config.critic_kernels_count, config.critic_kernels_count * 2, kernel_size=4, stride=2, padding=1),
+            nn.ELU(),
+            nn.Conv1d(config.critic_kernels_count * 2, config.critic_kernels_count * 2, kernel_size=3, stride=1, padding=1),
+            nn.ELU(),
+            nn.Flatten()
+        )
+
+        nn.init.orthogonal_(self.features[0].weight)
+        nn.init.orthogonal_(self.features[2].weight)
+        nn.init.orthogonal_(self.features[4].weight)
+
+        self.critic = nn.Sequential(
+            nn.Linear(fc_count, config.critic_h1),
+            nn.ReLU(),
+            Critic2Heads(config.critic_h1))
+
+        nn.init.xavier_uniform_(self.critic[0].weight)
+
+        self.channels = input_shape[0]
+        self.width = input_shape[1]
 
         self.layers_actor = [
             nn.Linear(fc_count, config.actor_h1),
@@ -163,6 +218,12 @@ class PPOAerisNetwork(torch.nn.Module):
         action, probs = self.actor(x)
 
         return value, action, probs
+
+
+class PPOAerisNetworkRND(PPOAerisMotivationNetwork):
+    def __init__(self, input_shape, action_dim, config, head):
+        super(PPOAerisNetworkRND, self).__init__(input_shape, action_dim, config, head)
+        self.rnd_model = RNDModelAeris(input_shape, action_dim, config)
 
 
 class PPOAtariNetwork(torch.nn.Module):

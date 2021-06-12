@@ -27,7 +27,7 @@ class RNDModelAeris(nn.Module):
         self._init(self.target_model[0], np.sqrt(2))
         self._init(self.target_model[2], np.sqrt(2))
         self._init(self.target_model[4], np.sqrt(2))
-        self._init(self.target_model[7], np.sqrt(2))
+        self._init(self.target_model[7], 1)
 
         for param in self.target_model.parameters():
             param.requires_grad = False
@@ -50,9 +50,9 @@ class RNDModelAeris(nn.Module):
         self._init(self.model[0], np.sqrt(2))
         self._init(self.model[2], np.sqrt(2))
         self._init(self.model[4], np.sqrt(2))
-        self._init(self.model[7], np.sqrt(2))
-        self._init(self.model[9], np.sqrt(2))
-        self._init(self.model[11], np.sqrt(2))
+        self._init(self.model[7], 1)
+        self._init(self.model[9], 1)
+        self._init(self.model[11], 1)
 
     def forward(self, state):
         predicted_code = self.model(state)
@@ -65,6 +65,7 @@ class RNDModelAeris(nn.Module):
         with torch.no_grad():
             prediction = self(state)
             target = self.encode(state)
+            # error = nn.functional.mse_loss(prediction, target, reduction='none')
             error = torch.mean(torch.pow(prediction - target, 2), dim=1)
 
         return error

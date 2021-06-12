@@ -5,7 +5,7 @@ import torch
 from etaprogress.progress import ProgressBar
 from gym.wrappers.monitoring.video_recorder import VideoRecorder
 
-from utils.RunningAverage import RunningAverageWindow
+from utils.RunningAverage import RunningAverageWindow, StepCounter
 
 
 class ExperimentPPO:
@@ -100,10 +100,9 @@ class ExperimentPPO:
         }
         numpy.save('ppo_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
 
-    def run_forward_model(self, agent, trial):
+    def run_rnd_model(self, agent, trial):
         config = self._config
         trial = trial + config.shift
-        forward_model = agent.get_motivation_module()
 
         step_limit = int(config.steps * 1e6)
         steps = 0
@@ -112,7 +111,8 @@ class ExperimentPPO:
         train_ext_rewards = []
         train_int_rewards = []
 
-        bar = ProgressBar(config.steps * 1e6, max_width=40)
+        bar = ProgressBar(step_limit, max_width=40)
+        reward_avg = RunningAverageWindow(100)
 
         while steps < step_limit:
             state0 = self.process_state(self._env.reset())
@@ -123,15 +123,19 @@ class ExperimentPPO:
 
             while not done:
                 train_steps += 1
-                action0 = agent.get_action(state0)
-                next_state, reward, done, info = self._env.step(action0.item())
+                value, action0, probs0 = agent.get_action(state0)
+                next_state, reward, done, info = self._env.step(agent.convert_action(action0))
                 state1 = self.process_state(next_state)
+                reward = torch.tensor([reward], dtype=torch.float32)
+                mask = torch.tensor([1], dtype=torch.float32)
+                if done:
+                    mask[0] = 0
 
-                agent.train(state0, action0, state1, reward, done)
+                agent.train(state0, value, action0, probs0, state1, reward, mask)
 
-                train_ext_reward += reward
-                train_int_reward += forward_model.reward(state0, action0, state1).item()
-                train_fm_error = forward_model.error(state0, action0, state1).item()
+                train_ext_reward += reward.item()
+                train_int_reward += agent.motivation.reward(state0).item()
+                train_fm_error = agent.motivation.error(state0).item()
                 train_fm_errors.append(train_fm_error)
 
                 state0 = state1
@@ -143,8 +147,9 @@ class ExperimentPPO:
 
             train_ext_rewards.append([train_steps, train_ext_reward])
             train_int_rewards.append([train_steps, train_int_reward])
+            reward_avg.update(train_ext_reward)
 
-            print('Run {0:d} step {1:d} training [ext. reward {2:f} int. reward {3:f} steps {4:d}]'.format(trial, steps, train_ext_reward, train_int_reward, train_steps))
+            print('Run {0:d} step {1:d} training [ext. reward {2:f} int. reward {3:f} steps {4:d}  mean reward {5:f}]'.format(trial, steps, train_ext_reward, train_int_reward, train_steps, reward_avg.value()))
             print(bar)
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
