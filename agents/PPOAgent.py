@@ -129,7 +129,7 @@ class PPOAerisRNDAgent(PPOAgent):
         super().__init__(input_shape, action_dim, config)
         self.network = PPOAerisNetworkRND(input_shape, action_dim, config, head=action_type).to(config.device)
         self.motivation = RNDMotivation(self.network.rnd_model, config.forward_model_lr, config.forward_model_eta, self.memory, config.device)
-        self.algorithm = self.init_algorithm(config, self.memory, action_type)
+        self.algorithm = self.init_algorithm(config, self.memory, action_type, self.motivation)
 
     def train(self, state0, value, action0, probs0, state1, reward, mask):
         self.memory.add(state0.cpu(), value.cpu(), action0.cpu(), probs0.cpu(), state1.cpu(), reward.cpu(), mask.cpu())

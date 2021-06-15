@@ -126,15 +126,17 @@ class ExperimentPPO:
                 value, action0, probs0 = agent.get_action(state0)
                 next_state, reward, done, info = self._env.step(agent.convert_action(action0))
                 state1 = self.process_state(next_state)
-                reward = torch.tensor([reward], dtype=torch.float32)
+                ext_reward = torch.tensor([reward], dtype=torch.float32).unsqueeze(0)
+                int_reward = agent.motivation.reward(state0)
+                reward = torch.stack([ext_reward, int_reward], dim=1).squeeze(-1)
                 mask = torch.tensor([1], dtype=torch.float32)
                 if done:
                     mask[0] = 0
 
                 agent.train(state0, value, action0, probs0, state1, reward, mask)
 
-                train_ext_reward += reward.item()
-                train_int_reward += agent.motivation.reward(state0).item()
+                train_ext_reward += ext_reward.item()
+                train_int_reward += int_reward.item()
                 train_fm_error = agent.motivation.error(state0).item()
                 train_fm_errors.append(train_fm_error)
 
@@ -149,7 +151,8 @@ class ExperimentPPO:
             train_int_rewards.append([train_steps, train_int_reward])
             reward_avg.update(train_ext_reward)
 
-            print('Run {0:d} step {1:d} training [ext. reward {2:f} int. reward {3:f} steps {4:d}  mean reward {5:f}]'.format(trial, steps, train_ext_reward, train_int_reward, train_steps, reward_avg.value()))
+            print('Run {0:d} step {1:d} training [ext. reward {2:f} int. reward {3:f} steps {4:d}  mean reward {5:f}]'.format(trial, steps, train_ext_reward, train_int_reward, train_steps,
+                                                                                                                              reward_avg.value()))
             print(bar)
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))

@@ -101,8 +101,7 @@ class PPOTrajectoryBuffer(object):
                 self.memory[i].append(PPO_Transition(state[i], value[i], action[i], prob[i], next_state[i], reward[i], mask[i]))
         else:
             self.index += 1
-            self.memory[0].append(PPO_Transition(state.squeeze(0), value.squeeze(0), action.squeeze(0), prob.squeeze(0), next_state.squeeze(0), torch.tensor([reward], dtype=torch.float32),
-                                                 torch.tensor([mask], dtype=torch.float32)))
+            self.memory[0].append(PPO_Transition(state.squeeze(0), value.squeeze(0), action.squeeze(0), prob.squeeze(0), next_state.squeeze(0), reward.squeeze(0), mask))
 
     def sample(self, indices):
         transitions = []
