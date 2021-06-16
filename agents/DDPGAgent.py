@@ -123,7 +123,7 @@ class DDPGBulletDOPSimpleModelAgent(DDPGAgent):
         super().__init__(state_dim, action_dim, config)
         self.network = DDPGBulletNetworkDOPSimple(state_dim, action_dim, config)
         self.memory = ExperienceReplayBuffer(config.memory_size)
-        self.motivation = DOPSimpleMotivation(self.network.dop_model, config.motivation_lr, config.motivation_eta, self.memory, config.motivation_batch_size, config.device)
+        self.motivation = DOPSimpleMotivation(self.network.dop_model, config.motivation_lr, config.motivation_eta, self.memory, config.device)
         self.algorithm = DDPG2(self.network, config.actor_lr, config.critic_lr, config.gamma, config.tau, self.memory, config.batch_size)
 
     def train(self, state0, action0, state1, reward, mask):

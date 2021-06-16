@@ -164,3 +164,66 @@ class ExperimentPPO:
             'fme': numpy.array(train_fm_errors[:step_limit])
         }
         numpy.save('ppo_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
+
+
+    def run_dop_model(self, agent, trial):
+        config = self._config
+        trial = trial + config.shift
+
+        step_limit = int(config.steps * 1e6)
+        steps = 0
+
+        train_fm_errors = []
+        train_ext_rewards = []
+        train_int_rewards = []
+
+        bar = ProgressBar(step_limit, max_width=40)
+        reward_avg = RunningAverageWindow(100)
+
+        while steps < step_limit:
+            state0 = self.process_state(self._env.reset())
+            done = False
+            train_ext_reward = 0
+            train_int_reward = 0
+            train_steps = 0
+
+            while not done:
+                train_steps += 1
+                value, action0, probs0 = agent.get_action(state0)
+                next_state, reward, done, info = self._env.step(agent.convert_action(action0))
+                state1 = self.process_state(next_state)
+                reward = torch.tensor([reward], dtype=torch.float32).unsqueeze(0)
+                mask = torch.tensor([1], dtype=torch.float32)
+                if done:
+                    mask[0] = 0
+
+                agent.train(state0, value, action0, probs0, state1, reward, mask)
+
+                train_int_reward += agent.motivation.reward(state0, action0).item()
+                train_fm_error = agent.motivation.error(state0, action0).item()
+                train_fm_errors.append(train_fm_error)
+
+                state0 = state1
+
+            steps += train_steps
+            if steps > step_limit:
+                train_steps -= steps - step_limit
+            bar.numerator = steps
+
+            train_ext_rewards.append([train_steps, train_ext_reward])
+            train_int_rewards.append([train_steps, train_int_reward])
+            reward_avg.update(train_ext_reward)
+
+            print('Run {0:d} step {1:d} training [ext. reward {2:f} int. reward {3:f} steps {4:d}  mean reward {5:f}]'.format(trial, steps, train_ext_reward, train_int_reward, train_steps,
+                                                                                                                              reward_avg.value()))
+            print(bar)
+
+        agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
+
+        print('Saving data...')
+        save_data = {
+            're': numpy.array(train_ext_rewards),
+            'ri': numpy.array(train_int_rewards),
+            'fme': numpy.array(train_fm_errors[:step_limit])
+        }
+        numpy.save('ppo_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)

@@ -6,7 +6,7 @@ from torch.distributions import Categorical, MultivariateNormal, Normal
 from agents import TYPE
 from modules import init
 from modules.forward_models.ForwardModelAtari import ForwardModelAtari
-from modules.rnd_models.RNDModelAeris import RNDModelAeris
+from modules.rnd_models.RNDModelAeris import RNDModelAeris, DOPSimpleModelAeris
 
 
 class DiscreteHead(nn.Module):
@@ -224,6 +224,12 @@ class PPOAerisNetworkRND(PPOAerisMotivationNetwork):
     def __init__(self, input_shape, action_dim, config, head):
         super(PPOAerisNetworkRND, self).__init__(input_shape, action_dim, config, head)
         self.rnd_model = RNDModelAeris(input_shape, action_dim, config)
+
+
+class PPOAerisNetworkDOPSimple(PPOAerisNetwork):
+    def __init__(self, state_dim, action_dim, config, head):
+        super(PPOAerisNetworkDOPSimple, self).__init__(state_dim, action_dim, config, head)
+        self.dop_model = DOPSimpleModelAeris(state_dim, action_dim, config, self.actor)
 
 
 class PPOAtariNetwork(torch.nn.Module):

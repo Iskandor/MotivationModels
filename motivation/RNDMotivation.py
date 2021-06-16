@@ -74,12 +74,11 @@ class QRNDMotivation:
 
 
 class DOPSimpleMotivation:
-    def __init__(self, network, lr, eta=1, memory_buffer=None, sample_size=0, device='cpu'):
+    def __init__(self, network, lr, eta=1, memory_buffer=None, device='cpu'):
         self.network = network
         self._motivator_optimizer = torch.optim.Adam(self.network.motivator.parameters(), lr=lr)
         self._generator_optimizer = torch.optim.Adam(self.network.actor.parameters(), lr=0.0001)
         self._memory = memory_buffer
-        self._sample_size = sample_size
         self._eta = eta
         self._device = device
 
@@ -89,6 +88,7 @@ class DOPSimpleMotivation:
 
             states = torch.stack(sample.state).squeeze(1)
             actions = torch.stack(sample.action).squeeze(1)
+            probs = torch.stack(sample.prob).squeeze(1)
 
             self._motivator_optimizer.zero_grad()
             loss = self.network.motivator_loss_function(states, actions)
@@ -96,7 +96,7 @@ class DOPSimpleMotivation:
             self._motivator_optimizer.step()
 
             self._generator_optimizer.zero_grad()
-            loss = self.network.generator_loss_function(states)
+            loss = self.network.generator_loss_function(states, probs, actions)
             loss.backward()
             self._generator_optimizer.step()
             # print(loss)
