@@ -131,6 +131,8 @@ class PPOAerisNetwork(torch.nn.Module):
         nn.init.orthogonal_(self.features[4].weight)
 
         self.critic = nn.Sequential(
+            nn.Linear(fc_count, fc_count),
+            nn.ReLU(),
             nn.Linear(fc_count, config.critic_h1),
             nn.ReLU(),
             nn.Linear(config.critic_h1, 1))
@@ -142,6 +144,8 @@ class PPOAerisNetwork(torch.nn.Module):
         self.width = input_shape[1]
 
         self.layers_actor = [
+            nn.Linear(fc_count, fc_count),
+            nn.ReLU(),
             nn.Linear(fc_count, config.actor_h1),
             nn.ReLU()]
 

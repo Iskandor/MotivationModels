@@ -114,10 +114,9 @@ def plot_forward_model(data, path, window=1000):
 
 
 def plot_forward_model_details(data, path, window=1000):
-    bar = ProgressBar(data['re'].shape[0], max_width=40)
     num_rows = 3
     num_cols = 2
-    for i in range(data['re'].shape[0]):
+    for i in tqdm(range(data['re'].shape[0])):
         fig = plt.figure(figsize=(num_cols * 7.00, num_rows * 7.00))
         ax = plt.subplot(num_rows, num_cols, 1)
         ax.set_xlabel('steps')
@@ -164,9 +163,6 @@ def plot_forward_model_details(data, path, window=1000):
 
         plt.savefig("{0:s}_{1:d}.png".format(path, i))
         plt.close()
-
-        bar.numerator = i + 1
-        print(bar)
 
 
 def plot_forward_inverse_model_details(data, path, window=1000):
