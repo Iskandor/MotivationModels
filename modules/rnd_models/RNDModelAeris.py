@@ -7,6 +7,8 @@ class RNDModelAeris(nn.Module):
     def __init__(self, input_shape, action_dim, config):
         super(RNDModelAeris, self).__init__()
 
+        self.state_average = torch.zeros((1, input_shape[0], input_shape[1]))
+
         self.input_shape = input_shape
         self.action_dim = action_dim
 
@@ -30,7 +32,7 @@ class RNDModelAeris(nn.Module):
         self._init(self.target_model[0], np.sqrt(2))
         self._init(self.target_model[2], np.sqrt(2))
         self._init(self.target_model[4], np.sqrt(2))
-        self._init(self.target_model[7], 1)
+        self._init(self.target_model[7], 0.1)
 
         for param in self.target_model.parameters():
             param.requires_grad = False
@@ -53,16 +55,18 @@ class RNDModelAeris(nn.Module):
         self._init(self.model[0], np.sqrt(2))
         self._init(self.model[2], np.sqrt(2))
         self._init(self.model[4], np.sqrt(2))
-        self._init(self.model[7], 1)
-        self._init(self.model[9], 1)
-        self._init(self.model[11], 1)
+        self._init(self.model[7], 0.1)
+        self._init(self.model[9], 0.1)
+        self._init(self.model[11], 0.01)
 
     def forward(self, state):
-        predicted_code = self.model(state)
+        x = state - self.state_average
+        predicted_code = self.model(x)
         return predicted_code
 
     def encode(self, state):
-        return self.target_model(state)
+        x = state - self.state_average
+        return self.target_model(x)
 
     def error(self, state):
         with torch.no_grad():
@@ -79,6 +83,9 @@ class RNDModelAeris(nn.Module):
         else:
             loss = nn.functional.mse_loss(predicted_state, self.encode(state).detach())
         return loss
+
+    def update_state_average(self, state):
+        self.state_average = self.state_average * 0.99 + state * 0.01
 
     def _init(self, layer, gain):
         nn.init.orthogonal_(layer.weight, gain)
@@ -112,7 +119,7 @@ class QRNDModelAeris(nn.Module):
         self._init(self.target_model[0], np.sqrt(2))
         self._init(self.target_model[2], np.sqrt(2))
         self._init(self.target_model[4], np.sqrt(2))
-        self._init(self.target_model[7], 1)
+        self._init(self.target_model[7], 0.1)
 
         for param in self.target_model.parameters():
             param.requires_grad = False
@@ -135,9 +142,9 @@ class QRNDModelAeris(nn.Module):
         self._init(self.model[0], np.sqrt(2))
         self._init(self.model[2], np.sqrt(2))
         self._init(self.model[4], np.sqrt(2))
-        self._init(self.model[7], 1)
-        self._init(self.model[9], 1)
-        self._init(self.model[11], 1)
+        self._init(self.model[7], 0.1)
+        self._init(self.model[9], 0.1)
+        self._init(self.model[11], 0.01)
 
     def forward(self, state, action):
         a = action.unsqueeze(2).repeat(1, 1, state.shape[2])

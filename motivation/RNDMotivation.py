@@ -35,6 +35,9 @@ class RNDMotivation:
         reward = torch.tanh(self.error(state0)).unsqueeze(1)
         return reward * self._eta
 
+    def update_state_average(self, state):
+        self._network.update_state_average(state)
+
 
 class QRNDMotivation:
     def __init__(self, network, lr, eta=1, memory_buffer=None, sample_size=0, device='cpu'):

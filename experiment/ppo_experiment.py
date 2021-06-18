@@ -124,6 +124,7 @@ class ExperimentPPO:
             while not done:
                 train_steps += 1
                 value, action0, probs0 = agent.get_action(state0)
+                agent.motivation.update_state_average(state0)
                 next_state, reward, done, info = self._env.step(agent.convert_action(action0))
                 state1 = self.process_state(next_state)
                 ext_reward = torch.tensor([reward], dtype=torch.float32).unsqueeze(0)
