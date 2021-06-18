@@ -1,20 +1,19 @@
-atari-py
+atari-py==0.2.9
 box2d-py
-etaprogress
+etaprogress==1.1.1
 gym
-gym-retro
--e git+https://github.com/openai/mujoco-py.git@1fe312b09ae7365f0dd9d4d0e453f8da59fae0bf#egg=mujoco_py
-nes-py
-opencv-python
-pybullet
-PyYAML
-scikit-image
-scikit-learn
-scipy
-torch
+-e git+https://github.com/michalnand/gym-aeris.git@ec5e8c61242683b36c66c2cfc5dfc599a08f8905#egg=gym_aeris&subdirectory=gym-aeris
+gym-retro==0.8.0
+imageio
+matplotlib
+nes-py==8.1.6
 numpy
-Pillow
-psutil
-ray
-pybulletgym
+opencv-python==4.5.2.54
+psutil==5.8.0
+pybullet==2.8.4
+-e git+https://github.com/benelot/pybullet-gym.git@79396fccc1d0e170a092b50137148da48ee2edab#egg=pybulletgym
 pyclustering
+ray==1.4.0
+scikit-learn
+torch==1.9.0
+umap-learn==0.5.1

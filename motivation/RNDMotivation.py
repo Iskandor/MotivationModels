@@ -88,7 +88,6 @@ class DOPSimpleMotivation:
 
             states = torch.stack(sample.state).squeeze(1)
             actions = torch.stack(sample.action).squeeze(1)
-            probs = torch.stack(sample.prob).squeeze(1)
 
             self._motivator_optimizer.zero_grad()
             loss = self.network.motivator_loss_function(states, actions)
@@ -96,7 +95,7 @@ class DOPSimpleMotivation:
             self._motivator_optimizer.step()
 
             self._generator_optimizer.zero_grad()
-            loss = self.network.generator_loss_function(states, probs, actions)
+            loss = self.network.generator_loss_function(states)
             loss.backward()
             self._generator_optimizer.step()
             # print(loss)

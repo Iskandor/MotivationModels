@@ -27,16 +27,8 @@ class PPOAgent:
 
     def init_algorithm(self, config, memory, action_type, motivation=None):
         self.action_type = action_type
-        algorithm = None
-        if action_type == TYPE.discrete:
-            algorithm = PPO(self.network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size, memory, config.beta, config.gamma,
-                            self.log_prob_discrete, self.entropy_discrete, ppo_epochs=config.ppo_epochs, n_env=config.n_env, device=config.device, motivation=motivation)
-        if action_type == TYPE.continuous:
-            algorithm = PPO(self.network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size, memory, config.beta, config.gamma,
-                            self.log_prob_continuous, self.entropy_continuous, ppo_epochs=config.ppo_epochs, n_env=config.n_env, device=config.device, motivation=motivation)
-        if action_type == TYPE.multibinary:
-            algorithm = PPO(self.network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size, memory, config.beta, config.gamma,
-                            self.log_prob_discrete, self.entropy_discrete, ppo_epochs=config.ppo_epochs, n_env=config.n_env, device=config.device, motivation=motivation)
+        algorithm = PPO(self.network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size, memory, config.beta, config.gamma,
+                        ppo_epochs=config.ppo_epochs, n_env=config.n_env, device=config.device, motivation=motivation)
 
         return algorithm
 
@@ -73,34 +65,6 @@ class PPOAgent:
 
     def load(self, path):
         self.network.load_state_dict(torch.load(path + '.pth', map_location='cpu'))
-
-    @staticmethod
-    def log_prob_discrete(probs, actions):
-        actions = torch.argmax(actions, dim=1)
-        dist = Categorical(probs)
-        log_prob = dist.log_prob(actions).unsqueeze(1)
-
-        return log_prob
-
-    @staticmethod
-    def entropy_discrete(probs):
-        dist = Categorical(probs)
-        entropy = -dist.entropy()
-        return entropy.mean()
-
-    def log_prob_continuous(self, probs, actions):
-        mu, var = probs[:, 0:self.action_dim], probs[:, self.action_dim:self.action_dim * 2]
-        dist = Normal(mu, var.sqrt())
-        log_prob = dist.log_prob(actions)
-
-        return log_prob
-
-    def entropy_continuous(self, probs):
-        mu, var = probs[:, 0:self.action_dim], probs[:, self.action_dim:self.action_dim * 2]
-        dist = Normal(mu, var.sqrt())
-        entropy = -dist.entropy()
-
-        return entropy.mean()
 
 
 class PPOSimpleAgent(PPOAgent):

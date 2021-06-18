@@ -3,7 +3,7 @@ from utils import *
 
 
 class PPO:
-    def __init__(self, network, lr, actor_loss_weight, critic_loss_weight, batch_size, trajectory_size, memory, p_beta, p_gamma, log_prob_fn, entropy_fn,
+    def __init__(self, network, lr, actor_loss_weight, critic_loss_weight, batch_size, trajectory_size, memory, p_beta, p_gamma,
                  ppo_epochs=10, p_epsilon=0.2, p_lambda=0.95, weight_decay=0, device='cpu', n_env=1, motivation=None):
         self._network = network
         self._optimizer = torch.optim.Adam(self._network.parameters(), lr=lr, weight_decay=weight_decay)
@@ -16,8 +16,6 @@ class PPO:
         self._trajectory_size = trajectory_size
         self._actor_loss_weight = actor_loss_weight
         self._critic_loss_weight = critic_loss_weight
-        self._log_prob_fn = log_prob_fn
-        self._entropy_fn = entropy_fn
 
         self._trajectory = []
         self._ppo_epochs = ppo_epochs
@@ -109,15 +107,15 @@ class PPO:
         else:
             loss_value = torch.nn.functional.mse_loss(values, ref_value)
 
-        log_probs = self._log_prob_fn(probs, old_actions)
-        old_logprobs = self._log_prob_fn(old_probs, old_actions)
+        log_probs = self._network.actor.log_prob(probs, old_actions)
+        old_logprobs = self._network.actor.log_prob(old_probs, old_actions)
 
         ratio = torch.exp(log_probs - old_logprobs) * adv_value
         clipped_ratio = torch.clamp(ratio, 1.0 - self._epsilon, 1.0 + self._epsilon) * adv_value
         loss_policy = -torch.min(ratio, clipped_ratio)
         loss_policy = loss_policy.mean()
 
-        entropy = self._entropy_fn(probs)
+        entropy = self._network.actor.entropy(probs)
         loss = loss_value * self._critic_loss_weight + loss_policy * self._actor_loss_weight + self._beta * entropy
 
         return loss

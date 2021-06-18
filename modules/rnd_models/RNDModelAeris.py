@@ -171,13 +171,14 @@ class QRNDModelAeris(nn.Module):
 
 
 class DOPSimpleModelAeris(nn.Module):
-    def __init__(self, state_dim, action_dim, config, actor):
+    def __init__(self, state_dim, action_dim, config, features, actor):
         super(DOPSimpleModelAeris, self).__init__()
 
         self.state_dim = state_dim
         self.action_dim = action_dim
 
         self.motivator = QRNDModelAeris(state_dim, action_dim, config)
+        self.features = features
         self.actor = actor
 
     def forward(self, state, action):
@@ -190,10 +191,12 @@ class DOPSimpleModelAeris(nn.Module):
     def motivator_loss_function(self, state, action, prediction=None):
         return self.motivator.loss_function(state, action, prediction)
 
-    def generator_loss_function(self, state, prob, action):
+    def generator_loss_function(self, state):
+        x = self.features(state)
+        action, prob = self.actor(x)
         error = self.error(state, action)
-        loss = self._log_prob_fn(prob, action) * error
-        return -loss.mean()
+        loss = self.actor.log_prob(prob, action) * error.unsqueeze(-1)
+        return -loss.sum()
 
     def _init(self, layer, gain):
         nn.init.orthogonal_(layer.weight, gain)
