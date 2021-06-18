@@ -152,8 +152,8 @@ class ExperimentPPO:
             train_int_rewards.append([train_steps, train_int_reward])
             reward_avg.update(train_ext_reward)
 
-            print('Run {0:d} step {1:d} training [ext. reward {2:f} int. reward {3:f} steps {4:d}  mean reward {5:f}]'.format(trial, steps, train_ext_reward, train_int_reward, train_steps,
-                                                                                                                              reward_avg.value()))
+            print('Run {0:d} step {1:d} training [ext. reward {2:f} int. reward {3:f} steps {4:d} ({5:f})  mean reward {6:f}]'.format(
+                trial, steps, train_ext_reward, train_int_reward, train_steps, train_int_reward / train_steps, reward_avg.value()))
             print(bar)
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
@@ -165,7 +165,6 @@ class ExperimentPPO:
             'fme': numpy.array(train_fm_errors[:step_limit])
         }
         numpy.save('ppo_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
-
 
     def run_dop_model(self, agent, trial):
         config = self._config
@@ -186,6 +185,7 @@ class ExperimentPPO:
             done = False
             train_ext_reward = 0
             train_int_reward = 0
+            train_error = 0
             train_steps = 0
 
             while not done:
@@ -200,8 +200,10 @@ class ExperimentPPO:
 
                 agent.train(state0, value, action0, probs0, state1, reward, mask)
 
+                train_ext_reward += reward.item()
                 train_int_reward += agent.motivation.reward(state0, action0).item()
                 train_fm_error = agent.motivation.error(state0, action0).item()
+                train_error += train_fm_error
                 train_fm_errors.append(train_fm_error)
 
                 state0 = state1
@@ -215,8 +217,8 @@ class ExperimentPPO:
             train_int_rewards.append([train_steps, train_int_reward])
             reward_avg.update(train_ext_reward)
 
-            print('Run {0:d} step {1:d} training [ext. reward {2:f} int. reward {3:f} steps {4:d}  mean reward {5:f}]'.format(trial, steps, train_ext_reward, train_int_reward, train_steps,
-                                                                                                                              reward_avg.value()))
+            print('Run {0:d} step {1:d} training [ext. reward {2:f} error {3:f} steps {4:d} ({5:f})  mean reward {6:f}]'.format(
+                trial, steps, train_ext_reward, train_error, train_steps, train_error / train_steps, reward_avg.value()))
             print(bar)
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
