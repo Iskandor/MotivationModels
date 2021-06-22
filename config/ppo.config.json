@@ -2,13 +2,13 @@
   "aeris_navigate": {
     "1": {
       "model": "baseline",
-      "n_env": 1,
+      "n_env": 8,
       "trials": 15,
       "steps": 2,
       "gamma": 0.99,
       "beta": 0.001,
-      "batch_size": 1024,
-      "trajectory_size": 4096,
+      "batch_size": 128,
+      "trajectory_size": 512,
       "ppo_epochs": 10,
       "lr": 0.0002,
       "actor_loss_weight": 0.5,
