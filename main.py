@@ -265,10 +265,10 @@ def update_config(args, experiment):
         experiment.num_threads = psutil.cpu_count(logical=True)
     else:
         experiment.num_threads = args.num_threads
-    if args.algorithm == 'ppo':
-        experiment.steps *= experiment.n_env
-        experiment.batch_size *= experiment.n_env
-        experiment.trajectory_size *= experiment.n_env
+    # if args.algorithm == 'ppo':
+    #     experiment.steps *= experiment.n_env
+    #     experiment.batch_size *= experiment.n_env
+    #     experiment.trajectory_size *= experiment.n_env
 
 
 if __name__ == '__main__':
