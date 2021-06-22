@@ -232,9 +232,12 @@ class DOPModelAeris(nn.Module):
     def generator_loss_function(self, state):
         x = self.features(state)
         action, prob = self.actor(x)
+        action = action.view(-1, self.action_dim)
+        prob = prob.view(-1, self.action_dim, 2)
+        state = state.unsqueeze(1).repeat(1, self.actor.head_count, 1, 1).view(-1, self.state_dim[0], self.state_dim[1])
         error = self.error(state, action)
         loss = self.actor.log_prob(prob, action) * error.unsqueeze(-1)
-        return -loss.sum()
+        return -loss.mean()
 
     def _init(self, layer, gain):
         nn.init.orthogonal_(layer.weight, gain)

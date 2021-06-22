@@ -108,7 +108,7 @@ class Actor(nn.Module):
 
 
 class ActorNHeads(nn.Module):
-    def __init__(self, n, input_dim, action_dim, layers, head):
+    def __init__(self, head_count, input_dim, action_dim, layers, head):
         super(ActorNHeads, self).__init__()
         self.head = None
         if head == TYPE.discrete:
@@ -119,7 +119,8 @@ class ActorNHeads(nn.Module):
             pass
 
         self.actor = nn.Sequential(*layers)
-        self.heads = [self.head(input_dim, action_dim) for _ in range(n)]
+        self.head_count = head_count
+        self.heads = [self.head(input_dim, action_dim) for _ in range(head_count)]
 
     def forward(self, x):
         x = self.actor(x)
@@ -308,8 +309,10 @@ class PPOAerisNetworkDOP(PPOAerisNetwork):
     def __init__(self, input_shape, action_dim, config, head):
         super(PPOAerisNetworkDOP, self).__init__(input_shape, action_dim, config, head)
 
+        self.action_dim = action_dim
         self.channels = input_shape[0]
         self.width = input_shape[1]
+        self.head_count = 16
 
         fc_count = config.critic_kernels_count * self.width // 4
 
@@ -322,7 +325,7 @@ class PPOAerisNetworkDOP(PPOAerisNetwork):
         nn.init.xavier_uniform_(self.layers_actor[0].weight)
         nn.init.xavier_uniform_(self.layers_actor[2].weight)
 
-        self.actor = ActorNHeads(16, config.actor_h1, action_dim, self.layers_actor, head)
+        self.actor = ActorNHeads(self.head_count, config.actor_h1, action_dim, self.layers_actor, head)
         self.motivator = QRNDModelAeris(input_shape, action_dim, config)
         self.dop_model = DOPModelAeris(input_shape, action_dim, config, self.features, self.actor, self.motivator)
 
@@ -331,10 +334,16 @@ class PPOAerisNetworkDOP(PPOAerisNetwork):
         value = self.critic(x)
         action, probs = self.actor(x)
 
-        error = self.motivator.error(state.repeat(16, 1, 1), action.squeeze(0))
-        argmax = error.argmax()
+        state = state.unsqueeze(1).repeat(1, self.head_count, 1, 1).view(-1, self.channels, self.width)
+        action = action.view(-1, self.action_dim)
 
-        return value, action[:, argmax], probs[:, argmax]
+        error = self.motivator.error(state, action).view(-1, self.head_count)
+        argmax = error.argmax(dim=1)
+        action = action.view(-1, self.head_count, self.action_dim)
+        action = action.gather(dim=1, index=argmax.unsqueeze(-1).unsqueeze(-1).repeat(1, 1, self.action_dim))
+        probs = probs.gather(dim=1, index=argmax.unsqueeze(-1).unsqueeze(-1).unsqueeze(-1).repeat(1, 1, self.action_dim, 2))
+
+        return value, action.squeeze(1), probs.squeeze(1)
 
 
 class PPOAtariNetwork(torch.nn.Module):
