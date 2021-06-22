@@ -206,3 +206,37 @@ class DOPSimpleModelAeris(nn.Module):
     def _init(self, layer, gain):
         nn.init.orthogonal_(layer.weight, gain)
         layer.bias.data.zero_()
+
+
+class DOPModelAeris(nn.Module):
+    def __init__(self, state_dim, action_dim, config, features, actor, motivator):
+        super(DOPModelAeris, self).__init__()
+
+        self.state_dim = state_dim
+        self.action_dim = action_dim
+
+        self.motivator = motivator
+        self.features = features
+        self.actor = actor
+
+    def forward(self, state, action):
+        predicted_code = self.motivator(state, action)
+        return predicted_code
+
+    def error(self, state, action):
+        return self.motivator.error(state, action)
+
+    def motivator_loss_function(self, state, action, prediction=None):
+        return self.motivator.loss_function(state, action, prediction)
+
+    def generator_loss_function(self, state):
+        x = self.features(state)
+        action, prob = self.actor(x)
+        error = self.error(state, action)
+        loss = self.actor.log_prob(prob, action) * error.unsqueeze(-1)
+        return -loss.sum()
+
+    def _init(self, layer, gain):
+        nn.init.orthogonal_(layer.weight, gain)
+        layer.bias.data.zero_()
+

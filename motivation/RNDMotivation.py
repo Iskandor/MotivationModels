@@ -123,7 +123,7 @@ class DOPMotivation:
     def __init__(self, network, lr, eta=1, memory_buffer=None, sample_size=0, device='cpu'):
         self._network = network
         self._motivator_optimizer = torch.optim.Adam(self._network.motivator.parameters(), lr=lr)
-        self._generator_optimizer = [torch.optim.Adam(g.parameters(), lr=lr) for g in self._network.generator]
+        self._generator_optimizer = torch.optim.Adam(self._network.actor.parameters(), lr=lr)
         self._memory = memory_buffer
         self._sample_size = sample_size
         self._eta = eta

@@ -6,7 +6,7 @@ from torch.distributions import Categorical, MultivariateNormal, Normal
 from agents import TYPE
 from modules import init
 from modules.forward_models.ForwardModelAtari import ForwardModelAtari
-from modules.rnd_models.RNDModelAeris import RNDModelAeris, DOPSimpleModelAeris
+from modules.rnd_models.RNDModelAeris import RNDModelAeris, DOPSimpleModelAeris, QRNDModelAeris, DOPModelAeris
 
 
 class DiscreteHead(nn.Module):
@@ -25,14 +25,16 @@ class DiscreteHead(nn.Module):
 
         return action, probs
 
-    def log_prob(self, probs, actions):
+    @staticmethod
+    def log_prob(probs, actions):
         actions = torch.argmax(actions, dim=1)
         dist = Categorical(probs)
         log_prob = dist.log_prob(actions).unsqueeze(1)
 
         return log_prob
 
-    def entropy(self, probs):
+    @staticmethod
+    def entropy(probs):
         dist = Categorical(probs)
         entropy = -dist.entropy()
         return entropy.mean()
@@ -62,17 +64,19 @@ class ContinuousHead(nn.Module):
         dist = Normal(mu, var.sqrt())
         action = dist.sample()
 
-        return action, torch.cat([mu, var], dim=1)
+        return action, torch.stack([mu, var], dim=1)
 
-    def log_prob(self, probs, actions):
-        mu, var = probs[:, 0:self.action_dim], probs[:, self.action_dim:self.action_dim * 2]
+    @staticmethod
+    def log_prob(probs, actions):
+        mu, var = probs[:, 0], probs[:, 1]
         dist = Normal(mu, var.sqrt())
         log_prob = dist.log_prob(actions)
 
         return log_prob
 
-    def entropy(self, probs):
-        mu, var = probs[:, 0:self.action_dim], probs[:, self.action_dim:self.action_dim * 2]
+    @staticmethod
+    def entropy(probs):
+        mu, var = probs[:, 0], probs[:, 1]
         dist = Normal(mu, var.sqrt())
         entropy = -dist.entropy()
 
@@ -84,17 +88,50 @@ class Actor(nn.Module):
         super(Actor, self).__init__()
         self.head = None
         if head == TYPE.discrete:
-            self.head = DiscreteHead(input_dim, action_dim)
+            self.head = DiscreteHead
         if head == TYPE.continuous:
-            self.head = ContinuousHead(input_dim, action_dim)
+            self.head = ContinuousHead
         if head == TYPE.multibinary:
             pass
 
-        layers.append(self.head)
+        layers.append(self.head(input_dim, action_dim))
         self.actor = nn.Sequential(*layers)
 
     def forward(self, x):
         return self.actor(x)
+
+    def log_prob(self, probs, actions):
+        return self.head.log_prob(probs, actions)
+
+    def entropy(self, probs):
+        return self.head.entropy(probs)
+
+
+class ActorNHeads(nn.Module):
+    def __init__(self, n, input_dim, action_dim, layers, head):
+        super(ActorNHeads, self).__init__()
+        self.head = None
+        if head == TYPE.discrete:
+            self.head = DiscreteHead
+        if head == TYPE.continuous:
+            self.head = ContinuousHead
+        if head == TYPE.multibinary:
+            pass
+
+        self.actor = nn.Sequential(*layers)
+        self.heads = [self.head(input_dim, action_dim) for _ in range(n)]
+
+    def forward(self, x):
+        x = self.actor(x)
+        probs = []
+        actions = []
+
+        for h in self.heads:
+            a, p = h(x)
+            actions.append(a)
+            probs.append(p)
+
+        return torch.stack(actions, dim=1), torch.stack(probs, dim=1)
 
     def log_prob(self, probs, actions):
         return self.head.log_prob(probs, actions)
@@ -265,6 +302,39 @@ class PPOAerisNetworkDOPSimple(PPOAerisNetwork):
     def __init__(self, state_dim, action_dim, config, head):
         super(PPOAerisNetworkDOPSimple, self).__init__(state_dim, action_dim, config, head)
         self.dop_model = DOPSimpleModelAeris(state_dim, action_dim, config, self.features, self.actor)
+
+
+class PPOAerisNetworkDOP(PPOAerisNetwork):
+    def __init__(self, input_shape, action_dim, config, head):
+        super(PPOAerisNetworkDOP, self).__init__(input_shape, action_dim, config, head)
+
+        self.channels = input_shape[0]
+        self.width = input_shape[1]
+
+        fc_count = config.critic_kernels_count * self.width // 4
+
+        self.layers_actor = [
+            nn.Linear(fc_count, fc_count),
+            nn.ReLU(),
+            nn.Linear(fc_count, config.actor_h1),
+            nn.ReLU()]
+
+        nn.init.xavier_uniform_(self.layers_actor[0].weight)
+        nn.init.xavier_uniform_(self.layers_actor[2].weight)
+
+        self.actor = ActorNHeads(16, config.actor_h1, action_dim, self.layers_actor, head)
+        self.motivator = QRNDModelAeris(input_shape, action_dim, config)
+        self.dop_model = DOPModelAeris(input_shape, action_dim, config, self.features, self.actor, self.motivator)
+
+    def forward(self, state):
+        x = self.features(state)
+        value = self.critic(x)
+        action, probs = self.actor(x)
+
+        error = self.motivator.error(state.repeat(16, 1, 1), action.squeeze(0))
+        argmax = error.argmax()
+
+        return value, action[:, argmax], probs[:, argmax]
 
 
 class PPOAtariNetwork(torch.nn.Module):
