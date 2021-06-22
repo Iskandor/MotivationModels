@@ -58,7 +58,7 @@ class ExperimentNEnvPPO:
         if done:
             mask = 0
 
-        if 'raw_score' in info:
+        if info is not None and 'raw_score' in info:
             train_ext_reward['raw'][i] += info['raw_score']
         train_ext_reward['train'][i] += reward
         train_steps[i] += 1
@@ -71,7 +71,7 @@ class ExperimentNEnvPPO:
                 train_steps[i] = step_counter.limit - step_counter.steps
             step_counter.update(train_steps[i])
 
-            if 'raw_score' in info:
+            if info is not None and 'raw_score' in info:
                 train_ext_rewards['raw'].append([train_steps[i], train_ext_reward['raw'][i]])
             train_ext_rewards['train'].append([train_steps[i], train_ext_reward['train'][i]])
             reward_avg.update(train_ext_reward['train'][i])
@@ -79,7 +79,7 @@ class ExperimentNEnvPPO:
             print('Run {0:d} step {1:d} training [ext. reward {2:f} steps {3:d}] avg. reward {4:f}'.format(trial, step_counter.steps, train_ext_reward['train'][i], train_steps[i], reward_avg.value()))
             step_counter.print()
 
-            if 'raw_score' in info:
+            if info is not None and 'raw_score' in info:
                 train_ext_reward['raw'][i] = 0
             train_ext_reward['train'][i] = 0
             train_steps[i] = 0
@@ -97,7 +97,7 @@ class ExperimentNEnvPPO:
         if done:
             mask = 0.
 
-        if 'raw_score' in info:
+        if info is not None and 'raw_score' in info:
             train_ext_reward['raw'][i] += info['raw_score']
         train_ext_reward['train'][i] += reward
         train_steps[i] += 1
@@ -110,7 +110,7 @@ class ExperimentNEnvPPO:
                 train_steps[i] = step_counter.limit - step_counter.steps
             step_counter.update(train_steps[i])
 
-            if 'raw_score' in info:
+            if info is not None and 'raw_score' in info:
                 train_ext_rewards['raw'].append([train_steps[i], train_ext_reward['raw'][i]])
             train_ext_rewards['train'].append([train_steps[i], train_ext_reward['train'][i]])
             train_int_rewards.append([train_steps[i], train_int_reward[i]])
@@ -120,7 +120,7 @@ class ExperimentNEnvPPO:
                 trial, step_counter.steps, train_ext_reward['train'][i], train_int_reward[i], numpy.array(train_fm_error[i]).mean(), train_steps[i]))
             step_counter.print()
 
-            if 'raw_score' in info:
+            if info is not None and 'raw_score' in info:
                 train_ext_reward['raw'][i] = 0
             train_ext_reward['train'][i] = 0
             train_int_reward[i] = 0
@@ -170,7 +170,7 @@ class ExperimentNEnvPPO:
 
             end = time.time()
             time_avg.update(end - start)
-            print('Duration {0:.3f}s'.format(time_avg.value()))
+            # print('Duration {0:.3f}s'.format(time_avg.value()))
 
             state1 = self.process_state(ns)
             reward = torch.tensor(r, dtype=torch.float32)
