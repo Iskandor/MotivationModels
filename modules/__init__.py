@@ -12,4 +12,4 @@ class ARCH(Enum):
 
 def init(layer, gain):
     nn.init.orthogonal_(layer.weight, gain)
-    layer.bias.data.zero_()
+    nn.init.zeros_(layer.bias)

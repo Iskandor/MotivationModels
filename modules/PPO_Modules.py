@@ -15,6 +15,7 @@ class DiscreteHead(nn.Module):
         self.logits = nn.Linear(input_dim, action_dim, bias=True)
 
         torch.nn.init.xavier_uniform_(self.logits.weight)
+        nn.init.zeros_(self.logits.bias)
 
     def forward(self, x):
         logits = self.logits(x)
@@ -52,8 +53,10 @@ class ContinuousHead(nn.Module):
             nn.Softplus()
         )
 
-        torch.nn.init.xavier_uniform_(self.mu[0].weight)
-        torch.nn.init.xavier_uniform_(self.var[0].weight)
+        nn.init.xavier_uniform_(self.mu[0].weight)
+        nn.init.zeros_(self.mu[0].bias)
+        nn.init.xavier_uniform_(self.var[0].weight)
+        nn.init.zeros_(self.var[0].bias)
 
         self.action_dim = action_dim
 
@@ -84,7 +87,7 @@ class ContinuousHead(nn.Module):
 
 
 class Actor(nn.Module):
-    def __init__(self, input_dim, action_dim, layers, head):
+    def __init__(self, action_dim, layers, head):
         super(Actor, self).__init__()
         self.head = None
         if head == TYPE.discrete:
@@ -94,7 +97,7 @@ class Actor(nn.Module):
         if head == TYPE.multibinary:
             pass
 
-        layers.append(self.head(input_dim, action_dim))
+        layers.append(self.head(layers[-2].out_features, action_dim))
         self.actor = nn.Sequential(*layers)
 
     def forward(self, x):
@@ -108,7 +111,7 @@ class Actor(nn.Module):
 
 
 class ActorNHeads(nn.Module):
-    def __init__(self, head_count, input_dim, action_dim, layers, head):
+    def __init__(self, head_count, action_dim, layers, head, config):
         super(ActorNHeads, self).__init__()
         self.head = None
         if head == TYPE.discrete:
@@ -120,7 +123,15 @@ class ActorNHeads(nn.Module):
 
         self.actor = nn.Sequential(*layers)
         self.head_count = head_count
-        self.heads = [self.head(input_dim, action_dim) for _ in range(head_count)]
+        self.heads = [nn.Sequential(
+            nn.Linear(self.actor[-2].out_features, config.actor_h1),
+            nn.ReLU(),
+            self.head(config.actor_h1, action_dim))
+            for _ in range(head_count)]
+
+        for h in self.heads:
+            nn.init.xavier_uniform_(h[0].weight)
+            nn.init.zeros_(h[0].bias)
 
     def forward(self, x):
         x = self.actor(x)
@@ -179,7 +190,7 @@ class PPOSimpleNetwork(torch.nn.Module):
         nn.init.xavier_uniform_(self.layers_actor[0].weight)
         nn.init.xavier_uniform_(self.layers_actor[2].weight)
 
-        self.actor = Actor(config.actor_h2, action_dim, self.layers_actor, head)
+        self.actor = Actor(action_dim, self.layers_actor, head)
 
     def forward(self, state):
         value = self.critic(state)
@@ -199,17 +210,20 @@ class PPOAerisNetwork(torch.nn.Module):
 
         self.features = nn.Sequential(
             nn.Conv1d(self.channels, config.critic_kernels_count, kernel_size=8, stride=4, padding=2),
-            nn.ELU(),
+            nn.ReLU(),
             nn.Conv1d(config.critic_kernels_count, config.critic_kernels_count * 2, kernel_size=4, stride=2, padding=1),
-            nn.ELU(),
+            nn.ReLU(),
             nn.Conv1d(config.critic_kernels_count * 2, config.critic_kernels_count * 2, kernel_size=3, stride=1, padding=1),
-            nn.ELU(),
+            nn.ReLU(),
             nn.Flatten()
         )
 
         nn.init.orthogonal_(self.features[0].weight)
+        nn.init.zeros_(self.features[0].bias)
         nn.init.orthogonal_(self.features[2].weight)
+        nn.init.zeros_(self.features[2].bias)
         nn.init.orthogonal_(self.features[4].weight)
+        nn.init.zeros_(self.features[4].bias)
 
         self.critic = nn.Sequential(
             nn.Linear(fc_count, fc_count),
@@ -219,8 +233,11 @@ class PPOAerisNetwork(torch.nn.Module):
             nn.Linear(config.critic_h1, 1))
 
         nn.init.xavier_uniform_(self.critic[0].weight)
+        nn.init.zeros_(self.critic[0].bias)
         nn.init.xavier_uniform_(self.critic[2].weight)
-        nn.init.uniform_(self.critic[4].weight, -0.003, 0.003)
+        nn.init.zeros_(self.critic[2].bias)
+        nn.init.xavier_uniform_(self.critic[4].weight)
+        nn.init.zeros_(self.critic[4].bias)
 
         self.channels = input_shape[0]
         self.width = input_shape[1]
@@ -232,9 +249,11 @@ class PPOAerisNetwork(torch.nn.Module):
             nn.ReLU()]
 
         nn.init.xavier_uniform_(self.layers_actor[0].weight)
+        nn.init.zeros_(self.layers_actor[0].bias)
         nn.init.xavier_uniform_(self.layers_actor[2].weight)
+        nn.init.zeros_(self.layers_actor[2].bias)
 
-        self.actor = Actor(config.actor_h1, action_dim, self.layers_actor, head)
+        self.actor = Actor(action_dim, self.layers_actor, head)
 
     def forward(self, state):
         x = self.features(state)
@@ -244,28 +263,14 @@ class PPOAerisNetwork(torch.nn.Module):
         return value, action, probs
 
 
-class PPOAerisMotivationNetwork(torch.nn.Module):
+class PPOAerisMotivationNetwork(PPOAerisNetwork):
     def __init__(self, input_shape, action_dim, config, head):
-        super(PPOAerisMotivationNetwork, self).__init__()
+        super(PPOAerisMotivationNetwork, self).__init__(input_shape, action_dim, config, head)
 
         self.channels = input_shape[0]
         self.width = input_shape[1]
 
         fc_count = config.critic_kernels_count * self.width // 4
-
-        self.features = nn.Sequential(
-            nn.Conv1d(self.channels, config.critic_kernels_count, kernel_size=8, stride=4, padding=2),
-            nn.ELU(),
-            nn.Conv1d(config.critic_kernels_count, config.critic_kernels_count * 2, kernel_size=4, stride=2, padding=1),
-            nn.ELU(),
-            nn.Conv1d(config.critic_kernels_count * 2, config.critic_kernels_count * 2, kernel_size=3, stride=1, padding=1),
-            nn.ELU(),
-            nn.Flatten()
-        )
-
-        nn.init.orthogonal_(self.features[0].weight)
-        nn.init.orthogonal_(self.features[2].weight)
-        nn.init.orthogonal_(self.features[4].weight)
 
         self.critic = nn.Sequential(
             nn.Linear(fc_count, config.critic_h1),
@@ -273,24 +278,7 @@ class PPOAerisMotivationNetwork(torch.nn.Module):
             Critic2Heads(config.critic_h1))
 
         nn.init.xavier_uniform_(self.critic[0].weight)
-
-        self.channels = input_shape[0]
-        self.width = input_shape[1]
-
-        self.layers_actor = [
-            nn.Linear(fc_count, config.actor_h1),
-            nn.ReLU()]
-
-        nn.init.xavier_uniform_(self.layers_actor[0].weight)
-
-        self.actor = Actor(config.actor_h1, action_dim, self.layers_actor, head)
-
-    def forward(self, state):
-        x = self.features(state)
-        value = self.critic(x)
-        action, probs = self.actor(x)
-
-        return value, action, probs
+        nn.init.zeros_(self.critic[0].bias)
 
 
 class PPOAerisNetworkRND(PPOAerisMotivationNetwork):
@@ -318,14 +306,12 @@ class PPOAerisNetworkDOP(PPOAerisNetwork):
 
         self.layers_actor = [
             nn.Linear(fc_count, fc_count),
-            nn.ReLU(),
-            nn.Linear(fc_count, config.actor_h1),
             nn.ReLU()]
 
         nn.init.xavier_uniform_(self.layers_actor[0].weight)
-        nn.init.xavier_uniform_(self.layers_actor[2].weight)
+        nn.init.zeros_(self.layers_actor[0].bias)
 
-        self.actor = ActorNHeads(self.head_count, config.actor_h1, action_dim, self.layers_actor, head)
+        self.actor = ActorNHeads(self.head_count, action_dim, self.layers_actor, head, config)
         self.motivator = QRNDModelAeris(input_shape, action_dim, config)
         self.dop_model = DOPModelAeris(input_shape, action_dim, config, self.features, self.actor, self.motivator)
 
@@ -390,7 +376,7 @@ class PPOAtariNetwork(torch.nn.Module):
 
         self.features = nn.Sequential(*self.layers_features)
         self.critic = nn.Sequential(*self.layers_value)
-        self.actor = Actor(self.feature_dim, action_dim, self.layers_actor, head)
+        self.actor = Actor(action_dim, self.layers_actor, head)
 
     def forward(self, state):
         features = self.features(state)
@@ -443,7 +429,7 @@ class PPOAtariMotivationNetwork(torch.nn.Module):
 
         self.features = nn.Sequential(*self.layers_features)
         self.critic = nn.Sequential(*self.layers_value)
-        self.actor = Actor(self.feature_dim, action_dim, self.layers_actor, head)
+        self.actor = Actor(action_dim, self.layers_actor, head)
 
     def forward(self, state):
         features = self.features(state)
