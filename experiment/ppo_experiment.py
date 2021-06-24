@@ -173,14 +173,17 @@ class ExperimentPPO:
         step_limit = int(config.steps * 1e6)
         steps = 0
 
+        steps_per_episode = []
         train_fm_errors = []
         train_ext_rewards = []
         train_int_rewards = []
+        train_head_index = []
 
         bar = ProgressBar(step_limit, max_width=40)
         reward_avg = RunningAverageWindow(100)
 
         while steps < step_limit:
+            head_index_density = numpy.zeros(4)
             state0 = self.process_state(self._env.reset())
             done = False
             train_ext_reward = 0
@@ -191,6 +194,8 @@ class ExperimentPPO:
             while not done:
                 train_steps += 1
                 value, action0, probs0 = agent.get_action(state0)
+                agent.motivation.update_state_average(state0)
+                action0, head_index = action0
                 next_state, reward, done, info = self._env.step(agent.convert_action(action0))
                 state1 = self.process_state(next_state)
                 reward = torch.tensor([reward], dtype=torch.float32).unsqueeze(0)
@@ -205,6 +210,7 @@ class ExperimentPPO:
                 train_fm_error = agent.motivation.error(state0, action0).item()
                 train_error += train_fm_error
                 train_fm_errors.append(train_fm_error)
+                head_index_density[head_index.item()] += 1
 
                 state0 = state1
 
@@ -213,20 +219,24 @@ class ExperimentPPO:
                 train_steps -= steps - step_limit
             bar.numerator = steps
 
+            steps_per_episode.append(train_steps)
             train_ext_rewards.append([train_steps, train_ext_reward])
             train_int_rewards.append([train_steps, train_int_reward])
+            train_head_index.append(head_index_density)
             reward_avg.update(train_ext_reward)
 
-            print('Run {0:d} step {1:d} training [ext. reward {2:f} error {3:f} steps {4:d} ({5:f})  mean reward {6:f}]'.format(
-                trial, steps, train_ext_reward, train_error, train_steps, train_error / train_steps, reward_avg.value()))
+            print('Run {0:d} step {1:d} training [ext. reward {2:f} error {3:f} steps {4:d} ({5:f} err/step) mean reward {6:f} density {7:s}]'.format(
+                trial, steps, train_ext_reward, train_error, train_steps, train_error / train_steps, reward_avg.value(), numpy.array2string(head_index_density)))
             print(bar)
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
 
         print('Saving data...')
         save_data = {
+            'steps': numpy.array(steps_per_episode),
             're': numpy.array(train_ext_rewards),
             'ri': numpy.array(train_int_rewards),
-            'fme': numpy.array(train_fm_errors[:step_limit])
+            'fme': numpy.array(train_fm_errors[:step_limit]),
+            'hid': numpy.stack(train_head_index)
         }
         numpy.save('ppo_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)

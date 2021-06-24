@@ -101,15 +101,17 @@ class QRNDModelAeris(nn.Module):
         self.channels = input_shape[0]
         self.width = input_shape[1]
 
+        self.state_average = torch.zeros((1, input_shape[0], input_shape[1]))
+
         fc_count = config.forward_model_kernels_count * self.width // 4
 
         self.target_model = nn.Sequential(
             nn.Conv1d(self.channels + action_dim, config.forward_model_kernels_count, kernel_size=8, stride=4, padding=2),
-            nn.ELU(),
+            nn.ReLU(),
             nn.Conv1d(config.forward_model_kernels_count, config.forward_model_kernels_count * 2, kernel_size=4, stride=2, padding=1),
-            nn.ELU(),
+            nn.ReLU(),
             nn.Conv1d(config.forward_model_kernels_count * 2, config.forward_model_kernels_count * 2, kernel_size=3, stride=1, padding=1),
-            nn.ELU(),
+            nn.ReLU(),
             nn.Flatten(),
             nn.Linear(fc_count, 64)
         )
@@ -124,11 +126,11 @@ class QRNDModelAeris(nn.Module):
 
         self.model = nn.Sequential(
             nn.Conv1d(self.channels + action_dim, config.forward_model_kernels_count, kernel_size=8, stride=4, padding=2),
-            nn.ELU(),
+            nn.ReLU(),
             nn.Conv1d(config.forward_model_kernels_count, config.forward_model_kernels_count * 2, kernel_size=4, stride=2, padding=1),
-            nn.ELU(),
+            nn.ReLU(),
             nn.Conv1d(config.forward_model_kernels_count * 2, config.forward_model_kernels_count * 2, kernel_size=3, stride=1, padding=1),
-            nn.ELU(),
+            nn.ReLU(),
             nn.Flatten(),
             nn.Linear(fc_count, 64),
             nn.ReLU(),
@@ -145,14 +147,16 @@ class QRNDModelAeris(nn.Module):
         self._init(self.model[11], 0.01)
 
     def forward(self, state, action):
+        x = state - self.state_average
         a = action.unsqueeze(2).repeat(1, 1, state.shape[2])
-        x = torch.cat([state, a], dim=1)
+        x = torch.cat([x, a], dim=1)
         predicted_code = self.model(x)
         return predicted_code
 
     def encode(self, state, action):
+        x = state - self.state_average
         a = action.unsqueeze(2).repeat(1, 1, state.shape[2])
-        x = torch.cat([state, a], dim=1)
+        x = torch.cat([x, a], dim=1)
         return self.target_model(x)
 
     def error(self, state, action):
@@ -169,6 +173,9 @@ class QRNDModelAeris(nn.Module):
         else:
             loss = nn.functional.mse_loss(prediction, self.encode(state, action).detach(), reduction='sum')
         return loss
+
+    def update_state_average(self, state):
+        self.state_average = self.state_average * 0.99 + state * 0.01
 
     def _init(self, layer, gain):
         nn.init.orthogonal_(layer.weight, gain)

@@ -300,7 +300,7 @@ class PPOAerisNetworkDOP(PPOAerisNetwork):
         self.action_dim = action_dim
         self.channels = input_shape[0]
         self.width = input_shape[1]
-        self.head_count = 16
+        self.head_count = 4
 
         fc_count = config.critic_kernels_count * self.width // 4
 
@@ -314,6 +314,7 @@ class PPOAerisNetworkDOP(PPOAerisNetwork):
         self.actor = ActorNHeads(self.head_count, action_dim, self.layers_actor, head, config)
         self.motivator = QRNDModelAeris(input_shape, action_dim, config)
         self.dop_model = DOPModelAeris(input_shape, action_dim, config, self.features, self.actor, self.motivator)
+        self.indices = []
 
     def forward(self, state):
         x = self.features(state)
@@ -329,7 +330,7 @@ class PPOAerisNetworkDOP(PPOAerisNetwork):
         action = action.gather(dim=1, index=argmax.unsqueeze(-1).unsqueeze(-1).repeat(1, 1, self.action_dim))
         probs = probs.gather(dim=1, index=argmax.unsqueeze(-1).unsqueeze(-1).unsqueeze(-1).repeat(1, 1, self.action_dim, 2))
 
-        return value, action.squeeze(1), probs.squeeze(1)
+        return value, (action.squeeze(1), argmax), probs.squeeze(1)
 
 
 class PPOAtariNetwork(torch.nn.Module):
