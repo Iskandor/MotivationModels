@@ -72,16 +72,22 @@ class ContinuousHead(nn.Module):
     @staticmethod
     def log_prob(probs, actions):
         mu, var = probs[:, 0], probs[:, 1]
-        dist = Normal(mu, var.sqrt())
-        log_prob = dist.log_prob(actions)
+        # dist = Normal(mu, var.sqrt())
+        # log_prob = dist.log_prob(actions)
+
+        p1 = -((actions - mu)**2) / (2.0 * var + 0.1)
+        p2 = -torch.log(torch.sqrt(2.0 * np.pi * var))
+
+        log_prob = p1 + p2
 
         return log_prob
 
     @staticmethod
     def entropy(probs):
-        mu, var = probs[:, 0], probs[:, 1]
-        dist = Normal(mu, var.sqrt())
-        entropy = -dist.entropy()
+        var = probs[:, 1]
+        # dist = Normal(mu, var.sqrt())
+        # entropy = -dist.entropy()
+        entropy = -(torch.log(2.0 * np.pi * var) + 1.0) / 2.0
 
         return entropy.mean()
 
