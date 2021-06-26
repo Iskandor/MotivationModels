@@ -48,8 +48,9 @@ class ExperimentPPO:
         trial = trial + config.shift
         step_limit = int(config.steps * 1e6)
         steps = 0
-        bar = ProgressBar(step_limit, max_width=40)
+        bar = ProgressBar(step_limit, max_width=80)
 
+        steps_per_episode = []
         train_ext_rewards = []
         reward_avg = RunningAverageWindow(100)
 
@@ -86,7 +87,8 @@ class ExperimentPPO:
             steps += train_steps
             bar.numerator = steps
 
-            train_ext_rewards.append([train_steps, train_ext_reward])
+            steps_per_episode.append(train_steps)
+            train_ext_rewards.append(train_ext_reward)
             reward_avg.update(train_ext_reward)
 
             print('Run {0:d} step {1:d} training [ext. reward {2:f} steps {3:d} mean reward {4:f}]'.format(trial, steps, train_ext_reward, train_steps, reward_avg.value()))
@@ -96,6 +98,7 @@ class ExperimentPPO:
 
         print('Saving data...')
         save_data = {
+            'steps': numpy.array(steps_per_episode),
             're': numpy.array(train_ext_rewards)
         }
         numpy.save('ppo_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
@@ -107,11 +110,12 @@ class ExperimentPPO:
         step_limit = int(config.steps * 1e6)
         steps = 0
 
+        steps_per_episode = []
         train_fm_errors = []
         train_ext_rewards = []
         train_int_rewards = []
 
-        bar = ProgressBar(step_limit, max_width=40)
+        bar = ProgressBar(step_limit, max_width=80)
         reward_avg = RunningAverageWindow(100)
 
         while steps < step_limit:
@@ -148,8 +152,9 @@ class ExperimentPPO:
                 train_steps -= steps - step_limit
             bar.numerator = steps
 
-            train_ext_rewards.append([train_steps, train_ext_reward])
-            train_int_rewards.append([train_steps, train_int_reward])
+            steps_per_episode.append(train_steps)
+            train_ext_rewards.append(train_ext_reward)
+            train_int_rewards.append(train_int_reward)
             reward_avg.update(train_ext_reward)
 
             print('Run {0:d} step {1:d} training [ext. reward {2:f} int. reward {3:f} steps {4:d} ({5:f})  mean reward {6:f}]'.format(
@@ -160,6 +165,7 @@ class ExperimentPPO:
 
         print('Saving data...')
         save_data = {
+            'steps': numpy.array(steps_per_episode),
             're': numpy.array(train_ext_rewards),
             'ri': numpy.array(train_int_rewards),
             'fme': numpy.array(train_fm_errors[:step_limit])
@@ -179,7 +185,7 @@ class ExperimentPPO:
         train_int_rewards = []
         train_head_index = []
 
-        bar = ProgressBar(step_limit, max_width=40)
+        bar = ProgressBar(step_limit, max_width=80)
         reward_avg = RunningAverageWindow(100)
 
         while steps < step_limit:
