@@ -81,13 +81,6 @@ class PPOAerisAgent(PPOAgent):
         self.algorithm = self.init_algorithm(config, self.memory, action_type)
 
 
-class PPOAerisAgent(PPOAgent):
-    def __init__(self, input_shape, action_dim, config, action_type):
-        super().__init__(input_shape, action_dim, config)
-        self.network = PPOAerisNetwork(input_shape, action_dim, config, head=action_type).to(config.device)
-        self.algorithm = self.init_algorithm(config, self.memory, action_type)
-
-
 class PPOAerisRNDAgent(PPOAgent):
     def __init__(self, input_shape, action_dim, config, action_type):
         super().__init__(input_shape, action_dim, config)
@@ -134,6 +127,7 @@ class PPOAerisDOPAgent(PPOAgent):
         self.motivation.train(indices)
         if indices is not None:
             self.memory.clear()
+
 
 class PPOAtariAgent(PPOAgent):
     def __init__(self, input_shape, action_dim, config, action_type):

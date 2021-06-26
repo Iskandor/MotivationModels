@@ -420,3 +420,58 @@ def plot_m2_model_details(data, path, window=1000):
 
         bar.numerator = i + 1
         print(bar)
+
+
+def plot_dop_model_details(data, path, window=1000):
+    num_rows = 2
+    num_cols = 2
+
+    hid_norm = np.expand_dims(np.sum(data['hid'], axis=2), 2)
+
+    for i in tqdm(range(data['re'].shape[0])):
+        fig = plt.figure(figsize=(num_cols * 7.00, num_rows * 7.00))
+        ax = plt.subplot(num_rows, num_cols, 1)
+        ax.set_xlabel('steps')
+        ax.set_ylabel('reward')
+        ax.grid()
+
+        t = range(data['re'].shape[1])
+
+        mu, sigma = prepare_data(data['re'][i], window)
+        plot_curve(ax, mu, sigma, t, 'blue')
+        mu, sigma = prepare_data(data['ri'][i], window)
+        plot_curve(ax, mu, sigma, t, 'red')
+        plt.legend(['external reward', 'internal reward'], loc=4)
+
+        ax = plt.subplot(num_rows, num_cols, 2)
+        color_cycle = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
+        t = range(data['hid'].shape[1])
+        data_hid = np.divide(data['hid'][i], hid_norm[i])
+        for j in range(data['hid'].shape[2]):
+            mu, sigma = prepare_data(data_hid[:, j], window)
+            plot_curve(ax, mu, sigma, t, color_cycle[j])
+        ax.grid()
+
+        ax = plt.subplot(num_rows, num_cols, 3)
+        ax.set_xlabel('steps')
+        ax.set_ylabel('error')
+        ax.set_yscale('log', nonpositive='clip')
+        ax.grid()
+
+        t = range(data['fme'].shape[1])
+
+        mu, sigma = prepare_data(data['fme'][i], window)
+        plot_curve(ax, mu, sigma, t, 'green')
+        plt.legend(['prediction error'], loc=1)
+
+        ax = plt.subplot(num_rows, num_cols, 4)
+        ax.set_xlabel('reward magnitude')
+        ax.set_ylabel('log count')
+        ax.set_yscale('log', nonpositive='clip')
+        ax.grid()
+        bins = np.linspace(0, 1, 50)
+        ax.hist(data['fme'][i], bins, color='darkcyan')
+        plt.legend(['prediction error reward'], loc=1)
+
+        plt.savefig("{0:s}_{1:d}.png".format(path, i))
+        plt.close()

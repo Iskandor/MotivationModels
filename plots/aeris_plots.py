@@ -1,7 +1,7 @@
 import os
 
 from plots.dataloader import prepare_data
-from plots.chart import plot_multiple_models, plot_baseline_details, plot_forward_model_details
+from plots.chart import plot_multiple_models, plot_baseline_details, plot_forward_model_details, plot_dop_model_details
 
 root = 'C:/GIT/Experiments/plots'
 
@@ -38,4 +38,4 @@ def plot_aeris(config, plot_overview=True, plot_details=False, window=1000):
             if model == 'rnd':
                 plot_forward_model_details(d, path, window=window)
             if model == 'dop':
-                plot_forward_model_details(d, path, window=window)
+                plot_dop_model_details(d, path, window=window)

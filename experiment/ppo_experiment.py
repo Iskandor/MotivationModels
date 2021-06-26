@@ -220,8 +220,8 @@ class ExperimentPPO:
             bar.numerator = steps
 
             steps_per_episode.append(train_steps)
-            train_ext_rewards.append([train_steps, train_ext_reward])
-            train_int_rewards.append([train_steps, train_int_reward])
+            train_ext_rewards.append(train_ext_reward)
+            train_int_rewards.append(train_int_reward)
             train_head_index.append(head_index_density)
             reward_avg.update(train_ext_reward)
 
