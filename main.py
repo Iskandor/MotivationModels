@@ -253,7 +253,7 @@ def run_torch_parallel(args, experiment):
     for i in range(experiment.trials):
         thread_params.append((args.algorithm, args.env, experiment, i))
 
-    with Pool(args.num_workers) as p:
+    with Pool(args.num_processes) as p:
         p.map(run_thread, thread_params)
 
 
