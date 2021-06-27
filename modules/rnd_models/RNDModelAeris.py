@@ -225,6 +225,7 @@ class DOPModelAeris(nn.Module):
         self.motivator = motivator
         self.features = features
         self.actor = actor
+        self.eta = config.motivation_eta
 
     def forward(self, state, action):
         predicted_code = self.motivator(state, action)
@@ -243,7 +244,7 @@ class DOPModelAeris(nn.Module):
         prob = prob.view(-1, self.action_dim, 2)
         state = state.unsqueeze(1).repeat(1, self.actor.head_count, 1, 1).view(-1, self.state_dim[0], self.state_dim[1])
         error = self.error(state, action)
-        loss = self.actor.log_prob(prob, action) * error.unsqueeze(-1)
+        loss = self.actor.log_prob(prob, action) * error.unsqueeze(-1) * self.eta
         return -loss.mean()
 
     def _init(self, layer, gain):

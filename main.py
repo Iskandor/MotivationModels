@@ -203,6 +203,8 @@ def run(id, algorithm, env, experiment):
         env_class.run_qrnd_model(experiment, id)
     if experiment.model == 'dop':
         env_class.run_dop_model(experiment, id)
+    if experiment.model == 'dop_ref':
+        env_class.run_dop_ref_model(experiment, id)
     if experiment.model == 's':
         env_class.run_metalearner_model(experiment, id)
     if experiment.model == 'su':

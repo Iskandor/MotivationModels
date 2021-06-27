@@ -350,6 +350,39 @@ class PPOAerisNetworkDOP(PPOAerisNetwork):
         return value, (action.squeeze(1), argmax), probs.squeeze(1)
 
 
+class PPOAerisNetworkDOPRef(PPOAerisNetwork):
+    def __init__(self, input_shape, action_dim, config, head):
+        super(PPOAerisNetworkDOPRef, self).__init__(input_shape, action_dim, config, head)
+
+        self.action_dim = action_dim
+        self.channels = input_shape[0]
+        self.width = input_shape[1]
+        self.head_count = 4
+
+        fc_count = config.critic_kernels_count * self.width // 4
+
+        self.layers_actor = [
+            nn.Linear(fc_count, fc_count),
+            nn.ReLU()]
+
+        nn.init.xavier_uniform_(self.layers_actor[0].weight)
+        nn.init.zeros_(self.layers_actor[0].bias)
+
+        self.actor = ActorNHeads(self.head_count, action_dim, self.layers_actor, head, config)
+        self.indices = []
+
+    def forward(self, state):
+        x = self.features(state)
+        value = self.critic(x)
+        action, probs = self.actor(x)
+
+        argmax = torch.randint(0, self.head_count, (state.shape[0],))
+        action = action.gather(dim=1, index=argmax.unsqueeze(-1).unsqueeze(-1).repeat(1, 1, self.action_dim))
+        probs = probs.gather(dim=1, index=argmax.unsqueeze(-1).unsqueeze(-1).unsqueeze(-1).repeat(1, 1, self.action_dim, 2))
+
+        return value, action.squeeze(1), probs.squeeze(1)
+
+
 class PPOAtariNetwork(torch.nn.Module):
     def __init__(self, input_shape, action_dim, config, head):
         super(PPOAtariNetwork, self).__init__()

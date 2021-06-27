@@ -38,7 +38,7 @@
       "forward_model_lr": 0.001,
       "forward_model_kernels_count": 32,
       "forward_model_h2": 128,
-      "forward_model_eta": 1,
+      "motivation_eta": 1,
       "forward_model_variant": "A"
     },
     "3": {
@@ -61,7 +61,7 @@
       "forward_model_lr": 0.001,
       "forward_model_kernels_count": 32,
       "forward_model_h2": 128,
-      "forward_model_eta": 1,
+      "motivation_eta": 1,
       "forward_model_variant": "A"
     },
     "4": {
@@ -84,8 +84,26 @@
       "forward_model_lr": 0.001,
       "forward_model_kernels_count": 32,
       "forward_model_h2": 128,
-      "forward_model_eta": 1,
+      "motivation_eta": 1,
       "forward_model_variant": "A"
+    },
+    "5": {
+      "model": "dop_ref",
+      "n_env": 1,
+      "trials": 15,
+      "steps": 2,
+      "gamma": 0.99,
+      "beta": 0,
+      "batch_size": 1024,
+      "trajectory_size": 8192,
+      "ppo_epochs": 10,
+      "lr": 0.0002,
+      "actor_loss_weight": 0.5,
+      "actor_kernels_count": 32,
+      "actor_h1": 256,
+      "critic_loss_weight": 1,
+      "critic_kernels_count": 32,
+      "critic_h1": 256
     }
   },
   "aeris_hazards": {
@@ -127,7 +145,7 @@
       "forward_model_lr": 0.001,
       "forward_model_kernels_count": 32,
       "forward_model_h2": 128,
-      "forward_model_eta": 1,
+      "motivation_eta": 1,
       "forward_model_variant": "A"
     },
     "3": {
@@ -150,7 +168,7 @@
       "forward_model_lr": 0.001,
       "forward_model_kernels_count": 32,
       "forward_model_h2": 128,
-      "forward_model_eta": 1,
+      "motivation_eta": 1,
       "forward_model_variant": "A"
     }
   },
@@ -193,7 +211,7 @@
       "forward_model_lr": 0.0001,
       "forward_model_h1": 64,
       "forward_model_h2": 32,
-      "forward_model_eta": 1,
+      "motivation_eta": 1,
       "forward_model_variant": "A"
     },
     "3": {
@@ -216,7 +234,7 @@
       "forward_model_lr": 0.0001,
       "forward_model_h1": 64,
       "forward_model_h2": 32,
-      "forward_model_eta": 1,
+      "motivation_eta": 1,
       "forward_model_variant": "A",
       "metacritic_lr": 0.0002,
       "metacritic_h1": 64,
@@ -430,7 +448,7 @@
     "1": {
       "model": "baseline",
       "n_env": 64,
-      "trials": 1,
+      "trials": 8,
       "steps": 8,
       "gamma": 0.99,
       "beta": 0.001,
@@ -439,78 +457,23 @@
       "ppo_epochs": 4,
       "lr": 0.0002,
       "actor_loss_weight": 0.5,
-      "actor_h1": 256,
-      "actor_h2": 128,
-      "critic_loss_weight": 1,
-      "critic_h1": 256,
-      "critic_h2": 128
+      "critic_loss_weight": 1
     },
     "2": {
-      "model": "baseline",
-      "n_env": 1,
-      "trials": 1,
+      "model": "dop",
+      "n_env": 64,
+      "trials": 8,
       "steps": 8,
       "gamma": 0.99,
       "beta": 0.001,
       "batch_size": 1024,
-      "trajectory_size": 8192,
+      "trajectory_size": 4096,
       "ppo_epochs": 4,
       "lr": 0.0002,
       "actor_loss_weight": 0.5,
-      "actor_h1": 256,
-      "actor_h2": 128,
       "critic_loss_weight": 1,
-      "critic_h1": 256,
-      "critic_h2": 128
-    },
-    "3": {
-      "model": "fm",
-      "n_env": 64,
-      "trials": 1,
-      "steps": 8,
-      "gamma": 0.99,
-      "beta": 0.01,
-      "batch_size": 512,
-      "trajectory_size": 8192,
-      "ppo_epochs": 4,
-      "lr": 0.0002,
-      "actor_loss_weight": 0.5,
-      "actor_h1": 256,
-      "actor_h2": 128,
-      "critic_loss_weight": 1,
-      "critic_h1": 256,
-      "critic_h2": 128,
-      "forward_model_lr": 0.00001,
-      "forward_model_h1": 512,
-      "forward_model_h2": 256,
-      "forward_model_eta": 1,
-      "forward_model_variant": "A",
-      "forward_model_batch_size": 32
-    },
-    "4": {
-      "descriptor": "with priors",
-      "model": "fm",
-      "n_env": 64,
-      "trials": 1,
-      "steps": 8,
-      "gamma": 0.99,
-      "beta": 0.01,
-      "batch_size": 512,
-      "trajectory_size": 8192,
-      "ppo_epochs": 4,
-      "lr": 0.0002,
-      "actor_loss_weight": 0.5,
-      "actor_h1": 256,
-      "actor_h2": 128,
-      "critic_loss_weight": 1,
-      "critic_h1": 256,
-      "critic_h2": 128,
-      "forward_model_lr": 0.00005,
-      "forward_model_h1": 512,
-      "forward_model_h2": 256,
-      "forward_model_eta": 1,
-      "forward_model_variant": "A",
-      "forward_model_batch_size": 32
+      "motivation_lr": 0.001,
+      "motivation_eta": 1
     }
   },
   "qbert": {

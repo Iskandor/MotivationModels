@@ -11,3 +11,7 @@ def run_rnd_model(config, i):
 
 def run_dop_model(config, i):
     PPO_AerisEnv.run_dop_model('TargetNavigate-v0', config, i)
+
+
+def run_dop_ref_model(config, i):
+    PPO_AerisEnv.run_dop_ref_model('TargetNavigate-v0', config, i)
