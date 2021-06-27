@@ -75,7 +75,7 @@ class ContinuousHead(nn.Module):
         # dist = Normal(mu, var.sqrt())
         # log_prob = dist.log_prob(actions)
 
-        p1 = -((actions - mu)**2) / (2.0 * var + 0.1)
+        p1 = -((actions - mu) ** 2) / (2.0 * var + 0.1)
         p2 = -torch.log(torch.sqrt(2.0 * np.pi * var))
 
         log_prob = p1 + p2
@@ -171,6 +171,17 @@ class Critic2Heads(nn.Module):
         ext_value = self.ext(x)
         int_value = self.int(x)
         return torch.stack([ext_value, int_value], dim=1).squeeze(-1)
+
+
+class Residual(torch.nn.Module):
+    def __init__(self, features):
+        super(Residual, self).__init__()
+
+        self.layer = nn.Linear(features, features)
+        init(self.layer, 0.01)
+
+    def forward(self, x):
+        return x + self.layer(x)
 
 
 class PPOSimpleNetwork(torch.nn.Module):
@@ -346,32 +357,41 @@ class PPOAtariNetwork(torch.nn.Module):
         self.input_shape = input_shape
         self.action_dim = action_dim
         input_channels = self.input_shape[0]
-        self.feature_dim = 512
+        input_height = self.input_shape[1]
+        input_width = self.input_shape[2]
+        self.feature_dim = 448
+
+        fc_inputs_count = 64 * (input_width // 8) * (input_height // 8)
 
         self.layers_features = [
             nn.Conv2d(input_channels, 32, kernel_size=8, stride=4, padding=2),
             nn.ReLU(),
-            nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=1),
+            nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
             nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(12 * 12 * 64, self.feature_dim),
+            nn.Linear(fc_inputs_count, self.feature_dim),
+            nn.ReLU(),
+            nn.Linear(self.feature_dim, self.feature_dim),
             nn.ReLU()
         ]
 
         init(self.layers_features[0], np.sqrt(2))
         init(self.layers_features[2], np.sqrt(2))
         init(self.layers_features[4], np.sqrt(2))
-        init(self.layers_features[7], np.sqrt(2))
+        init(self.layers_features[6], np.sqrt(2))
+        init(self.layers_features[9], 0.01)
+        init(self.layers_features[11], 0.01)
 
         self.layers_value = [
-            torch.nn.Linear(self.feature_dim, self.feature_dim),
+            Residual(self.feature_dim),
             torch.nn.ReLU(),
             torch.nn.Linear(self.feature_dim, 1)
         ]
 
-        init(self.layers_value[0], 0.1)
         init(self.layers_value[2], 0.01)
 
         self.layers_policy = [
@@ -383,7 +403,7 @@ class PPOAtariNetwork(torch.nn.Module):
 
         self.features = nn.Sequential(*self.layers_features)
         self.critic = nn.Sequential(*self.layers_value)
-        self.actor = Actor(action_dim, self.layers_actor, head)
+        self.actor = Actor(action_dim, self.layers_policy, head)
 
     def forward(self, state):
         features = self.features(state)
