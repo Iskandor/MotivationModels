@@ -39,11 +39,11 @@ class PPOAgent:
 
     def convert_action(self, action):
         if self.action_type == TYPE.discrete:
-            return torch.argmax(action.squeeze(0)).item()
+            return torch.argmax(action, dim=1).numpy()
         if self.action_type == TYPE.continuous:
             return action.squeeze(0).numpy()
         if self.action_type == TYPE.multibinary:
-            return action.squeeze(0).item()
+            return torch.argmax(action, dim=1).numpy()
 
     def encode_action(self, action):
         if self.action_type == TYPE.discrete:

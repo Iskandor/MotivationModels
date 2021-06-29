@@ -65,11 +65,11 @@ class PPO:
                 adv_values_t.append(adv_values)
                 ref_values_t.append(ref_values)
 
-            states_t = torch.cat(states_t, dim=0).to(self._device)
-            actions_t = torch.cat(actions_t, dim=0).to(self._device)
-            probs_t = torch.cat(probs_t, dim=0).to(self._device)
-            adv_values_t = torch.cat(adv_values_t, dim=0).to(self._device)
-            ref_values_t = torch.cat(ref_values_t, dim=0).to(self._device)
+            states_t = torch.cat(states_t, dim=0)
+            actions_t = torch.cat(actions_t, dim=0)
+            probs_t = torch.cat(probs_t, dim=0)
+            adv_values_t = torch.cat(adv_values_t, dim=0)
+            ref_values_t = torch.cat(ref_values_t, dim=0)
 
             self._train(states_t, actions_t, probs_t, adv_values_t, ref_values_t)
 
@@ -91,8 +91,8 @@ class PPO:
                 batch_adv_v = adv_values[batch_ofs:batch_l].unsqueeze(-1)
                 batch_ref_v = ref_values[batch_ofs:batch_l].unsqueeze(-1)
 
-                self._optimizer.zero_grad()
-                loss = self.calc_loss(states_v, batch_ref_v, batch_adv_v, actions_v, probs_v)
+                self._optimizer.zero_grad(set_to_none=True)
+                loss = self.calc_loss(states_v.to(self._device), batch_ref_v.to(self._device), batch_adv_v.to(self._device), actions_v.to(self._device), probs_v.to(self._device))
                 loss.backward()
                 self._optimizer.step()
 

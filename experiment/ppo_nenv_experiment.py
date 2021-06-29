@@ -10,14 +10,11 @@ from concurrent.futures import ThreadPoolExecutor
 
 
 class ExperimentNEnvPPO:
-    def __init__(self, env_name, env_list, config, input_shape, action_shape):
+    def __init__(self, env_name, env, config):
         self._env_name = env_name
-        self._env = env_list[0]
-        self._env_list = env_list
+        self._env = env
         self._config = config
         self._preprocess = None
-        self._input_shape = input_shape
-        self._action_shape = action_shape
 
         print('Total steps: {0:.2f}M'.format(self._config.steps))
         print('Total batch size: {0:d}'.format(self._config.batch_size))
@@ -50,43 +47,6 @@ class ExperimentNEnvPPO:
                 next_state, reward, done, info = self._env.step(action0.item())
                 state0 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0).to(config.device)
             video_recorder.close()
-
-    def one_step_baseline(self, params):
-        i, trial, agent, action0, train_ext_reward, train_steps, s, ns, r, d, step_counter, train_ext_rewards, reward_avg = params
-        next_state, reward, done, info = self._env_list[i].step(action0[i])
-        mask = 1
-        if done:
-            mask = 0
-
-        if info is not None and 'raw_score' in info:
-            train_ext_reward['raw'][i] += info['raw_score']
-        train_ext_reward['train'][i] += reward
-        train_steps[i] += 1
-        ns[i] = next_state
-        r[i] = reward
-        d[i] = mask
-
-        if d[i] == 0:
-            if step_counter.steps + train_steps[i] > step_counter.limit:
-                train_steps[i] = step_counter.limit - step_counter.steps
-            step_counter.update(train_steps[i])
-
-            if info is not None and 'raw_score' in info:
-                train_ext_rewards['raw'].append([train_steps[i], train_ext_reward['raw'][i]])
-            train_ext_rewards['train'].append([train_steps[i], train_ext_reward['train'][i]])
-            reward_avg.update(train_ext_reward['train'][i])
-
-            print('Run {0:d} step {1:d} training [ext. reward {2:f} steps {3:d}] avg. reward {4:f}'.format(trial, step_counter.steps, train_ext_reward['train'][i], train_steps[i], reward_avg.value()))
-            step_counter.print()
-
-            if info is not None and 'raw_score' in info:
-                train_ext_reward['raw'][i] = 0
-            train_ext_reward['train'][i] = 0
-            train_steps[i] = 0
-
-            s[i] = self._env_list[i].reset()
-        else:
-            s[i] = ns[i]
 
     def one_step_forward_model(self, params):
         i, trial, agent, action0, train_ext_reward, train_int_reward, train_fm_error, \
@@ -137,44 +97,54 @@ class ExperimentNEnvPPO:
         trial = trial + config.shift
         step_counter = StepCounter(int(config.steps * 1e6))
 
-        train_ext_rewards = {'raw': [], 'train': []}
-        train_ext_reward = {'raw': [0] * n_env, 'train': [0] * n_env}
-        train_steps = [0] * n_env
+        steps_per_episode = []
+        train_ext_rewards = []
+        train_ext_reward = numpy.zeros((n_env, 1), dtype=numpy.float32)
+        train_steps = numpy.zeros((n_env, 1), dtype=numpy.int32)
         reward_avg = RunningAverageWindow(100)
-        time_avg = RunningAverageWindow(100)
+        # time_avg = RunningAverageWindow(100)
 
-        s = numpy.zeros((n_env,) + self._input_shape, dtype=numpy.float32)
-        a = [None] * n_env
-        ns = numpy.zeros((n_env,) + self._input_shape, dtype=numpy.float32)
-        r = numpy.zeros((n_env, 1), dtype=numpy.float32)
-        d = numpy.zeros((n_env, 1), dtype=numpy.float32)
-
-        inputs = []
+        s = numpy.zeros((n_env,) + self._env.observation_space.shape, dtype=numpy.float32)
         for i in range(n_env):
-            inputs.append((i, trial, agent, a, train_ext_reward, train_steps, s, ns, r, d, step_counter, train_ext_rewards, reward_avg))
-
-        for i in range(n_env):
-            s[i] = self._env_list[i].reset()
+            s[i] = self._env.reset(i)
 
         state0 = self.process_state(s)
 
         while step_counter.running():
-            value, action0, probs0 = agent.get_action(state0)
+            with torch.no_grad():
+                value, action0, probs0 = agent.get_action(state0)
 
-            for i in range(n_env):
-                a[i] = agent.convert_action(action0[i])
-
-            start = time.time()
-            with ThreadPoolExecutor(max_workers=config.num_threads) as executor:
-                executor.map(self.one_step_baseline, inputs)
-
-            end = time.time()
-            time_avg.update(end - start)
+            # start = time.time()
+            next_state, reward, done, info = self._env.step(agent.convert_action(action0.cpu()))
+            # end = time.time()
+            # time_avg.update(end - start)
             # print('Duration {0:.3f}s'.format(time_avg.value()))
 
-            state1 = self.process_state(ns)
-            reward = torch.tensor(r, dtype=torch.float32)
-            done = torch.tensor(d, dtype=torch.float32)
+            train_steps += 1
+            train_ext_reward += reward
+
+            env_indices = numpy.nonzero(numpy.squeeze(done, axis=1))[0]
+
+            for i in env_indices:
+                if step_counter.steps + train_steps[i] > step_counter.limit:
+                    train_steps[i] = step_counter.limit - step_counter.steps
+                step_counter.update(train_steps[i].item())
+
+                steps_per_episode.append(train_steps[i])
+                train_ext_rewards.append(train_ext_reward[i])
+                reward_avg.update(train_ext_reward[i].item())
+
+                print('Run {0:d} step {1:d} training [ext. reward {2:f} steps {3:d} avg. reward {4:f}]'.format(trial, step_counter.steps, train_ext_reward[i].item(), train_steps[i].item(), reward_avg.value()))
+                step_counter.print()
+
+                train_ext_reward[i] = 0
+                train_steps[i] = 0
+
+                next_state[i] = self._env.reset(i)
+
+            state1 = self.process_state(next_state)
+            reward = torch.tensor(reward, dtype=torch.float32)
+            done = 1 - torch.tensor(done, dtype=torch.float32)
 
             agent.train(state0, value, action0, probs0, state1, reward, done)
 
@@ -184,8 +154,8 @@ class ExperimentNEnvPPO:
 
         print('Saving data...')
         save_data = {
-            're': numpy.array(train_ext_rewards['train']),
-            're_raw': numpy.array(train_ext_rewards['raw'])
+            'steps': numpy.array(steps_per_episode),
+            're': numpy.array(train_ext_rewards)
         }
         numpy.save('ppo_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
 
