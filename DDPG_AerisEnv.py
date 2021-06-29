@@ -4,7 +4,7 @@ import gym
 import gym_aeris.envs
 
 from agents import TYPE
-from agents.PPOAgent import PPOAerisAgent, PPOAerisRNDAgent, PPOAerisDOPAgent, PPOAerisDOPRefAgent
+from agents.PPOAgent import PPOAerisAgent, PPOAerisRNDAgent, PPOAerisDOPAgent
 from experiment.ppo_experiment import ExperimentPPO
 from experiment.ppo_nenv_experiment import ExperimentNEnvPPO
 
@@ -67,20 +67,8 @@ def run_dop_model(env_name, config, i):
 
     experiment = ExperimentPPO(env_name, env, config)
 
+    # agent = PPOAerisDOPSimpleAgent(state_dim, action_dim, config, TYPE.continuous)
     agent = PPOAerisDOPAgent(state_dim, action_dim, config, TYPE.continuous)
     experiment.run_dop_model(agent, i)
-
-    env.close()
-
-
-def run_dop_ref_model(env_name, config, i):
-    env = create_env(env_name)
-    state_dim = env.observation_space.shape
-    action_dim = env.action_space.shape[0]
-
-    experiment = ExperimentPPO(env_name, env, config)
-
-    agent = PPOAerisDOPRefAgent(state_dim, action_dim, config, TYPE.continuous)
-    experiment.run_baseline(agent, i)
 
     env.close()

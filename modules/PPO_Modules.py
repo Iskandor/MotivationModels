@@ -6,7 +6,7 @@ from torch.distributions import Categorical, MultivariateNormal, Normal
 from agents import TYPE
 from modules import init
 from modules.forward_models.ForwardModelAtari import ForwardModelAtari
-from modules.rnd_models.RNDModelAeris import RNDModelAeris, DOPSimpleModelAeris, QRNDModelAeris, DOPModelAeris
+from modules.rnd_models.RNDModelAeris import RNDModelAeris, QRNDModelAeris, DOPModelAeris
 
 
 class DiscreteHead(nn.Module):
@@ -67,11 +67,12 @@ class ContinuousHead(nn.Module):
         dist = Normal(mu, var.sqrt())
         action = dist.sample()
 
-        return action, torch.stack([mu, var], dim=1)
+        return action, torch.cat([mu, var], dim=1)
 
     @staticmethod
     def log_prob(probs, actions):
-        mu, var = probs[:, 0], probs[:, 1]
+        dim = probs.shape[1]
+        mu, var = probs[:, :dim//2], probs[:, dim//2:]
         # dist = Normal(mu, var.sqrt())
         # log_prob = dist.log_prob(actions)
 
@@ -84,7 +85,8 @@ class ContinuousHead(nn.Module):
 
     @staticmethod
     def entropy(probs):
-        var = probs[:, 1]
+        dim = probs.shape[1]
+        var = probs[:, dim//2:]
         # dist = Normal(mu, var.sqrt())
         # entropy = -dist.entropy()
         entropy = -(torch.log(2.0 * np.pi * var) + 1.0) / 2.0
@@ -304,12 +306,6 @@ class PPOAerisNetworkRND(PPOAerisMotivationNetwork):
         self.rnd_model = RNDModelAeris(input_shape, action_dim, config)
 
 
-class PPOAerisNetworkDOPSimple(PPOAerisNetwork):
-    def __init__(self, state_dim, action_dim, config, head):
-        super(PPOAerisNetworkDOPSimple, self).__init__(state_dim, action_dim, config, head)
-        self.dop_model = DOPSimpleModelAeris(state_dim, action_dim, config, self.features, self.actor)
-
-
 class PPOAerisNetworkDOP(PPOAerisNetwork):
     def __init__(self, input_shape, action_dim, config, head):
         super(PPOAerisNetworkDOP, self).__init__(input_shape, action_dim, config, head)
@@ -329,8 +325,8 @@ class PPOAerisNetworkDOP(PPOAerisNetwork):
         nn.init.zeros_(self.layers_actor[0].bias)
 
         self.actor = ActorNHeads(self.head_count, action_dim, self.layers_actor, head, config)
-        self.motivator = QRNDModelAeris(input_shape, action_dim, config)
-        self.dop_model = DOPModelAeris(input_shape, action_dim, config, self.features, self.actor, self.motivator)
+        self.motivator = QRNDModelAeris(input_shape, action_dim * 2, config)
+        self.dop_model = DOPModelAeris(input_shape, action_dim * 2, config, self.features, self.actor, self.motivator)
         self.indices = []
 
     def forward(self, state):
@@ -339,13 +335,13 @@ class PPOAerisNetworkDOP(PPOAerisNetwork):
         action, probs = self.actor(x)
 
         state = state.unsqueeze(1).repeat(1, self.head_count, 1, 1).view(-1, self.channels, self.width)
-        action = action.view(-1, self.action_dim)
+        probs = probs.view(-1, self.action_dim * 2)
 
-        error = self.motivator.error(state, action).view(-1, self.head_count)
+        error = self.motivator.error(state, probs).view(-1, self.head_count).detach()
         argmax = error.argmax(dim=1)
-        action = action.view(-1, self.head_count, self.action_dim)
+        probs = probs.view(-1, self.head_count, self.action_dim * 2)
         action = action.gather(dim=1, index=argmax.unsqueeze(-1).unsqueeze(-1).repeat(1, 1, self.action_dim))
-        probs = probs.gather(dim=1, index=argmax.unsqueeze(-1).unsqueeze(-1).unsqueeze(-1).repeat(1, 1, self.action_dim, 2))
+        probs = probs.gather(dim=1, index=argmax.unsqueeze(-1).unsqueeze(-1).repeat(1, 1, self.action_dim * 2))
 
         return value, (action.squeeze(1), argmax), probs.squeeze(1)
 
@@ -378,7 +374,7 @@ class PPOAerisNetworkDOPRef(PPOAerisNetwork):
 
         argmax = torch.randint(0, self.head_count, (state.shape[0],))
         action = action.gather(dim=1, index=argmax.unsqueeze(-1).unsqueeze(-1).repeat(1, 1, self.action_dim))
-        probs = probs.gather(dim=1, index=argmax.unsqueeze(-1).unsqueeze(-1).unsqueeze(-1).repeat(1, 1, self.action_dim, 2))
+        probs = probs.gather(dim=1, index=argmax.unsqueeze(-1).unsqueeze(-1).repeat(1, 1, self.action_dim * 2))
 
         return value, action.squeeze(1), probs.squeeze(1)
 

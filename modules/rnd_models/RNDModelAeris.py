@@ -19,11 +19,11 @@ class RNDModelAeris(nn.Module):
 
         self.target_model = nn.Sequential(
             nn.Conv1d(self.channels, config.forward_model_kernels_count, kernel_size=8, stride=4, padding=2),
-            nn.ELU(),
+            nn.ReLU(),
             nn.Conv1d(config.forward_model_kernels_count, config.forward_model_kernels_count * 2, kernel_size=4, stride=2, padding=1),
-            nn.ELU(),
+            nn.ReLU(),
             nn.Conv1d(config.forward_model_kernels_count * 2, config.forward_model_kernels_count * 2, kernel_size=3, stride=1, padding=1),
-            nn.ELU(),
+            nn.ReLU(),
             nn.Flatten(),
             nn.Linear(fc_count, 64)
         )
@@ -38,11 +38,11 @@ class RNDModelAeris(nn.Module):
 
         self.model = nn.Sequential(
             nn.Conv1d(self.channels, config.forward_model_kernels_count, kernel_size=8, stride=4, padding=2),
-            nn.ELU(),
+            nn.ReLU(),
             nn.Conv1d(config.forward_model_kernels_count, config.forward_model_kernels_count * 2, kernel_size=4, stride=2, padding=1),
-            nn.ELU(),
+            nn.ReLU(),
             nn.Conv1d(config.forward_model_kernels_count * 2, config.forward_model_kernels_count * 2, kernel_size=3, stride=1, padding=1),
-            nn.ELU(),
+            nn.ReLU(),
             nn.Flatten(),
             nn.Linear(fc_count, 64),
             nn.ReLU(),
@@ -71,17 +71,21 @@ class RNDModelAeris(nn.Module):
         with torch.no_grad():
             prediction = self(state)
             target = self.encode(state)
-            # error = nn.functional.mse_loss(prediction, target, reduction='none')
             error = torch.mean(torch.pow(prediction - target, 2), dim=1)
 
         return error
 
     def loss_function(self, state, predicted_state=None):
         if predicted_state is None:
-            loss = nn.functional.mse_loss(self(state), self.encode(state).detach())
+            loss = nn.functional.mse_loss(self(state), self.encode(state).detach(), reduction='none').sum(dim=1)
         else:
-            loss = nn.functional.mse_loss(predicted_state, self.encode(state).detach())
-        return loss
+            loss = nn.functional.mse_loss(predicted_state, self.encode(state).detach(), reduction='none').sum(dim=1)
+        mask = torch.empty_like(loss)
+        mask = nn.init.uniform_(mask) < 0.25
+
+        loss *= mask
+
+        return loss.sum(dim=0) / mask.sum(dim=0)
 
     def update_state_average(self, state):
         self.state_average = self.state_average * 0.99 + state * 0.01
@@ -160,10 +164,9 @@ class QRNDModelAeris(nn.Module):
         return self.target_model(x)
 
     def error(self, state, action):
-        with torch.no_grad():
-            prediction = self(state, action)
-            target = self.encode(state, action)
-            error = torch.mean(torch.pow(prediction - target, 2), dim=1)
+        prediction = self(state, action)
+        target = self.encode(state, action)
+        error = torch.mean(torch.pow(prediction - target, 2), dim=1)
 
         return error
 
@@ -176,39 +179,6 @@ class QRNDModelAeris(nn.Module):
 
     def update_state_average(self, state):
         self.state_average = self.state_average * 0.99 + state * 0.01
-
-    def _init(self, layer, gain):
-        nn.init.orthogonal_(layer.weight, gain)
-        layer.bias.data.zero_()
-
-
-class DOPSimpleModelAeris(nn.Module):
-    def __init__(self, state_dim, action_dim, config, features, actor):
-        super(DOPSimpleModelAeris, self).__init__()
-
-        self.state_dim = state_dim
-        self.action_dim = action_dim
-
-        self.motivator = QRNDModelAeris(state_dim, action_dim, config)
-        self.features = features
-        self.actor = actor
-
-    def forward(self, state, action):
-        predicted_code = self.motivator(state, action)
-        return predicted_code
-
-    def error(self, state, action):
-        return self.motivator.error(state, action)
-
-    def motivator_loss_function(self, state, action, prediction=None):
-        return self.motivator.loss_function(state, action, prediction)
-
-    def generator_loss_function(self, state):
-        x = self.features(state)
-        action, prob = self.actor(x)
-        error = self.error(state, action)
-        loss = self.actor.log_prob(prob, action) * error.unsqueeze(-1)
-        return -loss.sum()
 
     def _init(self, layer, gain):
         nn.init.orthogonal_(layer.weight, gain)
@@ -241,13 +211,13 @@ class DOPModelAeris(nn.Module):
         x = self.features(state)
         action, prob = self.actor(x)
         action = action.view(-1, self.action_dim)
-        prob = prob.view(-1, self.action_dim, 2)
+        prob = prob.view(-1, self.action_dim)
         state = state.unsqueeze(1).repeat(1, self.actor.head_count, 1, 1).view(-1, self.state_dim[0], self.state_dim[1])
-        error = self.error(state, action)
-        loss = self.actor.log_prob(prob, action) * error.unsqueeze(-1) * self.eta
+        error = self.error(state, prob)
+        # loss = self.actor.log_prob(prob, action) * error.unsqueeze(-1) * self.eta
+        loss = error.unsqueeze(-1) * self.eta
         return -loss.mean()
 
     def _init(self, layer, gain):
         nn.init.orthogonal_(layer.weight, gain)
         layer.bias.data.zero_()
-

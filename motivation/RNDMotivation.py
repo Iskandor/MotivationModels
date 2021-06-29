@@ -32,7 +32,7 @@ class RNDMotivation:
         return self.reward(states)
 
     def reward(self, state0):
-        reward = torch.tanh(self.error(state0)).unsqueeze(1)
+        reward = self.error(state0).unsqueeze(1)
         return reward * self._eta
 
     def update_state_average(self, state):
@@ -135,9 +135,10 @@ class DOPMotivation:
 
             states = torch.stack(sample.state).squeeze(1)
             actions = torch.stack(sample.action).squeeze(1)
+            probs = torch.stack(sample.prob).squeeze(1)
 
             self._motivator_optimizer.zero_grad()
-            loss = self._network.motivator_loss_function(states, actions)
+            loss = self._network.motivator_loss_function(states, probs)
             loss.backward()
             self._motivator_optimizer.step()
 
@@ -147,7 +148,7 @@ class DOPMotivation:
             self._generator_optimizer.step()
 
     def error(self, state0, action0):
-        return self._network.error(state0, action0)
+        return self._network.error(state0, action0).detach()
 
     def reward_sample(self, indices):
         sample = self._memory.sample(indices)

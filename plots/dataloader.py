@@ -15,9 +15,10 @@ def prepare_data(keys):
         id = key['id']
 
         path = os.path.join(root, model, env, id)
-        data.append(load_data(path, ['re', 'ri']))
+        data.append(load_data(path, ['re', 're_raw', 'ri', 'hid']))
 
     return data
+
 
 def expand_data_legacy(data):
     d = []
@@ -29,10 +30,13 @@ def expand_data_legacy(data):
     return np.stack(d)
 
 
-def expand_data(data):
+def expand_data(data, steps=None):
     d = []
-    for r in data:
-        d.append(np.full((int(r[0])), r[1]))
+    for i, r in enumerate(data):
+        if steps is None:
+            d.append(np.full((int(r[0])), r[1]))
+        else:
+            d.append(np.full((steps[i],) + r.shape, r))
     return np.concatenate(d)
 
 
@@ -46,11 +50,20 @@ def load_data(folder, expand_keys=[]):
         if data is None:
             data = {}
             for k in list(d.keys()):
-                data[k] = []
+                if k != 'steps':
+                    data[k] = []
+
+        steps = None
+        if 'steps' in d:
+            steps = d['steps']
+            del d['steps']
 
         for k in list(d.keys()):
             if k in expand_keys:
-                data[k].append(expand_data(d[k]))
+                if len(d[k].shape) == 2 and d[k].shape[1] == 2:
+                    data[k].append(expand_data(d[k], None))
+                else:
+                    data[k].append(expand_data(d[k], steps))
             else:
                 data[k].append(d[k])
 

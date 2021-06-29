@@ -77,8 +77,7 @@ class PPO:
             print("Trajectory {0:d} batch size {1:d} epochs {2:d} training time {3:.2f}s".format(self._trajectory_size, self._batch_size, self._ppo_epochs, end - start))
 
     def _train(self, states, actions, probs, adv_values, ref_values):
-        if self._motivation is None:
-            adv_values = (adv_values - torch.mean(adv_values)) / torch.std(adv_values)
+        adv_values = (adv_values - torch.mean(adv_values)) / torch.std(adv_values)
 
         trajectory_size = self._trajectory_size - self._n_env
 
@@ -91,7 +90,7 @@ class PPO:
                 batch_adv_v = adv_values[batch_ofs:batch_l].unsqueeze(-1)
                 batch_ref_v = ref_values[batch_ofs:batch_l].unsqueeze(-1)
 
-                self._optimizer.zero_grad(set_to_none=True)
+                self._optimizer.zero_grad()
                 loss = self.calc_loss(states_v.to(self._device), batch_ref_v.to(self._device), batch_adv_v.to(self._device), actions_v.to(self._device), probs_v.to(self._device))
                 loss.backward()
                 self._optimizer.step()
@@ -124,6 +123,9 @@ class PPO:
         int_reward = self._motivation.reward(states, actions, next_states)
         return int_reward
 
+    def func(self, gae, delta, gamma_lambda):
+        return delta + gamma_lambda * gae
+
     def calc_advantage(self, values, rewards, dones):
         dones = dones[:-1].flip(0)
         rewards = rewards[:-1].flip(0)
@@ -139,6 +141,8 @@ class PPO:
         for d, gl in zip(delta, gamma_lambda):
             last_gae = d + gl * last_gae
             adv_v.append(last_gae)
+
+        # map(PPO.func, )
 
         adv_v = torch.tensor(adv_v, dtype=torch.float32, device=values.device).flip(0)
         ref_v = adv_v + val.flip(0)

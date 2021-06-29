@@ -15,7 +15,7 @@ class RNDModel(nn.Module):
         self.target_model = nn.Sequential(
             nn.Conv2d(1, 32, kernel_size=8, stride=4),
             nn.LeakyReLU(),
-            nn.Conv2d(32, 64, kernel_size=4, stride=2),
+            nn.Conv2d(32, 64, kernel_size=3, stride=2),
             nn.LeakyReLU(),
             nn.Conv2d(64, 64, kernel_size=3, stride=1),
             nn.LeakyReLU(),
@@ -29,7 +29,7 @@ class RNDModel(nn.Module):
         self.target_model[2].bias.data.zero_()
         nn.init.orthogonal_(self.target_model[4].weights, np.sqrt(2))
         self.target_model[4].bias.data.zero_()
-        nn.init.orthogonal_(self.target_model[7].weights, np.sqrt(2))
+        nn.init.orthogonal_(self.target_model[7].weights, 0.1)
         self.target_model[7].bias.data.zero_()
 
         for param in self.target_model.parameters():
@@ -38,7 +38,7 @@ class RNDModel(nn.Module):
         self.model = nn.Sequential(
             nn.Conv2d(1, 32, kernel_size=8, stride=4),
             nn.LeakyReLU(),
-            nn.Conv2d(32, 64, kernel_size=4, stride=2),
+            nn.Conv2d(32, 64, kernel_size=3, stride=2),
             nn.LeakyReLU(),
             nn.Conv2d(64, 64, kernel_size=3, stride=1),
             nn.LeakyReLU(),
@@ -56,11 +56,11 @@ class RNDModel(nn.Module):
         self.model[2].bias.data.zero_()
         nn.init.orthogonal_(self.model[4].weights, np.sqrt(2))
         self.model[4].bias.data.zero_()
-        nn.init.orthogonal_(self.model[7].weights, np.sqrt(2))
+        nn.init.orthogonal_(self.model[7].weights, 0.1)
         self.model[7].bias.data.zero_()
-        nn.init.orthogonal_(self.model[9].weights, np.sqrt(2))
+        nn.init.orthogonal_(self.model[9].weights, 0.1)
         self.model[9].bias.data.zero_()
-        nn.init.orthogonal_(self.model[9].weights, np.sqrt(2))
+        nn.init.orthogonal_(self.model[9].weights, 0.01)
         self.model[9].bias.data.zero_()
 
     def forward(self, state):
@@ -79,5 +79,10 @@ class RNDModel(nn.Module):
         return error
 
     def loss_function(self, state):
-        loss = nn.functional.mse_loss(self(state), self.encode(state).detach())
-        return loss
+        loss = nn.functional.mse_loss(self(state), self.encode(state).detach(), reduction='none').sum(dim=1)
+        mask = torch.empty_like(loss)
+        mask = nn.init.uniform_(mask) < 0.25
+
+        loss *= mask
+
+        return loss.sum(dim=0) / mask.sum(dim=0)

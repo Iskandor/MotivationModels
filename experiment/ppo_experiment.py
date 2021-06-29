@@ -212,8 +212,8 @@ class ExperimentPPO:
                 agent.train(state0, value, action0, probs0, state1, reward, mask)
 
                 train_ext_reward += reward.item()
-                train_int_reward += agent.motivation.reward(state0, action0).item()
-                train_fm_error = agent.motivation.error(state0, action0).item()
+                train_int_reward += agent.motivation.reward(state0, probs0).item()
+                train_fm_error = agent.motivation.error(state0, probs0).item()
                 train_error += train_fm_error
                 train_fm_errors.append(train_fm_error)
                 head_index_density[head_index.item()] += 1
