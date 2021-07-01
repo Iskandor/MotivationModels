@@ -4,6 +4,7 @@ from collections import namedtuple, deque
 from operator import itemgetter
 
 import torch
+import numpy as np
 
 MDP_Transition = namedtuple('MDP_Transition', ('state', 'action', 'next_state', 'reward', 'mask'))
 MDP_DOP_Transition = namedtuple('MDP_DOP_Transition', ('state', 'action', 'noise', 'index', 'next_state', 'reward', 'mask'))
@@ -80,7 +81,7 @@ class M2ReplayBuffer(ReplayBuffer):
 class PPOTrajectoryBuffer(object):
     def __init__(self, capacity, batch_size, n_env=1):
         self.n_env = n_env
-        self.memory = [[] for _ in range(self.n_env)]
+        self.memory = {}
         self.index = 0
         self.capacity = capacity
         self.batch_size = batch_size
@@ -94,22 +95,46 @@ class PPOTrajectoryBuffer(object):
             ind = range(0, self.capacity)
         return ind
 
+    def dynamic_memory_init(self, state, action, prob):
+        shape = (self.capacity // self.n_env, self.n_env,) + tuple(state.shape[1:])
+        self.memory['state'] = torch.zeros(shape)
+        shape = (self.capacity // self.n_env, self.n_env, 1)
+        self.memory['value'] = torch.zeros(shape)
+        shape = (self.capacity // self.n_env, self.n_env,) + tuple(action.shape[1:])
+        self.memory['action'] = torch.zeros(shape)
+        shape = (self.capacity // self.n_env, self.n_env,) + tuple(prob.shape[1:])
+        self.memory['prob'] = torch.zeros(shape)
+        shape = (self.capacity // self.n_env, self.n_env,) + tuple(state.shape[1:])
+        self.memory['next_state'] = torch.zeros(shape)
+        shape = (self.capacity // self.n_env, self.n_env, 1)
+        self.memory['reward'] = torch.zeros(shape)
+        shape = (self.capacity // self.n_env, self.n_env, 1)
+        self.memory['mask'] = torch.zeros(shape)
+
     def add(self, state, value, action, prob, next_state, reward, mask):
-        if self.n_env > 1:
-            self.index += self.n_env
-            for i in range(self.n_env):
-                self.memory[i].append(PPO_Transition(state[i], value[i], action[i], prob[i], next_state[i], reward[i], mask[i]))
-        else:
-            self.index += 1
-            self.memory[0].append(PPO_Transition(state.squeeze(0), value.squeeze(0), action.squeeze(0), prob.squeeze(0), next_state.squeeze(0), reward.squeeze(0), mask))
+
+        if len(self.memory) == 0:
+            self.dynamic_memory_init(state, action, prob)
+
+        index = self.index // self.n_env
+        self.memory['state'][index] = state
+        self.memory['value'][index] = value
+        self.memory['action'][index] = action
+        self.memory['prob'][index] = prob
+        self.memory['next_state'][index] = next_state
+        self.memory['reward'][index] = reward
+        self.memory['mask'][index] = mask
+        self.index += self.n_env
 
     def sample(self, indices):
-        transitions = []
-        for i in range(self.n_env):
-            transitions += self.memory[i]
-        batch = PPO_Transition(*zip(*transitions))
-
-        return batch
+        return PPO_Transition(
+            self.memory['state'],
+            self.memory['value'],
+            self.memory['action'],
+            self.memory['prob'],
+            self.memory['next_state'],
+            self.memory['reward'],
+            self.memory['mask'])
 
     def sample_batches(self, indices):
         transitions = []
@@ -121,5 +146,3 @@ class PPOTrajectoryBuffer(object):
 
     def clear(self):
         self.index = 0
-        for i in range(self.n_env):
-            del self.memory[i][:]

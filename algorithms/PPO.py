@@ -32,46 +32,28 @@ class PPO:
             start = time.time()
             sample = self._memory.sample(indices)
 
-            states_t = []
-            actions_t = []
-            probs_t = []
-            adv_values_t = []
-            ref_values_t = []
+            states = sample.state
+            values = sample.value
+            actions = sample.action
+            probs = sample.prob
+            rewards = sample.reward
+            dones = sample.mask
 
-            trajectory_size_1_env = self._trajectory_size // self._n_env
+            if self._motivation:
+                ext_adv_values, ext_ref_values = self.calc_advantage(values[:, 0], rewards[:, 0], dones.squeeze())
+                int_adv_values, int_ref_values = self.calc_advantage(values[:, 1], rewards[:, 1], dones.squeeze())
+                adv_values = ext_adv_values + int_adv_values
+                ref_values = torch.stack([ext_ref_values, int_ref_values], dim=1)
+            else:
+                adv_values, ref_values = self.calc_advantage(values.squeeze(-1), rewards.squeeze(-1), dones.squeeze(-1))
 
-            for i in range(self._n_env):
-                start_batch = i * trajectory_size_1_env
-                end_batch = (i + 1) * trajectory_size_1_env
+            states = states.view(-1, *states.shape[2:])
+            actions = actions.view(-1, *actions.shape[2:])
+            probs = probs.view(-1, *probs.shape[2:])
+            adv_values = adv_values.view(-1, *adv_values.shape[2:])
+            ref_values = ref_values.view(-1, *ref_values.shape[2:])
 
-                states = torch.stack(sample.state[start_batch:end_batch])
-                values = torch.stack(sample.value[start_batch:end_batch])
-                actions = torch.stack(sample.action[start_batch:end_batch])
-                probs = torch.stack(sample.prob[start_batch:end_batch])
-                rewards = torch.stack(sample.reward[start_batch:end_batch])
-                dones = torch.stack(sample.mask[start_batch:end_batch])
-
-                if self._motivation:
-                    ext_adv_values, ext_ref_values = self.calc_advantage(values[:, 0], rewards[:, 0], dones.squeeze())
-                    int_adv_values, int_ref_values = self.calc_advantage(values[:, 1], rewards[:, 1], dones.squeeze())
-                    adv_values = ext_adv_values + int_adv_values
-                    ref_values = torch.stack([ext_ref_values, int_ref_values], dim=1)
-                else:
-                    adv_values, ref_values = self.calc_advantage(values.squeeze(), rewards.squeeze(), dones.squeeze())
-
-                states_t.append(states[:-1])
-                actions_t.append(actions[:-1])
-                probs_t.append(probs[:-1])
-                adv_values_t.append(adv_values)
-                ref_values_t.append(ref_values)
-
-            states_t = torch.cat(states_t, dim=0)
-            actions_t = torch.cat(actions_t, dim=0)
-            probs_t = torch.cat(probs_t, dim=0)
-            adv_values_t = torch.cat(adv_values_t, dim=0)
-            ref_values_t = torch.cat(ref_values_t, dim=0)
-
-            self._train(states_t, actions_t, probs_t, adv_values_t, ref_values_t)
+            self._train(states, actions, probs, adv_values, ref_values)
 
             end = time.time()
             print("Trajectory {0:d} batch size {1:d} epochs {2:d} training time {3:.2f}s".format(self._trajectory_size, self._batch_size, self._ppo_epochs, end - start))
@@ -123,10 +105,30 @@ class PPO:
         int_reward = self._motivation.reward(states, actions, next_states)
         return int_reward
 
-    def func(self, gae, delta, gamma_lambda):
-        return delta + gamma_lambda * gae
-
     def calc_advantage(self, values, rewards, dones):
+        buffer_size = rewards.shape[0]
+
+        returns = torch.zeros((buffer_size, self._n_env))
+        advantages = torch.zeros((buffer_size, self._n_env))
+
+        for e in range(self._n_env):
+            last_gae = 0.0
+
+            for n in reversed(range(buffer_size - 1)):
+
+                if dones[n, e] > 0:
+                    delta = rewards[n, e] - values[n, e]
+                    last_gae = delta
+                else:
+                    delta = rewards[n, e] + self._gamma * values[n + 1, e] - values[n, e]
+                    last_gae = delta + self._gamma * self._lambda * last_gae
+
+                returns[n, e] = last_gae + values[n, e]
+                advantages[n, e] = last_gae
+
+        return returns, advantages
+
+    def calc_advantage2(self, values, rewards, dones):
         dones = dones[:-1].flip(0)
         rewards = rewards[:-1].flip(0)
 

@@ -7,6 +7,7 @@ from agents import TYPE
 from agents.PPOAgent import PPOAerisAgent, PPOAerisRNDAgent, PPOAerisDOPAgent, PPOAerisDOPRefAgent
 from experiment.ppo_experiment import ExperimentPPO
 from experiment.ppo_nenv_experiment import ExperimentNEnvPPO
+from utils.MultiEnvWrapper import MultiEnvParallel
 
 
 def create_env(env_id):
@@ -21,30 +22,25 @@ def create_env(env_id):
 
 
 def run_baseline(env_name, config, trial):
-    env = create_env(env_name)
-    state_dim = env.observation_space.shape
+    if config.n_env > 1:
+        print('Creating {0:d} environments'.format(config.n_env))
+        env = MultiEnvParallel([create_env(env_name) for _ in range(config.n_env)], config.n_env, config.num_threads)
+    else:
+        env = create_env(env_name)
+
+    input_shape = env.observation_space.shape
     action_dim = env.action_space.shape[0]
 
-    env_list = None
+    print('Start training')
     if config.n_env > 1:
-        env_list = []
-        print('Creating {0:d} environments'.format(config.n_env))
-        for _ in range(config.n_env):
-            env_list.append(create_env(env_name))
-
-        print('Start training')
-        experiment = ExperimentNEnvPPO(env_name, env_list, config, state_dim, action_dim)
+        experiment = ExperimentNEnvPPO(env_name, env, config)
     else:
         experiment = ExperimentPPO(env_name, env, config)
 
-    agent = PPOAerisAgent(state_dim, action_dim, config, TYPE.continuous)
+    agent = PPOAerisAgent(input_shape, action_dim, config, TYPE.continuous)
     experiment.run_baseline(agent, trial)
 
     env.close()
-
-    if config.n_env > 1:
-        for i in range(config.n_env):
-            env_list[i].close()
 
 
 def run_rnd_model(env_name, config, i):
