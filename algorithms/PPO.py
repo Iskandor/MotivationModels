@@ -64,7 +64,7 @@ class PPO:
     def _train(self, states, actions, probs, adv_values, ref_values):
         adv_values = (adv_values - torch.mean(adv_values)) / torch.std(adv_values)
 
-        for epoch in tqdm(range(self._ppo_epochs)):
+        for epoch in range(self._ppo_epochs):
             for batch_ofs in range(0, self._trajectory_size, self._batch_size):
                 batch_l = batch_ofs + self._batch_size
                 states_v = states[batch_ofs:batch_l]
