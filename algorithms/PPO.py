@@ -1,4 +1,7 @@
 import time
+
+from tqdm import tqdm
+
 from utils import *
 
 
@@ -32,12 +35,12 @@ class PPO:
             start = time.time()
             sample = self._memory.sample(indices)
 
-            states = sample.state
-            values = sample.value
-            actions = sample.action
-            probs = sample.prob
-            rewards = sample.reward
-            dones = sample.mask
+            states = sample.state.transpose(0, 1)
+            values = sample.value.transpose(0, 1)
+            actions = sample.action.transpose(0, 1)
+            probs = sample.prob.transpose(0, 1)
+            rewards = sample.reward.transpose(0, 1)
+            dones = sample.mask.transpose(0, 1)
 
             if self._motivation:
                 ext_adv_values, ext_ref_values = self.calc_advantage(values[:, 0], rewards[:, 0], dones.squeeze())
@@ -47,11 +50,11 @@ class PPO:
             else:
                 adv_values, ref_values = self.calc_advantage(values.squeeze(-1), rewards.squeeze(-1), dones.squeeze(-1))
 
-            states = states.view(-1, *states.shape[2:])
-            actions = actions.view(-1, *actions.shape[2:])
-            probs = probs.view(-1, *probs.shape[2:])
-            adv_values = adv_values.view(-1, *adv_values.shape[2:])
-            ref_values = ref_values.view(-1, *ref_values.shape[2:])
+            states = states.reshape(-1, *states.shape[2:])
+            actions = actions.reshape(-1, *actions.shape[2:])
+            probs = probs.reshape(-1, *probs.shape[2:])
+            adv_values = adv_values.reshape(-1, *adv_values.shape[2:])
+            ref_values = ref_values.reshape(-1, *ref_values.shape[2:])
 
             self._train(states, actions, probs, adv_values, ref_values)
 
@@ -61,11 +64,9 @@ class PPO:
     def _train(self, states, actions, probs, adv_values, ref_values):
         adv_values = (adv_values - torch.mean(adv_values)) / torch.std(adv_values)
 
-        trajectory_size = self._trajectory_size - self._n_env
-
-        for epoch in range(self._ppo_epochs):
-            for batch_ofs in range(0, trajectory_size, self._batch_size):
-                batch_l = min(batch_ofs + self._batch_size, trajectory_size)
+        for epoch in tqdm(range(self._ppo_epochs)):
+            for batch_ofs in range(0, self._trajectory_size, self._batch_size):
+                batch_l = batch_ofs + self._batch_size
                 states_v = states[batch_ofs:batch_l]
                 actions_v = actions[batch_ofs:batch_l]
                 probs_v = probs[batch_ofs:batch_l]
@@ -106,25 +107,20 @@ class PPO:
         return int_reward
 
     def calc_advantage(self, values, rewards, dones):
-        buffer_size = rewards.shape[0]
+        buffer_size = rewards.shape[1]
 
-        returns = torch.zeros((buffer_size, self._n_env))
-        advantages = torch.zeros((buffer_size, self._n_env))
+        returns = torch.zeros((self._n_env, buffer_size))
+        advantages = torch.zeros((self._n_env, buffer_size))
 
         for e in range(self._n_env):
             last_gae = 0.0
 
             for n in reversed(range(buffer_size - 1)):
+                delta = rewards[e, n] + dones[e, n] * self._gamma * values[e, n + 1] - values[e, n]
+                last_gae = delta + dones[e, n] * self._gamma * self._lambda * last_gae
 
-                if dones[n, e] > 0:
-                    delta = rewards[n, e] - values[n, e]
-                    last_gae = delta
-                else:
-                    delta = rewards[n, e] + self._gamma * values[n + 1, e] - values[n, e]
-                    last_gae = delta + self._gamma * self._lambda * last_gae
-
-                returns[n, e] = last_gae + values[n, e]
-                advantages[n, e] = last_gae
+                returns[e, n] = last_gae + values[e, n]
+                advantages[e, n] = last_gae
 
         return returns, advantages
 
