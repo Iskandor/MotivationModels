@@ -53,9 +53,9 @@ class ContinuousHead(nn.Module):
             nn.Softplus()
         )
 
-        nn.init.xavier_uniform_(self.mu[0].weight)
+        nn.init.orthogonal_(self.mu[0].weight, 0.01)
         nn.init.zeros_(self.mu[0].bias)
-        nn.init.xavier_uniform_(self.var[0].weight)
+        nn.init.orthogonal_(self.var[0].weight, 1)
         nn.init.zeros_(self.var[0].bias)
 
         self.action_dim = action_dim
