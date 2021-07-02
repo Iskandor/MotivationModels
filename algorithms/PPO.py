@@ -35,12 +35,12 @@ class PPO:
             start = time.time()
             sample = self._memory.sample(indices)
 
-            states = sample.state.transpose(0, 1)
-            values = sample.value.transpose(0, 1)
-            actions = sample.action.transpose(0, 1)
-            probs = sample.prob.transpose(0, 1)
-            rewards = sample.reward.transpose(0, 1)
-            dones = sample.mask.transpose(0, 1)
+            states = sample.state
+            values = sample.value
+            actions = sample.action
+            probs = sample.prob
+            rewards = sample.reward
+            dones = sample.mask
 
             if self._motivation:
                 ext_adv_values, ext_ref_values = self.calc_advantage(values[:, 0], rewards[:, 0], dones.squeeze())
@@ -107,20 +107,19 @@ class PPO:
         return int_reward
 
     def calc_advantage(self, values, rewards, dones):
-        buffer_size = rewards.shape[1]
+        buffer_size = rewards.shape[0]
 
-        returns = torch.zeros((self._n_env, buffer_size))
-        advantages = torch.zeros((self._n_env, buffer_size))
+        returns = torch.zeros((buffer_size, self._n_env))
+        advantages = torch.zeros((buffer_size, self._n_env))
 
-        for e in range(self._n_env):
-            last_gae = 0.0
+        last_gae = torch.zeros(self._n_env)
 
-            for n in reversed(range(buffer_size - 1)):
-                delta = rewards[e, n] + dones[e, n] * self._gamma * values[e, n + 1] - values[e, n]
-                last_gae = delta + dones[e, n] * self._gamma * self._lambda * last_gae
+        for n in reversed(range(buffer_size - 1)):
+            delta = rewards[n, :] + dones[n, :] * self._gamma * values[n + 1, :] - values[n, :]
+            last_gae = delta + dones[n, :] * self._gamma * self._lambda * last_gae
 
-                returns[e, n] = last_gae + values[e, n]
-                advantages[e, n] = last_gae
+            returns[n, :] = last_gae + values[n, :]
+            advantages[n, :] = last_gae
 
         return returns, advantages
 
