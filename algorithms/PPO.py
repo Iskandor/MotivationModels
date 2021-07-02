@@ -76,6 +76,7 @@ class PPO:
                 self._optimizer.zero_grad()
                 loss = self.calc_loss(states_v.to(self._device), batch_ref_v.to(self._device), batch_adv_v.to(self._device), actions_v.to(self._device), probs_v.to(self._device))
                 loss.backward()
+                torch.nn.utils.clip_grad_norm_(self._network.parameters(), max_norm=0.5)
                 self._optimizer.step()
 
     def calc_loss(self, states, ref_value, adv_value, old_actions, old_probs):
