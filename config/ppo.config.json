@@ -352,7 +352,7 @@
       "gamma": 0.99,
       "beta": 0.001,
       "batch_size": 512,
-      "trajectory_size": 4096,
+      "trajectory_size": 512,
       "ppo_epochs": 10,
       "lr": 0.0002,
       "actor_loss_weight": 0.5,
