@@ -83,16 +83,13 @@ class ExperimentDDPG:
         step_limit = int(config.steps * 1e6)
         steps = 0
 
-        action_list = []
-        value_list = []
+        steps_per_episode = []
         train_ext_rewards = []
         reward_avg = RunningAverageWindow(100)
         step_avg = RunningAverageWindow(100)
 
         bar = ProgressBar(config.steps * 1e6, max_width=40)
         exploration = GaussianExploration(config.sigma, 0.01, config.steps * config.exploration_time * 1e6)
-
-        analytic = RNDAnalytic(config)
 
         while steps < step_limit:
             if self._preprocess is None:
@@ -107,7 +104,6 @@ class ExperimentDDPG:
             while not done:
                 train_steps += 1
                 action0 = exploration.explore(agent.get_action(state0))
-                analytic.collect(state0, action0)
                 next_state, reward, done, _ = self._env.step(agent.convert_action(action0))
                 reward = self.transform_reward(reward)
                 train_ext_reward += reward
@@ -128,7 +124,8 @@ class ExperimentDDPG:
 
             reward_avg.update(train_ext_reward)
             step_avg.update(train_steps)
-            train_ext_rewards.append([train_steps, train_ext_reward])
+            steps_per_episode.append(train_steps)
+            train_ext_rewards.append(train_ext_reward)
 
             print('Run {0:d} step {1:d} sigma {2:f} training [ext. reward {3:f} steps {4:d}] avg. ext. reward {5:f} avg. steps {6:f}'.format(
                 trial, steps, exploration.sigma, train_ext_reward, train_steps, reward_avg.value(), step_avg.value()))
@@ -138,11 +135,10 @@ class ExperimentDDPG:
 
         print('Saving data...')
         save_data = {
+            'steps': numpy.array(steps_per_episode),
             're': numpy.array(train_ext_rewards)
         }
         numpy.save('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
-        analytic.generate_grid(trial)
-
 
     def run_forward_model(self, agent, trial):
         config = self._config
@@ -151,8 +147,8 @@ class ExperimentDDPG:
         step_limit = int(config.steps * 1e6)
         steps = 0
 
+        steps_per_episode = []
         train_fm_errors = []
-        train_state_dist = []
         train_ext_rewards = []
         train_int_rewards = []
         reward_avg = RunningAverageWindow(100)
@@ -161,12 +157,8 @@ class ExperimentDDPG:
         bar = ProgressBar(config.steps * 1e6, max_width=40)
         exploration = GaussianExploration(config.sigma, 0.01, config.steps * config.exploration_time * 1e6)
 
-        # reducer = umap.UMAP()
-
         while steps < step_limit:
-            # states = []
             state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0)
-            # start = state0.clone().flatten()
             done = False
             train_ext_reward = 0
             train_int_reward = 0
@@ -178,10 +170,6 @@ class ExperimentDDPG:
                 reward = self.transform_reward(reward)
                 state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
 
-                # sample = state0.flatten()
-                # states.append(sample.numpy())
-                # train_state_dist.append(torch.dist(sample, start))
-
                 agent.train(state0, action0, state1, reward, done)
                 train_steps += 1
 
@@ -192,11 +180,6 @@ class ExperimentDDPG:
 
                 state0 = state1
 
-            # start = time.time()
-            # embedding = reducer.fit_transform(numpy.stack(states))
-            # end = time.time()
-            # print(end - start)
-
             steps += train_steps
             if steps > step_limit:
                 train_steps -= steps - step_limit
@@ -205,8 +188,9 @@ class ExperimentDDPG:
 
             reward_avg.update(train_ext_reward)
             step_avg.update(train_steps)
-            train_ext_rewards.append([train_steps, train_ext_reward])
-            train_int_rewards.append([train_steps, train_int_reward])
+            steps_per_episode.append(train_steps)
+            train_ext_rewards.append(train_ext_reward)
+            train_int_rewards.append(train_int_reward)
 
             print('Run {0:d} step {1:d} sigma {2:f} training [ext. reward {3:f} int. reward {4:f} steps {5:d}] avg. ext. reward {6:f} avg. steps {7:f}'.format(
                 trial, steps, exploration.sigma, train_ext_reward, train_int_reward, train_steps, reward_avg.value(), step_avg.value()))
@@ -216,6 +200,7 @@ class ExperimentDDPG:
 
         print('Saving data...')
         save_data = {
+            'steps': numpy.array(steps_per_episode),
             're': numpy.array(train_ext_rewards),
             'ri': numpy.array(train_int_rewards),
             'fme': numpy.array(train_fm_errors[:step_limit])
@@ -231,6 +216,7 @@ class ExperimentDDPG:
 
         states = []
 
+        steps_per_episode = []
         train_fm_errors = []
         train_ext_rewards = []
         train_int_rewards = []
@@ -272,8 +258,9 @@ class ExperimentDDPG:
 
             reward_avg.update(train_ext_reward)
             step_avg.update(train_steps)
-            train_ext_rewards.append([train_steps, train_ext_reward])
-            train_int_rewards.append([train_steps, train_int_reward])
+            steps_per_episode.append(train_steps)
+            train_ext_rewards.append(train_ext_reward)
+            train_int_rewards.append(train_int_reward)
 
             print('Run {0:d} step {1:d} sigma {2:f} training [ext. reward {3:f} int. reward {4:f} steps {5:d}] avg. ext. reward {6:f} avg. steps {7:f}'.format(
                 trial, steps, exploration.sigma, train_ext_reward, train_int_reward, train_steps, reward_avg.value(), step_avg.value()))
@@ -292,6 +279,7 @@ class ExperimentDDPG:
 
         print('Saving data...')
         save_data = {
+            'steps': numpy.array(steps_per_episode),
             're': numpy.array(train_ext_rewards),
             'ri': numpy.array(train_int_rewards),
             'fme': numpy.array(train_fm_errors[:step_limit]),
@@ -309,6 +297,7 @@ class ExperimentDDPG:
 
         states = []
 
+        steps_per_episode = []
         train_fm_errors = []
         train_ext_rewards = []
         train_int_rewards = []
@@ -350,8 +339,9 @@ class ExperimentDDPG:
 
             reward_avg.update(train_ext_reward)
             step_avg.update(train_steps)
-            train_ext_rewards.append([train_steps, train_ext_reward])
-            train_int_rewards.append([train_steps, train_int_reward])
+            steps_per_episode.append(train_steps)
+            train_ext_rewards.append(train_ext_reward)
+            train_int_rewards.append(train_int_reward)
 
             print('Run {0:d} step {1:d} sigma {2:f} training [ext. reward {3:f} int. reward {4:f} steps {5:d}] avg. ext. reward {6:f} avg. steps {7:f}'.format(
                 trial, steps, exploration.sigma, train_ext_reward, train_int_reward, train_steps, reward_avg.value(), step_avg.value()))
@@ -370,6 +360,7 @@ class ExperimentDDPG:
 
         print('Saving data...')
         save_data = {
+            'steps': numpy.array(steps_per_episode),
             're': numpy.array(train_ext_rewards),
             'ri': numpy.array(train_int_rewards),
             'fme': numpy.array(train_fm_errors[:step_limit]),
@@ -387,6 +378,7 @@ class ExperimentDDPG:
 
         states = []
 
+        steps_per_episode = []
         train_fm_errors = []
         train_im_errors = []
         train_ext_rewards = []
@@ -430,8 +422,9 @@ class ExperimentDDPG:
 
             reward_avg.update(train_ext_reward)
             step_avg.update(train_steps)
-            train_ext_rewards.append([train_steps, train_ext_reward])
-            train_int_rewards.append([train_steps, train_int_reward])
+            steps_per_episode.append(train_steps)
+            train_ext_rewards.append(train_ext_reward)
+            train_int_rewards.append(train_int_reward)
 
             print('Run {0:d} step {1:d} sigma {2:f} training [ext. reward {3:f} int. reward {4:f} steps {5:d}] avg. ext. reward {6:f} avg. steps {7:f}'.format(
                 trial, steps, exploration.sigma, train_ext_reward, train_int_reward, train_steps, reward_avg.value(), step_avg.value()))
@@ -450,6 +443,7 @@ class ExperimentDDPG:
 
         print('Saving data...')
         save_data = {
+            'steps': numpy.array(steps_per_episode),
             're': numpy.array(train_ext_rewards),
             'ri': numpy.array(train_int_rewards),
             'fme': numpy.array(train_fm_errors[:step_limit]),
@@ -479,6 +473,7 @@ class ExperimentDDPG:
         fm_error_list = []
         reward_list = []
 
+        steps_per_episode = []
         train_fm_errors = []
         train_ext_rewards = []
         train_int_rewards = []
@@ -532,9 +527,10 @@ class ExperimentDDPG:
 
             reward_avg.update(train_ext_reward)
             step_avg.update(train_steps)
-            train_ext_rewards.append([train_steps, train_ext_reward])
-            train_int_rewards.append([train_steps, train_int_reward])
-            train_vae_losses.append([train_steps, train_vae_loss])
+            steps_per_episode.append(train_steps)
+            train_ext_rewards.append(train_ext_reward)
+            train_int_rewards.append(train_int_reward)
+            train_vae_losses.append(train_vae_loss)
 
             print('Run {0} step {1:d} sigma {2:f} training [ext. reward {3:f} int. reward {4:f} VAE loss {5:f} steps {6:d}] avg. ext. reward {7:f} avg. steps {8:f}'.format(
                 trial, steps, exploration.sigma, train_ext_reward, train_int_reward, train_vae_loss, train_steps, reward_avg.value(), step_avg.value()))
@@ -544,6 +540,7 @@ class ExperimentDDPG:
 
         print('Saving data...')
         save_data = {
+            'steps': numpy.array(steps_per_episode),
             're': numpy.array(train_ext_rewards),
             'ri': numpy.array(train_int_rewards),
             'fme': numpy.array(train_fm_errors[:step_limit]),
@@ -572,6 +569,7 @@ class ExperimentDDPG:
         step_limit = int(config.steps * 1e6)
         steps = 0
 
+        steps_per_episode = []
         train_fm_errors = []
         train_mc_errors = []
         train_fm_rewards = []
@@ -617,8 +615,9 @@ class ExperimentDDPG:
 
             reward_avg.update(train_ext_reward)
             step_avg.update(train_steps)
-            train_ext_rewards.append([train_steps, train_ext_reward])
-            train_int_rewards.append([train_steps, train_int_reward])
+            steps_per_episode.append(train_steps)
+            train_ext_rewards.append(train_ext_reward)
+            train_int_rewards.append(train_int_reward)
 
             print('Run {0:d} step {1:d} sigma {2:f} training [ext. reward {3:f} int. reward {4:f} steps {5:d}] avg. ext. reward {6:f} avg. steps {7:f}'.format(
                 trial, steps, exploration.sigma, train_ext_reward, train_int_reward, train_steps, reward_avg.value(), step_avg.value()))
@@ -628,6 +627,7 @@ class ExperimentDDPG:
 
         print('Saving data...')
         save_data = {
+            'steps': numpy.array(steps_per_episode),
             're': numpy.array(train_ext_rewards),
             'ri': numpy.array(train_int_rewards),
             'fme': numpy.array(train_fm_errors[:step_limit]),
@@ -644,6 +644,7 @@ class ExperimentDDPG:
         step_limit = int(config.steps * 1e6)
         steps = 0
 
+        steps_per_episode = []
         train_fm_errors = []
         train_mc_errors = []
         train_fm_rewards = []
@@ -689,8 +690,9 @@ class ExperimentDDPG:
 
             reward_avg.update(train_ext_reward)
             step_avg.update(train_steps)
-            train_ext_rewards.append([train_steps, train_ext_reward])
-            train_int_rewards.append([train_steps, train_int_reward])
+            steps_per_episode.append(train_steps)
+            train_ext_rewards.append(train_ext_reward)
+            train_int_rewards.append(train_int_reward)
 
             print('Run {0:d} step {1:d} sigma {2:f} training [ext. reward {3:f} int. reward {4:f} steps {5:d}] avg. ext. reward {6:f} avg. steps {7:f}'.format(
                 trial, steps, exploration.sigma, train_ext_reward, train_int_reward, train_steps, reward_avg.value(), step_avg.value()))
@@ -700,6 +702,7 @@ class ExperimentDDPG:
 
         print('Saving data...')
         save_data = {
+            'steps': numpy.array(steps_per_episode),
             're': numpy.array(train_ext_rewards),
             'ri': numpy.array(train_int_rewards),
             'fme': numpy.array(train_fm_errors[:step_limit]),
@@ -718,6 +721,7 @@ class ExperimentDDPG:
 
         states = []
 
+        steps_per_episode = []
         train_fm_errors = []
         train_ext_rewards = []
         train_int_rewards = []
@@ -768,8 +772,9 @@ class ExperimentDDPG:
 
             reward_avg.update(train_ext_reward)
             step_avg.update(train_steps)
-            train_ext_rewards.append([train_steps, train_ext_reward])
-            train_int_rewards.append([train_steps, train_int_reward])
+            steps_per_episode.append(train_steps)
+            train_ext_rewards.append(train_ext_reward)
+            train_int_rewards.append(train_int_reward)
 
             print('Run {0:d} step {1:d} sigma {2:f} training [ext. reward {3:f} int. reward {4:f} steps {5:d}] avg. ext. reward {6:f} avg. steps {7:f}'.format(trial, steps, exploration.sigma,
                                                                                                                                                                train_ext_reward, train_int_reward,
@@ -781,6 +786,7 @@ class ExperimentDDPG:
 
         print('Saving data...')
         save_data = {
+            'steps': numpy.array(steps_per_episode),
             're': numpy.array(train_ext_rewards),
             'ri': numpy.array(train_int_rewards),
             'fme': numpy.array(train_fm_errors[:step_limit]),
@@ -795,6 +801,7 @@ class ExperimentDDPG:
         step_limit = int(config.steps * 1e6)
         steps = 0
 
+        steps_per_episode = []
         train_fm_errors = []
         train_ext_rewards = []
         train_int_rewards = []
@@ -835,8 +842,9 @@ class ExperimentDDPG:
 
             reward_avg.update(train_ext_reward)
             step_avg.update(train_steps)
-            train_ext_rewards.append([train_steps, train_ext_reward])
-            train_int_rewards.append([train_steps, train_int_reward])
+            steps_per_episode.append(train_steps)
+            train_ext_rewards.append(train_ext_reward)
+            train_int_rewards.append(train_int_reward)
 
             print('Run {0:d} step {1:d} sigma {2:f} training [ext. reward {3:f} int. reward {4:f} steps {5:d}] avg. ext. reward {6:f} avg. steps {7:f}'.format(trial, steps, exploration.sigma,
                                                                                                                                                                train_ext_reward, train_int_reward,
@@ -848,6 +856,7 @@ class ExperimentDDPG:
 
         print('Saving data...')
         save_data = {
+            'steps': numpy.array(steps_per_episode),
             're': numpy.array(train_ext_rewards),
             'ri': numpy.array(train_int_rewards),
             'fme': numpy.array(train_fm_errors[:step_limit])
@@ -861,6 +870,7 @@ class ExperimentDDPG:
         step_limit = int(config.steps * 1e6)
         steps = 0
 
+        steps_per_episode = []
         train_fm_errors = []
         train_ext_rewards = []
         train_int_rewards = []
@@ -901,8 +911,9 @@ class ExperimentDDPG:
 
             reward_avg.update(train_ext_reward)
             step_avg.update(train_steps)
-            train_ext_rewards.append([train_steps, train_ext_reward])
-            train_int_rewards.append([train_steps, train_int_reward])
+            steps_per_episode.append(train_steps)
+            train_ext_rewards.append(train_ext_reward)
+            train_int_rewards.append(train_int_reward)
 
             print('Run {0:d} step {1:d} sigma {2:f} training [ext. reward {3:f} int. reward {4:f} steps {5:d}] avg. ext. reward {6:f} avg. steps {7:f}'.format(trial, steps, exploration.sigma,
                                                                                                                                                                train_ext_reward, train_int_reward,
@@ -914,6 +925,7 @@ class ExperimentDDPG:
 
         print('Saving data...')
         save_data = {
+            'steps': numpy.array(steps_per_episode),
             're': numpy.array(train_ext_rewards),
             'ri': numpy.array(train_int_rewards),
             'fme': numpy.array(train_fm_errors[:step_limit])
@@ -927,13 +939,12 @@ class ExperimentDDPG:
         step_limit = int(config.steps * 1e6)
         steps = 0
 
+        steps_per_episode = []
         train_fm_errors = []
         train_ext_rewards = []
         train_int_rewards = []
         reward_avg = RunningAverageWindow(100)
         step_avg = RunningAverageWindow(100)
-        analytic = RNDAnalytic(config, motivation=agent.motivation, grid='grid_mountain_car_1_baseline.npy')
-        # analytic.initialization_test(config)
 
         bar = ProgressBar(config.steps * 1e6, max_width=40)
 
@@ -946,7 +957,6 @@ class ExperimentDDPG:
 
             while not done:
                 action0 = agent.get_action(state0)
-                analytic.collect(state0, action0)
                 next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
                 reward = self.transform_reward(reward)
                 state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
@@ -961,7 +971,6 @@ class ExperimentDDPG:
 
                 state0 = state1
 
-            analytic.end_trajectory(train_ext_reward)
             steps += train_steps
             if steps > step_limit:
                 train_steps -= steps - step_limit
@@ -969,8 +978,9 @@ class ExperimentDDPG:
 
             reward_avg.update(train_ext_reward)
             step_avg.update(train_steps)
-            train_ext_rewards.append([train_steps, train_ext_reward])
-            train_int_rewards.append([train_steps, train_int_reward])
+            steps_per_episode.append(train_steps)
+            train_ext_rewards.append(train_ext_reward)
+            train_int_rewards.append(train_int_reward)
 
             print('Run {0:d} step {1:d} training [ext. reward {2:f} int. reward {3:f} steps {4:d}] avg. ext. reward {5:f} avg. steps {6:f}'.format(
                 trial, steps, train_ext_reward, train_int_reward, train_steps, reward_avg.value(), step_avg.value()))
@@ -980,13 +990,12 @@ class ExperimentDDPG:
 
         print('Saving data...')
         save_data = {
+            'steps': numpy.array(steps_per_episode),
             're': numpy.array(train_ext_rewards),
             'ri': numpy.array(train_int_rewards),
             'fme': numpy.array(train_fm_errors[:step_limit])
         }
         numpy.save('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
-        analytic.save_data('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial))
-        # analytic.render_video('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial))
 
     def run_dop_model(self, agent, trial):
         config = self._config
@@ -995,8 +1004,8 @@ class ExperimentDDPG:
         step_limit = int(config.steps * 1e6)
         steps = 0
 
+        steps_per_episode = []
         train_fm_errors = []
-        train_noises = []
         train_ext_rewards = []
         train_int_rewards = []
         reward_avg = RunningAverageWindow(100)
@@ -1024,7 +1033,6 @@ class ExperimentDDPG:
                 train_int_reward += agent.motivation.reward(state0, action0).item()
                 train_fm_error = agent.motivation.error(state0, action0).item()
                 train_fm_errors.append(train_fm_error)
-                # train_noises.append(noise.squeeze(0).numpy())
 
                 state0 = state1
 
@@ -1035,8 +1043,9 @@ class ExperimentDDPG:
 
             reward_avg.update(train_ext_reward)
             step_avg.update(train_steps)
-            train_ext_rewards.append([train_steps, train_ext_reward])
-            train_int_rewards.append([train_steps, train_int_reward])
+            steps_per_episode.append(train_steps)
+            train_ext_rewards.append(train_ext_reward)
+            train_int_rewards.append(train_int_reward)
 
             print('Run {0:d} step {1:d} training [ext. reward {2:f} int. reward {3:f} steps {4:d}] avg. ext. reward {5:f} avg. steps {6:f}'.format(
                 trial, steps, train_ext_reward, train_int_reward, train_steps, reward_avg.value(), step_avg.value()))
@@ -1046,10 +1055,10 @@ class ExperimentDDPG:
 
         print('Saving data...')
         save_data = {
+            'steps': numpy.array(steps_per_episode),
             're': numpy.array(train_ext_rewards),
             'ri': numpy.array(train_int_rewards),
-            'fme': numpy.array(train_fm_errors[:step_limit]),
-            # 'noise': numpy.stack(train_noises[:step_limit])
+            'fme': numpy.array(train_fm_errors[:step_limit])
         }
         numpy.save('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
 

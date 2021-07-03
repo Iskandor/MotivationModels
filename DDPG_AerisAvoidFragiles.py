@@ -1,110 +1,43 @@
-import gym
-import gym_aeris.envs
+import DDPG_AerisEnv
 
-from agents.DDPGAgent import DDPGAerisAgent, DDPGAerisForwardModelAgent, DDPGAerisForwardModelEncoderAgent, DDPGAerisInverseModelAgent, DDPGAerisM2ModelAgent, DDPGAerisForwardInverseModelAgent, \
-    DDPGAerisGatedMetacriticModelAgent, DDPGAerisRNDModelAgent
-from experiment.ddpg_experiment import ExperimentDDPG
+env_name = 'AvoidFragiles-v0'
 
 
 def run_baseline(config, i):
-    env = gym_aeris.envs.AvoidFragilesEnv()
-    state_dim = env.observation_space.shape
-    action_dim = env.action_space.shape[0]
-
-    experiment = ExperimentDDPG('AvoidFragiles-v0', env, config)
-
-    agent = DDPGAerisAgent(state_dim, action_dim, config)
-    experiment.run_baseline(agent, i)
-
-    env.close()
+    DDPG_AerisEnv.run_baseline(env_name, config, i)
 
 
 def run_forward_model(config, i):
-    env = gym_aeris.envs.AvoidFragilesEnv()
-    state_dim = env.observation_space.shape
-    action_dim = env.action_space.shape[0]
-
-    experiment = ExperimentDDPG('AvoidFragiles-v0', env, config)
-
-    agent = DDPGAerisForwardModelAgent(state_dim, action_dim, config)
-    experiment.run_forward_model(agent, i)
-
-    env.close()
+    DDPG_AerisEnv.run_forward_model(env_name, config, i)
 
 
 def run_forward_model_encoder(config, i):
-    env = gym_aeris.envs.AvoidFragilesEnv()
-    state_dim = env.observation_space.shape
-    action_dim = env.action_space.shape[0]
-
-    experiment = ExperimentDDPG('AvoidFragiles-v0', env, config)
-
-    agent = DDPGAerisForwardModelEncoderAgent(state_dim, action_dim, config)
-    experiment.run_forward_model_encoder(agent, i)
-
-    env.close()
+    DDPG_AerisEnv.run_forward_model_encoder(env_name, config, i)
 
 
 def run_inverse_model(config, i):
-    env = gym_aeris.envs.AvoidFragilesEnv()
-    state_dim = env.observation_space.shape
-    action_dim = env.action_space.shape[0]
-
-    experiment = ExperimentDDPG('AvoidFragiles-v0', env, config)
-
-    agent = DDPGAerisInverseModelAgent(state_dim, action_dim, config)
-    experiment.run_inverse_model(agent, i)
-
-    env.close()
+    DDPG_AerisEnv.run_inverse_model(env_name, config, i)
 
 
 def run_forward_inverse_model(config, i):
-    env = gym_aeris.envs.AvoidFragilesEnv()
-    state_dim = env.observation_space.shape
-    action_dim = env.action_space.shape[0]
-
-    experiment = ExperimentDDPG('AvoidFragiles-v0', env, config)
-
-    agent = DDPGAerisForwardInverseModelAgent(state_dim, action_dim, config)
-    experiment.run_forward_inverse_model(agent, i)
-
-    env.close()
+    DDPG_AerisEnv.run_forward_inverse_model(env_name, config, i)
 
 
 def run_m2_model(config, i):
-    env = gym_aeris.envs.AvoidFragilesEnv()
-    state_dim = env.observation_space.shape
-    action_dim = env.action_space.shape[0]
+    DDPG_AerisEnv.run_m2_model(env_name, config, i)
 
-    experiment = ExperimentDDPG('AvoidFragiles-v0', env, config)
 
-    agent = DDPGAerisM2ModelAgent(state_dim, action_dim, config)
-    experiment.run_m2_model(agent, i)
-
-    env.close()
+def run_m2s_model(config, i):
+    DDPG_AerisEnv.run_m2s_model(env_name, config, i)
 
 
 def run_rnd_model(config, i):
-    env = gym_aeris.envs.AvoidFragilesEnv()
-    state_dim = env.observation_space.shape
-    action_dim = env.action_space.shape[0]
-
-    experiment = ExperimentDDPG('AvoidFragiles-v0', env, config)
-
-    agent = DDPGAerisRNDModelAgent(state_dim, action_dim, config)
-    experiment.run_rnd_model(agent, i)
-
-    env.close()
+    DDPG_AerisEnv.run_rnd_model(env_name, config, i)
 
 
 def run_metalearner_model(config, i):
-    env = gym_aeris.envs.AvoidFragilesEnv()
-    state_dim = env.observation_space.shape
-    action_dim = env.action_space.shape[0]
+    DDPG_AerisEnv.run_metalearner_model(env_name, config, i)
 
-    experiment = ExperimentDDPG('AvoidFragiles-v0', env, config)
 
-    agent = DDPGAerisGatedMetacriticModelAgent(state_dim, action_dim, config)
-    experiment.run_metalearner_model(agent, i)
-
-    env.close()
+def run_metalearner_rnd_model(config, i):
+    DDPG_AerisEnv.run_metalearner_rnd_model(env_name, config, i)
