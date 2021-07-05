@@ -11,7 +11,7 @@ class PPO:
         self._network = network
         self._optimizer = torch.optim.Adam(self._network.parameters(), lr=lr, weight_decay=weight_decay)
         self._beta = p_beta
-        self._gamma = p_gamma
+        self._gamma = [float(g) for g in p_gamma.split(',')]
         self._epsilon = p_epsilon
         self._lambda = p_lambda
         self._device = device
@@ -33,7 +33,7 @@ class PPO:
     def train(self, indices):
         if indices:
             start = time.time()
-            sample = self._memory.sample(indices)
+            sample = self._memory.sample(indices, False)
 
             states = sample.state
             values = sample.value
@@ -43,12 +43,12 @@ class PPO:
             dones = sample.mask
 
             if self._motivation:
-                ext_adv_values, ext_ref_values = self.calc_advantage(values[:, 0], rewards[:, 0], dones.squeeze())
-                int_adv_values, int_ref_values = self.calc_advantage(values[:, 1], rewards[:, 1], dones.squeeze())
+                ext_adv_values, ext_ref_values = self.calc_advantage(values[:, :, 0].unsqueeze(-1), rewards[:, :, 0].unsqueeze(-1), dones, self._gamma[0])
+                int_adv_values, int_ref_values = self.calc_advantage(values[:, :, 1].unsqueeze(-1), rewards[:, :, 1].unsqueeze(-1), dones, self._gamma[1])
                 adv_values = ext_adv_values + int_adv_values
-                ref_values = torch.stack([ext_ref_values, int_ref_values], dim=1)
+                ref_values = torch.cat([ext_ref_values, int_ref_values], dim=2)
             else:
-                adv_values, ref_values = self.calc_advantage(values.squeeze(-1), rewards.squeeze(-1), dones.squeeze(-1))
+                adv_values, ref_values = self.calc_advantage(values, rewards, dones, self._gamma[0])
 
             states = states.reshape(-1, *states.shape[2:])
             actions = actions.reshape(-1, *actions.shape[2:])
@@ -70,8 +70,8 @@ class PPO:
                 states_v = states[batch_ofs:batch_l]
                 actions_v = actions[batch_ofs:batch_l]
                 probs_v = probs[batch_ofs:batch_l]
-                batch_adv_v = adv_values[batch_ofs:batch_l].unsqueeze(-1)
-                batch_ref_v = ref_values[batch_ofs:batch_l].unsqueeze(-1)
+                batch_adv_v = adv_values[batch_ofs:batch_l]
+                batch_ref_v = ref_values[batch_ofs:batch_l]
 
                 self._optimizer.zero_grad()
                 loss = self.calc_loss(states_v.to(self._device), batch_ref_v.to(self._device), batch_adv_v.to(self._device), actions_v.to(self._device), probs_v.to(self._device))
@@ -83,7 +83,6 @@ class PPO:
         values, _, probs = self._network(states)
 
         if self._motivation:
-            ref_value = ref_value.squeeze(-1)
             loss_ext_value = torch.nn.functional.mse_loss(values[:, 0], ref_value[:, 0])
             loss_int_value = torch.nn.functional.mse_loss(values[:, 1], ref_value[:, 1])
             loss_value = loss_ext_value + loss_int_value
@@ -107,17 +106,17 @@ class PPO:
         int_reward = self._motivation.reward(states, actions, next_states)
         return int_reward
 
-    def calc_advantage(self, values, rewards, dones):
+    def calc_advantage(self, values, rewards, dones, gamma):
         buffer_size = rewards.shape[0]
 
-        returns = torch.zeros((buffer_size, self._n_env))
-        advantages = torch.zeros((buffer_size, self._n_env))
+        returns = torch.zeros((buffer_size, self._n_env, 1))
+        advantages = torch.zeros((buffer_size, self._n_env, 1))
 
-        last_gae = torch.zeros(self._n_env)
+        last_gae = torch.zeros(self._n_env, 1)
 
         for n in reversed(range(buffer_size - 1)):
-            delta = rewards[n, :] + dones[n, :] * self._gamma * values[n + 1, :] - values[n, :]
-            last_gae = delta + dones[n, :] * self._gamma * self._lambda * last_gae
+            delta = rewards[n, :] + dones[n, :] * gamma * values[n + 1, :] - values[n, :]
+            last_gae = delta + dones[n, :] * gamma * self._lambda * last_gae
 
             returns[n, :] = last_gae + values[n, :]
             advantages[n, :] = last_gae

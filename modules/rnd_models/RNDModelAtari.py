@@ -1,78 +1,79 @@
-import random
-
 import torch
 import torch.nn as nn
 import numpy as np
 
+from modules import init
 
-class RNDModel(nn.Module):
+
+class RNDModelAtari(nn.Module):
     def __init__(self, input_shape, action_dim, config):
-        super(RNDModel, self).__init__()
+        super(RNDModelAtari, self).__init__()
 
         self.input_shape = input_shape
         self.action_dim = action_dim
 
+        input_channels = 1
+        input_height = self.input_shape[1]
+        input_width = self.input_shape[2]
+        self.feature_dim = 512
+        self.state_average = torch.zeros((1, input_channels, input_height, input_width), device=config.device)
+
+        fc_inputs_count = 64 * (input_width // 8) * (input_height // 8)
+
         self.target_model = nn.Sequential(
-            nn.Conv2d(1, 32, kernel_size=8, stride=4),
-            nn.LeakyReLU(),
-            nn.Conv2d(32, 64, kernel_size=3, stride=2),
-            nn.LeakyReLU(),
-            nn.Conv2d(64, 64, kernel_size=3, stride=1),
-            nn.LeakyReLU(),
+            nn.Conv2d(input_channels, 32, kernel_size=8, stride=4, padding=2),
+            nn.ELU(),
+            nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1),
+            nn.ELU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
+            nn.ELU(),
             nn.Flatten(),
-            nn.Linear(7 * 7 * 64, 512)
+            nn.Linear(fc_inputs_count, self.feature_dim)
         )
 
-        nn.init.orthogonal_(self.target_model[0].weights, np.sqrt(2))
-        self.target_model[0].bias.data.zero_()
-        nn.init.orthogonal_(self.target_model[2].weights, np.sqrt(2))
-        self.target_model[2].bias.data.zero_()
-        nn.init.orthogonal_(self.target_model[4].weights, np.sqrt(2))
-        self.target_model[4].bias.data.zero_()
-        nn.init.orthogonal_(self.target_model[7].weights, 0.1)
-        self.target_model[7].bias.data.zero_()
+        init(self.target_model[0], np.sqrt(2))
+        init(self.target_model[2], np.sqrt(2))
+        init(self.target_model[4], np.sqrt(2))
+        init(self.target_model[7], np.sqrt(2))
 
         for param in self.target_model.parameters():
             param.requires_grad = False
 
         self.model = nn.Sequential(
-            nn.Conv2d(1, 32, kernel_size=8, stride=4),
-            nn.LeakyReLU(),
-            nn.Conv2d(32, 64, kernel_size=3, stride=2),
-            nn.LeakyReLU(),
-            nn.Conv2d(64, 64, kernel_size=3, stride=1),
-            nn.LeakyReLU(),
+            nn.Conv2d(1, 32, kernel_size=8, stride=4, padding=2),
+            nn.ELU(),
+            nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1),
+            nn.ELU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
+            nn.ELU(),
             nn.Flatten(),
-            nn.Linear(7 * 7 * 64, 512),
+            nn.Linear(fc_inputs_count, self.feature_dim),
             nn.ReLU(),
-            nn.Linear(512, 512),
+            nn.Linear(self.feature_dim, self.feature_dim),
             nn.ReLU(),
-            nn.Linear(512, 512)
+            nn.Linear(self.feature_dim, self.feature_dim)
         )
 
-        nn.init.orthogonal_(self.model[0].weights, np.sqrt(2))
-        self.model[0].bias.data.zero_()
-        nn.init.orthogonal_(self.model[2].weights, np.sqrt(2))
-        self.model[2].bias.data.zero_()
-        nn.init.orthogonal_(self.model[4].weights, np.sqrt(2))
-        self.model[4].bias.data.zero_()
-        nn.init.orthogonal_(self.model[7].weights, 0.1)
-        self.model[7].bias.data.zero_()
-        nn.init.orthogonal_(self.model[9].weights, 0.1)
-        self.model[9].bias.data.zero_()
-        nn.init.orthogonal_(self.model[9].weights, 0.01)
-        self.model[9].bias.data.zero_()
+        init(self.model[0], np.sqrt(2))
+        init(self.model[2], np.sqrt(2))
+        init(self.model[4], np.sqrt(2))
+        init(self.model[7], np.sqrt(2))
+        init(self.model[9], np.sqrt(2))
+        init(self.model[11], np.sqrt(2))
 
     def forward(self, state):
-        predicted_code = self.model(state)
+        x = state[:, 0, :, :].unsqueeze(1)
+        predicted_code = self.model(x)
         return predicted_code
 
     def encode(self, state):
-        return self.target_model(state)
+        x = state[:, 0, :, :].unsqueeze(1)
+        return self.target_model(x)
 
     def error(self, state):
+        x = state[:, 0, :, :].unsqueeze(1)
         with torch.no_grad():
-            prediction = self(state)
+            prediction = self(x)
             target = self.encode(state)
             error = torch.mean(torch.pow(prediction - target, 2), dim=1)
 
@@ -86,3 +87,7 @@ class RNDModel(nn.Module):
         loss *= mask
 
         return loss.sum(dim=0) / mask.sum(dim=0)
+
+    def update_state_average(self, state):
+        pass
+        # self.state_average = self.state_average * 0.99 + state[:, 0, :, :].unsqueeze(1) * 0.01

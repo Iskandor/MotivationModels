@@ -95,10 +95,10 @@ class PPOTrajectoryBuffer(object):
             ind = range(0, self.capacity)
         return ind
 
-    def dynamic_memory_init(self, state, action, prob):
+    def dynamic_memory_init(self, state, value, action, prob, reward):
         shape = (self.capacity // self.n_env, self.n_env,) + tuple(state.shape[1:])
         self.memory['state'] = torch.zeros(shape)
-        shape = (self.capacity // self.n_env, self.n_env, 1)
+        shape = (self.capacity // self.n_env, self.n_env,) + tuple(value.shape[1:])
         self.memory['value'] = torch.zeros(shape)
         shape = (self.capacity // self.n_env, self.n_env,) + tuple(action.shape[1:])
         self.memory['action'] = torch.zeros(shape)
@@ -106,7 +106,7 @@ class PPOTrajectoryBuffer(object):
         self.memory['prob'] = torch.zeros(shape)
         shape = (self.capacity // self.n_env, self.n_env,) + tuple(state.shape[1:])
         self.memory['next_state'] = torch.zeros(shape)
-        shape = (self.capacity // self.n_env, self.n_env, 1)
+        shape = (self.capacity // self.n_env, self.n_env,) + tuple(reward.shape[1:])
         self.memory['reward'] = torch.zeros(shape)
         shape = (self.capacity // self.n_env, self.n_env, 1)
         self.memory['mask'] = torch.zeros(shape)
@@ -114,7 +114,7 @@ class PPOTrajectoryBuffer(object):
     def add(self, state, value, action, prob, next_state, reward, mask):
 
         if len(self.memory) == 0:
-            self.dynamic_memory_init(state, action, prob)
+            self.dynamic_memory_init(state, value, action, prob, reward)
 
         index = self.index // self.n_env
         self.memory['state'][index] = state
@@ -126,23 +126,38 @@ class PPOTrajectoryBuffer(object):
         self.memory['mask'][index] = mask
         self.index += self.n_env
 
-    def sample(self, indices):
-        return PPO_Transition(
-            self.memory['state'],
-            self.memory['value'],
-            self.memory['action'],
-            self.memory['prob'],
-            self.memory['next_state'],
-            self.memory['reward'],
-            self.memory['mask'])
+    def sample(self, indices, reshape_to_batch=True):
+        if reshape_to_batch:
+            result = PPO_Transition(
+                self.memory['state'].reshape(-1, *self.memory['state'].shape[2:]),
+                self.memory['value'].reshape(-1, *self.memory['value'].shape[2:]),
+                self.memory['action'].reshape(-1, *self.memory['action'].shape[2:]),
+                self.memory['prob'].reshape(-1, *self.memory['prob'].shape[2:]),
+                self.memory['next_state'].reshape(-1, *self.memory['next_state'].shape[2:]),
+                self.memory['reward'].reshape(-1, *self.memory['reward'].shape[2:]),
+                self.memory['mask'].reshape(-1, *self.memory['mask'].shape[2:]))
+        else:
+            result = PPO_Transition(
+                self.memory['state'],
+                self.memory['value'],
+                self.memory['action'],
+                self.memory['prob'],
+                self.memory['next_state'],
+                self.memory['reward'],
+                self.memory['mask'])
+
+        return result
 
     def sample_batches(self, indices):
-        transitions = []
-        for i in range(self.n_env):
-            transitions += self.memory[i]
-        batch = list(PPO_Transition(*zip(*transitions[x:x + self.batch_size])) for x in range(0, self.capacity, self.batch_size))
-
-        return batch
+        batch = PPO_Transition(
+            self.memory['state'].reshape(-1, self.batch_size, *self.memory['state'].shape[2:]),
+            self.memory['value'].reshape(-1, self.batch_size, *self.memory['value'].shape[2:]),
+            self.memory['action'].reshape(-1, self.batch_size, *self.memory['action'].shape[2:]),
+            self.memory['prob'].reshape(-1, self.batch_size, *self.memory['prob'].shape[2:]),
+            self.memory['next_state'].reshape(-1, self.batch_size, *self.memory['next_state'].shape[2:]),
+            self.memory['reward'].reshape(-1, self.batch_size, *self.memory['reward'].shape[2:]),
+            self.memory['mask'].reshape(-1, self.batch_size, *self.memory['mask'].shape[2:]))
+        return batch, self.capacity // self.batch_size
 
     def clear(self):
         self.index = 0

@@ -7,6 +7,7 @@ from agents import TYPE
 from modules import init
 from modules.forward_models.ForwardModelAtari import ForwardModelAtari
 from modules.rnd_models.RNDModelAeris import RNDModelAeris, QRNDModelAeris, DOPModelAeris
+from modules.rnd_models.RNDModelAtari import RNDModelAtari
 
 
 class DiscreteHead(nn.Module):
@@ -72,9 +73,7 @@ class ContinuousHead(nn.Module):
     @staticmethod
     def log_prob(probs, actions):
         dim = probs.shape[1]
-        mu, var = probs[:, :dim//2], probs[:, dim//2:]
-        # dist = Normal(mu, var.sqrt())
-        # log_prob = dist.log_prob(actions)
+        mu, var = probs[:, :dim // 2], probs[:, dim // 2:]
 
         p1 = -((actions - mu) ** 2) / (2.0 * var + 0.1)
         p2 = -torch.log(torch.sqrt(2.0 * np.pi * var))
@@ -86,9 +85,7 @@ class ContinuousHead(nn.Module):
     @staticmethod
     def entropy(probs):
         dim = probs.shape[1]
-        var = probs[:, dim//2:]
-        # dist = Normal(mu, var.sqrt())
-        # entropy = -dist.entropy()
+        var = probs[:, dim // 2:]
         entropy = -(torch.log(2.0 * np.pi * var) + 1.0) / 2.0
 
         return entropy.mean()
@@ -172,7 +169,7 @@ class Critic2Heads(nn.Module):
     def forward(self, x):
         ext_value = self.ext(x)
         int_value = self.int(x)
-        return torch.stack([ext_value, int_value], dim=1).squeeze(-1)
+        return torch.cat([ext_value, int_value], dim=1).squeeze(-1)
 
 
 class Residual(torch.nn.Module):
@@ -442,60 +439,26 @@ class PPOAtariNetwork(torch.nn.Module):
         return value, action, probs
 
 
-class PPOAtariMotivationNetwork(torch.nn.Module):
+class PPOAtariMotivationNetwork(PPOAtariNetwork):
     def __init__(self, input_shape, action_dim, config, head):
-        super(PPOAtariMotivationNetwork, self).__init__()
-
-        self.input_shape = input_shape
-        self.action_dim = action_dim
-        input_channels = self.input_shape[0]
-        self.feature_dim = 512
-
-        self.layers_features = [
-            nn.Conv2d(input_channels, 32, kernel_size=8, stride=4, padding=2),
-            nn.ReLU(),
-            nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-            nn.Flatten(),
-            nn.Linear(12 * 12 * 64, self.feature_dim),
-            nn.ReLU()
-        ]
-
-        init(self.layers_features[0], np.sqrt(2))
-        init(self.layers_features[2], np.sqrt(2))
-        init(self.layers_features[4], np.sqrt(2))
-        init(self.layers_features[7], np.sqrt(2))
+        super(PPOAtariMotivationNetwork, self).__init__(input_shape, action_dim, config, head)
 
         self.layers_value = [
-            torch.nn.Linear(self.feature_dim, self.feature_dim),
+            Residual(self.feature_dim),
             torch.nn.ReLU(),
             Critic2Heads(self.feature_dim)
         ]
 
-        init(self.layers_value[0], 0.1)
-
-        self.layers_policy = [
-            torch.nn.Linear(self.feature_dim, self.feature_dim),
-            torch.nn.ReLU(),
-        ]
-
-        init(self.layers_policy[0], 0.01)
-
-        self.features = nn.Sequential(*self.layers_features)
         self.critic = nn.Sequential(*self.layers_value)
-        self.actor = Actor(action_dim, self.layers_actor, head)
-
-    def forward(self, state):
-        features = self.features(state)
-        value = self.critic(features)
-        action, probs = self.actor(features)
-
-        return value, action, probs
 
 
 class PPOAtariNetworkFM(PPOAtariMotivationNetwork):
     def __init__(self, input_shape, action_dim, config, head):
         super(PPOAtariNetworkFM, self).__init__(input_shape, action_dim, config, head)
         self.forward_model = ForwardModelAtari(self.features, self.feature_dim, self.action_dim)
+
+
+class PPOAtariNetworkRND(PPOAtariMotivationNetwork):
+    def __init__(self, input_shape, action_dim, config, head):
+        super(PPOAtariNetworkRND, self).__init__(input_shape, action_dim, config, head)
+        self.rnd_model = RNDModelAtari(input_shape, self.action_dim, config)

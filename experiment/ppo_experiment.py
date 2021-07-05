@@ -62,16 +62,17 @@ class ExperimentPPO:
 
             while not done:
                 value, action0, probs0 = agent.get_action(state0)
-                next_state, reward, done, info = self._env.step(agent.convert_action(action0))
+                next_state, reward, done, info = self._env.step(agent.convert_action(action0.cpu()))
 
                 if isinstance(reward, numpy.ndarray):
                     reward = reward[0]
-                reward = torch.tensor([reward], dtype=torch.float32)
+                reward = torch.tensor([reward], dtype=torch.float32).unsqueeze(-1)
 
                 state1 = self.process_state(next_state)
                 mask = torch.tensor([1], dtype=torch.float32)
                 if done:
                     mask[0] = 0
+                mask = mask.unsqueeze(-1)
                 agent.train(state0, value, action0, probs0, state1, reward, mask)
                 state0 = state1
 
@@ -129,14 +130,15 @@ class ExperimentPPO:
                 train_steps += 1
                 value, action0, probs0 = agent.get_action(state0)
                 agent.motivation.update_state_average(state0)
-                next_state, reward, done, info = self._env.step(agent.convert_action(action0))
+                next_state, reward, done, info = self._env.step(agent.convert_action(action0.cpu()))
                 state1 = self.process_state(next_state)
                 ext_reward = torch.tensor([reward], dtype=torch.float32).unsqueeze(0)
-                int_reward = agent.motivation.reward(state0)
-                reward = torch.stack([ext_reward, int_reward], dim=1).squeeze(-1)
+                int_reward = agent.motivation.reward(state0).cpu()
+                reward = torch.cat([ext_reward, int_reward], dim=1)
                 mask = torch.tensor([1], dtype=torch.float32)
                 if done:
                     mask[0] = 0
+                mask = mask.unsqueeze(-1)
 
                 agent.train(state0, value, action0, probs0, state1, reward, mask)
 
