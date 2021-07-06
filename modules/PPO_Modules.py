@@ -231,43 +231,32 @@ class PPOAerisNetwork(torch.nn.Module):
             nn.ReLU(),
             nn.Conv1d(config.critic_kernels_count * 2, config.critic_kernels_count * 2, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
-            nn.Flatten()
+            nn.Flatten(),
+            nn.Linear(fc_count, fc_count),
+            nn.ReLU()
         )
 
-        nn.init.orthogonal_(self.features[0].weight)
-        nn.init.zeros_(self.features[0].bias)
-        nn.init.orthogonal_(self.features[2].weight)
-        nn.init.zeros_(self.features[2].bias)
-        nn.init.orthogonal_(self.features[4].weight)
-        nn.init.zeros_(self.features[4].bias)
+        init(self.features[0], np.sqrt(2))
+        init(self.features[2], np.sqrt(2))
+        init(self.features[4], np.sqrt(2))
+        init(self.features[7], np.sqrt(2))
 
         self.critic = nn.Sequential(
-            nn.Linear(fc_count, fc_count),
-            nn.ReLU(),
             nn.Linear(fc_count, config.critic_h1),
             nn.ReLU(),
             nn.Linear(config.critic_h1, 1))
 
-        nn.init.xavier_uniform_(self.critic[0].weight)
-        nn.init.zeros_(self.critic[0].bias)
-        nn.init.xavier_uniform_(self.critic[2].weight)
-        nn.init.zeros_(self.critic[2].bias)
-        nn.init.xavier_uniform_(self.critic[4].weight)
-        nn.init.zeros_(self.critic[4].bias)
+        init(self.critic[0], 0.01)
+        init(self.critic[2], 0.01)
 
         self.channels = input_shape[0]
         self.width = input_shape[1]
 
         self.layers_actor = [
-            nn.Linear(fc_count, fc_count),
-            nn.ReLU(),
             nn.Linear(fc_count, config.actor_h1),
             nn.ReLU()]
 
-        nn.init.xavier_uniform_(self.layers_actor[0].weight)
-        nn.init.zeros_(self.layers_actor[0].bias)
-        nn.init.xavier_uniform_(self.layers_actor[2].weight)
-        nn.init.zeros_(self.layers_actor[2].bias)
+        init(self.layers_actor[0], 0.01)
 
         self.actor = Actor(action_dim, self.layers_actor, head)
 
