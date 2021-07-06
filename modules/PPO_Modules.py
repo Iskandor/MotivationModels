@@ -224,7 +224,24 @@ class PPOAerisNetwork(torch.nn.Module):
 
         fc_count = config.critic_kernels_count * self.width // 4
 
-        self.features = nn.Sequential(
+        # self.features = nn.Sequential(
+        #     nn.Conv1d(self.channels, config.critic_kernels_count, kernel_size=8, stride=4, padding=2),
+        #     nn.ReLU(),
+        #     nn.Conv1d(config.critic_kernels_count, config.critic_kernels_count * 2, kernel_size=4, stride=2, padding=1),
+        #     nn.ReLU(),
+        #     nn.Conv1d(config.critic_kernels_count * 2, config.critic_kernels_count * 2, kernel_size=3, stride=1, padding=1),
+        #     nn.ReLU(),
+        #     nn.Flatten(),
+        #     nn.Linear(fc_count, fc_count),
+        #     nn.ReLU()
+        # )
+
+        # init(self.features[0], np.sqrt(2))
+        # init(self.features[2], np.sqrt(2))
+        # init(self.features[4], np.sqrt(2))
+        # init(self.features[7], np.sqrt(2))
+
+        self.critic = nn.Sequential(
             nn.Conv1d(self.channels, config.critic_kernels_count, kernel_size=8, stride=4, padding=2),
             nn.ReLU(),
             nn.Conv1d(config.critic_kernels_count, config.critic_kernels_count * 2, kernel_size=4, stride=2, padding=1),
@@ -233,35 +250,45 @@ class PPOAerisNetwork(torch.nn.Module):
             nn.ReLU(),
             nn.Flatten(),
             nn.Linear(fc_count, fc_count),
-            nn.ReLU()
-        )
-
-        init(self.features[0], np.sqrt(2))
-        init(self.features[2], np.sqrt(2))
-        init(self.features[4], np.sqrt(2))
-        init(self.features[7], np.sqrt(2))
-
-        self.critic = nn.Sequential(
+            nn.ReLU(),
             nn.Linear(fc_count, config.critic_h1),
             nn.ReLU(),
             nn.Linear(config.critic_h1, 1))
 
-        init(self.critic[0], 0.01)
-        init(self.critic[2], 0.01)
+        init(self.critic[0], np.sqrt(2))
+        init(self.critic[2], np.sqrt(2))
+        init(self.critic[4], np.sqrt(2))
+        init(self.critic[7], np.sqrt(2))
+        init(self.critic[9], 0.01)
+        init(self.critic[11], 0.01)
 
         self.channels = input_shape[0]
         self.width = input_shape[1]
 
         self.layers_actor = [
+            nn.Conv1d(self.channels, config.critic_kernels_count, kernel_size=8, stride=4, padding=2),
+            nn.ReLU(),
+            nn.Conv1d(config.critic_kernels_count, config.critic_kernels_count * 2, kernel_size=4, stride=2, padding=1),
+            nn.ReLU(),
+            nn.Conv1d(config.critic_kernels_count * 2, config.critic_kernels_count * 2, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(fc_count, fc_count),
+            nn.ReLU(),
             nn.Linear(fc_count, config.actor_h1),
             nn.ReLU()]
 
-        init(self.layers_actor[0], 0.01)
+        init(self.layers_actor[0], np.sqrt(2))
+        init(self.layers_actor[2], np.sqrt(2))
+        init(self.layers_actor[4], np.sqrt(2))
+        init(self.layers_actor[7], np.sqrt(2))
+        init(self.layers_actor[9], 0.01)
 
         self.actor = Actor(action_dim, self.layers_actor, head)
 
     def forward(self, state):
-        x = self.features(state)
+        # x = self.features(state)
+        x = state
         value = self.critic(x)
         action, probs = self.actor(x)
 
