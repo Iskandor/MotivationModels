@@ -8,11 +8,15 @@ root = 'C:/GIT/Experiments/plots'
 
 def plot(config, plot_overview=True, plot_details=False, window=1000):
     data = prepare_data(config)
+    algorithm = config[0]['algorithm']
     env = config[0]['env']
     legend = [key['model'] for key in config]
 
     if plot_overview:
-        path = os.path.join(root, env, env)
+        path = os.path.join(root, algorithm, env)
+        if not os.path.exists(path):
+            os.mkdir(path)
+        path = os.path.join(path, env)
         plot_multiple_models(
             data,
             legend,
@@ -26,7 +30,7 @@ def plot(config, plot_overview=True, plot_details=False, window=1000):
             model = key['model']
             id = key['id']
 
-            path = os.path.join(root, env, model)
+            path = os.path.join(root, algorithm, env, model)
             if not os.path.exists(path):
                 os.mkdir(path)
             path = os.path.join(path, id)

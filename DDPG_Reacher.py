@@ -11,70 +11,12 @@ from motivation.MetaCriticMotivation import MetaCriticMotivation
 
 
 def run_baseline(config, i):
-    env = gym.make('ReacherBulletEnv-v0')
-    state_dim = env.observation_space.shape[0]
-    action_dim = env.action_space.shape[0]
-
-    experiment = ExperimentDDPG('ReacherBulletEnv-v0', env, config)
-
-    actor = Actor(state_dim, action_dim, config)
-    critic = Critic(state_dim, action_dim, config)
-    memory = ExperienceReplayBuffer(config.memory_size)
-    agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)
-    experiment.run_baseline(agent, i)
-
-    env.close()
+    pass
 
 
 def run_forward_model(config, i):
-    env = gym.make('ReacherBulletEnv-v0')
-    state_dim = env.observation_space.shape[0]
-    action_dim = env.action_space.shape[0]
-
-    experiment = ExperimentDDPG('ReacherBulletEnv-v0', env, config)
-
-    actor = Actor(state_dim, action_dim, config)
-    critic = Critic(state_dim, action_dim, config)
-    memory = ExperienceReplayBuffer(config.memory_size)
-
-    agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)
-
-    if hasattr(config, 'forward_model_batch_size'):
-        forward_model = ForwardModelMotivation(ForwardModel(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
-                                               config.forward_model_variant, env.spec.max_episode_steps * 10,
-                                               memory, config.forward_model_batch_size)
-    else:
-        forward_model = ForwardModelMotivation(ForwardModel(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
-                                               config.forward_model_variant, env.spec.max_episode_steps * 10)
-
-    agent.add_motivation_module(forward_model)
-
-    experiment.run_forward_model(agent, i)
-
-    env.close()
+    pass
 
 
 def run_metalearner_model(config, i):
-    env = gym.make('ReacherBulletEnv-v0')
-    state_dim = env.observation_space.shape[0]
-    action_dim = env.action_space.shape[0]
-
-    experiment = ExperimentDDPG('ReacherBulletEnv-v0', env, config)
-
-    actor = Actor(state_dim, action_dim, config)
-    critic = Critic(state_dim, action_dim, config)
-    memory = ExperienceReplayBuffer(config.memory_size)
-
-    agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)
-
-    if hasattr(config, 'metacritic_batch_size'):
-        metacritic = MetaCriticMotivation(MetaCritic(state_dim, action_dim, config), config.metacritic_lr, config.metacritic_variant, config.metacritic_eta,
-                                          memory, config.metacritic_batch_size)
-    else:
-        metacritic = MetaCriticMotivation(MetaCritic(state_dim, action_dim, config), config.metacritic_lr, config.metacritic_variant, config.metacritic_eta)
-
-    agent.add_motivation_module(metacritic)
-
-    experiment.run_metalearner_model(agent, i)
-
-    env.close()
+    pass

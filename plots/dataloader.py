@@ -11,10 +11,11 @@ def prepare_data(keys):
 
     for key in keys:
         model = key['model']
+        algorithm = key['algorithm']
         env = key['env']
         id = key['id']
 
-        path = os.path.join(root, model, env, id)
+        path = os.path.join(root, algorithm, model, env, id)
         data.append(load_data(path, ['re', 're_raw', 'ri', 'hid']))
 
     return data

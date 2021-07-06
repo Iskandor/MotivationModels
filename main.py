@@ -16,17 +16,10 @@ import DDPG_AerisAvoidFragiles
 import DDPG_AerisAvoidHazards
 import DDPG_AerisTargetNavigate
 import DDPG_Ant
-import DDPG_FetchReach
 import DDPG_HalfCheetah
 import DDPG_Hopper
 import DDPG_LunarLander
 import DDPG_MountainCar
-import DDPG_Noisy_AerisTargetNavigate
-import DDPG_Noisy_Ant
-import DDPG_Noisy_HalfCheetah
-import DDPG_Noisy_Hopper
-import DDPG_Noisy_LunarLander
-import DDPG_Noisy_Reacher
 import DDPG_Reacher
 import PPO_AerisAvoidFragiles
 import PPO_AerisAvoidHazards
@@ -48,43 +41,23 @@ from config import load_config_file
 from config.Config import Config
 
 
-def set_env_class_ddpg(env, experiment):
+def set_env_class_ddpg(env):
     env_class = None
 
     if env == 'mountain_car':
         env_class = DDPG_MountainCar
-    if env == 'fetch_reach':
-        env_class = DDPG_FetchReach
     if env == 'lunar_lander':
-        if experiment.noisy:
-            env_class = DDPG_Noisy_LunarLander
-        else:
-            env_class = DDPG_LunarLander
+        env_class = DDPG_LunarLander
     if env == 'half_cheetah':
-        if experiment.noisy:
-            env_class = DDPG_Noisy_HalfCheetah
-        else:
-            env_class = DDPG_HalfCheetah
+        env_class = DDPG_HalfCheetah
     if env == 'hopper':
-        if experiment.noisy:
-            env_class = DDPG_Noisy_Hopper
-        else:
-            env_class = DDPG_Hopper
+        env_class = DDPG_Hopper
     if env == 'ant':
-        if experiment.noisy:
-            env_class = DDPG_Noisy_Ant
-        else:
-            env_class = DDPG_Ant
+        env_class = DDPG_Ant
     if env == 'reacher':
-        if experiment.noisy:
-            env_class = DDPG_Noisy_Reacher
-        else:
-            env_class = DDPG_Reacher
+        env_class = DDPG_Reacher
     if env == 'aeris_navigate':
-        if experiment.noisy:
-            env_class = DDPG_Noisy_AerisTargetNavigate
-        else:
-            env_class = DDPG_AerisTargetNavigate
+        env_class = DDPG_AerisTargetNavigate
     if env == 'aeris_hazards':
         env_class = DDPG_AerisAvoidHazards
     if env == 'aeris_fragiles':
@@ -143,13 +116,13 @@ def set_env_class_a2c(env):
     return env_class
 
 
-def set_env_class(algorithm, env, experiment):
+def set_env_class(algorithm, env):
     env_class = None
 
     if algorithm == 'a2c':
         env_class = set_env_class_a2c(env)
     if algorithm == 'ddpg':
-        env_class = set_env_class_ddpg(env, experiment)
+        env_class = set_env_class_ddpg(env)
     if algorithm == 'ppo':
         env_class = set_env_class_ppo(env)
 
@@ -181,7 +154,7 @@ def run_thread(thread_params):
 def run(id, algorithm, env, experiment):
     print('Starting experiment {0} on env {1} learning algorithm {2} model {3}'.format(id + experiment.shift, env, algorithm, experiment.model))
 
-    env_class = set_env_class(algorithm, env, experiment)
+    env_class = set_env_class(algorithm, env)
 
     if experiment.model == 'baseline':
         env_class.run_baseline(experiment, id)

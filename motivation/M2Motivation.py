@@ -1,6 +1,6 @@
 import torch
 
-from algorithms.DDPG2 import DDPG2
+from algorithms.DDPG import DDPG
 
 
 class M2Motivation:
@@ -12,7 +12,7 @@ class M2Motivation:
         self._sample_size = sample_size
         self._weight = torch.tensor([[0.9, 0.1]], dtype=torch.float32)
 
-        self.gate_algorithm = DDPG2(self.network.gate, lr, lr, gamma, tau, memory, 32)
+        self.gate_algorithm = DDPG(self.network.gate, lr, lr, gamma, tau, memory, 32)
 
     def train(self, indices):
         if indices:

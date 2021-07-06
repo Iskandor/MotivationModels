@@ -54,45 +54,8 @@ def run_metalearner_model(config, i):
 
 
 def run_residual_forward_model(config, i):
-    env = gym.make('HalfCheetahBulletEnv-v0')
-    state_dim = env.observation_space.shape[0]
-    action_dim = env.action_space.shape[0]
-
-    experiment = ExperimentDDPG('HalfCheetahBulletEnv-v0', env, config)
-
-    actor = Actor(state_dim, action_dim, config)
-    critic = Critic(state_dim, action_dim, config)
-    memory = ExperienceReplayBuffer(config.memory_size)
-
-    agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)
-
-    forward_model = ForwardModelMotivation(ResidualForwardModel(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
-                                           config.forward_model_variant, env.spec.max_episode_steps * 10,
-                                           memory, config.forward_model_batch_size)
-    agent.add_motivation_module(forward_model)
-
-    experiment.run_forward_model(agent, i)
-
-    env.close()
+    pass
 
 
 def run_vae_forward_model(config, i):
-    env = gym.make('HalfCheetahBulletEnv-v0')
-    state_dim = env.observation_space.shape[0]
-    action_dim = env.action_space.shape[0]
-
-    experiment = ExperimentDDPG('HalfCheetahBulletEnv-v0', env, config)
-
-    actor = Actor(state_dim, action_dim, config)
-    critic = Critic(state_dim, action_dim, config)
-    memory = ExperienceReplayBuffer(config.memory_size)
-
-    agent = DDPG(actor, critic, config.actor_lr, config.critic_lr, config.gamma, config.tau, memory, config.batch_size)
-
-    forward_model = VAE_ForwardModelMotivation(VAE_ForwardModel(state_dim, action_dim, config), config.forward_model_lr, config.forward_model_eta,
-                                               memory, config.forward_model_batch_size)
-    agent.add_motivation_module(forward_model)
-
-    experiment.run_vae_forward_model(agent, i)
-
-    env.close()
+    pass

@@ -1,6 +1,6 @@
 import torch
 
-from algorithms.DDPG2 import DDPG2
+from algorithms.DDPG import DDPG
 
 
 class M2SMotivation:
