@@ -35,6 +35,10 @@ def run_rnd_model(config, i):
     DDPG_AerisEnv.run_rnd_model(env_name, config, i)
 
 
+def run_qrnd_model(config, i):
+    DDPG_AerisEnv.run_qrnd_model(env_name, config, i)
+
+
 def run_metalearner_model(config, i):
     DDPG_AerisEnv.run_metalearner_model(env_name, config, i)
 

@@ -17,11 +17,11 @@ class DDPG:
         if indices:
             sample = self._memory.sample(indices)
 
-            states = torch.stack(sample.state).squeeze(1)
-            next_states = torch.stack(sample.next_state).squeeze(1)
-            actions = torch.stack(sample.action).squeeze(1)
-            rewards = torch.stack(sample.reward)
-            masks = torch.stack(sample.mask)
+            states = sample.state
+            next_states = sample.next_state
+            actions = sample.action
+            rewards = sample.reward
+            masks = sample.mask
 
             if self.motivation:
                 rewards += self.motivation.reward_sample(indices)

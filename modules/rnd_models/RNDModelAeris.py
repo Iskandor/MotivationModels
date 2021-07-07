@@ -85,7 +85,7 @@ class RNDModelAeris(nn.Module):
 
         loss *= mask
 
-        return loss.sum(dim=0) / mask.sum(dim=0)
+        return loss.sum(dim=0) / (mask.sum(dim=0) + 1e-8)
 
     def update_state_average(self, state):
         self.state_average = self.state_average * 0.99 + state * 0.01

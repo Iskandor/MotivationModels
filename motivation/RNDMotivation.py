@@ -27,7 +27,7 @@ class RNDMotivation:
     def reward_sample(self, indices):
         sample = self._memory.sample(indices)
 
-        states = torch.stack(sample.state).squeeze(1)
+        states = sample.state
 
         return self.reward(states)
 
@@ -52,8 +52,8 @@ class QRNDMotivation:
         if indices:
             sample = self._memory.sample(indices)
 
-            states = torch.stack(sample.state).squeeze(1)
-            actions = torch.stack(sample.action).squeeze(1)
+            states = sample.state
+            actions = sample.action
 
             self._optimizer.zero_grad()
             loss = self._network.loss_function(states, actions)
@@ -66,8 +66,8 @@ class QRNDMotivation:
     def reward_sample(self, indices):
         sample = self._memory.sample(indices)
 
-        states = torch.stack(sample.state).squeeze(1)
-        actions = torch.stack(sample.action).squeeze(1)
+        states = sample.state
+        actions = sample.action
 
         return self.reward(states, actions)
 

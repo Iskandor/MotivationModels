@@ -74,7 +74,7 @@ def run_dop_model(config, i):
 
     experiment = ExperimentDDPG('MountainCarContinuous-v0', env, config)
     agent = DDPGBulletDOPSimpleModelAgent(state_dim, action_dim, config)
-    experiment.run_dop_simple_model(agent, i)
+    experiment.run_dop_model(agent, i)
 
     env.close()
 
