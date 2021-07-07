@@ -241,48 +241,31 @@ class PPOAerisNetwork(torch.nn.Module):
         # init(self.features[4], np.sqrt(2))
         # init(self.features[7], np.sqrt(2))
 
+        fc_count = config.critic_kernels_count * self.width // 4
+
         self.critic = nn.Sequential(
             nn.Conv1d(self.channels, config.critic_kernels_count, kernel_size=8, stride=4, padding=2),
             nn.ReLU(),
-            nn.Conv1d(config.critic_kernels_count, config.critic_kernels_count * 2, kernel_size=4, stride=2, padding=1),
-            nn.ReLU(),
-            nn.Conv1d(config.critic_kernels_count * 2, config.critic_kernels_count * 2, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(fc_count, fc_count),
-            nn.ReLU(),
             nn.Linear(fc_count, config.critic_h1),
             nn.ReLU(),
             nn.Linear(config.critic_h1, 1))
 
-        init(self.critic[0], 1)
-        init(self.critic[2], 1)
-        init(self.critic[4], 1)
-        init(self.critic[7], 1)
-        init(self.critic[9], 0.01)
-        init(self.critic[11], 0.01)
+        nn.init.xavier_uniform_(self.critic[0].weight)
+        nn.init.xavier_uniform_(self.critic[3].weight)
+        nn.init.uniform_(self.critic[5].weight, -0.003, 0.003)
 
-        self.channels = input_shape[0]
-        self.width = input_shape[1]
+        fc_count = config.actor_kernels_count * self.width // 4
 
         self.layers_actor = [
-            nn.Conv1d(self.channels, config.critic_kernels_count, kernel_size=8, stride=4, padding=2),
-            nn.ReLU(),
-            nn.Conv1d(config.critic_kernels_count, config.critic_kernels_count * 2, kernel_size=4, stride=2, padding=1),
-            nn.ReLU(),
-            nn.Conv1d(config.critic_kernels_count * 2, config.critic_kernels_count * 2, kernel_size=3, stride=1, padding=1),
+            nn.Conv1d(self.channels, config.actor_kernels_count, kernel_size=8, stride=4, padding=2),
             nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(fc_count, fc_count),
-            nn.ReLU(),
             nn.Linear(fc_count, config.actor_h1),
             nn.ReLU()]
 
-        init(self.layers_actor[0], 1)
-        init(self.layers_actor[2], 1)
-        init(self.layers_actor[4], 1)
-        init(self.layers_actor[7], 1)
-        init(self.layers_actor[9], 0.01)
+        nn.init.xavier_uniform_(self.layers_actor[0].weight)
+        nn.init.xavier_uniform_(self.layers_actor[3].weight)
 
         self.actor = Actor(action_dim, self.layers_actor, head)
 
