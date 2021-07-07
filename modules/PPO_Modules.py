@@ -255,10 +255,10 @@ class PPOAerisNetwork(torch.nn.Module):
             nn.ReLU(),
             nn.Linear(config.critic_h1, 1))
 
-        init(self.critic[0], np.sqrt(2))
-        init(self.critic[2], np.sqrt(2))
-        init(self.critic[4], np.sqrt(2))
-        init(self.critic[7], np.sqrt(2))
+        init(self.critic[0], 1)
+        init(self.critic[2], 1)
+        init(self.critic[4], 1)
+        init(self.critic[7], 1)
         init(self.critic[9], 0.01)
         init(self.critic[11], 0.01)
 
@@ -278,10 +278,10 @@ class PPOAerisNetwork(torch.nn.Module):
             nn.Linear(fc_count, config.actor_h1),
             nn.ReLU()]
 
-        init(self.layers_actor[0], np.sqrt(2))
-        init(self.layers_actor[2], np.sqrt(2))
-        init(self.layers_actor[4], np.sqrt(2))
-        init(self.layers_actor[7], np.sqrt(2))
+        init(self.layers_actor[0], 1)
+        init(self.layers_actor[2], 1)
+        init(self.layers_actor[4], 1)
+        init(self.layers_actor[7], 1)
         init(self.layers_actor[9], 0.01)
 
         self.actor = Actor(action_dim, self.layers_actor, head)
