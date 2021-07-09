@@ -4,7 +4,7 @@ import numpy as np
 from torch.distributions import Categorical, MultivariateNormal, Normal
 
 from agents import TYPE
-from modules import init
+from modules import init_orthogonal, init_uniform
 from modules.forward_models.ForwardModelAtari import ForwardModelAtari
 from modules.rnd_models.RNDModelAeris import RNDModelAeris, QRNDModelAeris, DOPModelAeris
 from modules.rnd_models.RNDModelAtari import RNDModelAtari
@@ -54,10 +54,8 @@ class ContinuousHead(nn.Module):
             nn.Softplus()
         )
 
-        nn.init.orthogonal_(self.mu[0].weight, 0.01)
-        nn.init.zeros_(self.mu[0].bias)
-        nn.init.orthogonal_(self.var[0].weight, 1)
-        nn.init.zeros_(self.var[0].bias)
+        init_uniform(self.mu[0], 0.03)
+        init_uniform(self.var[0], 0.03)
 
         self.action_dim = action_dim
 
@@ -75,8 +73,8 @@ class ContinuousHead(nn.Module):
         dim = probs.shape[1]
         mu, var = probs[:, :dim // 2], probs[:, dim // 2:]
 
-        p1 = -((actions - mu) ** 2) / (2.0 * var + 0.1)
-        p2 = -torch.log(torch.sqrt(2.0 * np.pi * var))
+        p1 = - ((actions - mu) ** 2) / (2.0 * var.clamp(min=1e-3))
+        p2 = - torch.log(torch.sqrt(2.0 * np.pi * var))
 
         log_prob = p1 + p2
 
@@ -163,8 +161,8 @@ class Critic2Heads(nn.Module):
         self.ext = nn.Linear(input_dim, 1)
         self.int = nn.Linear(input_dim, 1)
 
-        init(self.ext, 0.01)
-        init(self.int, 0.01)
+        init_orthogonal(self.ext, 0.01)
+        init_orthogonal(self.int, 0.01)
 
     def forward(self, x):
         ext_value = self.ext(x)
@@ -177,7 +175,7 @@ class Residual(torch.nn.Module):
         super(Residual, self).__init__()
 
         self.layer = nn.Linear(features, features)
-        init(self.layer, 0.01)
+        init_orthogonal(self.layer, 0.01)
 
     def forward(self, x):
         return x + self.layer(x)
@@ -224,58 +222,58 @@ class PPOAerisNetwork(torch.nn.Module):
 
         fc_count = config.critic_kernels_count * self.width // 4
 
-        # self.features = nn.Sequential(
-        #     nn.Conv1d(self.channels, config.critic_kernels_count, kernel_size=8, stride=4, padding=2),
-        #     nn.ReLU(),
-        #     nn.Conv1d(config.critic_kernels_count, config.critic_kernels_count * 2, kernel_size=4, stride=2, padding=1),
-        #     nn.ReLU(),
-        #     nn.Conv1d(config.critic_kernels_count * 2, config.critic_kernels_count * 2, kernel_size=3, stride=1, padding=1),
-        #     nn.ReLU(),
-        #     nn.Flatten(),
-        #     nn.Linear(fc_count, fc_count),
-        #     nn.ReLU()
-        # )
+        self.features = nn.Sequential(
+            nn.Conv1d(self.channels, config.critic_kernels_count, kernel_size=8, stride=4, padding=2),
+            nn.ReLU(),
+            nn.Conv1d(config.critic_kernels_count, config.critic_kernels_count * 2, kernel_size=4, stride=2, padding=1),
+            nn.ReLU(),
+            nn.Conv1d(config.critic_kernels_count * 2, config.critic_kernels_count * 2, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(fc_count, fc_count),
+            nn.ReLU()
+        )
 
-        # init(self.features[0], np.sqrt(2))
-        # init(self.features[2], np.sqrt(2))
-        # init(self.features[4], np.sqrt(2))
-        # init(self.features[7], np.sqrt(2))
+        init_orthogonal(self.features[0], np.sqrt(2))
+        init_orthogonal(self.features[2], np.sqrt(2))
+        init_orthogonal(self.features[4], np.sqrt(2))
+        init_orthogonal(self.features[7], np.sqrt(2))
 
         fc_count = config.critic_kernels_count * self.width // 4
 
         self.critic = nn.Sequential(
-            nn.Conv1d(self.channels, config.critic_kernels_count, kernel_size=8, stride=4, padding=2),
-            nn.ReLU(),
-            nn.Flatten(),
+            # nn.Conv1d(self.channels, config.critic_kernels_count, kernel_size=8, stride=4, padding=2),
+            # nn.ReLU(),
+            # nn.Flatten(),
             nn.Linear(fc_count, config.critic_h1),
             nn.ReLU(),
             nn.Linear(config.critic_h1, 1))
 
         nn.init.xavier_uniform_(self.critic[0].weight)
-        nn.init.xavier_uniform_(self.critic[3].weight)
-        nn.init.uniform_(self.critic[5].weight, -0.003, 0.003)
+        nn.init.xavier_uniform_(self.critic[2].weight)
+        # nn.init.uniform_(self.critic[5].weight, -0.003, 0.003)
 
         fc_count = config.actor_kernels_count * self.width // 4
 
         self.layers_actor = [
-            nn.Conv1d(self.channels, config.actor_kernels_count, kernel_size=8, stride=4, padding=2),
-            nn.ReLU(),
-            nn.Flatten(),
+            # nn.Conv1d(self.channels, config.actor_kernels_count, kernel_size=8, stride=4, padding=2),
+            # nn.ReLU(),
+            # nn.Flatten(),
             nn.Linear(fc_count, config.actor_h1),
             nn.ReLU()]
 
         nn.init.xavier_uniform_(self.layers_actor[0].weight)
-        nn.init.xavier_uniform_(self.layers_actor[3].weight)
+        # nn.init.xavier_uniform_(self.layers_actor[3].weight)
 
         self.actor = Actor(action_dim, self.layers_actor, head)
 
     def forward(self, state):
-        # x = self.features(state)
-        x = state
+        x = self.features(state)
+        # x = state
         value = self.critic(x)
         action, probs = self.actor(x)
 
-        return value, action, probs
+        return value, torch.tanh(action), probs
 
 
 class PPOAerisMotivationNetwork(PPOAerisNetwork):
@@ -404,12 +402,12 @@ class PPOAtariNetwork(torch.nn.Module):
             nn.ReLU()
         ]
 
-        init(self.layers_features[0], np.sqrt(2))
-        init(self.layers_features[2], np.sqrt(2))
-        init(self.layers_features[4], np.sqrt(2))
-        init(self.layers_features[6], np.sqrt(2))
-        init(self.layers_features[9], 0.01)
-        init(self.layers_features[11], 0.01)
+        init_orthogonal(self.layers_features[0], np.sqrt(2))
+        init_orthogonal(self.layers_features[2], np.sqrt(2))
+        init_orthogonal(self.layers_features[4], np.sqrt(2))
+        init_orthogonal(self.layers_features[6], np.sqrt(2))
+        init_orthogonal(self.layers_features[9], 0.01)
+        init_orthogonal(self.layers_features[11], 0.01)
 
         self.layers_value = [
             Residual(self.feature_dim),
@@ -417,14 +415,14 @@ class PPOAtariNetwork(torch.nn.Module):
             torch.nn.Linear(self.feature_dim, 1)
         ]
 
-        init(self.layers_value[2], 0.01)
+        init_orthogonal(self.layers_value[2], 0.01)
 
         self.layers_policy = [
             torch.nn.Linear(self.feature_dim, self.feature_dim),
             torch.nn.ReLU(),
         ]
 
-        init(self.layers_policy[0], 0.01)
+        init_orthogonal(self.layers_policy[0], 0.01)
 
         self.features = nn.Sequential(*self.layers_features)
         self.critic = nn.Sequential(*self.layers_value)

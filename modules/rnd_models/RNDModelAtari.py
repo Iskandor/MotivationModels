@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-from modules import init
+from modules import init_orthogonal
 
 
 class RNDModelAtari(nn.Module):
@@ -31,10 +31,10 @@ class RNDModelAtari(nn.Module):
             nn.Linear(fc_inputs_count, self.feature_dim)
         )
 
-        init(self.target_model[0], np.sqrt(2))
-        init(self.target_model[2], np.sqrt(2))
-        init(self.target_model[4], np.sqrt(2))
-        init(self.target_model[7], np.sqrt(2))
+        init_orthogonal(self.target_model[0], np.sqrt(2))
+        init_orthogonal(self.target_model[2], np.sqrt(2))
+        init_orthogonal(self.target_model[4], np.sqrt(2))
+        init_orthogonal(self.target_model[7], np.sqrt(2))
 
         for param in self.target_model.parameters():
             param.requires_grad = False
@@ -54,12 +54,12 @@ class RNDModelAtari(nn.Module):
             nn.Linear(self.feature_dim, self.feature_dim)
         )
 
-        init(self.model[0], np.sqrt(2))
-        init(self.model[2], np.sqrt(2))
-        init(self.model[4], np.sqrt(2))
-        init(self.model[7], np.sqrt(2))
-        init(self.model[9], np.sqrt(2))
-        init(self.model[11], np.sqrt(2))
+        init_orthogonal(self.model[0], np.sqrt(2))
+        init_orthogonal(self.model[2], np.sqrt(2))
+        init_orthogonal(self.model[4], np.sqrt(2))
+        init_orthogonal(self.model[7], np.sqrt(2))
+        init_orthogonal(self.model[9], np.sqrt(2))
+        init_orthogonal(self.model[11], np.sqrt(2))
 
     def forward(self, state):
         x = state[:, 0, :, :].unsqueeze(1)

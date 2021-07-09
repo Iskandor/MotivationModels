@@ -22,7 +22,7 @@ def run_baseline(config, i):
     else:
         experiment = ExperimentPPO('LunarLanderContinuous-v2', env, config)
 
-    agent = PPOSimpleAgent(state_dim, action_dim, config, TYPE.continuous, config.n_env)
+    agent = PPOSimpleAgent(state_dim, action_dim, config, TYPE.continuous)
     experiment.run_baseline(agent, i)
 
     env.close()

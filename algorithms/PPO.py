@@ -7,7 +7,7 @@ from utils import *
 
 class PPO:
     def __init__(self, network, lr, actor_loss_weight, critic_loss_weight, batch_size, trajectory_size, memory, p_beta, p_gamma,
-                 ppo_epochs=10, p_epsilon=0.2, p_lambda=0.95, weight_decay=0, device='cpu', n_env=1, motivation=None):
+                 ppo_epochs=10, p_epsilon=0.1, p_lambda=0.95, weight_decay=0, device='cpu', n_env=1, motivation=None):
         self._network = network
         self._optimizer = torch.optim.Adam(self._network.parameters(), lr=lr, weight_decay=weight_decay)
         self._beta = p_beta
@@ -115,11 +115,10 @@ class PPO:
         last_gae = torch.zeros(self._n_env, 1)
 
         for n in reversed(range(buffer_size - 1)):
-            delta = rewards[n, :] + dones[n, :] * gamma * values[n + 1, :] - values[n, :]
-            last_gae = delta + dones[n, :] * gamma * self._lambda * last_gae
-
-            returns[n, :] = last_gae + values[n, :]
-            advantages[n, :] = last_gae
+            delta = rewards[n, :, :] + dones[n, :, :] * gamma * values[n + 1, :, :] - values[n, :, :]
+            advantages[n, :, :] = delta + dones[n, :, :] * gamma * self._lambda * advantages[n + 1, :, :]
+            returns[n, :, :] = advantages[n, :, :] + values[n, :, :]
+            # advantages[n, :, :] = last_gae
 
         return returns, advantages
 
@@ -138,8 +137,6 @@ class PPO:
         for d, gl in zip(delta, gamma_lambda):
             last_gae = d + gl * last_gae
             adv_v.append(last_gae)
-
-        # map(PPO.func, )
 
         adv_v = torch.tensor(adv_v, dtype=torch.float32, device=values.device).flip(0)
         ref_v = adv_v + val.flip(0)

@@ -16,8 +16,8 @@ class RunningAverage:
 
 
 class RunningAverageWindow:
-    def __init__(self, window=1):
-        self._cma = np.zeros(window)
+    def __init__(self, window=1, size=1):
+        self._cma = np.zeros((window, size))
         self._n = 0
         self._window = window
 
@@ -28,7 +28,7 @@ class RunningAverageWindow:
             self._n = 0
 
     def value(self):
-        return self._cma.mean()
+        return self._cma.mean(axis=0)
 
 
 class StepCounter:

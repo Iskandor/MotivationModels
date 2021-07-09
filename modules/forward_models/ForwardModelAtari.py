@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from modules import init
+from modules import init_orthogonal
 
 
 class ForwardModelAtari(nn.Module):
@@ -20,9 +20,9 @@ class ForwardModelAtari(nn.Module):
             nn.Linear(self.feature_dim, self.feature_dim)
         ]
 
-        init(self.layers_forward_model[0], 0.1)
-        init(self.layers_forward_model[2], 0.01)
-        init(self.layers_forward_model[4], 0.01)
+        init_orthogonal(self.layers_forward_model[0], 0.1)
+        init_orthogonal(self.layers_forward_model[2], 0.01)
+        init_orthogonal(self.layers_forward_model[4], 0.01)
 
         self.forward_model = nn.Sequential(*self.layers_forward_model)
 
