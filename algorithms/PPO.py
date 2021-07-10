@@ -50,11 +50,19 @@ class PPO:
             else:
                 adv_values, ref_values = self.calc_advantage(values, rewards, dones, self._gamma[0])
 
-            states = states.reshape(-1, *states.shape[2:])[torch.randperm(self._trajectory_size)]
-            actions = actions.reshape(-1, *actions.shape[2:])[torch.randperm(self._trajectory_size)]
-            probs = probs.reshape(-1, *probs.shape[2:])[torch.randperm(self._trajectory_size)]
-            adv_values = adv_values.reshape(-1, *adv_values.shape[2:])[torch.randperm(self._trajectory_size)]
-            ref_values = ref_values.reshape(-1, *ref_values.shape[2:])[torch.randperm(self._trajectory_size)]
+            permutation = torch.randperm(self._trajectory_size)
+
+            states = states.reshape(-1, *states.shape[2:])[permutation]
+            actions = actions.reshape(-1, *actions.shape[2:])[permutation]
+            probs = probs.reshape(-1, *probs.shape[2:])[permutation]
+            adv_values = adv_values.reshape(-1, *adv_values.shape[2:])[permutation]
+            ref_values = ref_values.reshape(-1, *ref_values.shape[2:])[permutation]
+
+            # states = states.reshape(-1, *states.shape[2:])
+            # actions = actions.reshape(-1, *actions.shape[2:])
+            # probs = probs.reshape(-1, *probs.shape[2:])
+            # adv_values = adv_values.reshape(-1, *adv_values.shape[2:])
+            # ref_values = ref_values.reshape(-1, *ref_values.shape[2:])
 
             self._train(states, actions, probs, adv_values, ref_values)
 
@@ -62,7 +70,7 @@ class PPO:
             print("Trajectory {0:d} batch size {1:d} epochs {2:d} training time {3:.2f}s".format(self._trajectory_size, self._batch_size, self._ppo_epochs, end - start))
 
     def _train(self, states, actions, probs, adv_values, ref_values):
-        adv_values = (adv_values - torch.mean(adv_values)) / torch.std(adv_values)
+        adv_values = (adv_values - torch.mean(adv_values)) / (torch.std(adv_values) + 1e-8)
 
         for epoch in range(self._ppo_epochs):
             for batch_ofs in range(0, self._trajectory_size, self._batch_size):
