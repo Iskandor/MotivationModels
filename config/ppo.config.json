@@ -385,7 +385,7 @@
     "1": {
       "model": "baseline",
       "n_env": 1,
-      "trials": 1,
+      "trials": 15,
       "steps": 1,
       "gamma": "0.99",
       "beta": 0.001,
@@ -393,7 +393,7 @@
       "lr": 0.00025,
       "batch_size": 1024,
       "trajectory_size": 4096,
-      "actor_loss_weight": 0.5,
+      "actor_loss_weight": 1,
       "actor_h1": 128,
       "actor_h2": 64,
       "critic_loss_weight": 1,

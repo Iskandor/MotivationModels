@@ -50,11 +50,11 @@ class PPO:
             else:
                 adv_values, ref_values = self.calc_advantage(values, rewards, dones, self._gamma[0])
 
-            states = states.reshape(-1, *states.shape[2:])
-            actions = actions.reshape(-1, *actions.shape[2:])
-            probs = probs.reshape(-1, *probs.shape[2:])
-            adv_values = adv_values.reshape(-1, *adv_values.shape[2:])
-            ref_values = ref_values.reshape(-1, *ref_values.shape[2:])
+            states = states.reshape(-1, *states.shape[2:])[torch.randperm(self._trajectory_size)]
+            actions = actions.reshape(-1, *actions.shape[2:])[torch.randperm(self._trajectory_size)]
+            probs = probs.reshape(-1, *probs.shape[2:])[torch.randperm(self._trajectory_size)]
+            adv_values = adv_values.reshape(-1, *adv_values.shape[2:])[torch.randperm(self._trajectory_size)]
+            ref_values = ref_values.reshape(-1, *ref_values.shape[2:])[torch.randperm(self._trajectory_size)]
 
             self._train(states, actions, probs, adv_values, ref_values)
 
