@@ -31,7 +31,7 @@ class RNDModelAeris(nn.Module):
         self._init(self.target_model[0], np.sqrt(2))
         self._init(self.target_model[2], np.sqrt(2))
         self._init(self.target_model[4], np.sqrt(2))
-        self._init(self.target_model[7], 0.5)
+        self._init(self.target_model[7], np.sqrt(2))
 
         for param in self.target_model.parameters():
             param.requires_grad = False
@@ -123,7 +123,7 @@ class QRNDModelAeris(nn.Module):
         self._init(self.target_model[0], np.sqrt(2))
         self._init(self.target_model[2], np.sqrt(2))
         self._init(self.target_model[4], np.sqrt(2))
-        self._init(self.target_model[7], 0.5)
+        self._init(self.target_model[7], np.sqrt(2))
 
         for param in self.target_model.parameters():
             param.requires_grad = False

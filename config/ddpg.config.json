@@ -60,7 +60,7 @@
     "1": {
       "model": "baseline",
       "sigma": 1,
-      "exploration_time": 1,
+      "exploration_time": 0.9,
       "trials": 15,
       "steps": 0.6,
       "gamma": 0.99,
@@ -75,6 +75,23 @@
       "critic_h1": 256
     },
     "2": {
+      "model": "baseline",
+      "sigma": 0,
+      "exploration_time": 0,
+      "trials": 15,
+      "steps": 0.6,
+      "gamma": 0.99,
+      "tau ": 0.005,
+      "batch_size": 32,
+      "memory_size": 100000,
+      "actor_lr": 0.0001,
+      "actor_kernels_count": 32,
+      "actor_h1": 64,
+      "critic_lr": 0.0002,
+      "critic_kernels_count": 32,
+      "critic_h1": 256
+    },
+    "3": {
       "model": "rnd",
       "sigma": 0,
       "exploration_time": 0,
@@ -96,7 +113,7 @@
       "forward_model_variant": "A",
       "forward_model_batch_size": 4
     },
-    "3": {
+    "4": {
       "model": "qrnd",
       "sigma": 0,
       "exploration_time": 0,
@@ -118,7 +135,7 @@
       "forward_model_variant": "A",
       "forward_model_batch_size": 4
     },
-    "4": {
+    "5": {
       "model": "dop",
       "sigma": 0,
       "exploration_time": 0,
@@ -559,7 +576,7 @@
     "1": {
       "model": "baseline",
       "sigma": 1,
-      "exploration_time": 1,
+      "exploration_time": 0.9,
       "trials": 15,
       "steps": 1,
       "gamma": 0.99,
@@ -574,6 +591,23 @@
       "critic_h1": 256
     },
     "2": {
+      "model": "baseline",
+      "sigma": 0,
+      "exploration_time": 0,
+      "trials": 15,
+      "steps": 1,
+      "gamma": 0.99,
+      "tau ": 0.005,
+      "batch_size": 32,
+      "memory_size": 100000,
+      "actor_lr": 0.0001,
+      "actor_kernels_count": 32,
+      "actor_h1": 64,
+      "critic_lr": 0.0002,
+      "critic_kernels_count": 32,
+      "critic_h1": 256
+    },
+    "3": {
       "model": "rnd",
       "sigma": 0,
       "exploration_time": 0,
@@ -595,7 +629,7 @@
       "forward_model_variant": "A",
       "forward_model_batch_size": 4
     },
-    "3": {
+    "4": {
       "model": "qrnd",
       "sigma": 0,
       "exploration_time": 0,
@@ -617,7 +651,7 @@
       "forward_model_variant": "A",
       "forward_model_batch_size": 4
     },
-    "4": {
+    "5": {
       "model": "dop",
       "sigma": 0,
       "exploration_time": 0,
