@@ -29,7 +29,7 @@ class DDPG:
             self.train(states, actions, next_states, rewards, masks)
 
     def train(self, states, actions, next_states, rewards, masks):
-        expected_values = rewards + masks * self._gamma * self.network.value_target(next_states, self.network.action_target(next_states).detach()).detach()
+        expected_values = rewards + masks * self._gamma * self.network.value_target(next_states, self.network.action_target(next_states))
 
         self._critic_optimizer.zero_grad()
         loss = torch.nn.functional.mse_loss(self.network.value(states, actions), expected_values)

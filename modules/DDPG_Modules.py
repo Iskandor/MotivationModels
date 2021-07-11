@@ -131,12 +131,14 @@ class DDPGNetwork(nn.Module):
         return policy
 
     def value_target(self, state, action):
-        x = torch.cat([state, action], dim=1)
-        value = self.critic_target(x)
+        with torch.no_grad():
+            x = torch.cat([state, action], dim=1)
+            value = self.critic_target(x)
         return value
 
     def action_target(self, state):
-        policy = self.actor_target(state)
+        with torch.no_grad():
+            policy = self.actor_target(state)
         return policy
 
     def soft_update(self, tau):
@@ -297,9 +299,10 @@ class DDPGAerisNetwork(DDPGNetwork):
         return value
 
     def value_target(self, state, action):
-        a = action.unsqueeze(state.ndim - 1).repeat(1, 1, state.shape[2])
-        x = torch.cat([state, a], dim=1)
-        value = self.critic_target(x)
+        with torch.no_grad():
+            a = action.unsqueeze(state.ndim - 1).repeat(1, 1, state.shape[2])
+            x = torch.cat([state, a], dim=1)
+            value = self.critic_target(x)
         return value
 
 
@@ -415,15 +418,16 @@ class DDPGAerisNetworkDOP(DDPGAerisNetwork):
         return self.argmax
 
     def action_target(self, state):
-        action = self.actor_target(state)
+        with torch.no_grad():
+            action = self.actor_target(state)
 
-        state = state.unsqueeze(1).repeat(1, self.head_count, 1, 1).view(-1, self.channels, self.width)
-        action = action.view(-1, self.action_dim)
+            state = state.unsqueeze(1).repeat(1, self.head_count, 1, 1).view(-1, self.channels, self.width)
+            action = action.view(-1, self.action_dim)
 
-        error = self.motivator.error(state, action).view(-1, self.head_count).detach()
-        action = action.view(-1, self.head_count, self.action_dim)
-        argmax = error.argmax(dim=1)
-        action = action.gather(dim=1, index=argmax.unsqueeze(-1).unsqueeze(-1).repeat(1, 1, self.action_dim))
+            error = self.motivator.error(state, action).view(-1, self.head_count).detach()
+            action = action.view(-1, self.head_count, self.action_dim)
+            argmax = error.argmax(dim=1)
+            action = action.gather(dim=1, index=argmax.unsqueeze(-1).unsqueeze(-1).repeat(1, 1, self.action_dim))
 
         return action.squeeze(1)
 

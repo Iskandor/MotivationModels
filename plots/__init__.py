@@ -41,5 +41,7 @@ def plot(config, plot_overview=True, plot_details=False, window=1000):
                 plot_baseline_details(d, path, window=window)
             if model == 'rnd':
                 plot_forward_model_details(d, path, window=window)
+            if model == 'qrnd':
+                plot_forward_model_details(d, path, window=window)
             if model == 'dop':
                 plot_dop_model_details(d, path, window=window)
