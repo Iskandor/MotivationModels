@@ -15,6 +15,9 @@ def create_env(env_id):
         env = gym_aeris.envs.AvoidHazardsEnv()
     if env_id == 'TargetNavigate-v0':
         env = gym_aeris.envs.TargetNavigateEnv()
+    if env_id == 'FoodGathering-v0':
+        env = gym_aeris.envs.FoodGatheringEnv()
+
     return env
 
 

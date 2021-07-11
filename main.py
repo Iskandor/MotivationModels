@@ -14,6 +14,7 @@ import torch
 import A2C_Breakout
 import DDPG_AerisAvoidFragiles
 import DDPG_AerisAvoidHazards
+import DDPG_AerisFoodGather
 import DDPG_AerisTargetNavigate
 import DDPG_Ant
 import DDPG_HalfCheetah
@@ -62,6 +63,8 @@ def set_env_class_ddpg(env):
         env_class = DDPG_AerisAvoidHazards
     if env == 'aeris_fragiles':
         env_class = DDPG_AerisAvoidFragiles
+    if env == 'aeris_gather':
+        env_class = DDPG_AerisFoodGather
 
     return env_class
 
