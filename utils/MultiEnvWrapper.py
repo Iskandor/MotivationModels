@@ -59,7 +59,15 @@ class MultiEnvParallel:
         obs = self.observations
         reward = self.rewards
         done = self.dones
-        info = self.infos
+        info = {}
+        for i in self.infos:
+            for k in i:
+                if k not in info:
+                    info[k] = []
+                info[k].append(i[k])
+
+        for k in info:
+            info[k] = numpy.stack(info[k])
 
         return obs, reward, done, info
 

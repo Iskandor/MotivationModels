@@ -150,12 +150,103 @@ class EpisodicLifeEnv(gym.Wrapper):
         return obs
 
 
+class StickyActionEnv(gym.Wrapper):
+    def __init__(self, env, p=0.25):
+        super(StickyActionEnv, self).__init__(env)
+        self.p = p
+        self.last_action = 0
+
+    def step(self, action):
+        if numpy.random.uniform() < self.p:
+            action = self.last_action
+
+        self.last_action = action
+        return self.env.step(action)
+
+    def reset(self):
+        self.last_action = 0
+        return self.env.reset()
+
+
+class RepeatActionEnv(gym.Wrapper):
+    def __init__(self, env):
+        gym.Wrapper.__init__(self, env)
+        self.successive_frame = numpy.zeros((2,) + self.env.observation_space.shape, dtype=numpy.uint8)
+
+    def reset(self, **kwargs):
+        return self.env.reset(**kwargs)
+
+    def step(self, action):
+        reward, done = 0, False
+        for t in range(4):
+            state, r, done, info = self.env.step(action)
+            if t == 2:
+                self.successive_frame[0] = state
+            elif t == 3:
+                self.successive_frame[1] = state
+            reward += r
+            if done:
+                break
+
+        state = self.successive_frame.max(axis=0)
+        return state, reward, done, info
+
+
+class RawScoreEnv(gym.Wrapper):
+    def __init__(self, env, max_steps):
+        gym.Wrapper.__init__(self, env)
+
+        self.steps = 0
+        self.max_steps = max_steps
+
+        self.raw_episodes = 0
+        self.raw_score = 0.0
+        self.raw_score_per_episode = 0.0
+        self.raw_score_total = 0.0
+
+    def step(self, action):
+        obs, reward, done, info = self.env.step(action)
+        info['raw_score'] = reward
+
+        self.steps += 1
+        if self.steps >= self.max_steps:
+            self.steps = 0
+            done = True
+
+        self.raw_score += reward
+        self.raw_score_total += reward
+        if done:
+            self.steps = 0
+            self.raw_episodes += 1
+
+            k = 0.1
+            self.raw_score_per_episode = (1.0 - k) * self.raw_score_per_episode + k * self.raw_score
+            self.raw_score = 0.0
+
+        reward = float(numpy.sign(reward))
+
+        return obs, reward, done, info
+
+    def reset(self):
+        self.steps = 0
+        return self.env.reset()
+
+
 def WrapperAtari(env, height=96, width=96, frame_stacking=4, frame_skipping=4, reward_scale=1.0, dense_rewards=1.0):
     env = NopOpsEnv(env)
     env = FireResetEnv(env)
     env = MaxAndSkipEnv(env, frame_skipping)
     env = ResizeEnv(env, height, width, frame_stacking)
     env = EpisodicLifeEnv(env, reward_scale, dense_rewards)
+
+    return env
+
+
+def WrapperHardAtari(env, height=96, width=96, frame_stacking=4, max_steps=4500):
+    env = StickyActionEnv(env)
+    env = RepeatActionEnv(env)
+    env = ResizeEnv(env, height, width, frame_stacking)
+    env = RawScoreEnv(env, max_steps)
 
     return env
 
