@@ -10,16 +10,16 @@ class ARCH(Enum):
     atari = 3
 
 
-def init_orthogonal(layer, gain):
+def init_orthogonal(layer, gain=1.0):
     nn.init.orthogonal_(layer.weight, gain)
     nn.init.zeros_(layer.bias)
 
 
-def init_xavier_uniform(layer, gain):
+def init_xavier_uniform(layer, gain=1.0):
     nn.init.xavier_uniform_(layer.weight, gain)
     nn.init.zeros_(layer.bias)
 
 
-def init_uniform(layer, gain):
+def init_uniform(layer, gain=1.0):
     nn.init.uniform_(layer.weight, -gain, gain)
     nn.init.zeros_(layer.bias)

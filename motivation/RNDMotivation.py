@@ -75,6 +75,9 @@ class QRNDMotivation:
         reward = torch.tanh(self.error(state0, action0)).unsqueeze(1)
         return reward * self._eta
 
+    def update_state_average(self, state):
+        self._network.update_state_average(state)
+
 
 class DOPSimpleMotivation:
     def __init__(self, network, lr, eta=1, memory_buffer=None, device='cpu'):
@@ -89,8 +92,8 @@ class DOPSimpleMotivation:
         if indices:
             sample = self._memory.sample(indices)
 
-            states = torch.stack(sample.state).squeeze(1)
-            actions = torch.stack(sample.action).squeeze(1)
+            states = sample.state
+            actions = sample.action
 
             self._motivator_optimizer.zero_grad()
             loss = self.network.motivator_loss_function(states, actions)
@@ -109,8 +112,8 @@ class DOPSimpleMotivation:
     def reward_sample(self, indices):
         sample = self._memory.sample(indices)
 
-        states = torch.stack(sample.state).squeeze(1)
-        actions = torch.stack(sample.action).squeeze(1)
+        states = sample.state
+        actions = sample.action
 
         return self.reward(states, actions)
 
@@ -133,12 +136,11 @@ class DOPMotivation:
         if indices:
             sample = self._memory.sample(indices)
 
-            states = torch.stack(sample.state).squeeze(1)
-            actions = torch.stack(sample.action).squeeze(1)
-            probs = torch.stack(sample.prob).squeeze(1)
+            states = sample.state
+            actions = sample.action
 
             self._motivator_optimizer.zero_grad()
-            loss = self._network.motivator_loss_function(states, probs)
+            loss = self._network.motivator_loss_function(states, actions)
             loss.backward()
             self._motivator_optimizer.step()
 
@@ -153,8 +155,8 @@ class DOPMotivation:
     def reward_sample(self, indices):
         sample = self._memory.sample(indices)
 
-        states = torch.stack(sample.state).squeeze(1)
-        actions = torch.stack(sample.action).squeeze(1)
+        states = sample.state
+        actions = sample.action
 
         return self.reward(states, actions)
 

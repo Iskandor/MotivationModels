@@ -123,7 +123,7 @@ class QRNDModelAeris(nn.Module):
         self._init(self.target_model[0], np.sqrt(2))
         self._init(self.target_model[2], np.sqrt(2))
         self._init(self.target_model[4], np.sqrt(2))
-        self._init(self.target_model[7], 0.1)
+        self._init(self.target_model[7], 0.5)
 
         for param in self.target_model.parameters():
             param.requires_grad = False
@@ -178,7 +178,7 @@ class QRNDModelAeris(nn.Module):
         return loss
 
     def update_state_average(self, state):
-        self.state_average = self.state_average * 0.99 + state * 0.01
+        self.state_average = self.state_average * 0.999 + state * 0.001
 
     def _init(self, layer, gain):
         nn.init.orthogonal_(layer.weight, gain)
@@ -208,16 +208,14 @@ class DOPModelAeris(nn.Module):
         return self.motivator.loss_function(state, action, prediction)
 
     def generator_loss_function(self, state):
-        x = self.features(state)
-        action, prob = self.actor(x)
+        if self.features is not None:
+            x = self.features(state)
+        else:
+            x = state
+        action = self.actor(x)
         action = action.view(-1, self.action_dim)
-        prob = prob.view(-1, self.action_dim)
+        # prob = prob.view(-1, self.action_dim)
         state = state.unsqueeze(1).repeat(1, self.actor.head_count, 1, 1).view(-1, self.state_dim[0], self.state_dim[1])
-        error = self.error(state, prob)
         # loss = self.actor.log_prob(prob, action) * error.unsqueeze(-1) * self.eta
-        loss = error.unsqueeze(-1) * self.eta
-        return -loss.mean()
-
-    def _init(self, layer, gain):
-        nn.init.orthogonal_(layer.weight, gain)
-        layer.bias.data.zero_()
+        loss = -self.error(state, action).unsqueeze(-1) * self.eta
+        return loss.mean()

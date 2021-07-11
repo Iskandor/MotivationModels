@@ -892,6 +892,7 @@ class ExperimentDDPG:
             train_steps = 0
 
             while not done:
+                agent.motivation.update_state_average(state0)
                 action0 = exploration.explore(agent.get_action(state0))
                 next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
                 reward = self.transform_reward(reward)
@@ -921,8 +922,8 @@ class ExperimentDDPG:
             train_ext_rewards.append(train_ext_reward)
             train_int_rewards.append(train_int_reward)
 
-            print('Run {0:d} step {1:d} sigma {2:f} training [ext. reward {3:f} int. reward {4:f} steps {5:d}] avg. ext. reward {6:f} avg. steps {7:f}'.format(
-                trial, steps, exploration.sigma, train_ext_reward, train_int_reward, train_steps, reward_avg.value(), step_avg.value()))
+            print('Run {0:d} step {1:d} sigma {2:f} training [ext. reward {3:f} int. reward {4:f} steps {5:d} ({6:f})] avg. ext. reward {7:f}'.format(
+                trial, steps, exploration.sigma, train_ext_reward, train_int_reward, train_steps, train_int_reward / train_steps, reward_avg.value().item()))
             print(bar)
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
@@ -947,10 +948,12 @@ class ExperimentDDPG:
         train_fm_errors = []
         train_ext_rewards = []
         train_int_rewards = []
+        train_head_index = []
         reward_avg = RunningAverageWindow(100)
         step_avg = RunningAverageWindow(100)
 
         bar = ProgressBar(config.steps * 1e6, max_width=40)
+        exploration = GaussianExploration(config.sigma, 0.01, config.steps * config.exploration_time * 1e6)
 
         while steps < step_limit:
             state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0)
@@ -958,20 +961,25 @@ class ExperimentDDPG:
             train_ext_reward = 0
             train_int_reward = 0
             train_steps = 0
+            head_index_density = numpy.zeros(4)
 
             while not done:
-                base_action, action0, index = agent.get_action(state0)
+                agent.motivation.update_state_average(state0)
+                action0, head_index = agent.get_action(state0)
                 next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
                 reward = self.transform_reward(reward)
                 state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
+                reward = torch.tensor([reward], dtype=torch.float32).unsqueeze(0)
+                mask = torch.tensor([done], dtype=torch.float32).unsqueeze(0)
 
-                agent.train(state0, action0, base_action, index, state1, reward, done)
+                agent.train(state0, action0, state1, reward, mask)
                 train_steps += 1
 
-                train_ext_reward += reward
+                train_ext_reward += reward.item()
                 train_int_reward += agent.motivation.reward(state0, action0).item()
                 train_fm_error = agent.motivation.error(state0, action0).item()
                 train_fm_errors.append(train_fm_error)
+                head_index_density[head_index.item()] += 1
 
                 state0 = state1
 
@@ -979,15 +987,17 @@ class ExperimentDDPG:
             if steps > step_limit:
                 train_steps -= steps - step_limit
             bar.numerator = steps
+            exploration.update(steps)
 
             reward_avg.update(train_ext_reward)
             step_avg.update(train_steps)
             steps_per_episode.append(train_steps)
             train_ext_rewards.append(train_ext_reward)
             train_int_rewards.append(train_int_reward)
+            train_head_index.append(head_index_density)
 
-            print('Run {0:d} step {1:d} training [ext. reward {2:f} int. reward {3:f} steps {4:d}] avg. ext. reward {5:f} avg. steps {6:f}'.format(
-                trial, steps, train_ext_reward, train_int_reward, train_steps, reward_avg.value(), step_avg.value()))
+            print('Run {0:d} step {1:d} sigma {2:f} training [ext. reward {3:f} int. reward {4:f} steps {5:d} ({6:f})] avg. ext. reward {7:f} density {8:s}'.format(
+                trial, steps, exploration.sigma, train_ext_reward, train_int_reward, train_steps, train_int_reward / train_steps, reward_avg.value().item(), numpy.array2string(head_index_density)))
             print(bar)
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
@@ -997,7 +1007,8 @@ class ExperimentDDPG:
             'steps': numpy.array(steps_per_episode),
             're': numpy.array(train_ext_rewards),
             'ri': numpy.array(train_int_rewards),
-            'fme': numpy.array(train_fm_errors[:step_limit])
+            'fme': numpy.array(train_fm_errors[:step_limit]),
+            'hid': numpy.stack(train_head_index)
         }
         numpy.save('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
 

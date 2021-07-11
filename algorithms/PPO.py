@@ -124,9 +124,10 @@ class PPO:
 
         for n in reversed(range(buffer_size - 1)):
             delta = rewards[n, :, :] + dones[n, :, :] * gamma * values[n + 1, :, :] - values[n, :, :]
-            advantages[n, :, :] = delta + dones[n, :, :] * gamma * self._lambda * advantages[n + 1, :, :]
-            returns[n, :, :] = advantages[n, :, :] + values[n, :, :]
-            # advantages[n, :, :] = last_gae
+            last_gae = delta + dones[n, :, :] * gamma * self._lambda * last_gae
+
+            returns[n, :, :] = last_gae + values[n, :, :]
+            advantages[n, :, :] = last_gae
 
         return returns, advantages
 

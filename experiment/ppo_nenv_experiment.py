@@ -144,7 +144,7 @@ class ExperimentNEnvPPO:
 
             state1 = self.process_state(next_state)
             reward = torch.tensor(reward, dtype=torch.float32)
-            done = 1 - torch.tensor(done, dtype=torch.float32)
+            done = torch.tensor(done, dtype=torch.float32)
 
             agent.train(state0, value, action0, probs0, state1, reward, done)
 
@@ -230,7 +230,7 @@ class ExperimentNEnvPPO:
             state1 = self.process_state(next_state)
 
             reward = torch.cat([ext_reward, int_reward], dim=1)
-            done = 1 - torch.tensor(done, dtype=torch.float32)
+            done = torch.tensor(done, dtype=torch.float32)
 
             agent.train(state0, value, action0, probs0, state1, reward, done)
 

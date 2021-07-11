@@ -4,7 +4,7 @@ from algorithms.DDPG import DDPG
 from algorithms.ReplayBuffer import ExperienceReplayBuffer, M2ReplayBuffer, DOPReplayBuffer
 from modules.DDPG_Modules import DDPGSimpleNetwork, DDPGAerisNetwork, DDPGAerisNetworkFM, DDPGAerisNetworkFME, DDPGAerisNetworkIM, DDPGAerisNetworkM2, DDPGAerisNetworkFIM, DDPGAerisNetworkSU, \
     DDPGAerisNetworkRND, DDPGAerisNetworkSURND, DDPGBulletNetwork, DDPGBulletNetworkFM, DDPGBulletNetworkSU, DDPGBulletNetworkRND, DDPGBulletNetworkSURND, DDPGBulletNetworkQRND, DDPGBulletNetworkDOP, \
-    DDPGBulletNetworkDOPSimple, DDPGAerisNetworkQRND
+    DDPGBulletNetworkDOPSimple, DDPGAerisNetworkQRND, DDPGAerisNetworkDOP
 from motivation.ForwardInverseModelMotivation import ForwardInverseModelMotivation
 from motivation.ForwardModelMotivation import ForwardModelMotivation
 from motivation.M2Motivation import M2Motivation
@@ -289,7 +289,7 @@ class DDPGAerisRNDModelAgent(DDPGAgent):
         super().__init__(state_dim, action_dim, config)
         self.network = DDPGAerisNetworkRND(state_dim, action_dim, config)
         self.memory = ExperienceReplayBuffer(config.memory_size)
-        self.motivation = RNDMotivation(self.network.rnd_model, config.forward_model_lr, config.forward_model_eta, self.memory)
+        self.motivation = RNDMotivation(self.network.rnd_model, config.forward_model_lr, config.motivation_eta, self.memory)
         self.algorithm = DDPG(self.network, config.actor_lr, config.critic_lr, config.gamma, config.tau, self.memory, config.batch_size, self.motivation)
 
     def train(self, state0, action0, state1, reward, mask):
@@ -303,8 +303,27 @@ class DDPGAerisQRNDModelAgent(DDPGAgent):
         super().__init__(state_dim, action_dim, config)
         self.network = DDPGAerisNetworkQRND(state_dim, action_dim, config)
         self.memory = ExperienceReplayBuffer(config.memory_size)
-        self.motivation = QRNDMotivation(self.network.qrnd_model, config.forward_model_lr, config.forward_model_eta, self.memory)
+        self.motivation = QRNDMotivation(self.network.qrnd_model, config.forward_model_lr, config.motivation_eta, self.memory)
         self.algorithm = DDPG(self.network, config.actor_lr, config.critic_lr, config.gamma, config.tau, self.memory, config.batch_size, self.motivation)
+
+    def train(self, state0, action0, state1, reward, mask):
+        self.memory.add(state0, action0, state1, reward, mask)
+        self.algorithm.train_sample(self.memory.indices(self.config.batch_size))
+        self.motivation.train(self.memory.indices(self.config.forward_model_batch_size))
+
+
+class DDPGAerisDOPAgent(DDPGAgent):
+    def __init__(self, input_shape, action_dim, config):
+        super().__init__(input_shape, action_dim, config)
+        self.memory = ExperienceReplayBuffer(config.memory_size)
+        self.network = DDPGAerisNetworkDOP(input_shape, action_dim, config).to(config.device)
+        self.motivation = DOPMotivation(self.network.dop_model, config.forward_model_lr, config.motivation_eta, self.memory, config.device)
+        self.algorithm = DDPG(self.network, config.actor_lr, config.critic_lr, config.gamma, config.tau, self.memory, config.batch_size)
+
+    def get_action(self, state):
+        action = self.network.action(state)
+        index = self.network.index()
+        return action.detach(), index
 
     def train(self, state0, action0, state1, reward, mask):
         self.memory.add(state0, action0, state1, reward, mask)

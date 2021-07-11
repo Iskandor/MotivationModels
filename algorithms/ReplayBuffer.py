@@ -50,7 +50,7 @@ class ExperienceReplayBuffer(ReplayBuffer):
         self.memory['action'][self.index] = action
         self.memory['next_state'][self.index] = next_state
         self.memory['reward'][self.index] = reward
-        self.memory['mask'][self.index] = mask
+        self.memory['mask'][self.index] = 1 - mask
 
         self.index += 1
         if self.capacity_index < self.capacity:
@@ -156,7 +156,7 @@ class PPOTrajectoryBuffer(object):
         self.memory['prob'][index] = prob
         self.memory['next_state'][index] = next_state
         self.memory['reward'][index] = reward
-        self.memory['mask'][index] = mask
+        self.memory['mask'][index] = 1 - mask
         self.index += self.n_env
 
     def sample(self, indices, reshape_to_batch=True):

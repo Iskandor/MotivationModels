@@ -3,13 +3,14 @@ import copy
 import torch
 from torch import nn
 
+from modules import init_xavier_uniform
 from modules.encoders.EncoderAeris import EncoderAeris
 from modules.forward_models.ForwardModelAeris import ForwardModelAeris, ForwardModelEncoderAeris
 from modules.forward_models.ForwardModelBullet import ForwardModelBullet
 from modules.inverse_models.InverseModelAeris import InverseModelAeris
 from modules.metacritic_models.MetaCriticModelAeris import MetaCriticModelAeris, MetaCriticRNDModelAeris
 from modules.metacritic_models.MetaCriticModelBullet import MetaCriticModelBullet, MetaCriticRNDModelBullet
-from modules.rnd_models.RNDModelAeris import RNDModelAeris, QRNDModelAeris
+from modules.rnd_models.RNDModelAeris import RNDModelAeris, QRNDModelAeris, DOPModelAeris
 from modules.rnd_models.RNDModelBullet import RNDModelBullet, QRNDModelBullet, DOPModelBullet, DOPSimpleModelBullet
 
 
@@ -83,6 +84,33 @@ class Actor(nn.Module):
         nn.init.xavier_uniform_(self._hidden0.weight)
         nn.init.xavier_uniform_(self._hidden1.weight)
         nn.init.uniform_(self._output.weight, -3e-1, 3e-1)
+
+
+class ActorNHeads(nn.Module):
+    def __init__(self, head_count, action_dim, layers, config):
+        super(ActorNHeads, self).__init__()
+
+        self.actor = nn.Sequential(*layers)
+        self.head_count = head_count
+        self.heads = [nn.Sequential(
+            nn.Linear(config.actor_h1, config.actor_h1),
+            nn.ReLU(),
+            nn.Linear(config.actor_h1, action_dim))
+            for _ in range(head_count)]
+
+        for h in self.heads:
+            init_xavier_uniform(h[0])
+            init_xavier_uniform(h[2])
+
+    def forward(self, x):
+        x = self.actor(x)
+        actions = []
+
+        for h in self.heads:
+            a = h(x)
+            actions.append(a)
+
+        return torch.stack(actions, dim=1)
 
 
 class DDPGNetwork(nn.Module):
@@ -335,6 +363,69 @@ class DDPGAerisNetworkQRND(DDPGAerisNetwork):
     def __init__(self, input_shape, action_dim, config):
         super(DDPGAerisNetworkQRND, self).__init__(input_shape, action_dim, config)
         self.qrnd_model = QRNDModelAeris(input_shape, action_dim, config)
+
+
+class DDPGAerisNetworkDOP(DDPGAerisNetwork):
+    def __init__(self, input_shape, action_dim, config):
+        super(DDPGAerisNetworkDOP, self).__init__(input_shape, action_dim, config)
+
+        self.action_dim = action_dim
+        self.channels = input_shape[0]
+        self.width = input_shape[1]
+        self.head_count = 4
+
+        fc_count = config.critic_kernels_count * self.width // 4
+
+        self.layers_actor = [
+            nn.Conv1d(self.channels, config.actor_kernels_count, kernel_size=8, stride=4, padding=2),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(fc_count, config.actor_h1),
+            nn.ReLU()
+        ]
+
+        init_xavier_uniform(self.layers_actor[0])
+        init_xavier_uniform(self.layers_actor[3])
+
+        self.actor = ActorNHeads(self.head_count, action_dim, self.layers_actor, config)
+        self.motivator = QRNDModelAeris(input_shape, action_dim, config)
+        self.dop_model = DOPModelAeris(input_shape, action_dim, config, None, self.actor, self.motivator)
+        self.argmax = None
+
+        self.critic_target = copy.deepcopy(self.critic)
+        self.actor_target = copy.deepcopy(self.actor)
+        self.hard_update()
+
+    def action(self, state):
+        x = state
+        action = self.actor(x)
+
+        state = state.unsqueeze(1).repeat(1, self.head_count, 1, 1).view(-1, self.channels, self.width)
+        action = action.view(-1, self.action_dim)
+
+        error = self.motivator.error(state, action).view(-1, self.head_count).detach()
+        action = action.view(-1, self.head_count, self.action_dim)
+        argmax = error.argmax(dim=1)
+        action = action.gather(dim=1, index=argmax.unsqueeze(-1).unsqueeze(-1).repeat(1, 1, self.action_dim))
+        self.argmax = argmax
+
+        return action.squeeze(1)
+
+    def index(self):
+        return self.argmax
+
+    def action_target(self, state):
+        action = self.actor_target(state)
+
+        state = state.unsqueeze(1).repeat(1, self.head_count, 1, 1).view(-1, self.channels, self.width)
+        action = action.view(-1, self.action_dim)
+
+        error = self.motivator.error(state, action).view(-1, self.head_count).detach()
+        action = action.view(-1, self.head_count, self.action_dim)
+        argmax = error.argmax(dim=1)
+        action = action.gather(dim=1, index=argmax.unsqueeze(-1).unsqueeze(-1).repeat(1, 1, self.action_dim))
+
+        return action.squeeze(1)
 
 
 class DDPGAerisNetworkSURND(DDPGAerisNetwork):
