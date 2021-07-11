@@ -31,7 +31,7 @@ class RNDModelAeris(nn.Module):
         self._init(self.target_model[0], np.sqrt(2))
         self._init(self.target_model[2], np.sqrt(2))
         self._init(self.target_model[4], np.sqrt(2))
-        self._init(self.target_model[7], 0.1)
+        self._init(self.target_model[7], 0.5)
 
         for param in self.target_model.parameters():
             param.requires_grad = False
@@ -88,7 +88,7 @@ class RNDModelAeris(nn.Module):
         return loss.sum(dim=0) / (mask.sum(dim=0) + 1e-8)
 
     def update_state_average(self, state):
-        self.state_average = self.state_average * 0.99 + state * 0.01
+        self.state_average = self.state_average * 0.999 + state * 0.001
 
     def _init(self, layer, gain):
         nn.init.orthogonal_(layer.weight, gain)

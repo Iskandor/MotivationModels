@@ -811,7 +811,6 @@ class ExperimentDDPG:
         train_ext_rewards = []
         train_int_rewards = []
         reward_avg = RunningAverageWindow(100)
-        step_avg = RunningAverageWindow(100)
 
         bar = ProgressBar(config.steps * 1e6, max_width=40)
         exploration = GaussianExploration(config.sigma, 0.01, config.steps * config.exploration_time * 1e6)
@@ -824,6 +823,7 @@ class ExperimentDDPG:
             train_steps = 0
 
             while not done:
+                agent.motivation.update_state_average(state0)
                 action0 = exploration.explore(agent.get_action(state0))
                 next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
                 reward = self.transform_reward(reward)
@@ -848,13 +848,12 @@ class ExperimentDDPG:
             exploration.update(steps)
 
             reward_avg.update(train_ext_reward)
-            step_avg.update(train_steps)
             steps_per_episode.append(train_steps)
             train_ext_rewards.append(train_ext_reward)
             train_int_rewards.append(train_int_reward)
 
-            print('Run {0:d} step {1:d} sigma {2:f} training [ext. reward {3:f} int. reward {4:f} steps {5:d}] avg. ext. reward {6:f} avg. steps {7:f}'.format(
-                trial, steps, exploration.sigma, train_ext_reward, train_int_reward, train_steps, reward_avg.value(), step_avg.value()))
+            print('Run {0:d} step {1:d} sigma {2:f} training [ext. reward {3:f} int. reward {4:f} steps {5:d} ({6:f})] avg. ext. reward {7:f}'.format(
+                trial, steps, exploration.sigma, train_ext_reward, train_int_reward, train_steps, train_int_reward / train_steps, reward_avg.value().item()))
             print(bar)
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
