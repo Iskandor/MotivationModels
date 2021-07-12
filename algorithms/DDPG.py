@@ -24,7 +24,7 @@ class DDPG:
             masks = sample.mask
 
             if self.motivation:
-                rewards += self.motivation.reward_sample(indices)
+                rewards += self.motivation.reward_sample(self._memory, indices)
 
             self.train(states, actions, next_states, rewards, masks)
 

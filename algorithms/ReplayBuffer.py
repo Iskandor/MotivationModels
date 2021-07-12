@@ -194,3 +194,76 @@ class PPOTrajectoryBuffer(object):
 
     def clear(self):
         self.index = 0
+
+
+class MDPTrajectoryBuffer(object):
+    def __init__(self, capacity, batch_size, n_env=1):
+        self.n_env = n_env
+        self.memory = {}
+        self.index = 0
+        self.capacity = capacity
+        self.batch_size = batch_size
+
+    def __len__(self):
+        return self.index
+
+    def indices(self):
+        ind = None
+        if len(self) == self.capacity:
+            ind = range(0, self.capacity)
+        return ind
+
+    def dynamic_memory_init(self, state, action, reward):
+        shape = (self.capacity // self.n_env, self.n_env,) + tuple(state.shape[1:])
+        self.memory['state'] = torch.zeros(shape)
+        shape = (self.capacity // self.n_env, self.n_env,) + tuple(action.shape[1:])
+        self.memory['action'] = torch.zeros(shape)
+        shape = (self.capacity // self.n_env, self.n_env,) + tuple(state.shape[1:])
+        self.memory['next_state'] = torch.zeros(shape)
+        shape = (self.capacity // self.n_env, self.n_env,) + tuple(reward.shape[1:])
+        self.memory['reward'] = torch.zeros(shape)
+        shape = (self.capacity // self.n_env, self.n_env, 1)
+        self.memory['mask'] = torch.zeros(shape)
+
+    def add(self, state, action, next_state, reward, mask):
+
+        if len(self.memory) == 0:
+            self.dynamic_memory_init(state, action, reward)
+
+        index = self.index // self.n_env
+        self.memory['state'][index] = state
+        self.memory['action'][index] = action
+        self.memory['next_state'][index] = next_state
+        self.memory['reward'][index] = reward
+        self.memory['mask'][index] = 1 - mask
+        self.index += self.n_env
+
+    def sample(self, indices, reshape_to_batch=True):
+        if reshape_to_batch:
+            result = MDP_Transition(
+                self.memory['state'].reshape(-1, *self.memory['state'].shape[2:]),
+                self.memory['action'].reshape(-1, *self.memory['action'].shape[2:]),
+                self.memory['next_state'].reshape(-1, *self.memory['next_state'].shape[2:]),
+                self.memory['reward'].reshape(-1, *self.memory['reward'].shape[2:]),
+                self.memory['mask'].reshape(-1, *self.memory['mask'].shape[2:]))
+        else:
+            result = MDP_Transition(
+                self.memory['state'],
+                self.memory['action'],
+                self.memory['next_state'],
+                self.memory['reward'],
+                self.memory['mask'])
+
+        return result
+
+    def sample_batches(self, indices):
+        batch = MDP_Transition(
+            self.memory['state'].reshape(-1, self.batch_size, *self.memory['state'].shape[2:]),
+            self.memory['action'].reshape(-1, self.batch_size, *self.memory['action'].shape[2:]),
+            self.memory['next_state'].reshape(-1, self.batch_size, *self.memory['next_state'].shape[2:]),
+            self.memory['reward'].reshape(-1, self.batch_size, *self.memory['reward'].shape[2:]),
+            self.memory['mask'].reshape(-1, self.batch_size, *self.memory['mask'].shape[2:]))
+        return batch, self.capacity // self.batch_size
+
+    def clear(self):
+        self.index = 0

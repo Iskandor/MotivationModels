@@ -283,7 +283,7 @@ if __name__ == '__main__':
     update_config(args, experiment)
 
     if args.load != '':
-        env_class = set_env_class(args.algorithm, args.env, experiment)
+        env_class = set_env_class(args.algorithm, args.env)
         env_class.test(experiment, args.load)
     else:
         if args.thread:

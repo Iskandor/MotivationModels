@@ -24,8 +24,8 @@ class RNDMotivation:
     def error(self, state0):
         return self._network.error(state0)
 
-    def reward_sample(self, indices):
-        sample = self._memory.sample(indices)
+    def reward_sample(self, memory, indices):
+        sample = memory.sample(indices)
 
         states = sample.state
 
@@ -63,8 +63,8 @@ class QRNDMotivation:
     def error(self, state0, action0):
         return self._network.error(state0, action0)
 
-    def reward_sample(self, indices):
-        sample = self._memory.sample(indices)
+    def reward_sample(self, memory, indices):
+        sample = memory.sample(indices)
 
         states = sample.state
         actions = sample.action
@@ -109,8 +109,8 @@ class DOPSimpleMotivation:
     def error(self, state0, action0):
         return self.network.error(state0, action0)
 
-    def reward_sample(self, indices):
-        sample = self._memory.sample(indices)
+    def reward_sample(self, memory, indices):
+        sample = memory.sample(indices)
 
         states = sample.state
         actions = sample.action

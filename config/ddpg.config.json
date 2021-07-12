@@ -111,7 +111,7 @@
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
       "forward_model_variant": "A",
-      "forward_model_batch_size": 4
+      "forward_model_batch_size": 4096
     },
     "4": {
       "model": "qrnd",
@@ -133,7 +133,7 @@
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
       "forward_model_variant": "A",
-      "forward_model_batch_size": 4
+      "forward_model_batch_size": 4096
     },
     "5": {
       "model": "dop",
@@ -155,7 +155,7 @@
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
       "forward_model_variant": "A",
-      "forward_model_batch_size": 4
+      "forward_model_batch_size": 4096
     }
   },
   "aeris_hazards": {

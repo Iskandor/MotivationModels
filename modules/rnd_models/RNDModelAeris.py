@@ -59,12 +59,12 @@ class RNDModelAeris(nn.Module):
         self._init(self.model[11], 0.01)
 
     def forward(self, state):
-        x = state - self.state_average
+        x = state - self.state_average.expand(state.shape[0], *state.shape[1:])
         predicted_code = self.model(x)
         return predicted_code
 
     def encode(self, state):
-        x = state - self.state_average
+        x = state - self.state_average.expand(state.shape[0], *state.shape[1:])
         return self.target_model(x)
 
     def error(self, state):
@@ -151,14 +151,14 @@ class QRNDModelAeris(nn.Module):
         self._init(self.model[11], 0.01)
 
     def forward(self, state, action):
-        x = state - self.state_average
+        x = state - self.state_average.expand(state.shape[0], *state.shape[1:])
         a = action.unsqueeze(2).repeat(1, 1, state.shape[2])
         x = torch.cat([x, a], dim=1)
         predicted_code = self.model(x)
         return predicted_code
 
     def encode(self, state, action):
-        x = state - self.state_average
+        x = state - self.state_average.expand(state.shape[0], *state.shape[1:])
         a = action.unsqueeze(2).repeat(1, 1, state.shape[2])
         x = torch.cat([x, a], dim=1)
         return self.target_model(x)
