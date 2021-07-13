@@ -328,7 +328,7 @@ class DDPGAerisDOPAgent(DDPGAgent):
         self.memory = ExperienceReplayBuffer(config.memory_size)
         self.motivation_memory = MDPTrajectoryBuffer(self.config.forward_model_batch_size, self.config.forward_model_batch_size)
         self.network = DDPGAerisNetworkDOP(input_shape, action_dim, config).to(config.device)
-        self.motivation = DOPMotivation(self.network.dop_model, config.forward_model_lr, config.motivation_eta, config.device)
+        self.motivation = DOPMotivation(self.network.dop_model, config.forward_model_lr, config.actor_lr, config.motivation_eta, config.device)
         self.algorithm = DDPG(self.network, config.actor_lr, config.critic_lr, config.gamma, config.tau, self.memory, config.batch_size)
 
     def get_action(self, state):

@@ -106,7 +106,7 @@ class PPOAerisDOPAgent(PPOAgent):
     def __init__(self, input_shape, action_dim, config, action_type):
         super().__init__(input_shape, action_dim, config)
         self.network = PPOAerisNetworkDOP(input_shape, action_dim, config, head=action_type).to(config.device)
-        self.motivation = DOPMotivation(self.network.dop_model, config.forward_model_lr, config.motivation_eta, self.memory, config.device)
+        self.motivation = DOPMotivation(self.network.dop_model, config.forward_model_lr, config.forward_model_lr, config.motivation_eta, config.device)
         self.algorithm = self.init_algorithm(config, self.memory, action_type)
 
     def train(self, state0, value, action0, probs0, state1, reward, mask):

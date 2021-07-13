@@ -123,10 +123,10 @@ class DOPSimpleMotivation:
 
 
 class DOPMotivation:
-    def __init__(self, network, lr, eta=1, device='cpu'):
+    def __init__(self, network, motivator_lr, generator_lr, eta=1, device='cpu'):
         self._network = network
-        self._motivator_optimizer = torch.optim.Adam(self._network.motivator.parameters(), lr=lr)
-        self._generator_optimizer = torch.optim.Adam(self._network.actor.parameters(), lr=lr)
+        self._motivator_optimizer = torch.optim.Adam(self._network.motivator.parameters(), lr=motivator_lr)
+        self._generator_optimizer = torch.optim.Adam(self._network.actor.parameters(), lr=generator_lr)
         self._eta = eta
         self._device = device
 
