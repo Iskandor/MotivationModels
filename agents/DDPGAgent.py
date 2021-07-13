@@ -328,7 +328,7 @@ class DDPGAerisDOPAgent(DDPGAgent):
         self.memory = ExperienceReplayBuffer(config.memory_size)
         self.motivation_memory = MDPTrajectoryBuffer(self.config.forward_model_batch_size, self.config.forward_model_batch_size)
         self.network = DDPGAerisNetworkDOP(input_shape, action_dim, config).to(config.device)
-        self.motivation = DOPMotivation(self.network.dop_model, config.forward_model_lr, config.motivation_eta, self.motivation_memory, config.device)
+        self.motivation = DOPMotivation(self.network.dop_model, config.forward_model_lr, config.motivation_eta, config.device)
         self.algorithm = DDPG(self.network, config.actor_lr, config.critic_lr, config.gamma, config.tau, self.memory, config.batch_size)
 
     def get_action(self, state):
@@ -339,10 +339,11 @@ class DDPGAerisDOPAgent(DDPGAgent):
     def train(self, state0, action0, state1, reward, mask):
         self.memory.add(state0, action0, state1, reward, mask)
         self.motivation_memory.add(state0, action0, state1, reward, mask)
-        self.algorithm.train_sample(self.memory.indices(self.config.batch_size))
-        indices = self.motivation_memory.indices()
-        self.motivation.train(indices)
-        if indices is not None:
+        ddpg_indices = self.memory.indices(self.config.batch_size)
+        self.algorithm.train_sample(ddpg_indices)
+        dop_indices = self.motivation_memory.indices()
+        self.motivation.train(self.motivation_memory, dop_indices, self.memory, ddpg_indices)
+        if dop_indices is not None:
             self.motivation_memory.clear()
 
 

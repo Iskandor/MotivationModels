@@ -95,7 +95,8 @@ class ActorNHeads(nn.Module):
         self.heads = [nn.Sequential(
             nn.Linear(config.actor_h1, config.actor_h1),
             nn.ReLU(),
-            nn.Linear(config.actor_h1, action_dim))
+            nn.Linear(config.actor_h1, action_dim),
+            nn.Tanh())
             for _ in range(head_count)]
 
         for h in self.heads:

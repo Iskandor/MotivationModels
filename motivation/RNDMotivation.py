@@ -123,19 +123,16 @@ class DOPSimpleMotivation:
 
 
 class DOPMotivation:
-    def __init__(self, network, lr, eta=1, memory_buffer=None, sample_size=0, device='cpu'):
+    def __init__(self, network, lr, eta=1, device='cpu'):
         self._network = network
         self._motivator_optimizer = torch.optim.Adam(self._network.motivator.parameters(), lr=lr)
         self._generator_optimizer = torch.optim.Adam(self._network.actor.parameters(), lr=lr)
-        self._memory = memory_buffer
-        self._sample_size = sample_size
         self._eta = eta
         self._device = device
 
-    def train(self, indices):
-        if indices:
-            sample = self._memory.sample(indices)
-
+    def train(self, motivator_memory, motivator_indices, generator_memory, generator_indices):
+        if motivator_indices:
+            sample = motivator_memory.sample(motivator_indices)
             states = sample.state
             actions = sample.action
 
@@ -143,6 +140,10 @@ class DOPMotivation:
             loss = self._network.motivator_loss_function(states, actions)
             loss.backward()
             self._motivator_optimizer.step()
+
+        if generator_indices:
+            sample = generator_memory.sample(generator_indices)
+            states = sample.state
 
             self._generator_optimizer.zero_grad()
             loss = self._network.generator_loss_function(states)
@@ -152,8 +153,8 @@ class DOPMotivation:
     def error(self, state0, action0):
         return self._network.error(state0, action0).detach()
 
-    def reward_sample(self, indices):
-        sample = self._memory.sample(indices)
+    def reward_sample(self, memory, indices):
+        sample = memory.sample(indices)
 
         states = sample.state
         actions = sample.action
