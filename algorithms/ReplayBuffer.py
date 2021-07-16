@@ -111,7 +111,7 @@ class M2ReplayBuffer(ReplayBuffer):
         return [self.sample(indices)]
 
 
-class PPOTrajectoryBuffer(object):
+class PPOTrajectoryBuffer2(object):
     def __init__(self, capacity, batch_size, n_env=1):
         self.n_env = n_env
         self.memory = {}
@@ -194,6 +194,54 @@ class PPOTrajectoryBuffer(object):
 
     def clear(self):
         self.index = 0
+
+
+class PPOTrajectoryBuffer(object):
+    def __init__(self, capacity, batch_size, n_env=1):
+        self.n_env = n_env
+        self.memory = [[] for _ in range(self.n_env)]
+        self.index = 0
+        self.capacity = capacity
+        self.batch_size = batch_size
+
+    def __len__(self):
+        return self.index
+
+    def indices(self):
+        ind = None
+        if len(self) == self.capacity:
+            ind = range(0, self.capacity)
+        return ind
+
+    def add(self, state, value, action, prob, next_state, reward, mask):
+        if self.n_env > 1:
+            self.index += self.n_env
+            for i in range(self.n_env):
+                self.memory[i].append(PPO_Transition(state[i], value[i], action[i], prob[i], next_state[i], reward[i], 1 - mask[i]))
+        else:
+            self.index += 1
+            self.memory[0].append(PPO_Transition(state.squeeze(0), value.squeeze(0), action.squeeze(0), prob.squeeze(0), next_state.squeeze(0), reward.squeeze(0), 1 - mask))
+
+    def sample(self, indices):
+        transitions = []
+        for i in range(self.n_env):
+            transitions += self.memory[i]
+        batch = PPO_Transition(*zip(*transitions))
+
+        return batch
+
+    def sample_batches(self, indices):
+        transitions = []
+        for i in range(self.n_env):
+            transitions += self.memory[i]
+        batch = list(PPO_Transition(*zip(*transitions[x:x + self.batch_size])) for x in range(0, self.capacity, self.batch_size))
+
+        return batch
+
+    def clear(self):
+        self.index = 0
+        for i in range(self.n_env):
+            del self.memory[i][:]
 
 
 class MDPTrajectoryBuffer(object):
