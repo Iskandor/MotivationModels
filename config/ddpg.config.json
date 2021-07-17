@@ -1,61 +1,4 @@
 {
-  "mountain_car": {
-    "1": {
-      "model": "baseline",
-      "sigma": 0.3,
-      "exploration_time": 0.8,
-      "trials": 15,
-      "steps": 0.5,
-      "gamma": 0.99,
-      "tau ": 0.005,
-      "batch_size": 64,
-      "memory_size": 100000,
-      "actor_lr": 0.0001,
-      "actor_h": "64,32",
-      "critic_lr": 0.0002,
-      "critic_h": "64,32"
-    },
-    "2": {
-      "model": "dop",
-      "sigma": 0,
-      "exploration_time": 1,
-      "trials": 15,
-      "steps": 0.5,
-      "gamma": 0.99,
-      "tau ": 0.005,
-      "batch_size": 64,
-      "memory_size": 100000,
-      "actor_lr": 0.0001,
-      "actor_h": "64,32",
-      "critic_lr": 0.0002,
-      "critic_h": "64,32",
-      "motivation_eta": 1,
-      "motivation_variant": "A",
-      "motivation_lr": 0.00001,
-      "motivation_batch_size": 32,
-      "fm_h": "128,64"
-    },
-    "3": {
-      "model": "dop",
-      "sigma": 0,
-      "exploration_time": 1,
-      "trials": 15,
-      "steps": 0.5,
-      "gamma": 0.99,
-      "tau ": 0.005,
-      "batch_size": 64,
-      "memory_size": 100000,
-      "actor_lr": 0.0001,
-      "actor_h": "64,32",
-      "critic_lr": 0.0002,
-      "critic_h": "64,32",
-      "motivation_eta": 1,
-      "motivation_variant": "A",
-      "motivation_lr": 1e-7,
-      "motivation_batch_size": 32,
-      "fm_h": "128,64"
-    }
-  },
   "aeris_navigate": {
     "1": {
       "model": "baseline",
@@ -110,8 +53,7 @@
       "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
-      "forward_model_variant": "A",
-      "forward_model_batch_size": 4096
+      "forward_model_batch_size": 32
     },
     "4": {
       "model": "qrnd",
@@ -132,8 +74,7 @@
       "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
-      "forward_model_variant": "A",
-      "forward_model_batch_size": 4096
+      "forward_model_batch_size": 32
     },
     "5": {
       "model": "dop",
@@ -154,8 +95,175 @@
       "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
-      "forward_model_variant": "A",
       "forward_model_batch_size": 4096
+    },
+    "6": {
+      "model": "dop",
+      "sigma": 0,
+      "exploration_time": 0,
+      "trials": 15,
+      "steps": 0.6,
+      "gamma": 0.99,
+      "tau ": 0.005,
+      "batch_size": 32,
+      "memory_size": 100000,
+      "actor_lr": 0.0001,
+      "actor_kernels_count": 32,
+      "actor_h1": 64,
+      "critic_lr": 0.0002,
+      "critic_kernels_count": 32,
+      "critic_h1": 256,
+      "forward_model_lr": 0.001,
+      "forward_model_kernels_count": 32,
+      "motivation_eta": 1,
+      "forward_model_batch_size": 4096
+    },
+    "7": {
+      "model": "dop",
+      "sigma": 0,
+      "exploration_time": 0,
+      "trials": 15,
+      "steps": 0.6,
+      "gamma": 0.99,
+      "tau ": 0.005,
+      "batch_size": 32,
+      "memory_size": 100000,
+      "actor_lr": 0.0001,
+      "actor_kernels_count": 32,
+      "actor_h1": 64,
+      "critic_lr": 0.0002,
+      "critic_kernels_count": 32,
+      "critic_h1": 256,
+      "forward_model_lr": 0.001,
+      "forward_model_kernels_count": 32,
+      "motivation_eta": 1,
+      "forward_model_batch_size": 2048
+    },
+    "8": {
+      "model": "dop",
+      "sigma": 0,
+      "exploration_time": 0,
+      "trials": 15,
+      "steps": 0.6,
+      "gamma": 0.99,
+      "tau ": 0.005,
+      "batch_size": 32,
+      "memory_size": 100000,
+      "actor_lr": 0.0001,
+      "actor_kernels_count": 32,
+      "actor_h1": 64,
+      "critic_lr": 0.0002,
+      "critic_kernels_count": 32,
+      "critic_h1": 256,
+      "forward_model_lr": 0.001,
+      "forward_model_kernels_count": 32,
+      "motivation_eta": 1,
+      "forward_model_batch_size": 1024
+    },
+    "9": {
+      "model": "dop",
+      "sigma": 0,
+      "exploration_time": 0,
+      "trials": 15,
+      "steps": 0.6,
+      "gamma": 0.99,
+      "tau ": 0.005,
+      "batch_size": 32,
+      "memory_size": 100000,
+      "actor_lr": 0.0001,
+      "actor_kernels_count": 32,
+      "actor_h1": 64,
+      "critic_lr": 0.0002,
+      "critic_kernels_count": 32,
+      "critic_h1": 256,
+      "forward_model_lr": 0.001,
+      "forward_model_kernels_count": 32,
+      "motivation_eta": 1,
+      "forward_model_batch_size": 512
+    },
+    "10": {
+      "model": "dop",
+      "sigma": 0,
+      "exploration_time": 0,
+      "trials": 15,
+      "steps": 0.6,
+      "gamma": 0.99,
+      "tau ": 0.005,
+      "batch_size": 32,
+      "memory_size": 100000,
+      "actor_lr": 0.0001,
+      "actor_kernels_count": 32,
+      "actor_h1": 64,
+      "critic_lr": 0.0002,
+      "critic_kernels_count": 32,
+      "critic_h1": 256,
+      "forward_model_lr": 0.001,
+      "forward_model_kernels_count": 32,
+      "motivation_eta": 1,
+      "forward_model_batch_size": 256
+    },
+    "11": {
+      "model": "dop",
+      "sigma": 0,
+      "exploration_time": 0,
+      "trials": 15,
+      "steps": 0.6,
+      "gamma": 0.99,
+      "tau ": 0.005,
+      "batch_size": 32,
+      "memory_size": 100000,
+      "actor_lr": 0.0001,
+      "actor_kernels_count": 32,
+      "actor_h1": 64,
+      "critic_lr": 0.0002,
+      "critic_kernels_count": 32,
+      "critic_h1": 256,
+      "forward_model_lr": 0.001,
+      "forward_model_kernels_count": 32,
+      "motivation_eta": 1,
+      "forward_model_batch_size": 128
+    },
+    "12": {
+      "model": "dop",
+      "sigma": 0,
+      "exploration_time": 0,
+      "trials": 15,
+      "steps": 0.6,
+      "gamma": 0.99,
+      "tau ": 0.005,
+      "batch_size": 32,
+      "memory_size": 100000,
+      "actor_lr": 0.0001,
+      "actor_kernels_count": 32,
+      "actor_h1": 64,
+      "critic_lr": 0.0002,
+      "critic_kernels_count": 32,
+      "critic_h1": 256,
+      "forward_model_lr": 0.001,
+      "forward_model_kernels_count": 32,
+      "motivation_eta": 1,
+      "forward_model_batch_size": 64
+    },
+    "13": {
+      "model": "dop",
+      "sigma": 0,
+      "exploration_time": 0,
+      "trials": 15,
+      "steps": 0.6,
+      "gamma": 0.99,
+      "tau ": 0.005,
+      "batch_size": 32,
+      "memory_size": 100000,
+      "actor_lr": 0.0001,
+      "actor_kernels_count": 32,
+      "actor_h1": 64,
+      "critic_lr": 0.0002,
+      "critic_kernels_count": 32,
+      "critic_h1": 256,
+      "forward_model_lr": 0.001,
+      "forward_model_kernels_count": 32,
+      "motivation_eta": 1,
+      "forward_model_batch_size": 32
     }
   },
   "aeris_hazards": {
@@ -677,7 +785,6 @@
   "ant": {
     "1": {
       "model": "baseline",
-      "noisy": true,
       "trials": 15,
       "steps": 2,
       "gamma": 0.99,
@@ -693,7 +800,6 @@
     },
     "2": {
       "model": "fm",
-      "noisy": true,
       "trials": 15,
       "steps": 2,
       "gamma": 0.99,
@@ -716,7 +822,6 @@
     "3": {
       "descriptor": "ada_sigma",
       "model": "su",
-      "noisy": true,
       "trials": 10,
       "steps": 2,
       "gamma": 0.99,
@@ -744,7 +849,6 @@
     },
     "4": {
       "model": "fm",
-      "noisy": true,
       "trials": 5,
       "steps": 2,
       "gamma": 0.99,
@@ -767,7 +871,6 @@
     "5": {
       "descriptor": "const_sigma",
       "model": "su",
-      "noisy": true,
       "trials": 1,
       "steps": 2,
       "gamma": 0.99,
@@ -796,7 +899,6 @@
     "6": {
       "descriptor": "const_sigma",
       "model": "su",
-      "noisy": true,
       "trials": 1,
       "steps": 2,
       "gamma": 0.99,
@@ -825,7 +927,6 @@
     "7": {
       "descriptor": "6 LeakyReLU",
       "model": "su",
-      "noisy": true,
       "trials": 1,
       "steps": 1,
       "gamma": 0.99,
@@ -854,7 +955,6 @@
     "8": {
       "descriptor": "6 LeakyReLU FM",
       "model": "su",
-      "noisy": true,
       "trials": 15,
       "steps": 2,
       "gamma": 0.99,
@@ -882,7 +982,6 @@
     },
     "9": {
       "model": "s",
-      "noisy": true,
       "trials": 15,
       "steps": 2,
       "gamma": 0.99,
@@ -910,7 +1009,6 @@
     },
     "10": {
       "model": "baseline",
-      "noisy": false,
       "sigma": 0.3,
       "trials": 15,
       "steps": 2,
@@ -927,7 +1025,6 @@
     },
     "11": {
       "model": "fm",
-      "noisy": false,
       "sigma": 0.3,
       "trials": 15,
       "steps": 2,
@@ -950,7 +1047,6 @@
     },
     "12": {
       "model": "vfm",
-      "noisy": false,
       "sigma": 0.3,
       "trials": 5,
       "steps": 2,
@@ -973,7 +1069,6 @@
     },
     "13": {
       "model": "vfm",
-      "noisy": false,
       "sigma": 0.3,
       "trials": 5,
       "steps": 2,
@@ -996,7 +1091,6 @@
     },
     "14": {
       "model": "vfm",
-      "noisy": false,
       "sigma": 0.3,
       "trials": 5,
       "steps": 2,
@@ -1019,7 +1113,6 @@
     },
     "15": {
       "model": "rnd",
-      "noisy": false,
       "sigma": 0.3,
       "trials": 5,
       "steps": 2,
@@ -1042,7 +1135,6 @@
     },
     "16": {
       "model": "baseline",
-      "noisy": false,
       "sigma": 0,
       "trials": 15,
       "steps": 2,
@@ -1059,7 +1151,6 @@
     },
     "17": {
       "model": "fm",
-      "noisy": false,
       "sigma": 0,
       "trials": 15,
       "steps": 2,
@@ -1082,7 +1173,6 @@
     },
     "18": {
       "model": "fm",
-      "noisy": false,
       "sigma": 0,
       "trials": 15,
       "steps": 2,
@@ -1104,7 +1194,6 @@
     },
     "19": {
       "model": "fm",
-      "noisy": false,
       "sigma": 0.3,
       "trials": 15,
       "steps": 2,
@@ -1128,7 +1217,6 @@
     "20": {
       "descriptor": "deep fm",
       "model": "fm",
-      "noisy": false,
       "sigma": 0.3,
       "trials": 15,
       "steps": 2,
@@ -1151,7 +1239,6 @@
     },
     "21": {
       "model": "su",
-      "noisy": false,
       "sigma": 0.3,
       "trials": 15,
       "steps": 2,
@@ -1181,7 +1268,6 @@
     "22": {
       "descriptor": "21 deep ac",
       "model": "fm",
-      "noisy": false,
       "sigma": 0.3,
       "trials": 15,
       "steps": 2,
@@ -1205,7 +1291,6 @@
     "23": {
       "descriptor": "deep ac",
       "model": "baseline",
-      "noisy": false,
       "sigma": 0.3,
       "trials": 15,
       "steps": 2,
@@ -1223,7 +1308,6 @@
     "24": {
       "descriptor": 20,
       "model": "fm",
-      "noisy": false,
       "sigma": 0.3,
       "trials": 15,
       "steps": 2,
@@ -1247,7 +1331,6 @@
     "25": {
       "descriptor": "ddpg robotic",
       "model": "baseline",
-      "noisy": false,
       "sigma": 0.3,
       "trials": 15,
       "steps": 2,
@@ -1266,7 +1349,6 @@
   "half_cheetah": {
     "1": {
       "model": "baseline",
-      "noisy": true,
       "trials": 15,
       "steps": 2,
       "gamma": 0.99,
@@ -1282,7 +1364,6 @@
     },
     "2": {
       "model": "fm",
-      "noisy": true,
       "trials": 10,
       "steps": 2,
       "gamma": 0.99,
@@ -1304,7 +1385,6 @@
     },
     "3": {
       "model": "su",
-      "noisy": true,
       "trials": 15,
       "steps": 2,
       "gamma": 0.99,
@@ -1332,7 +1412,6 @@
     },
     "4": {
       "model": "vfm",
-      "noisy": false,
       "sigma": 0.2,
       "trials": 1,
       "steps": 1,
@@ -1355,7 +1434,6 @@
     },
     "5": {
       "model": "rfm",
-      "noisy": true,
       "trials": 5,
       "steps": 2,
       "gamma": 0.99,
@@ -1377,7 +1455,6 @@
     },
     "6": {
       "model": "baseline",
-      "noisy": false,
       "sigma": 0.2,
       "trials": 15,
       "steps": 2,
@@ -1394,7 +1471,6 @@
     },
     "7": {
       "model": "s",
-      "noisy": true,
       "trials": 15,
       "steps": 2,
       "gamma": 0.99,
@@ -1424,7 +1500,6 @@
   "hopper": {
     "1": {
       "model": "baseline",
-      "noisy": false,
       "sigma": 0.2,
       "exploration_time": 0.8,
       "trials": 15,
@@ -1440,7 +1515,6 @@
     },
     "2": {
       "model": "baseline",
-      "noisy": false,
       "sigma": 0.2,
       "exploration_time": 0.8,
       "trials": 15,
@@ -1456,7 +1530,6 @@
     },
     "3": {
       "model": "baseline",
-      "noisy": false,
       "sigma": 0.2,
       "exploration_time": 0.8,
       "trials": 15,
@@ -1472,7 +1545,6 @@
     },
     "4": {
       "model": "baseline",
-      "noisy": false,
       "sigma": 0.2,
       "exploration_time": 0.8,
       "trials": 15,
@@ -1488,7 +1560,6 @@
     },
     "5": {
       "model": "baseline",
-      "noisy": false,
       "sigma": 0.2,
       "exploration_time": 0.8,
       "trials": 15,
@@ -1504,7 +1575,6 @@
     },
     "6": {
       "model": "baseline",
-      "noisy": false,
       "sigma": 0.1,
       "exploration_time": 0.8,
       "trials": 15,
@@ -1520,7 +1590,6 @@
     },
     "7": {
       "model": "fm",
-      "noisy": false,
       "sigma": 1,
       "exploration_time": 0.8,
       "trials": 15,
@@ -1541,7 +1610,6 @@
     },
     "8": {
       "model": "su",
-      "noisy": false,
       "sigma": 1,
       "exploration_time": 0.8,
       "trials": 15,
@@ -1563,7 +1631,6 @@
     },
     "9": {
       "model": "s",
-      "noisy": false,
       "sigma": 1,
       "exploration_time": 0.8,
       "trials": 15,
@@ -1585,7 +1652,6 @@
     },
     "10": {
       "model": "baseline",
-      "noisy": false,
       "sigma": 0.3,
       "exploration_time": 0.8,
       "trials": 15,
@@ -1601,7 +1667,6 @@
     },
     "11": {
       "model": "baseline",
-      "noisy": false,
       "sigma": 0.6,
       "exploration_time": 0.8,
       "trials": 15,
@@ -1617,7 +1682,6 @@
     },
     "12": {
       "model": "fm",
-      "noisy": false,
       "sigma": 0.3,
       "exploration_time": 0.8,
       "trials": 15,
@@ -1638,7 +1702,6 @@
     },
     "13": {
       "model": "fm",
-      "noisy": false,
       "sigma": 0.3,
       "exploration_time": 0.8,
       "trials": 15,
@@ -1659,7 +1722,6 @@
     },
     "14": {
       "model": "fm",
-      "noisy": false,
       "sigma": 0.2,
       "exploration_time": 0.8,
       "trials": 15,
@@ -1680,7 +1742,6 @@
     },
     "15": {
       "model": "fm",
-      "noisy": false,
       "sigma": 0.2,
       "exploration_time": 0.8,
       "trials": 15,
@@ -1701,7 +1762,6 @@
     },
     "16": {
       "model": "fm",
-      "noisy": false,
       "sigma": 0.2,
       "exploration_time": 0.8,
       "trials": 15,
@@ -1722,7 +1782,6 @@
     },
     "17": {
       "model": "fm",
-      "noisy": false,
       "sigma": 0.2,
       "exploration_time": 0.8,
       "trials": 15,
@@ -1743,7 +1802,6 @@
     },
     "18": {
       "model": "rnd",
-      "noisy": false,
       "sigma": 0,
       "exploration_time": 0.8,
       "trials": 15,
@@ -1764,7 +1822,6 @@
     },
     "19": {
       "model": "rnd",
-      "noisy": false,
       "sigma": 0.2,
       "exploration_time": 0.8,
       "trials": 15,
@@ -1785,7 +1842,6 @@
     },
     "20": {
       "model": "rnd",
-      "noisy": false,
       "sigma": 0,
       "exploration_time": 0.8,
       "trials": 15,
@@ -1806,7 +1862,6 @@
     },
     "21": {
       "model": "rnd",
-      "noisy": false,
       "sigma": 0.2,
       "exploration_time": 0.8,
       "trials": 15,
@@ -1827,7 +1882,6 @@
     },
     "22": {
       "model": "srnd",
-      "noisy": false,
       "sigma": 0,
       "exploration_time": 0.8,
       "trials": 15,
@@ -1849,7 +1903,6 @@
     },
     "23": {
       "model": "srnd",
-      "noisy": false,
       "sigma": 0,
       "exploration_time": 0.8,
       "trials": 15,
@@ -1871,7 +1924,6 @@
     },
     "24": {
       "model": "srnd",
-      "noisy": false,
       "sigma": 0,
       "exploration_time": 0.8,
       "trials": 15,
@@ -1893,7 +1945,6 @@
     },
     "25": {
       "model": "rnd",
-      "noisy": false,
       "sigma": 0,
       "exploration_time": 0.8,
       "trials": 15,
@@ -1914,7 +1965,6 @@
     },
     "26": {
       "model": "srnd",
-      "noisy": false,
       "sigma": 0,
       "exploration_time": 0.8,
       "trials": 15,
@@ -1936,7 +1986,6 @@
     },
     "27": {
       "model": "srnd",
-      "noisy": false,
       "sigma": 0.01,
       "exploration_time": 1,
       "trials": 15,
@@ -1958,7 +2007,6 @@
     },
     "28": {
       "model": "rnd",
-      "noisy": false,
       "sigma": 0.01,
       "exploration_time": 1,
       "trials": 15,
@@ -1979,7 +2027,6 @@
     },
     "29": {
       "model": "qrnd",
-      "noisy": false,
       "sigma": 0.01,
       "exploration_time": 1,
       "trials": 15,
@@ -2000,7 +2047,6 @@
     },
     "30": {
       "model": "qrnd",
-      "noisy": false,
       "sigma": 0.01,
       "exploration_time": 1,
       "trials": 15,
@@ -2021,7 +2067,6 @@
     },
     "31": {
       "model": "qrnd",
-      "noisy": false,
       "sigma": 0.01,
       "exploration_time": 1,
       "trials": 15,
@@ -2042,7 +2087,6 @@
     },
     "32": {
       "model": "qrnd",
-      "noisy": false,
       "sigma": 0.01,
       "exploration_time": 1,
       "trials": 15,
@@ -2063,7 +2107,6 @@
     },
     "33": {
       "model": "qrnd",
-      "noisy": false,
       "sigma": 0.01,
       "exploration_time": 1,
       "trials": 15,
@@ -2084,7 +2127,6 @@
     },
     "34": {
       "model": "qrnd",
-      "noisy": false,
       "sigma": 0.01,
       "exploration_time": 1,
       "trials": 15,
@@ -2105,7 +2147,6 @@
     },
     "35": {
       "model": "qrnd",
-      "noisy": false,
       "sigma": 0.01,
       "exploration_time": 1,
       "trials": 15,
@@ -2126,7 +2167,6 @@
     },
     "36": {
       "model": "dop",
-      "noisy": false,
       "sigma": 0.01,
       "exploration_time": 1,
       "trials": 15,
@@ -2149,7 +2189,7 @@
   "reacher": {
     "1": {
       "model": "baseline",
-      "noisy": true,
+      "sigma": 0.2,
       "trials": 15,
       "steps": 0.5,
       "gamma": 0.99,
@@ -2165,7 +2205,7 @@
     },
     "2": {
       "model": "fm",
-      "noisy": true,
+      "sigma": 0.2,
       "trials": 15,
       "steps": 0.5,
       "gamma": 0.99,
@@ -2187,7 +2227,7 @@
     },
     "3": {
       "model": "su",
-      "noisy": true,
+      "sigma": 0.2,
       "trials": 15,
       "steps": 0.5,
       "gamma": 0.99,
@@ -2212,6 +2252,63 @@
       "metacritic_eta": 0.1,
       "metacritic_variant": "A",
       "metacritic_batch_size": 32
+    }
+  },
+  "mountain_car": {
+    "1": {
+      "model": "baseline",
+      "sigma": 0.3,
+      "exploration_time": 0.8,
+      "trials": 15,
+      "steps": 0.5,
+      "gamma": 0.99,
+      "tau ": 0.005,
+      "batch_size": 64,
+      "memory_size": 100000,
+      "actor_lr": 0.0001,
+      "actor_h": "64,32",
+      "critic_lr": 0.0002,
+      "critic_h": "64,32"
+    },
+    "2": {
+      "model": "dop",
+      "sigma": 0,
+      "exploration_time": 1,
+      "trials": 15,
+      "steps": 0.5,
+      "gamma": 0.99,
+      "tau ": 0.005,
+      "batch_size": 64,
+      "memory_size": 100000,
+      "actor_lr": 0.0001,
+      "actor_h": "64,32",
+      "critic_lr": 0.0002,
+      "critic_h": "64,32",
+      "motivation_eta": 1,
+      "motivation_variant": "A",
+      "motivation_lr": 0.00001,
+      "motivation_batch_size": 32,
+      "fm_h": "128,64"
+    },
+    "3": {
+      "model": "dop",
+      "sigma": 0,
+      "exploration_time": 1,
+      "trials": 15,
+      "steps": 0.5,
+      "gamma": 0.99,
+      "tau ": 0.005,
+      "batch_size": 64,
+      "memory_size": 100000,
+      "actor_lr": 0.0001,
+      "actor_h": "64,32",
+      "critic_lr": 0.0002,
+      "critic_h": "64,32",
+      "motivation_eta": 1,
+      "motivation_variant": "A",
+      "motivation_lr": 1e-7,
+      "motivation_batch_size": 32,
+      "fm_h": "128,64"
     }
   },
   "lunar_lander": {

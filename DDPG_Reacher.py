@@ -1,22 +1,51 @@
-import gym
-import pybullet_envs
-from algorithms.DDPG import DDPG
-from algorithms.ReplayBuffer import ExperienceReplayBuffer
-from experiment.ddpg_experiment import ExperimentDDPG
-from modules.DDPG_Modules import *
-from modules.forward_models.ForwardModel import ForwardModel
-from modules.metacritic_models import MetaCritic
-from motivation.ForwardModelMotivation import ForwardModelMotivation
-from motivation.MetaCriticMotivation import MetaCriticMotivation
+import DDPG_PyBulletEnv
+
+env_name = 'ReacherPyBulletEnv-v0'
 
 
 def run_baseline(config, i):
-    pass
+    DDPG_PyBulletEnv.run_baseline(env_name, config, i)
 
 
 def run_forward_model(config, i):
-    pass
+    DDPG_PyBulletEnv.run_forward_model(env_name, config, i)
+
+
+def run_forward_model_encoder(config, i):
+    DDPG_PyBulletEnv.run_forward_model_encoder(env_name, config, i)
+
+
+def run_inverse_model(config, i):
+    DDPG_PyBulletEnv.run_inverse_model(env_name, config, i)
+
+
+def run_forward_inverse_model(config, i):
+    DDPG_PyBulletEnv.run_forward_inverse_model(env_name, config, i)
+
+
+def run_m2_model(config, i):
+    DDPG_PyBulletEnv.run_m2_model(env_name, config, i)
+
+
+def run_m2s_model(config, i):
+    DDPG_PyBulletEnv.run_m2s_model(env_name, config, i)
+
+
+def run_rnd_model(config, i):
+    DDPG_PyBulletEnv.run_rnd_model(env_name, config, i)
+
+
+def run_qrnd_model(config, i):
+    DDPG_PyBulletEnv.run_qrnd_model(env_name, config, i)
+
+
+def run_dop_model(config, i):
+    DDPG_PyBulletEnv.run_dop_model(env_name, config, i)
 
 
 def run_metalearner_model(config, i):
-    pass
+    DDPG_PyBulletEnv.run_metalearner_model(env_name, config, i)
+
+
+def run_metalearner_rnd_model(config, i):
+    DDPG_PyBulletEnv.run_metalearner_rnd_model(env_name, config, i)
