@@ -117,7 +117,7 @@ class QRNDModelAeris(nn.Module):
             nn.Conv1d(config.forward_model_kernels_count * 2, config.forward_model_kernels_count * 2, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(fc_count, 64)
+            nn.Linear(fc_count, 256)
         )
 
         self._init(self.target_model[0], np.sqrt(2))
@@ -136,11 +136,11 @@ class QRNDModelAeris(nn.Module):
             nn.Conv1d(config.forward_model_kernels_count * 2, config.forward_model_kernels_count * 2, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(fc_count, 64),
+            nn.Linear(fc_count, 256),
             nn.ReLU(),
-            nn.Linear(64, 64),
+            nn.Linear(256, 256),
             nn.ReLU(),
-            nn.Linear(64, 64)
+            nn.Linear(256, 256)
         )
 
         self._init(self.model[0], np.sqrt(2))

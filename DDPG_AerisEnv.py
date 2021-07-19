@@ -3,7 +3,7 @@ import gym_aeris.envs
 
 from agents import TYPE
 from agents.DDPGAgent import DDPGAerisAgent, DDPGAerisForwardModelAgent, DDPGAerisForwardModelEncoderAgent, DDPGAerisInverseModelAgent, DDPGAerisRNDModelAgent, DDPGAerisForwardInverseModelAgent, \
-    DDPGAerisM2ModelAgent, DDPGAerisM2SModelAgent, DDPGAerisGatedMetacriticModelAgent, DDPGAerisMetaCriticRNDModelAgent, DDPGAerisQRNDModelAgent, DDPGAerisDOPAgent
+    DDPGAerisM2ModelAgent, DDPGAerisM2SModelAgent, DDPGAerisGatedMetacriticModelAgent, DDPGAerisMetaCriticRNDModelAgent, DDPGAerisQRNDModelAgent, DDPGAerisDOPAgent, DDPGAerisDOPRefAgent
 from experiment.ddpg_experiment import ExperimentDDPG
 
 
@@ -121,6 +121,19 @@ def run_dop_model(env_name, config, i):
 
     agent = DDPGAerisDOPAgent(state_dim, action_dim, config)
     experiment.run_dop_model(agent, i)
+
+    env.close()
+
+
+def run_dop_ref_model(env_name, config, i):
+    env = create_env(env_name)
+    state_dim = env.observation_space.shape
+    action_dim = env.action_space.shape[0]
+
+    experiment = ExperimentDDPG(env_name, env, config)
+
+    agent = DDPGAerisDOPRefAgent(state_dim, action_dim, config)
+    experiment.run_baseline(agent, i)
 
     env.close()
 

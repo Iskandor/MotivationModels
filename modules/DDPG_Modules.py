@@ -433,6 +433,57 @@ class DDPGAerisNetworkDOP(DDPGAerisNetwork):
         return action.squeeze(1)
 
 
+class DDPGAerisNetworkDOPRef(DDPGAerisNetwork):
+    def __init__(self, input_shape, action_dim, config):
+        super(DDPGAerisNetworkDOPRef, self).__init__(input_shape, action_dim, config)
+
+        self.action_dim = action_dim
+        self.channels = input_shape[0]
+        self.width = input_shape[1]
+        self.head_count = 4
+
+        fc_count = config.critic_kernels_count * self.width // 4
+
+        self.layers_actor = [
+            nn.Conv1d(self.channels, config.actor_kernels_count, kernel_size=8, stride=4, padding=2),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(fc_count, config.actor_h1),
+            nn.ReLU()
+        ]
+
+        init_xavier_uniform(self.layers_actor[0])
+        init_xavier_uniform(self.layers_actor[3])
+
+        self.actor = ActorNHeads(self.head_count, action_dim, self.layers_actor, config)
+        self.argmax = None
+
+        self.critic_target = copy.deepcopy(self.critic)
+        self.actor_target = copy.deepcopy(self.actor)
+        self.hard_update()
+
+    def action(self, state):
+        x = state
+        action = self.actor(x)
+
+        argmax = torch.randint(0, self.head_count, (state.shape[0],))
+        action = action.gather(dim=1, index=argmax.unsqueeze(-1).unsqueeze(-1).repeat(1, 1, self.action_dim))
+        self.argmax = argmax
+
+        return action.squeeze(1)
+
+    def index(self):
+        return self.argmax
+
+    def action_target(self, state):
+        with torch.no_grad():
+            action = self.actor_target(state)
+            argmax = torch.randint(0, self.head_count, (state.shape[0],))
+            action = action.gather(dim=1, index=argmax.unsqueeze(-1).unsqueeze(-1).repeat(1, 1, self.action_dim))
+
+        return action.squeeze(1)
+
+
 class DDPGAerisNetworkSURND(DDPGAerisNetwork):
     def __init__(self, input_shape, action_dim, config):
         super(DDPGAerisNetworkSURND, self).__init__(input_shape, action_dim, config)
