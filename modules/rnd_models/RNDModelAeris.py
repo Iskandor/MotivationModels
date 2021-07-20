@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import numpy as np
 
+from utils import one_hot_code
+
 
 class RNDModelAeris(nn.Module):
     def __init__(self, input_shape, action_dim, config):
@@ -16,6 +18,7 @@ class RNDModelAeris(nn.Module):
         self.width = input_shape[1]
 
         fc_count = config.forward_model_kernels_count * self.width // 4
+        hidden_count = 64
 
         self.target_model = nn.Sequential(
             nn.Conv1d(self.channels, config.forward_model_kernels_count, kernel_size=8, stride=4, padding=2),
@@ -25,7 +28,7 @@ class RNDModelAeris(nn.Module):
             nn.Conv1d(config.forward_model_kernels_count * 2, config.forward_model_kernels_count * 2, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(fc_count, 64)
+            nn.Linear(fc_count, hidden_count)
         )
 
         self._init(self.target_model[0], np.sqrt(2))
@@ -44,11 +47,11 @@ class RNDModelAeris(nn.Module):
             nn.Conv1d(config.forward_model_kernels_count * 2, config.forward_model_kernels_count * 2, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(fc_count, 64),
+            nn.Linear(fc_count, hidden_count),
             nn.ReLU(),
-            nn.Linear(64, 64),
+            nn.Linear(hidden_count, hidden_count),
             nn.ReLU(),
-            nn.Linear(64, 64)
+            nn.Linear(hidden_count, hidden_count)
         )
 
         self._init(self.model[0], np.sqrt(2))
@@ -108,6 +111,7 @@ class QRNDModelAeris(nn.Module):
         self.state_average = torch.zeros((1, input_shape[0], input_shape[1]))
 
         fc_count = config.forward_model_kernels_count * self.width // 4
+        hidden_count = 64
 
         self.target_model = nn.Sequential(
             nn.Conv1d(self.channels + action_dim, config.forward_model_kernels_count, kernel_size=8, stride=4, padding=2),
@@ -117,7 +121,7 @@ class QRNDModelAeris(nn.Module):
             nn.Conv1d(config.forward_model_kernels_count * 2, config.forward_model_kernels_count * 2, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(fc_count, 256)
+            nn.Linear(fc_count, hidden_count)
         )
 
         self._init(self.target_model[0], np.sqrt(2))
@@ -136,11 +140,11 @@ class QRNDModelAeris(nn.Module):
             nn.Conv1d(config.forward_model_kernels_count * 2, config.forward_model_kernels_count * 2, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(fc_count, 256),
+            nn.Linear(fc_count, hidden_count),
             nn.ReLU(),
-            nn.Linear(256, 256),
+            nn.Linear(hidden_count, hidden_count),
             nn.ReLU(),
-            nn.Linear(256, 256)
+            nn.Linear(hidden_count, hidden_count)
         )
 
         self._init(self.model[0], np.sqrt(2))
@@ -219,3 +223,44 @@ class DOPModelAeris(nn.Module):
         # loss = self.actor.log_prob(prob, action) * error.unsqueeze(-1) * self.eta
         loss = -self.error(state, action).unsqueeze(-1) * self.eta
         return loss.mean()
+
+
+class DOPV2ModelAeris(nn.Module):
+    def __init__(self, state_dim, action_dim, config, features, actor, motivator, arbiter):
+        super(DOPV2ModelAeris, self).__init__()
+
+        self.state_dim = state_dim
+        self.action_dim = action_dim
+
+        self.motivator = motivator
+        self.features = features
+        self.actor = actor
+        self.arbiter = arbiter
+        self.eta = config.motivation_eta
+
+    def forward(self, state, action):
+        predicted_code = self.motivator(state, action)
+        return predicted_code
+
+    def error(self, state, action):
+        return self.motivator.error(state, action)
+
+    def motivator_loss_function(self, state, action, prediction=None):
+        return self.motivator.loss_function(state, action, prediction)
+
+    def generator_loss_function(self, state):
+        if self.features is not None:
+            x = self.features(state)
+        else:
+            x = state
+        action = self.actor(x)
+        action = action.view(-1, self.action_dim)
+        state = state.unsqueeze(1).repeat(1, self.actor.head_count, 1, 1).view(-1, self.state_dim[0], self.state_dim[1])
+        error = self.error(state, action)
+
+        index = self.arbiter(x)
+        index_target = one_hot_code(torch.argmax(error.view(-1, self.actor.head_count, 1).detach(), dim=1), self.actor.head_count)
+
+        loss_arbiter = nn.functional.binary_cross_entropy(index, index_target, reduction='mean')
+        loss_generator = -error.unsqueeze(-1).mean()
+        return (loss_generator * self.eta) + (loss_arbiter * 10)

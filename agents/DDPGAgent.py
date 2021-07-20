@@ -4,7 +4,7 @@ from algorithms.DDPG import DDPG
 from algorithms.ReplayBuffer import ExperienceReplayBuffer, M2ReplayBuffer, DOPReplayBuffer, PPOTrajectoryBuffer, MDPTrajectoryBuffer
 from modules.DDPG_Modules import DDPGSimpleNetwork, DDPGAerisNetwork, DDPGAerisNetworkFM, DDPGAerisNetworkFME, DDPGAerisNetworkIM, DDPGAerisNetworkM2, DDPGAerisNetworkFIM, DDPGAerisNetworkSU, \
     DDPGAerisNetworkRND, DDPGAerisNetworkSURND, DDPGBulletNetwork, DDPGBulletNetworkFM, DDPGBulletNetworkSU, DDPGBulletNetworkRND, DDPGBulletNetworkSURND, DDPGBulletNetworkQRND, DDPGBulletNetworkDOP, \
-    DDPGBulletNetworkDOPSimple, DDPGAerisNetworkQRND, DDPGAerisNetworkDOP, DDPGAerisNetworkDOPRef
+    DDPGBulletNetworkDOPSimple, DDPGAerisNetworkQRND, DDPGAerisNetworkDOP, DDPGAerisNetworkDOPRef, DDPGAerisNetworkDOPV2
 from motivation.ForwardInverseModelMotivation import ForwardInverseModelMotivation
 from motivation.ForwardModelMotivation import ForwardModelMotivation
 from motivation.M2Motivation import M2Motivation
@@ -327,7 +327,7 @@ class DDPGAerisDOPAgent(DDPGAgent):
         super().__init__(input_shape, action_dim, config)
         self.memory = ExperienceReplayBuffer(config.memory_size)
         self.motivation_memory = MDPTrajectoryBuffer(self.config.forward_model_batch_size, self.config.forward_model_batch_size)
-        self.network = DDPGAerisNetworkDOP(input_shape, action_dim, config).to(config.device)
+        self.network = DDPGAerisNetworkDOPV2(input_shape, action_dim, config).to(config.device)
         self.motivation = DOPMotivation(self.network.dop_model, config.forward_model_lr, config.actor_lr, config.motivation_eta, config.device)
         self.algorithm = DDPG(self.network, config.actor_lr, config.critic_lr, config.gamma, config.tau, self.memory, config.batch_size)
 
