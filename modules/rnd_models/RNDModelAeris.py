@@ -253,12 +253,16 @@ class DOPV2ModelAeris(nn.Module):
             x = self.features(state)
         else:
             x = state
+
         action = self.actor(x)
         action = action.view(-1, self.action_dim)
-        state = state.unsqueeze(1).repeat(1, self.actor.head_count, 1, 1).view(-1, self.state_dim[0], self.state_dim[1])
-        error = self.error(state, action)
+        s = state.unsqueeze(1).repeat(1, self.actor.head_count, 1, 1).view(-1, self.state_dim[0], self.state_dim[1])
+        a = action.unsqueeze(2).repeat(1, 1, state.shape[2])
 
-        index = self.arbiter(x)
+        error = self.error(s, action)
+
+        x = torch.cat([s, a], dim=1)
+        index = self.arbiter(x).view(-1, self.actor.head_count)
         index_target = one_hot_code(torch.argmax(error.view(-1, self.actor.head_count, 1).detach(), dim=1), self.actor.head_count)
 
         loss_arbiter = nn.functional.binary_cross_entropy(index, index_target, reduction='mean')

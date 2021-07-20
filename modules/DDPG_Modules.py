@@ -457,12 +457,12 @@ class DDPGAerisNetworkDOPV2(DDPGAerisNetwork):
         init_xavier_uniform(self.layers_actor[3])
 
         self.arbiter = nn.Sequential(
-            nn.Conv1d(self.channels, config.actor_kernels_count, kernel_size=8, stride=4, padding=2),
+            nn.Conv1d(self.channels + action_dim, config.actor_kernels_count, kernel_size=8, stride=4, padding=2),
             nn.ReLU(),
             nn.Flatten(),
             nn.Linear(fc_count, fc_count),
             nn.ReLU(),
-            nn.Linear(fc_count, self.head_count),
+            nn.Linear(fc_count, 1),
             nn.Sigmoid()
         )
 
@@ -480,9 +480,15 @@ class DDPGAerisNetworkDOPV2(DDPGAerisNetwork):
 
     def action(self, state):
         x = state
-        action = self.actor(x)
-        argmax = self.arbiter(x).argmax(dim=1)
+        action = self.actor(x).view(-1, self.action_dim)
+
+        s = state.unsqueeze(1).repeat(1, self.head_count, 1, 1).view(-1, self.channels, self.width)
+        a = action.unsqueeze(2).repeat(1, 1, state.shape[2])
+        x = torch.cat([s, a], dim=1)
+        argmax = self.arbiter(x).view(-1, self.head_count).argmax(dim=1)
+        action = action.view(-1, self.head_count, self.action_dim)
         action = action.gather(dim=1, index=argmax.unsqueeze(-1).unsqueeze(-1).repeat(1, 1, self.action_dim))
+
         self.argmax = argmax
 
         return action.squeeze(1)
@@ -492,8 +498,13 @@ class DDPGAerisNetworkDOPV2(DDPGAerisNetwork):
 
     def action_target(self, state):
         with torch.no_grad():
-            action = self.actor_target(state)
-            argmax = self.arbiter(state).argmax(dim=1)
+            action = self.actor_target(state).view(-1, self.action_dim)
+
+            s = state.unsqueeze(1).repeat(1, self.head_count, 1, 1).view(-1, self.channels, self.width)
+            a = action.unsqueeze(2).repeat(1, 1, state.shape[2])
+            x = torch.cat([s, a], dim=1)
+            argmax = self.arbiter(x).view(-1, self.head_count).argmax(dim=1)
+            action = action.view(-1, self.head_count, self.action_dim)
             action = action.gather(dim=1, index=argmax.unsqueeze(-1).unsqueeze(-1).repeat(1, 1, self.action_dim))
 
         return action.squeeze(1)
