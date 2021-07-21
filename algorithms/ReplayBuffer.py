@@ -7,7 +7,7 @@ import torch
 import numpy as np
 
 MDP_Transition = namedtuple('MDP_Transition', ('state', 'action', 'next_state', 'reward', 'mask'))
-MDP_DOP_Transition = namedtuple('MDP_DOP_Transition', ('state', 'action', 'noise', 'index', 'next_state', 'reward', 'mask'))
+MDP_DOP_Transition = namedtuple('MDP_DOP_Transition', ('state', 'action', 'arbiter_action', 'next_state', 'reward', 'mask'))
 M2_Transition = namedtuple('M2_Transition', ('state', 'action', 'next_state', 'gate_state', 'weight', 'next_gate_state', 'reward', 'mask'))
 PPO_Transition = namedtuple('PPO_Transition', ('state', 'value', 'action', 'prob', 'next_state', 'reward', 'mask'))
 
@@ -78,20 +78,56 @@ class ExperienceReplayBuffer(ReplayBuffer):
 
 
 class DOPReplayBuffer(ReplayBuffer):
-    def add(self, state, action, noise, index, next_state, reward, mask):
-        if mask:
-            self.memory.append(MDP_DOP_Transition(state, action, noise, index, next_state, torch.tensor([reward], dtype=torch.float32), torch.tensor([0], dtype=torch.float32)))
-        else:
-            self.memory.append(MDP_DOP_Transition(state, action, noise, index, next_state, torch.tensor([reward], dtype=torch.float32), torch.tensor([1], dtype=torch.float32)))
+    def dynamic_memory_init(self, state, action, arbiter_action, reward):
+        shape = (self.capacity,) + tuple(state.shape[1:])
+        self.memory['state'] = torch.zeros(shape)
+        shape = (self.capacity,) + tuple(action.shape[1:])
+        self.memory['action'] = torch.zeros(shape)
+        shape = (self.capacity,) + tuple(arbiter_action.shape[1:])
+        self.memory['arbiter_action'] = torch.zeros(shape)
+        shape = (self.capacity,) + tuple(state.shape[1:])
+        self.memory['next_state'] = torch.zeros(shape)
+        shape = (self.capacity,) + tuple(reward.shape[1:])
+        self.memory['reward'] = torch.zeros(shape)
+        shape = (self.capacity, 1)
+        self.memory['mask'] = torch.zeros(shape)
+
+    def add(self, state, action, arbiter_action, next_state, reward, mask):
+        if len(self.memory) == 0:
+            self.dynamic_memory_init(state, action, arbiter_action, reward)
+
+        self.memory['state'][self.index] = state
+        self.memory['action'][self.index] = action
+        self.memory['arbiter_action'][self.index] = arbiter_action
+        self.memory['next_state'][self.index] = next_state
+        self.memory['reward'][self.index] = reward
+        self.memory['mask'][self.index] = 1 - mask
+
+        self.index += 1
+        if self.capacity_index < self.capacity:
+            self.capacity_index += 1
+        if self.index == self.capacity:
+            self.index = 0
 
     def sample(self, indices):
-        transitions = list(itemgetter(*indices)(self.memory))
-        batch = MDP_DOP_Transition(*zip(*transitions))
+        state = self.memory['state'][indices]
+        action = self.memory['action'][indices]
+        arbiter_action = self.memory['arbiter_action'][indices]
+        next_state = self.memory['next_state'][indices]
+        reward = self.memory['reward'][indices]
+        mask = self.memory['mask'][indices]
 
-        return batch
+        return MDP_DOP_Transition(state, action, arbiter_action, next_state, reward, mask)
 
     def sample_batches(self, indices):
-        return [self.sample(indices)]
+        state = self.memory['state'][indices].unsqueeze(0)
+        action = self.memory['action'][indices].unsqueeze(0)
+        arbiter_action = self.memory['arbiter_action'][indices].unsqueeze(0)
+        next_state = self.memory['next_state'][indices].unsqueeze(0)
+        reward = self.memory['reward'][indices].unsqueeze(0)
+        mask = self.memory['mask'][indices].unsqueeze(0)
+
+        return MDP_DOP_Transition(state, action, arbiter_action, next_state, reward, mask), 1
 
 
 class M2ReplayBuffer(ReplayBuffer):

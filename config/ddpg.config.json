@@ -411,7 +411,7 @@
       "forward_model_batch_size": 8
     },
     "21": {
-      "descriptor": "DOP V2B",
+      "descriptor": "DOP V2Q",
       "model": "dop",
       "sigma": 0,
       "exploration_time": 0,

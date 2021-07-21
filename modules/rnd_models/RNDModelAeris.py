@@ -268,3 +268,50 @@ class DOPV2ModelAeris(nn.Module):
         loss_arbiter = nn.functional.binary_cross_entropy(index, index_target, reduction='mean')
         loss_generator = -error.unsqueeze(-1).mean()
         return (loss_generator * self.eta) + (loss_arbiter * 10)
+
+
+class DOPV2QModelAeris(nn.Module):
+    def __init__(self, state_dim, action_dim, config, features, actor, motivator, arbiter):
+        super(DOPV2QModelAeris, self).__init__()
+
+        self.state_dim = state_dim
+        self.action_dim = action_dim
+
+        self.motivator = motivator
+        self.features = features
+        self.actor = actor
+        self.arbiter = arbiter
+        self.eta = config.motivation_eta
+
+    def forward(self, state, action):
+        predicted_code = self.motivator(state, action)
+        return predicted_code
+
+    def error(self, state, action):
+        return self.motivator.error(state, action)
+
+    def motivator_loss_function(self, state, action, prediction=None):
+        return self.motivator.loss_function(state, action, prediction)
+
+    def generator_loss_function(self, state, next_state, mask, gamma):
+        if self.features is not None:
+            x = self.features(state)
+        else:
+            x = state
+
+        action = self.actor(x).view(-1, self.action_dim)
+        s = x.unsqueeze(1).repeat(1, self.actor.head_count, 1, 1).view(-1, self.state_dim[0], self.state_dim[1])
+        error = self.error(s, action)
+
+        error_max = error.view(-1, self.actor.head_count).max(dim=1)
+        index = error_max.indices.unsqueeze(-1)
+        intrinsic_reward = error_max.values.unsqueeze(-1)
+
+        current_q_value = self.arbiter(state).gather(dim=1, index=index)
+        max_next_q_value = self.arbiter(next_state).max(dim=1).values.unsqueeze(-1)
+        expected_q_values = intrinsic_reward + mask * (gamma * max_next_q_value)
+
+        loss_arbiter = torch.nn.functional.mse_loss(current_q_value, expected_q_values.detach(), reduction='sum')
+
+        loss_generator = -error.unsqueeze(-1).mean()
+        return (loss_generator * self.eta) + loss_arbiter
