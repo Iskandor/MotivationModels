@@ -2,6 +2,7 @@ import copy
 
 import torch
 from torch import nn
+from torch.distributions import Categorical
 
 from modules import init_xavier_uniform
 from modules.encoders.EncoderAeris import EncoderAeris
@@ -436,6 +437,74 @@ class DDPGAerisNetworkDOP(DDPGAerisNetwork):
 class DDPGAerisNetworkDOPV2(DDPGAerisNetwork):
     def __init__(self, input_shape, action_dim, config):
         super(DDPGAerisNetworkDOPV2, self).__init__(input_shape, action_dim, config)
+
+        self.action_dim = action_dim
+        self.channels = input_shape[0]
+        self.width = input_shape[1]
+        self.head_count = 4
+        self.argmax = None
+
+        fc_count = config.critic_kernels_count * self.width // 4
+
+        self.layers_actor = [
+            nn.Conv1d(self.channels, config.actor_kernels_count, kernel_size=8, stride=4, padding=2),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(fc_count, config.actor_h1),
+            nn.ReLU()
+        ]
+
+        init_xavier_uniform(self.layers_actor[0])
+        init_xavier_uniform(self.layers_actor[3])
+
+        self.arbiter = nn.Sequential(
+            nn.Conv1d(self.channels, config.actor_kernels_count, kernel_size=8, stride=4, padding=2),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(fc_count, fc_count),
+            nn.ReLU(),
+            nn.Linear(fc_count, self.head_count)
+        )
+
+        init_xavier_uniform(self.arbiter[0])
+        init_xavier_uniform(self.arbiter[3])
+        init_xavier_uniform(self.arbiter[5])
+
+        self.actor = ActorNHeads(self.head_count, action_dim, self.layers_actor, config)
+        self.motivator = QRNDModelAeris(input_shape, action_dim, config)
+        self.dop_model = DOPV2ModelAeris(input_shape, action_dim, config, None, self.actor, self.motivator, self.arbiter)
+
+        self.critic_target = copy.deepcopy(self.critic)
+        self.actor_target = copy.deepcopy(self.actor)
+        self.hard_update()
+
+    def action(self, state):
+        action = self.actor(state)
+        action, argmax = self._select_action(state, action)
+        self.argmax = argmax
+
+        return action
+
+    def index(self):
+        return self.argmax
+
+    def action_target(self, state):
+        with torch.no_grad():
+            action = self.actor_target(state)
+            action, _ = self._select_action(state, action)
+
+        return action
+
+    def _select_action(self, state, action):
+        probs = torch.softmax(self.arbiter(state), dim=1)
+        dist = Categorical(probs)
+        index = dist.sample()
+        return action.gather(dim=1, index=index.unsqueeze(-1).unsqueeze(-1).repeat(1, 1, self.action_dim)).squeeze(1), index
+
+
+class DDPGAerisNetworkDOPV2B(DDPGAerisNetwork):
+    def __init__(self, input_shape, action_dim, config):
+        super(DDPGAerisNetworkDOPV2B, self).__init__(input_shape, action_dim, config)
 
         self.action_dim = action_dim
         self.channels = input_shape[0]

@@ -253,6 +253,47 @@ class DOPV2ModelAeris(nn.Module):
             x = self.features(state)
         else:
             x = state
+        action = self.actor(x)
+        action = action.view(-1, self.action_dim)
+        state = state.unsqueeze(1).repeat(1, self.actor.head_count, 1, 1).view(-1, self.state_dim[0], self.state_dim[1])
+        error = self.error(state, action)
+
+        index = self.arbiter(x)
+        index_target = one_hot_code(torch.argmax(error.view(-1, self.actor.head_count, 1).detach(), dim=1), self.actor.head_count)
+
+        loss_arbiter = nn.functional.mse_loss(index, index_target, reduction='mean')
+        loss_generator = -error.unsqueeze(-1).mean()
+        return (loss_generator * self.eta) + (loss_arbiter * 10)
+
+
+class DOPV2BModelAeris(nn.Module):
+    def __init__(self, state_dim, action_dim, config, features, actor, motivator, arbiter):
+        super(DOPV2BModelAeris, self).__init__()
+
+        self.state_dim = state_dim
+        self.action_dim = action_dim
+
+        self.motivator = motivator
+        self.features = features
+        self.actor = actor
+        self.arbiter = arbiter
+        self.eta = config.motivation_eta
+
+    def forward(self, state, action):
+        predicted_code = self.motivator(state, action)
+        return predicted_code
+
+    def error(self, state, action):
+        return self.motivator.error(state, action)
+
+    def motivator_loss_function(self, state, action, prediction=None):
+        return self.motivator.loss_function(state, action, prediction)
+
+    def generator_loss_function(self, state):
+        if self.features is not None:
+            x = self.features(state)
+        else:
+            x = state
 
         action = self.actor(x)
         action = action.view(-1, self.action_dim)
