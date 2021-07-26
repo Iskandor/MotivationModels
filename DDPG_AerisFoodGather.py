@@ -43,6 +43,14 @@ def run_dop_model(config, i):
     DDPG_AerisEnv.run_dop_model(env_name, config, i)
 
 
+def run_dop2_model(config, i):
+    DDPG_AerisEnv.run_dop2_model(env_name, config, i)
+
+
+def run_dop2q_model(config, i):
+    DDPG_AerisEnv.run_dop2q_model(env_name, config, i)
+
+
 def run_dop_ref_model(config, i):
     DDPG_AerisEnv.run_dop_ref_model(env_name, config, i)
 
