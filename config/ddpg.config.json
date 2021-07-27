@@ -50,7 +50,7 @@
       "critic_lr": 0.0002,
       "critic_kernels_count": 32,
       "critic_h1": 256,
-      "forward_model_lr": 0.001,
+      "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
       "forward_model_batch_size": 8
@@ -71,7 +71,7 @@
       "critic_lr": 0.0002,
       "critic_kernels_count": 32,
       "critic_h1": 256,
-      "forward_model_lr": 0.001,
+      "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
       "forward_model_batch_size": 8
@@ -453,6 +453,48 @@
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
       "forward_model_batch_size": 8
+    },
+    "23": {
+      "model": "dop",
+      "sigma": 0,
+      "exploration_time": 0,
+      "trials": 15,
+      "steps": 0.6,
+      "gamma": 0.99,
+      "tau ": 0.005,
+      "batch_size": 32,
+      "memory_size": 100000,
+      "actor_lr": 0.0001,
+      "actor_kernels_count": 32,
+      "actor_h1": 64,
+      "critic_lr": 0.0002,
+      "critic_kernels_count": 32,
+      "critic_h1": 256,
+      "forward_model_lr": 0.0001,
+      "forward_model_kernels_count": 32,
+      "motivation_eta": 1,
+      "forward_model_batch_size": 8
+    },
+    "24": {
+      "model": "dop_2",
+      "sigma": 0,
+      "exploration_time": 0,
+      "trials": 15,
+      "steps": 0.6,
+      "gamma": 0.99,
+      "tau ": 0.005,
+      "batch_size": 32,
+      "memory_size": 100000,
+      "actor_lr": 0.0001,
+      "actor_kernels_count": 32,
+      "actor_h1": 64,
+      "critic_lr": 0.0002,
+      "critic_kernels_count": 32,
+      "critic_h1": 256,
+      "forward_model_lr": 0.0001,
+      "forward_model_kernels_count": 32,
+      "motivation_eta": 1,
+      "forward_model_batch_size": 8
     }
   },
   "aeris_hazards": {
@@ -506,7 +548,7 @@
       "critic_lr": 0.0002,
       "critic_kernels_count": 32,
       "critic_h1": 256,
-      "forward_model_lr": 0.001,
+      "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
       "forward_model_batch_size": 8
@@ -527,7 +569,7 @@
       "critic_lr": 0.0002,
       "critic_kernels_count": 32,
       "critic_h1": 256,
-      "forward_model_lr": 0.001,
+      "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
       "forward_model_batch_size": 8
@@ -586,7 +628,7 @@
       "critic_lr": 0.0002,
       "critic_kernels_count": 32,
       "critic_h1": 256,
-      "forward_model_lr": 0.001,
+      "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
       "forward_model_batch_size": 8
@@ -643,7 +685,7 @@
       "critic_lr": 0.0002,
       "critic_kernels_count": 32,
       "critic_h1": 256,
-      "forward_model_lr": 0.001,
+      "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
       "forward_model_batch_size": 8
@@ -664,7 +706,7 @@
       "critic_lr": 0.0002,
       "critic_kernels_count": 32,
       "critic_h1": 256,
-      "forward_model_lr": 0.001,
+      "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
       "forward_model_batch_size": 8
@@ -723,7 +765,7 @@
       "critic_lr": 0.0002,
       "critic_kernels_count": 32,
       "critic_h1": 256,
-      "forward_model_lr": 0.001,
+      "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
       "forward_model_batch_size": 8
@@ -780,7 +822,7 @@
       "critic_lr": 0.0002,
       "critic_kernels_count": 32,
       "critic_h1": 256,
-      "forward_model_lr": 0.001,
+      "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
       "forward_model_batch_size": 8
@@ -801,7 +843,7 @@
       "critic_lr": 0.0002,
       "critic_kernels_count": 32,
       "critic_h1": 256,
-      "forward_model_lr": 0.001,
+      "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
       "forward_model_batch_size": 8
@@ -860,7 +902,7 @@
       "critic_lr": 0.0002,
       "critic_kernels_count": 32,
       "critic_h1": 256,
-      "forward_model_lr": 0.001,
+      "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
       "forward_model_batch_size": 8
