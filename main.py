@@ -298,7 +298,7 @@ if __name__ == '__main__':
                 num_cpus = psutil.cpu_count(logical=True)
             else:
                 num_cpus = min(psutil.cpu_count(logical=True), args.num_processes)
-            print('Running parallel {0} trainings'.format(num_cpus))
+            print('Running parallel {0} trainings'.format(min(experiment.trials, num_cpus)))
             print('Using {0} parallel backend'.format(args.parallel_backend))
 
             if args.parallel_backend == 'ray':
