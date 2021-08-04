@@ -650,7 +650,7 @@
       "motivation_eta": 0.1,
       "forward_model_batch_size": 8
     },
-    "33": {
+    "32": {
       "descriptor": "rnd fc",
       "model": "rnd",
       "sigma": 0,
