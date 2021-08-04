@@ -4,7 +4,7 @@ import torch
 from torch import nn
 from torch.distributions import Categorical
 
-from modules import init_xavier_uniform
+from modules import init_xavier_uniform, init_custom
 from modules.encoders.EncoderAeris import EncoderAeris
 from modules.forward_models.ForwardModelAeris import ForwardModelAeris, ForwardModelEncoderAeris
 from modules.forward_models.ForwardModelBullet import ForwardModelBullet
@@ -100,9 +100,18 @@ class ActorNHeads(nn.Module):
             nn.Tanh())
             for _ in range(head_count)]
 
-        for h in self.heads:
-            init_xavier_uniform(h[0])
-            init_xavier_uniform(h[2])
+        # for h in self.heads:
+        #     init_xavier_uniform(h[0])
+        #     init_xavier_uniform(h[2])
+
+        weight1 = torch.zeros(head_count, config.actor_h1, config.actor_h1)
+        nn.init.orthogonal_(weight1, 0.01)
+        weight2 = torch.zeros(head_count, action_dim, config.actor_h1)
+        nn.init.orthogonal_(weight2, 0.01)
+
+        for i, h in enumerate(self.heads):
+            init_custom(h[0], weight1[i])
+            init_custom(h[2], weight2[i])
 
     def forward(self, x):
         x = self.actor(x)
