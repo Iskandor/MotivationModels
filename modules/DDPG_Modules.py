@@ -3,6 +3,7 @@ import copy
 import torch
 from torch import nn
 from torch.distributions import Categorical
+import numpy as np
 
 from modules import init_xavier_uniform, init_custom
 from modules.encoders.EncoderAeris import EncoderAeris
@@ -105,9 +106,9 @@ class ActorNHeads(nn.Module):
         #     init_xavier_uniform(h[2])
 
         weight1 = torch.zeros(head_count, config.actor_h1, config.actor_h1)
-        nn.init.orthogonal_(weight1, 0.01)
+        nn.init.orthogonal_(weight1, 10)
         weight2 = torch.zeros(head_count, action_dim, config.actor_h1)
-        nn.init.orthogonal_(weight2, 0.01)
+        nn.init.orthogonal_(weight2, 10)
 
         for i, h in enumerate(self.heads):
             init_custom(h[0], weight1[i])

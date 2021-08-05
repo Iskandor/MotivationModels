@@ -6,17 +6,17 @@ from plots.chart import plot_multiple_models, plot_baseline_details, plot_forwar
 root = 'C:/GIT/Experiments/plots'
 
 
-def plot(config, plot_overview=True, plot_details=[], window=1000):
+def plot(name, config, plot_overview=True, plot_details=[], window=1000):
     data = prepare_data(config)
     algorithm = config[0]['algorithm']
     env = config[0]['env']
-    legend = [key['model'] for key in config]
+    legend = ['{0:s} {1:s}'.format(key['model'], key['id']) for key in config]
 
     if plot_overview:
         path = os.path.join(root, algorithm, env)
         if not os.path.exists(path):
             os.mkdir(path)
-        path = os.path.join(path, env)
+        path = os.path.join(path, name)
         plot_multiple_models(
             data,
             legend,
