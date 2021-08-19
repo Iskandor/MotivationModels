@@ -2,20 +2,18 @@ import torch
 
 
 class DDPG:
-    def __init__(self, network, actor_lr, critic_lr, gamma, tau, memory_buffer, sample_size, motivation=None):
+    def __init__(self, network, actor_lr, critic_lr, gamma, tau, motivation=None):
         self.network = network
         self.motivation = motivation
-        self._memory = memory_buffer
-        self._sample_size = sample_size
         self._gamma = gamma
         self._tau = tau
 
         self._critic_optimizer = torch.optim.Adam(self.network.critic.parameters(), lr=critic_lr)
         self._actor_optimizer = torch.optim.Adam(self.network.actor.parameters(), lr=actor_lr)
 
-    def train_sample(self, indices):
+    def train_sample(self, memory, indices):
         if indices:
-            sample = self._memory.sample(indices)
+            sample = memory.sample(indices)
 
             states = sample.state
             next_states = sample.next_state
@@ -24,7 +22,7 @@ class DDPG:
             masks = sample.mask
 
             if self.motivation:
-                rewards += self.motivation.reward_sample(self._memory, indices)
+                rewards += self.motivation.reward_sample(memory, indices)
 
             self.train(states, actions, next_states, rewards, masks)
 

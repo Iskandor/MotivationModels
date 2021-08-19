@@ -23,11 +23,11 @@ class RNDModelAeris(nn.Module):
 
         self.target_model = nn.Sequential(
             nn.Conv1d(self.channels, config.forward_model_kernels_count, kernel_size=8, stride=4, padding=2),
-            nn.ReLU(),
+            nn.ELU(),
             nn.Conv1d(config.forward_model_kernels_count, config.forward_model_kernels_count * 2, kernel_size=4, stride=2, padding=1),
-            nn.ReLU(),
+            nn.ELU(),
             nn.Conv1d(config.forward_model_kernels_count * 2, config.forward_model_kernels_count * 2, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
+            nn.ELU(),
             nn.Flatten(),
             nn.Linear(fc_count, hidden_count)
         )
@@ -42,16 +42,16 @@ class RNDModelAeris(nn.Module):
 
         self.model = nn.Sequential(
             nn.Conv1d(self.channels, config.forward_model_kernels_count, kernel_size=8, stride=4, padding=2),
-            nn.ReLU(),
+            nn.ELU(),
             nn.Conv1d(config.forward_model_kernels_count, config.forward_model_kernels_count * 2, kernel_size=4, stride=2, padding=1),
-            nn.ReLU(),
+            nn.ELU(),
             nn.Conv1d(config.forward_model_kernels_count * 2, config.forward_model_kernels_count * 2, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
+            nn.ELU(),
             nn.Flatten(),
             nn.Linear(fc_count, hidden_count),
-            nn.ReLU(),
+            nn.ELU(),
             nn.Linear(hidden_count, hidden_count),
-            nn.ReLU(),
+            nn.ELU(),
             nn.Linear(hidden_count, hidden_count)
         )
 
@@ -114,11 +114,11 @@ class QRNDModelAeris(nn.Module):
 
         self.target_model = nn.Sequential(
             nn.Conv1d(self.channels, config.forward_model_kernels_count, kernel_size=8, stride=4, padding=2),
-            nn.ReLU(),
+            nn.ELU(),
             nn.Conv1d(config.forward_model_kernels_count, config.forward_model_kernels_count * 2, kernel_size=4, stride=2, padding=1),
-            nn.ReLU(),
+            nn.ELU(),
             nn.Conv1d(config.forward_model_kernels_count * 2, config.forward_model_kernels_count * 2, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
+            nn.ELU(),
             nn.Flatten(),
             nn.Linear(fc_count, hidden_count)
         )
@@ -133,16 +133,16 @@ class QRNDModelAeris(nn.Module):
 
         self.model = nn.Sequential(
             nn.Conv1d(self.channels, config.forward_model_kernels_count, kernel_size=8, stride=4, padding=2),
-            nn.ReLU(),
+            nn.ELU(),
             nn.Conv1d(config.forward_model_kernels_count, config.forward_model_kernels_count * 2, kernel_size=4, stride=2, padding=1),
-            nn.ReLU(),
+            nn.ELU(),
             nn.Conv1d(config.forward_model_kernels_count * 2, config.forward_model_kernels_count * 2, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
+            nn.ELU(),
             nn.Flatten(),
             nn.Linear(fc_count, hidden_count),
-            nn.ReLU(),
+            nn.ELU(),
             nn.Linear(hidden_count, hidden_count),
-            nn.ReLU(),
+            nn.ELU(),
             nn.Linear(hidden_count, hidden_count)
         )
 

@@ -7,7 +7,7 @@ from algorithms.DDPG import DDPG
 class M3Motivation:
     def __init__(self, gate, critic, gate_lr, critic_lr, gamma, tau, memory_buffer, sample_size, forward_model, meta_critic):
         self._gate = gate
-        self._ddpg = DDPG(gate, critic, gate_lr, critic_lr, gamma, tau, memory_buffer, sample_size)
+        self._ddpg = DDPG(gate, critic, gate_lr, critic_lr, gamma, sample_size)
         self._forward_model = forward_model
         self._meta_critic = meta_critic
 
