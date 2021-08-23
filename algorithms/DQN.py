@@ -1,64 +1,41 @@
-import abc
-import copy
-
 import torch
-from algorithms.ReplayBuffer import ExperienceReplayBuffer
-
-
-class DQNCritic(torch.nn.Module):
-    @abc.abstractmethod
-    def __init__(self, state_dim, action_dim):
-        super(DQNCritic, self).__init__()
-
-    @abc.abstractmethod
-    def forward(self, state):
-        raise NotImplementedError
 
 
 class DQN:
-    def __init__(self, critic, memory_size, sample_size, critic_lr, gamma, weight_decay=0):
-        self._critic = critic
-        self._critic_target = copy.deepcopy(critic)
-        self._memory = ExperienceReplayBuffer(memory_size)
-        self._sample_size = sample_size
-        self._gamma = gamma
-        self._update_step = 0
+    def __init__(self, network, critic_lr, gamma, weight_decay=0, motivation=None):
+        self.network = network
+        self.gamma = gamma
+        self.update_step = 0
+        self.motivation = motivation
 
-        self._hard_update(self._critic_target, self._critic)
-        self._critic_optimizer = torch.optim.Adam(self._critic.parameters(), lr=critic_lr, weight_decay=weight_decay)
+        self.critic_optimizer = torch.optim.Adam(self.network.parameters(), lr=critic_lr, weight_decay=weight_decay)
 
-    def get_action(self, state):
-        return self.activate(state).argmax(0).item()
+    def train_sample(self, memory, indices):
+        if indices:
+            sample = memory.sample(indices)
+
+            states = sample.state
+            next_states = sample.next_state
+            actions = sample.action
+            rewards = sample.reward
+            masks = sample.mask
+
+            if self.motivation:
+                rewards += self.motivation.reward_sample(memory, indices)
+
+            self.train(states, actions, next_states, rewards, masks)
 
     def train(self, state0, action0, state1, reward, done):
-        self._memory.add(state0, action0, state1, reward, done)
-
-        if len(self._memory) > self._sample_size:
-            sample = self._memory.sample(self._sample_size)
-
-            states = torch.stack(sample.state)
-            next_states = torch.stack(sample.next_state)
-            actions = torch.Tensor(sample.action).long().unsqueeze(1)
-            rewards = torch.Tensor(sample.reward)
-            masks = torch.Tensor(sample.mask)
-
-            Qs0a = self._critic(states).gather(1, actions).squeeze()
-            Qs1max = self._critic_target(next_states).max(1)[0]
-            target = rewards + masks * self._gamma * Qs1max
+            Qs0a = self.network.value(state0).gather(dim=1, index=action0.type(torch.int64)).squeeze()
+            Qs1max = self.network.value_target(state1).max(1)[0]
+            target = reward + done * self.gamma * Qs1max
 
             loss = torch.nn.functional.mse_loss(Qs0a, target.detach())
-            self._critic_optimizer.zero_grad()
+            self.critic_optimizer.zero_grad()
             loss.backward()
-            self._critic_optimizer.step()
+            self.critic_optimizer.step()
 
-            self._update_step += 1
-            if self._update_step == 100:
-                self._update_step = 0
-                self._hard_update(self._critic_target, self._critic)
-
-    def activate(self, state):
-        return self._critic(state)
-
-    def _hard_update(self, target, source):
-        for target_param, param in zip(target.parameters(), source.parameters()):
-            target_param.data.copy_(param.data)
+            self.update_step += 1
+            if self.update_step == 100:
+                self.update_step = 0
+                self.network.hard_update()

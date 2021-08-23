@@ -22,8 +22,6 @@ class ExperimentDDPG:
         self._env_name = env_name
         self._env = env
         self._config = config
-        self._actor = None
-        self._critic = None
         self._preprocess = None
         self._reward_transform = None
 

@@ -1,0 +1,17 @@
+{
+  "cart_pole": {
+    "1": {
+      "model": "baseline",
+      "epsilon": 0.4,
+      "exploration_time": 0.9,
+      "trials": 1,
+      "steps": 0.1,
+      "gamma": 0.99,
+      "batch_size": 32,
+      "memory_size": 100000,
+      "critic_lr": 0.0003,
+      "critic_h1": 128,
+      "critic_h2": 64
+    }
+  }
+}

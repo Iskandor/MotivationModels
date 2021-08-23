@@ -22,6 +22,7 @@ import DDPG_Hopper
 import DDPG_LunarLander
 import DDPG_MountainCar
 import DDPG_Reacher
+import DQN_CartPole
 import PPO_AerisAvoidFragiles
 import PPO_AerisAvoidHazards
 import PPO_AerisNavigate
@@ -40,6 +41,15 @@ import PPO_Solaris
 import PPO_Venture
 from config import load_config_file
 from config.Config import Config
+
+
+def set_env_class_dqn(env):
+    env_class = None
+
+    if env == 'cart_pole':
+        env_class = DQN_CartPole
+
+    return env_class
 
 
 def set_env_class_ddpg(env):
@@ -124,6 +134,8 @@ def set_env_class(algorithm, env):
 
     if algorithm == 'a2c':
         env_class = set_env_class_a2c(env)
+    if algorithm == 'dqn':
+        env_class = set_env_class_dqn(env)
     if algorithm == 'ddpg':
         env_class = set_env_class_ddpg(env)
     if algorithm == 'ppo':
