@@ -134,7 +134,7 @@ def run_dop2_model(env_name, config, i):
     experiment = ExperimentDDPG(env_name, env, config)
 
     agent = DDPGAerisDOPV2Agent(state_dim, action_dim, config)
-    experiment.run_dop_model(agent, i)
+    experiment.run_dop2_model(agent, i)
 
     env.close()
 
@@ -147,7 +147,7 @@ def run_dop2q_model(env_name, config, i):
     experiment = ExperimentDDPG(env_name, env, config)
 
     agent = DDPGAerisDOPV2QAgent(state_dim, action_dim, config)
-    experiment.run_dop_model(agent, i)
+    experiment.run_dop2_model(agent, i)
 
     env.close()
 

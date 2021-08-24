@@ -453,6 +453,7 @@ class DDPGAerisNetworkDOPV2(DDPGAerisNetwork):
         self.width = input_shape[1]
         self.head_count = 4
         self.argmax = None
+        self.arbiter_accuracy = 0
 
         fc_count = config.critic_kernels_count * self.width // 4
 
@@ -489,14 +490,27 @@ class DDPGAerisNetworkDOPV2(DDPGAerisNetwork):
         self.hard_update()
 
     def action(self, state):
-        action = self.actor(state)
-        action, argmax = self._select_action(state, action)
-        self.argmax = argmax
+        actions = self.actor(state)
+        action, pred_argmax = self._select_action(state, actions)
+        self.argmax = pred_argmax
+
+        if state.shape[0] == 1:
+            state = state.unsqueeze(1).repeat(1, self.head_count, 1, 1).view(-1, self.channels, self.width)
+            actions = actions.view(-1, self.action_dim)
+            error = self.motivator.error(state, actions).view(-1, self.head_count).detach()
+            target_argmax = error.argmax(dim=1)
+
+            self.arbiter_accuracy = 0
+            if pred_argmax == target_argmax:
+                self.arbiter_accuracy = 1
 
         return action
 
     def index(self):
         return self.argmax
+
+    def accuracy(self):
+        return self.arbiter_accuracy
 
     def action_target(self, state):
         with torch.no_grad():
