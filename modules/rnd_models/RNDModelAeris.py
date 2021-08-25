@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-from modules import init_orthogonal
+from modules import init_orthogonal, init_coupled_orthogonal
 from utils import one_hot_code
 
 
@@ -32,11 +32,6 @@ class RNDModelAeris(nn.Module):
             nn.Linear(fc_count, hidden_count)
         )
 
-        init_orthogonal(self.target_model[0], np.sqrt(2))
-        init_orthogonal(self.target_model[2], np.sqrt(2))
-        init_orthogonal(self.target_model[4], np.sqrt(2))
-        init_orthogonal(self.target_model[7], 1)
-
         for param in self.target_model.parameters():
             param.requires_grad = False
 
@@ -55,10 +50,10 @@ class RNDModelAeris(nn.Module):
             nn.Linear(hidden_count, hidden_count)
         )
 
-        init_orthogonal(self.model[0], np.sqrt(2))
-        init_orthogonal(self.model[2], np.sqrt(2))
-        init_orthogonal(self.model[4], np.sqrt(2))
-        init_orthogonal(self.model[7], 0.1)
+        init_coupled_orthogonal([self.target_model[0], self.model[0]], 10)
+        init_coupled_orthogonal([self.target_model[2], self.model[2]], 10)
+        init_coupled_orthogonal([self.target_model[4], self.model[4]], 10)
+        init_coupled_orthogonal([self.target_model[7], self.model[7]], 5)
         init_orthogonal(self.model[9], 0.1)
         init_orthogonal(self.model[11], 0.01)
 
@@ -123,11 +118,6 @@ class QRNDModelAeris(nn.Module):
             nn.Linear(fc_count, hidden_count)
         )
 
-        init_orthogonal(self.target_model[0], np.sqrt(2))
-        init_orthogonal(self.target_model[2], np.sqrt(2))
-        init_orthogonal(self.target_model[4], np.sqrt(2))
-        init_orthogonal(self.target_model[7], 1)
-
         for param in self.target_model.parameters():
             param.requires_grad = False
 
@@ -146,10 +136,10 @@ class QRNDModelAeris(nn.Module):
             nn.Linear(hidden_count, hidden_count)
         )
 
-        init_orthogonal(self.model[0], np.sqrt(2))
-        init_orthogonal(self.model[2], np.sqrt(2))
-        init_orthogonal(self.model[4], np.sqrt(2))
-        init_orthogonal(self.model[7], 0.1)
+        init_coupled_orthogonal([self.target_model[0], self.model[0]], 10)
+        init_coupled_orthogonal([self.target_model[2], self.model[2]], 10)
+        init_coupled_orthogonal([self.target_model[4], self.model[4]], 10)
+        init_coupled_orthogonal([self.target_model[7], self.model[7]], 5)
         init_orthogonal(self.model[9], 0.1)
         init_orthogonal(self.model[11], 0.01)
 

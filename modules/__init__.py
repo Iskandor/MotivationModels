@@ -16,6 +16,14 @@ def init_custom(layer, weight_tensor):
     nn.init.zeros_(layer.bias)
 
 
+def init_coupled_orthogonal(layers, gain=1.0):
+    weight = torch.zeros(len(layers), *layers[0].weight.shape)
+    nn.init.orthogonal_(weight, gain)
+
+    for i, l in enumerate(layers):
+        init_custom(l, weight[i])
+
+
 def init_orthogonal(layer, gain=1.0):
     nn.init.orthogonal_(layer.weight, gain)
     nn.init.zeros_(layer.bias)
