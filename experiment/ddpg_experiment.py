@@ -965,6 +965,7 @@ class ExperimentDDPG:
             while not done:
                 agent.motivation.update_state_average(state0)
                 action0, head_index = agent.get_action(state0)
+                print(action0)
                 next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
                 reward = self.transform_reward(reward)
                 state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
@@ -999,7 +1000,11 @@ class ExperimentDDPG:
                 trial, steps, exploration.sigma, train_ext_reward, train_int_reward, train_steps, train_int_reward / train_steps, reward_avg.value().item(), numpy.array2string(head_index_density)))
             print(bar)
 
+        print('Saving agent...')
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
+
+        print('Running analysis...')
+        states, actions, head_indices = DOPAnalytic.head_analyze(self._env, agent)
 
         print('Saving data...')
         save_data = {
@@ -1007,7 +1012,10 @@ class ExperimentDDPG:
             're': numpy.array(train_ext_rewards),
             'ri': numpy.array(train_int_rewards),
             'fme': numpy.array(train_fm_errors[:step_limit]),
-            'hid': numpy.stack(train_head_index)
+            'hid': numpy.stack(train_head_index),
+            'ts': states,
+            'ta': actions,
+            'th': head_indices,
         }
         numpy.save('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
 
@@ -1081,6 +1089,7 @@ class ExperimentDDPG:
         print('Saving agent...')
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
 
+        print('Running analysis...')
         states, actions, head_indices = DOPAnalytic.head_analyze(self._env, agent)
 
         print('Saving data...')

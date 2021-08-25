@@ -50,10 +50,10 @@ class RNDModelAeris(nn.Module):
             nn.Linear(hidden_count, hidden_count)
         )
 
-        init_coupled_orthogonal([self.target_model[0], self.model[0]], 10)
-        init_coupled_orthogonal([self.target_model[2], self.model[2]], 10)
-        init_coupled_orthogonal([self.target_model[4], self.model[4]], 10)
-        init_coupled_orthogonal([self.target_model[7], self.model[7]], 5)
+        init_coupled_orthogonal([self.target_model[0], self.model[0]], np.sqrt(2))
+        init_coupled_orthogonal([self.target_model[2], self.model[2]], np.sqrt(2))
+        init_coupled_orthogonal([self.target_model[4], self.model[4]], np.sqrt(2))
+        init_coupled_orthogonal([self.target_model[7], self.model[7]], 1)
         init_orthogonal(self.model[9], 0.1)
         init_orthogonal(self.model[11], 0.01)
 
@@ -136,10 +136,10 @@ class QRNDModelAeris(nn.Module):
             nn.Linear(hidden_count, hidden_count)
         )
 
-        init_coupled_orthogonal([self.target_model[0], self.model[0]], 10)
-        init_coupled_orthogonal([self.target_model[2], self.model[2]], 10)
-        init_coupled_orthogonal([self.target_model[4], self.model[4]], 10)
-        init_coupled_orthogonal([self.target_model[7], self.model[7]], 5)
+        init_coupled_orthogonal([self.target_model[0], self.model[0]], np.sqrt(2))
+        init_coupled_orthogonal([self.target_model[2], self.model[2]], np.sqrt(2))
+        init_coupled_orthogonal([self.target_model[4], self.model[4]], np.sqrt(2))
+        init_coupled_orthogonal([self.target_model[7], self.model[7]], 1)
         init_orthogonal(self.model[9], 0.1)
         init_orthogonal(self.model[11], 0.01)
 
@@ -255,7 +255,7 @@ class DOPV2ModelAeris(nn.Module):
 
         loss_arbiter = nn.functional.mse_loss(index, index_target, reduction='mean')
         loss_generator = -error.unsqueeze(-1).mean()
-        return (loss_generator * self.eta) + (loss_arbiter * 10)
+        return (loss_generator * self.eta) + loss_arbiter
 
 
 class DOPV2BModelAeris(nn.Module):

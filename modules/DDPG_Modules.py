@@ -105,10 +105,12 @@ class ActorNHeads(nn.Module):
         #     init_xavier_uniform(h[0])
         #     init_xavier_uniform(h[2])
 
-        weight1 = torch.zeros(head_count, config.actor_h1, config.actor_h1)
-        nn.init.orthogonal_(weight1, 10)
-        weight2 = torch.zeros(head_count, action_dim, config.actor_h1)
-        nn.init.orthogonal_(weight2, 10)
+        weight1 = torch.zeros(head_count * config.actor_h1, config.actor_h1)
+        nn.init.orthogonal_(weight1, 3)
+        weight1 = weight1.reshape(head_count, config.actor_h1, config.actor_h1)
+        weight2 = torch.zeros(head_count * action_dim, config.actor_h1)
+        nn.init.orthogonal_(weight2, 3)
+        weight2 = weight2.reshape(head_count, action_dim, config.actor_h1)
 
         for i, h in enumerate(self.heads):
             init_custom(h[0], weight1[i])
