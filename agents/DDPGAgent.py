@@ -359,7 +359,8 @@ class DDPGAerisDOPV2Agent(DDPGAgent):
     def get_action(self, state):
         action = self.network.action(state)
         index = self.network.index()
-        return action.detach(), index
+        accuracy = self.network.accuracy()
+        return action.detach(), index, accuracy
 
     def train(self, state0, action0, state1, reward, mask):
         self.memory.add(state0, action0, state1, reward, mask)
