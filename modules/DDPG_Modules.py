@@ -389,7 +389,7 @@ class DDPGAerisNetworkDOP(DDPGAerisNetwork):
         self.action_dim = action_dim
         self.channels = input_shape[0]
         self.width = input_shape[1]
-        self.head_count = 4
+        self.head_count = config.dop_heads
 
         fc_count = config.critic_kernels_count * self.width // 4
 
@@ -453,7 +453,7 @@ class DDPGAerisNetworkDOPV2(DDPGAerisNetwork):
         self.action_dim = action_dim
         self.channels = input_shape[0]
         self.width = input_shape[1]
-        self.head_count = 4
+        self.head_count = config.dop_heads
         self.argmax = None
         self.arbiter_accuracy = 0
 
@@ -535,7 +535,7 @@ class DDPGAerisNetworkDOPV2B(DDPGAerisNetwork):
         self.action_dim = action_dim
         self.channels = input_shape[0]
         self.width = input_shape[1]
-        self.head_count = 4
+        self.head_count = config.dop_heads
         self.argmax = None
 
         fc_count = config.critic_kernels_count * self.width // 4
@@ -612,7 +612,7 @@ class DDPGAerisNetworkDOPV2Q(DDPGAerisNetwork):
         self.action_dim = action_dim
         self.channels = input_shape[0]
         self.width = input_shape[1]
-        self.head_count = 4
+        self.head_count = config.dop_heads
         self.argmax = None
 
         fc_count = config.critic_kernels_count * self.width // 4
@@ -681,7 +681,7 @@ class DDPGAerisNetworkDOPRef(DDPGAerisNetwork):
         self.action_dim = action_dim
         self.channels = input_shape[0]
         self.width = input_shape[1]
-        self.head_count = 4
+        self.head_count = config.dop_heads
 
         fc_count = config.critic_kernels_count * self.width // 4
 

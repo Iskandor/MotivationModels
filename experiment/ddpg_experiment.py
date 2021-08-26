@@ -960,12 +960,11 @@ class ExperimentDDPG:
             train_ext_reward = 0
             train_int_reward = 0
             train_steps = 0
-            head_index_density = numpy.zeros(4)
+            head_index_density = numpy.zeros(config.dop_heads)
 
             while not done:
                 agent.motivation.update_state_average(state0)
                 action0, head_index = agent.get_action(state0)
-                print(action0)
                 next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
                 reward = self.transform_reward(reward)
                 state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
@@ -1044,7 +1043,7 @@ class ExperimentDDPG:
             train_ext_reward = 0
             train_int_reward = 0
             train_steps = 0
-            head_index_density = numpy.zeros(4)
+            head_index_density = numpy.zeros(config.dop_heads)
             accuracy_per_episode = 0
 
             while not done:

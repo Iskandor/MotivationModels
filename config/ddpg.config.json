@@ -95,7 +95,8 @@
       "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
-      "forward_model_batch_size": 4096
+      "forward_model_batch_size": 4096,
+      "dop_heads": 4
     },
     "6": {
       "model": "dop",
@@ -116,7 +117,8 @@
       "forward_model_lr": 0.001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
-      "forward_model_batch_size": 4096
+      "forward_model_batch_size": 4096,
+      "dop_heads": 4
     },
     "7": {
       "model": "dop",
@@ -137,7 +139,8 @@
       "forward_model_lr": 0.001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
-      "forward_model_batch_size": 2048
+      "forward_model_batch_size": 2048,
+      "dop_heads": 4
     },
     "8": {
       "model": "dop",
@@ -158,7 +161,8 @@
       "forward_model_lr": 0.001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
-      "forward_model_batch_size": 1024
+      "forward_model_batch_size": 1024,
+      "dop_heads": 4
     },
     "9": {
       "model": "dop",
@@ -179,7 +183,8 @@
       "forward_model_lr": 0.001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
-      "forward_model_batch_size": 512
+      "forward_model_batch_size": 512,
+      "dop_heads": 4
     },
     "10": {
       "model": "dop",
@@ -200,7 +205,8 @@
       "forward_model_lr": 0.001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
-      "forward_model_batch_size": 256
+      "forward_model_batch_size": 256,
+      "dop_heads": 4
     },
     "11": {
       "model": "dop",
@@ -221,7 +227,8 @@
       "forward_model_lr": 0.001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
-      "forward_model_batch_size": 128
+      "forward_model_batch_size": 128,
+      "dop_heads": 4
     },
     "12": {
       "model": "dop",
@@ -242,7 +249,8 @@
       "forward_model_lr": 0.001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
-      "forward_model_batch_size": 64
+      "forward_model_batch_size": 64,
+      "dop_heads": 4
     },
     "13": {
       "model": "dop",
@@ -263,7 +271,8 @@
       "forward_model_lr": 0.001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
-      "forward_model_batch_size": 32
+      "forward_model_batch_size": 32,
+      "dop_heads": 4
     },
     "14": {
       "model": "dop",
@@ -284,7 +293,8 @@
       "forward_model_lr": 0.001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
-      "forward_model_batch_size": 8
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
     },
     "15": {
       "model": "dop",
@@ -305,7 +315,8 @@
       "forward_model_lr": 0.001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
-      "forward_model_batch_size": 4
+      "forward_model_batch_size": 4,
+      "dop_heads": 4
     },
     "16": {
       "model": "dop",
@@ -326,7 +337,8 @@
       "forward_model_lr": 0.001,
       "forward_model_kernels_count": 16,
       "motivation_eta": 1,
-      "forward_model_batch_size": 8
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
     },
     "17": {
       "model": "dop",
@@ -347,7 +359,8 @@
       "forward_model_lr": 0.001,
       "forward_model_kernels_count": 64,
       "motivation_eta": 1,
-      "forward_model_batch_size": 8
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
     },
     "18": {
       "descriptor": "RND 256",
@@ -369,7 +382,8 @@
       "forward_model_lr": 0.001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
-      "forward_model_batch_size": 8
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
     },
     "19": {
       "model": "dop_ref",
@@ -386,7 +400,8 @@
       "actor_h1": 64,
       "critic_lr": 0.0002,
       "critic_kernels_count": 32,
-      "critic_h1": 256
+      "critic_h1": 256,
+      "dop_heads": 4
     },
     "20": {
       "descriptor": "DOP V2",
@@ -408,7 +423,8 @@
       "forward_model_lr": 0.001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
-      "forward_model_batch_size": 8
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
     },
     "21": {
       "descriptor": "DOP V2B",
@@ -430,7 +446,8 @@
       "forward_model_lr": 0.001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
-      "forward_model_batch_size": 8
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
     },
     "22": {
       "descriptor": "DOP V2Q",
@@ -452,7 +469,8 @@
       "forward_model_lr": 0.001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
-      "forward_model_batch_size": 8
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
     },
     "23": {
       "model": "dop",
@@ -473,7 +491,8 @@
       "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
-      "forward_model_batch_size": 8
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
     },
     "24": {
       "model": "dop_2",
@@ -494,7 +513,8 @@
       "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
-      "forward_model_batch_size": 8
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
     },
     "25": {
       "descriptor": "rnd fc",
@@ -516,7 +536,8 @@
       "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
-      "forward_model_batch_size": 8
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
     },
     "26": {
       "descriptor": "rnd fc",
@@ -538,7 +559,8 @@
       "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
-      "forward_model_batch_size": 8
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
     },
     "27": {
       "descriptor": "rnd fc",
@@ -560,7 +582,8 @@
       "forward_model_lr": 0.001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1000,
-      "forward_model_batch_size": 8
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
     },
     "28": {
       "descriptor": "rnd fc",
@@ -582,7 +605,8 @@
       "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1000,
-      "forward_model_batch_size": 8
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
     },
     "29": {
       "descriptor": "new init",
@@ -604,7 +628,8 @@
       "forward_model_lr": 0.001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1000,
-      "forward_model_batch_size": 8
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
     },
     "30": {
       "descriptor": "new init",
@@ -626,7 +651,8 @@
       "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1000,
-      "forward_model_batch_size": 8
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
     },
     "31": {
       "descriptor": "rnd fc",
@@ -648,7 +674,8 @@
       "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 0.1,
-      "forward_model_batch_size": 8
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
     },
     "32": {
       "descriptor": "rnd fc",
@@ -670,7 +697,8 @@
       "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 0.01,
-      "forward_model_batch_size": 8
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
     },
     "33": {
       "descriptor": "rnd conv",
@@ -692,7 +720,8 @@
       "forward_model_lr": 0.001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1000,
-      "forward_model_batch_size": 8
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
     },
     "34": {
       "descriptor": "rnd conv",
@@ -714,7 +743,8 @@
       "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1000,
-      "forward_model_batch_size": 8
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
     },
     "35": {
       "descriptor": "rnd elu",
@@ -736,7 +766,8 @@
       "forward_model_lr": 0.001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1000,
-      "forward_model_batch_size": 8
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
     },
     "36": {
       "descriptor": "rnd elu",
@@ -758,7 +789,122 @@
       "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1000,
-      "forward_model_batch_size": 8
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
+    },
+    "37": {
+      "descriptor": "orto init",
+      "model": "rnd",
+      "sigma": 0,
+      "exploration_time": 0,
+      "trials": 15,
+      "steps": 0.6,
+      "gamma": 0.99,
+      "tau ": 0.005,
+      "batch_size": 32,
+      "memory_size": 100000,
+      "actor_lr": 0.0001,
+      "actor_kernels_count": 32,
+      "actor_h1": 64,
+      "critic_lr": 0.0002,
+      "critic_kernels_count": 32,
+      "critic_h1": 256,
+      "forward_model_lr": 0.0001,
+      "forward_model_kernels_count": 32,
+      "motivation_eta": 1,
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
+    },
+    "38": {
+      "descriptor": "orto init",
+      "model": "qrnd",
+      "sigma": 0,
+      "exploration_time": 0,
+      "trials": 15,
+      "steps": 0.6,
+      "gamma": 0.99,
+      "tau ": 0.005,
+      "batch_size": 32,
+      "memory_size": 100000,
+      "actor_lr": 0.0001,
+      "actor_kernels_count": 32,
+      "actor_h1": 64,
+      "critic_lr": 0.0002,
+      "critic_kernels_count": 32,
+      "critic_h1": 256,
+      "forward_model_lr": 0.0001,
+      "forward_model_kernels_count": 32,
+      "motivation_eta": 1,
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
+    },
+    "39": {
+      "descriptor": "orto init",
+      "model": "dop",
+      "sigma": 0,
+      "exploration_time": 0,
+      "trials": 15,
+      "steps": 0.6,
+      "gamma": 0.99,
+      "tau ": 0.005,
+      "batch_size": 32,
+      "memory_size": 100000,
+      "actor_lr": 0.0001,
+      "actor_kernels_count": 32,
+      "actor_h1": 64,
+      "critic_lr": 0.0002,
+      "critic_kernels_count": 32,
+      "critic_h1": 256,
+      "forward_model_lr": 0.0001,
+      "forward_model_kernels_count": 32,
+      "motivation_eta": 1000,
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
+    },
+    "40": {
+      "descriptor": "orto init",
+      "model": "dop_2",
+      "sigma": 0,
+      "exploration_time": 0,
+      "trials": 15,
+      "steps": 0.6,
+      "gamma": 0.99,
+      "tau ": 0.005,
+      "batch_size": 32,
+      "memory_size": 100000,
+      "actor_lr": 0.0001,
+      "actor_kernels_count": 32,
+      "actor_h1": 64,
+      "critic_lr": 0.0002,
+      "critic_kernels_count": 32,
+      "critic_h1": 256,
+      "forward_model_lr": 0.0001,
+      "forward_model_kernels_count": 32,
+      "motivation_eta": 1000,
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
+    },
+    "41": {
+      "model": "dop",
+      "sigma": 0,
+      "exploration_time": 0,
+      "trials": 15,
+      "steps": 0.6,
+      "gamma": 0.99,
+      "tau ": 0.005,
+      "batch_size": 32,
+      "memory_size": 100000,
+      "actor_lr": 0.0001,
+      "actor_kernels_count": 32,
+      "actor_h1": 64,
+      "critic_lr": 0.0002,
+      "critic_kernels_count": 32,
+      "critic_h1": 256,
+      "forward_model_lr": 0.0001,
+      "forward_model_kernels_count": 32,
+      "motivation_eta": 1000,
+      "forward_model_batch_size": 8,
+      "dop_heads": 2
     }
   },
   "aeris_hazards": {
@@ -767,7 +913,7 @@
       "sigma": 1,
       "exploration_time": 0.9,
       "trials": 15,
-      "steps": 3,
+      "steps": 1.5,
       "gamma": 0.99,
       "tau ": 0.005,
       "batch_size": 32,
@@ -784,7 +930,7 @@
       "sigma": 0,
       "exploration_time": 0,
       "trials": 15,
-      "steps": 3,
+      "steps": 1.5,
       "gamma": 0.99,
       "tau ": 0.005,
       "batch_size": 32,
@@ -801,7 +947,7 @@
       "sigma": 0,
       "exploration_time": 0,
       "trials": 15,
-      "steps": 3,
+      "steps": 1.5,
       "gamma": 0.99,
       "tau ": 0.005,
       "batch_size": 32,
@@ -815,14 +961,15 @@
       "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
-      "forward_model_batch_size": 8
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
     },
     "4": {
       "model": "qrnd",
       "sigma": 0,
       "exploration_time": 0,
       "trials": 15,
-      "steps": 3,
+      "steps": 1.5,
       "gamma": 0.99,
       "tau ": 0.005,
       "batch_size": 32,
@@ -836,14 +983,15 @@
       "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
-      "forward_model_batch_size": 8
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
     },
     "5": {
       "model": "dop",
       "sigma": 0,
       "exploration_time": 0,
       "trials": 15,
-      "steps": 3,
+      "steps": 1.5,
       "gamma": 0.99,
       "tau ": 0.005,
       "batch_size": 32,
@@ -857,14 +1005,15 @@
       "forward_model_lr": 0.001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1000,
-      "forward_model_batch_size": 8
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
     },
     "6": {
       "model": "dop_ref",
       "sigma": 0,
       "exploration_time": 0,
       "trials": 15,
-      "steps": 3,
+      "steps": 1.5,
       "gamma": 0.99,
       "tau ": 0.005,
       "batch_size": 32,
@@ -874,14 +1023,15 @@
       "actor_h1": 64,
       "critic_lr": 0.0002,
       "critic_kernels_count": 32,
-      "critic_h1": 256
+      "critic_h1": 256,
+      "dop_heads": 4
     },
     "7": {
       "model": "dop_2",
       "sigma": 0,
       "exploration_time": 0,
       "trials": 15,
-      "steps": 3,
+      "steps": 1.5,
       "gamma": 0.99,
       "tau ": 0.005,
       "batch_size": 32,
@@ -895,7 +1045,30 @@
       "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1000,
-      "forward_model_batch_size": 8
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
+    },
+    "8": {
+      "model": "dop",
+      "sigma": 0,
+      "exploration_time": 0,
+      "trials": 15,
+      "steps": 1.5,
+      "gamma": 0.99,
+      "tau ": 0.005,
+      "batch_size": 32,
+      "memory_size": 100000,
+      "actor_lr": 0.0001,
+      "actor_kernels_count": 32,
+      "actor_h1": 64,
+      "critic_lr": 0.0002,
+      "critic_kernels_count": 32,
+      "critic_h1": 256,
+      "forward_model_lr": 0.0001,
+      "forward_model_kernels_count": 32,
+      "motivation_eta": 1000,
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
     }
   },
   "aeris_fragiles": {
@@ -952,7 +1125,8 @@
       "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
-      "forward_model_batch_size": 8
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
     },
     "4": {
       "model": "qrnd",
@@ -973,7 +1147,8 @@
       "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
-      "forward_model_batch_size": 8
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
     },
     "5": {
       "model": "dop",
@@ -994,7 +1169,8 @@
       "forward_model_lr": 0.001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1000,
-      "forward_model_batch_size": 8
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
     },
     "6": {
       "model": "dop_ref",
@@ -1011,7 +1187,8 @@
       "actor_h1": 64,
       "critic_lr": 0.0002,
       "critic_kernels_count": 32,
-      "critic_h1": 256
+      "critic_h1": 256,
+      "dop_heads": 4
     },
     "7": {
       "model": "dop_2",
@@ -1032,7 +1209,8 @@
       "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1000,
-      "forward_model_batch_size": 8
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
     }
   },
   "aeris_gather": {
@@ -1089,7 +1267,8 @@
       "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
-      "forward_model_batch_size": 8
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
     },
     "4": {
       "model": "qrnd",
@@ -1110,7 +1289,8 @@
       "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
-      "forward_model_batch_size": 8
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
     },
     "5": {
       "model": "dop",
@@ -1131,7 +1311,8 @@
       "forward_model_lr": 0.001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1000,
-      "forward_model_batch_size": 8
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
     },
     "6": {
       "model": "dop_ref",
@@ -1148,7 +1329,8 @@
       "actor_h1": 64,
       "critic_lr": 0.0002,
       "critic_kernels_count": 32,
-      "critic_h1": 256
+      "critic_h1": 256,
+      "dop_heads": 4
     },
     "7": {
       "model": "dop_2",
@@ -1169,7 +1351,8 @@
       "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1000,
-      "forward_model_batch_size": 8
+      "forward_model_batch_size": 8,
+      "dop_heads": 4
     }
   },
   "ant": {
