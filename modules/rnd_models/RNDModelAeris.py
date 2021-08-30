@@ -192,6 +192,7 @@ class DOPModelAeris(nn.Module):
         self.features = features
         self.actor = actor
         self.eta = config.motivation_eta
+        self.zeta = config.motivation_zeta
 
     def forward(self, state, action):
         predicted_code = self.motivator(state, action)
@@ -213,9 +214,19 @@ class DOPModelAeris(nn.Module):
         # prob = prob.view(-1, self.action_dim)
         state = state.unsqueeze(1).repeat(1, self.actor.head_count, 1, 1).view(-1, self.state_dim[0], self.state_dim[1])
         # loss = self.actor.log_prob(prob, action) * error.unsqueeze(-1) * self.eta
-        loss = (-self.error(state, action).mean() * self.eta)
-        regularization_term = -torch.cdist(action, action).mean() * self.eta
+        loss = -self.error(state, action).mean() * self.eta
+        regularization_term = self.regularization_term(action) * self.zeta
+
         return loss + regularization_term
+
+    def regularization_term(self, action):
+        # mask = torch.empty(action.shape[0], 1)
+        # mask = nn.init.uniform_(mask) < 0.25
+        # action *= mask
+
+        regularization_term = torch.cdist(action, action)
+
+        return -regularization_term.mean()
 
 
 class DOPV2ModelAeris(nn.Module):
