@@ -471,7 +471,11 @@ class DDPGAerisNetworkDOPV2(DDPGAerisNetwork):
         init_xavier_uniform(self.layers_actor[3])
 
         self.arbiter = nn.Sequential(
-            nn.Conv1d(self.channels, config.actor_kernels_count, kernel_size=8, stride=4, padding=2),
+            nn.Conv1d(self.channels, config.forward_model_kernels_count, kernel_size=8, stride=4, padding=2),
+            nn.ReLU(),
+            nn.Conv1d(config.forward_model_kernels_count, config.forward_model_kernels_count * 2, kernel_size=4, stride=2, padding=1),
+            nn.ReLU(),
+            nn.Conv1d(config.forward_model_kernels_count * 2, config.forward_model_kernels_count * 2, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
             nn.Flatten(),
             nn.Linear(fc_count, fc_count),
@@ -480,8 +484,10 @@ class DDPGAerisNetworkDOPV2(DDPGAerisNetwork):
         )
 
         init_xavier_uniform(self.arbiter[0])
-        init_xavier_uniform(self.arbiter[3])
-        init_xavier_uniform(self.arbiter[5])
+        init_xavier_uniform(self.arbiter[2])
+        init_xavier_uniform(self.arbiter[4])
+        init_xavier_uniform(self.arbiter[7])
+        init_xavier_uniform(self.arbiter[9])
 
         self.actor = ActorNHeads(self.head_count, action_dim, self.layers_actor, config)
         self.motivator = QRNDModelAeris(input_shape, action_dim, config)
