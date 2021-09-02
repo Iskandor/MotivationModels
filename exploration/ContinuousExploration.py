@@ -13,7 +13,7 @@ class GaussianExploration:
         if self.sigma == 0:
             return action
         else:
-            return action + torch.normal(0, self.sigma, action.size())
+            return action + torch.normal(0, self.sigma, action.size(), device=action.device)
 
     def update(self, step):
         if self._sigma0 > self._sigma1 and self.sigma > self._sigma1 and self._epochs > 0:
@@ -33,7 +33,7 @@ class OUExploration:
         self._state = numpy.ones(self._action_dimension) * self._mu
 
     def explore(self, action):
-        return action + torch.tensor(self.noise(), dtype=torch.float32)
+        return action + torch.tensor(self.noise(), dtype=torch.float32, device=action.device)
 
     def reset(self):
         self._state = numpy.ones(self._action_dimension) * self._mu

@@ -93,9 +93,9 @@ class ExperimentDDPG:
 
         while steps < step_limit:
             if self._preprocess is None:
-                state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0)
+                state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0).to(config.device)
             else:
-                state0 = self._preprocess(self._env.reset())
+                state0 = self._preprocess(self._env.reset()).to(config.device)
 
             done = False
             train_ext_reward = 0
@@ -109,9 +109,9 @@ class ExperimentDDPG:
                 train_ext_reward += reward
 
                 if self._preprocess is None:
-                    state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
+                    state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0).to(config.device)
                 else:
-                    state1 = self._preprocess(next_state)
+                    state1 = self._preprocess(next_state).to(config.device)
 
                 reward = torch.tensor([reward], dtype=torch.float32).unsqueeze(0)
                 mask = torch.tensor([done], dtype=torch.float32).unsqueeze(0)
@@ -160,7 +160,7 @@ class ExperimentDDPG:
         exploration = GaussianExploration(config.sigma, 0.01, config.steps * config.exploration_time * 1e6)
 
         while steps < step_limit:
-            state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0)
+            state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0).to(config.device)
             done = False
             train_ext_reward = 0
             train_int_reward = 0
@@ -168,9 +168,9 @@ class ExperimentDDPG:
 
             while not done:
                 action0 = exploration.explore(agent.get_action(state0))
-                next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
+                next_state, reward, done, _ = self._env.step(agent.convert_action(action0))
                 reward = self.transform_reward(reward)
-                state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
+                state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0).to(config.device)
                 reward = torch.tensor([reward], dtype=torch.float32).unsqueeze(0)
                 mask = torch.tensor([done], dtype=torch.float32).unsqueeze(0)
 
@@ -231,7 +231,7 @@ class ExperimentDDPG:
         exploration = GaussianExploration(config.sigma, 0.01, config.steps * config.exploration_time * 1e6)
 
         while steps < step_limit:
-            state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0)
+            state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0).to(config.device)
             done = False
             train_ext_reward = 0
             train_int_reward = 0
@@ -241,9 +241,9 @@ class ExperimentDDPG:
                 train_steps += 1
                 states.append(state0.squeeze(0))
                 action0 = exploration.explore(agent.get_action(state0))
-                next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
+                next_state, reward, done, _ = self._env.step(agent.convert_action(action0))
                 reward = self.transform_reward(reward)
-                state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
+                state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0).to(config.device)
 
                 agent.train(state0, action0, state1, reward, done)
 
@@ -312,7 +312,7 @@ class ExperimentDDPG:
         exploration = GaussianExploration(config.sigma, 0.01, config.steps * config.exploration_time * 1e6)
 
         while steps < step_limit:
-            state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0)
+            state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0).to(config.device)
             done = False
             train_ext_reward = 0
             train_int_reward = 0
@@ -322,9 +322,9 @@ class ExperimentDDPG:
                 train_steps += 1
                 states.append(state0.squeeze(0))
                 action0 = exploration.explore(agent.get_action(state0))
-                next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
+                next_state, reward, done, _ = self._env.step(agent.convert_action(action0))
                 reward = self.transform_reward(reward)
-                state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
+                state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0).to(config.device)
 
                 agent.train(state0, action0, state1, reward, done)
 
@@ -394,7 +394,7 @@ class ExperimentDDPG:
         exploration = GaussianExploration(config.sigma, 0.01, config.steps * config.exploration_time * 1e6)
 
         while steps < step_limit:
-            state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0)
+            state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0).to(config.device)
             done = False
             train_ext_reward = 0
             train_int_reward = 0
@@ -404,9 +404,9 @@ class ExperimentDDPG:
                 train_steps += 1
                 states.append(state0.squeeze(0))
                 action0 = exploration.explore(agent.get_action(state0))
-                next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
+                next_state, reward, done, _ = self._env.step(agent.convert_action(action0))
                 reward = self.transform_reward(reward)
-                state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
+                state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0).to(config.device)
 
                 agent.train(state0, action0, state1, reward, done)
 
@@ -496,7 +496,7 @@ class ExperimentDDPG:
                 fm_error_list.append(fm_errors)
                 reward_list.append(rewards)
 
-            state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0)
+            state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0).to(config.device)
             done = False
             train_ext_reward = 0
             train_int_reward = 0
@@ -508,9 +508,9 @@ class ExperimentDDPG:
                 if config.check('generate_states'):
                     states.append(state0.numpy())
                 action0 = exploration.explore(agent.get_action(state0))
-                next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
+                next_state, reward, done, _ = self._env.step(agent.convert_action(action0))
                 reward = self.transform_reward(reward)
-                state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
+                state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0).to(config.device)
 
                 agent.train(state0, action0, state1, reward, done)
                 forward_model.train(state0, action0, state1)
@@ -587,7 +587,7 @@ class ExperimentDDPG:
         exploration = GaussianExploration(config.sigma, 0.01, config.steps * config.exploration_time * 1e6)
 
         while steps < step_limit:
-            state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0)
+            state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0).to(config.device)
             done = False
             train_ext_reward = 0
             train_int_reward = 0
@@ -596,9 +596,9 @@ class ExperimentDDPG:
             while not done:
                 train_steps += 1
                 action0 = exploration.explore(agent.get_action(state0))
-                next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
+                next_state, reward, done, _ = self._env.step(agent.convert_action(action0))
                 reward = self.transform_reward(reward)
-                state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
+                state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0).to(config.device)
 
                 pe_error, ps_error, pe_reward, ps_reward, int_reward = agent.motivation.raw_data(state0, action0, state1)
                 train_ext_reward += reward
@@ -662,7 +662,7 @@ class ExperimentDDPG:
         exploration = GaussianExploration(config.sigma, 0.01, config.steps * config.exploration_time * 1e6)
 
         while steps < step_limit:
-            state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0)
+            state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0).to(config.device)
             done = False
             train_ext_reward = 0
             train_int_reward = 0
@@ -671,9 +671,9 @@ class ExperimentDDPG:
             while not done:
                 train_steps += 1
                 action0 = exploration.explore(agent.get_action(state0))
-                next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
+                next_state, reward, done, _ = self._env.step(agent.convert_action(action0))
                 reward = self.transform_reward(reward)
-                state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
+                state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0).to(config.device)
 
                 pe_error, ps_error, pe_reward, ps_reward, int_reward = agent.motivation.raw_data(state0)
                 train_ext_reward += reward
@@ -737,7 +737,7 @@ class ExperimentDDPG:
         exploration = GaussianExploration(config.sigma, 0.01, config.steps * config.exploration_time * 1e6)
 
         while steps < step_limit:
-            state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0)
+            state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0).to(config.device)
             im0 = torch.zeros((1, 1), dtype=torch.float32)
             error0 = torch.zeros((1, 1), dtype=torch.float32)
             done = False
@@ -749,9 +749,9 @@ class ExperimentDDPG:
                 train_steps += 1
                 states.append(state0.squeeze(0))
                 action0 = exploration.explore(agent.get_action(state0))
-                next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
+                next_state, reward, done, _ = self._env.step(agent.convert_action(action0))
                 reward = self.transform_reward(reward)
-                state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
+                state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0).to(config.device)
 
                 weight = agent.motivation.weight(agent.compose_gate_state(im0, error0))
                 im1 = agent.motivation.reward(state0, action0, weight, state1)
@@ -815,7 +815,7 @@ class ExperimentDDPG:
         exploration = GaussianExploration(config.sigma, 0.01, config.steps * config.exploration_time * 1e6)
 
         while steps < step_limit:
-            state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0)
+            state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0).to(config.device)
             done = False
             train_ext_reward = 0
             train_int_reward = 0
@@ -824,9 +824,9 @@ class ExperimentDDPG:
             while not done:
                 agent.motivation.update_state_average(state0)
                 action0 = exploration.explore(agent.get_action(state0))
-                next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
+                next_state, reward, done, _ = self._env.step(agent.convert_action(action0))
                 reward = self.transform_reward(reward)
-                state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
+                state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0).to(config.device)
                 reward = torch.tensor([reward], dtype=torch.float32).unsqueeze(0)
                 mask = torch.tensor([done], dtype=torch.float32).unsqueeze(0)
 
@@ -884,7 +884,7 @@ class ExperimentDDPG:
         exploration = GaussianExploration(config.sigma, 0.01, config.steps * config.exploration_time * 1e6)
 
         while steps < step_limit:
-            state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0)
+            state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0).to(config.device)
             done = False
             train_ext_reward = 0
             train_int_reward = 0
@@ -893,9 +893,9 @@ class ExperimentDDPG:
             while not done:
                 agent.motivation.update_state_average(state0)
                 action0 = exploration.explore(agent.get_action(state0))
-                next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
+                next_state, reward, done, _ = self._env.step(agent.convert_action(action0))
                 reward = self.transform_reward(reward)
-                state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
+                state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0).to(config.device)
                 reward = torch.tensor([reward], dtype=torch.float32).unsqueeze(0)
                 mask = torch.tensor([done], dtype=torch.float32).unsqueeze(0)
 
@@ -955,7 +955,7 @@ class ExperimentDDPG:
         exploration = GaussianExploration(config.sigma, 0.01, config.steps * config.exploration_time * 1e6)
 
         while steps < step_limit:
-            state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0)
+            state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0).to(config.device)
             done = False
             train_ext_reward = 0
             train_int_reward = 0
@@ -965,9 +965,9 @@ class ExperimentDDPG:
             while not done:
                 agent.motivation.update_state_average(state0)
                 action0, head_index = agent.get_action(state0)
-                next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
+                next_state, reward, done, _ = self._env.step(agent.convert_action(action0))
                 reward = self.transform_reward(reward)
-                state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
+                state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0).to(config.device)
                 reward = torch.tensor([reward], dtype=torch.float32).unsqueeze(0)
                 mask = torch.tensor([done], dtype=torch.float32).unsqueeze(0)
 
@@ -1038,7 +1038,7 @@ class ExperimentDDPG:
         exploration = GaussianExploration(config.sigma, 0.01, config.steps * config.exploration_time * 1e6)
 
         while steps < step_limit:
-            state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0)
+            state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0).to(config.device)
             done = False
             train_ext_reward = 0
             train_int_reward = 0
@@ -1049,9 +1049,9 @@ class ExperimentDDPG:
             while not done:
                 agent.motivation.update_state_average(state0)
                 action0, head_index, arbiter_accuracy = agent.get_action(state0)
-                next_state, reward, done, _ = self._env.step(action0.squeeze(0).numpy())
+                next_state, reward, done, _ = self._env.step(agent.convert_action(action0))
                 reward = self.transform_reward(reward)
-                state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
+                state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0).to(config.device)
                 reward = torch.tensor([reward], dtype=torch.float32).unsqueeze(0)
                 mask = torch.tensor([done], dtype=torch.float32).unsqueeze(0)
 

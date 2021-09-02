@@ -94,12 +94,12 @@ class ActorNHeads(nn.Module):
 
         self.actor = nn.Sequential(*layers)
         self.head_count = head_count
-        self.heads = [nn.Sequential(
+        self.heads = nn.ModuleList([nn.Sequential(
             nn.Linear(config.actor_h1, config.actor_h1),
             nn.ReLU(),
             nn.Linear(config.actor_h1, action_dim),
             nn.Tanh())
-            for _ in range(head_count)]
+            for _ in range(head_count)])
 
         # for h in self.heads:
         #     init_xavier_uniform(h[0])
@@ -682,6 +682,7 @@ class DDPGAerisNetworkDOPRef(DDPGAerisNetwork):
         self.channels = input_shape[0]
         self.width = input_shape[1]
         self.head_count = config.dop_heads
+        self.device = config.device
 
         fc_count = config.critic_kernels_count * self.width // 4
 
@@ -707,7 +708,7 @@ class DDPGAerisNetworkDOPRef(DDPGAerisNetwork):
         x = state
         action = self.actor(x)
 
-        argmax = torch.randint(0, self.head_count, (state.shape[0],))
+        argmax = torch.randint(0, self.head_count, (state.shape[0],), device=self.device)
         action = action.gather(dim=1, index=argmax.unsqueeze(-1).unsqueeze(-1).repeat(1, 1, self.action_dim))
         self.argmax = argmax
 
@@ -719,7 +720,7 @@ class DDPGAerisNetworkDOPRef(DDPGAerisNetwork):
     def action_target(self, state):
         with torch.no_grad():
             action = self.actor_target(state)
-            argmax = torch.randint(0, self.head_count, (state.shape[0],))
+            argmax = torch.randint(0, self.head_count, (state.shape[0],), device=self.device)
             action = action.gather(dim=1, index=argmax.unsqueeze(-1).unsqueeze(-1).repeat(1, 1, self.action_dim))
 
         return action.squeeze(1)

@@ -2,11 +2,12 @@ import torch
 
 
 class DDPG:
-    def __init__(self, network, actor_lr, critic_lr, gamma, tau, motivation=None):
+    def __init__(self, network, actor_lr, critic_lr, gamma, tau, motivation=None, device='cpu'):
         self.network = network
         self.motivation = motivation
         self._gamma = gamma
         self._tau = tau
+        self.device = device
 
         self._critic_optimizer = torch.optim.Adam(self.network.critic.parameters(), lr=critic_lr)
         self._actor_optimizer = torch.optim.Adam(self.network.actor.parameters(), lr=actor_lr)
@@ -15,11 +16,11 @@ class DDPG:
         if indices:
             sample = memory.sample(indices)
 
-            states = sample.state
-            next_states = sample.next_state
-            actions = sample.action
-            rewards = sample.reward
-            masks = sample.mask
+            states = sample.state.to(self.device)
+            next_states = sample.next_state.to(self.device)
+            actions = sample.action.to(self.device)
+            rewards = sample.reward.to(self.device)
+            masks = sample.mask.to(self.device)
 
             if self.motivation:
                 rewards += self.motivation.reward_sample(memory, indices)

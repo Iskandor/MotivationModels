@@ -10,7 +10,7 @@ class RNDModelAeris(nn.Module):
     def __init__(self, input_shape, action_dim, config):
         super(RNDModelAeris, self).__init__()
 
-        self.state_average = torch.zeros((1, input_shape[0], input_shape[1]))
+        self.state_average = torch.zeros((1, input_shape[0], input_shape[1]), device=config.device)
 
         self.input_shape = input_shape
         self.action_dim = action_dim
@@ -102,7 +102,7 @@ class QRNDModelAeris(nn.Module):
         self.channels = input_shape[0] + action_dim
         self.width = input_shape[1]
 
-        self.state_average = torch.zeros((1, input_shape[0], input_shape[1]))
+        self.state_average = torch.zeros((1, input_shape[0], input_shape[1]), device=config.device)
 
         fc_count = config.forward_model_kernels_count * self.width // 4
         hidden_count = 64

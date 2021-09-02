@@ -46,11 +46,11 @@ class ExperienceReplayBuffer(ReplayBuffer):
         if len(self.memory) == 0:
             self.dynamic_memory_init(state, action, reward)
 
-        self.memory['state'][self.index] = state
-        self.memory['action'][self.index] = action
-        self.memory['next_state'][self.index] = next_state
-        self.memory['reward'][self.index] = reward
-        self.memory['mask'][self.index] = 1 - mask
+        self.memory['state'][self.index] = state.cpu()
+        self.memory['action'][self.index] = action.cpu()
+        self.memory['next_state'][self.index] = next_state.cpu()
+        self.memory['reward'][self.index] = reward.cpu()
+        self.memory['mask'][self.index] = 1 - mask.cpu()
 
         self.index += 1
         if self.capacity_index < self.capacity:

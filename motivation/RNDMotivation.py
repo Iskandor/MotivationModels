@@ -2,16 +2,15 @@ import torch
 
 
 class RNDMotivation:
-    def __init__(self, network, lr, eta=1, memory_buffer=None, device='cpu'):
+    def __init__(self, network, lr, eta=1, device='cpu'):
         self._network = network
         self._optimizer = torch.optim.Adam(self._network.parameters(), lr=lr)
-        self._memory = memory_buffer
         self._eta = eta
         self._device = device
 
-    def train(self, indices):
+    def train(self, memory, indices):
         if indices:
-            sample, size = self._memory.sample_batches(indices)
+            sample, size = memory.sample_batches(indices)
 
             for i in range(size):
                 states = sample.state[i].to(self._device)
@@ -27,7 +26,7 @@ class RNDMotivation:
     def reward_sample(self, memory, indices):
         sample = memory.sample(indices)
 
-        states = sample.state
+        states = sample.state.to(self._device)
 
         return self.reward(states)
 
@@ -40,20 +39,18 @@ class RNDMotivation:
 
 
 class QRNDMotivation:
-    def __init__(self, network, lr, eta=1, memory_buffer=None, sample_size=0, device='cpu'):
+    def __init__(self, network, lr, eta=1, device='cpu'):
         self._network = network
         self._optimizer = torch.optim.Adam(self._network.parameters(), lr=lr)
-        self._memory = memory_buffer
-        self._sample_size = sample_size
         self._eta = eta
         self._device = device
 
-    def train(self, indices):
+    def train(self, memory, indices):
         if indices:
-            sample = self._memory.sample(indices)
+            sample = memory.sample(indices)
 
-            states = sample.state
-            actions = sample.action
+            states = sample.state.to(self._device)
+            actions = sample.action.to(self._device)
 
             self._optimizer.zero_grad()
             loss = self._network.loss_function(states, actions)
@@ -66,8 +63,8 @@ class QRNDMotivation:
     def reward_sample(self, memory, indices):
         sample = memory.sample(indices)
 
-        states = sample.state
-        actions = sample.action
+        states = sample.state.to(self._device)
+        actions = sample.action.to(self._device)
 
         return self.reward(states, actions)
 
@@ -92,8 +89,8 @@ class DOPSimpleMotivation:
         if indices:
             sample = self._memory.sample(indices)
 
-            states = sample.state
-            actions = sample.action
+            states = sample.state.to(self._device)
+            actions = sample.action.to(self._device)
 
             self._motivator_optimizer.zero_grad()
             loss = self.network.motivator_loss_function(states, actions)
@@ -112,8 +109,8 @@ class DOPSimpleMotivation:
     def reward_sample(self, memory, indices):
         sample = memory.sample(indices)
 
-        states = sample.state
-        actions = sample.action
+        states = sample.state.to(self._device)
+        actions = sample.action.to(self._device)
 
         return self.reward(states, actions)
 
@@ -133,8 +130,8 @@ class DOPMotivation:
     def train(self, motivator_memory, motivator_indices, generator_memory, generator_indices):
         if motivator_indices:
             sample = motivator_memory.sample(motivator_indices)
-            states = sample.state
-            actions = sample.action
+            states = sample.state.to(self._device)
+            actions = sample.action.to(self._device)
 
             self._motivator_optimizer.zero_grad()
             loss = self._network.motivator_loss_function(states, actions)
@@ -143,7 +140,7 @@ class DOPMotivation:
 
         if generator_indices:
             sample = generator_memory.sample(generator_indices)
-            states = sample.state
+            states = sample.state.to(self._device)
 
             self._generator_optimizer.zero_grad()
             loss = self._network.generator_loss_function(states)
@@ -156,8 +153,8 @@ class DOPMotivation:
     def reward_sample(self, memory, indices):
         sample = memory.sample(indices)
 
-        states = sample.state
-        actions = sample.action
+        states = sample.state.to(self._device)
+        actions = sample.action.to(self._device)
 
         return self.reward(states, actions)
 
@@ -180,8 +177,8 @@ class DOPV2QMotivation:
     def train(self, motivator_memory, motivator_indices, generator_memory, generator_indices):
         if motivator_indices:
             sample = motivator_memory.sample(motivator_indices)
-            states = sample.state
-            actions = sample.action
+            states = sample.state.to(self._device)
+            actions = sample.action.to(self._device)
 
             self._motivator_optimizer.zero_grad()
             loss = self._network.motivator_loss_function(states, actions)
@@ -190,9 +187,9 @@ class DOPV2QMotivation:
 
         if generator_indices:
             sample = generator_memory.sample(generator_indices)
-            states = sample.state
-            next_states = sample.next_state
-            masks = sample.mask
+            states = sample.state.to(self._device)
+            next_states = sample.next_state.to(self._device)
+            masks = sample.mask.to(self._device)
 
             self._generator_optimizer.zero_grad()
             loss = self._network.generator_loss_function(states, next_states, masks, 0.99)
@@ -205,8 +202,8 @@ class DOPV2QMotivation:
     def reward_sample(self, memory, indices):
         sample = memory.sample(indices)
 
-        states = sample.state
-        actions = sample.action
+        states = sample.state.to(self._device)
+        actions = sample.action.to(self._device)
 
         return self.reward(states, actions)
 
