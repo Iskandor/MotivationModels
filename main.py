@@ -272,6 +272,9 @@ if __name__ == '__main__':
     print(torch.__config__.parallel_info())
     # torch.autograd.set_detect_anomaly(True)
 
+    for i in range(torch.cuda.device_count()):
+        print('{0:d}. {1:s}'.format(i, torch.cuda.get_device_name(i)))
+
     parser = argparse.ArgumentParser(description='Motivation models learning platform.')
 
     if not os.path.exists('./models'):
