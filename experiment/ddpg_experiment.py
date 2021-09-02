@@ -1003,7 +1003,7 @@ class ExperimentDDPG:
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
 
         print('Running analysis...')
-        states, actions, head_indices = DOPAnalytic.head_analyze(self._env, agent)
+        states, actions, head_indices = DOPAnalytic.head_analyze(self._env, agent, config)
 
         print('Saving data...')
         save_data = {
@@ -1089,7 +1089,7 @@ class ExperimentDDPG:
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
 
         print('Running analysis...')
-        states, actions, head_indices = DOPAnalytic.head_analyze(self._env, agent)
+        states, actions, head_indices = DOPAnalytic.head_analyze(self._env, agent, config)
 
         print('Saving data...')
         save_data = {

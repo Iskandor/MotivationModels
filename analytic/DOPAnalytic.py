@@ -10,7 +10,7 @@ class DOPAnalytic:
         pass
 
     @staticmethod
-    def head_analyze(env, agent):
+    def head_analyze(env, agent, config):
         step_limit = 2000
         steps = 0
 
@@ -21,7 +21,7 @@ class DOPAnalytic:
         head_indices = []
 
         while steps < step_limit:
-            state0 = torch.tensor(env.reset(), dtype=torch.float32).unsqueeze(0)
+            state0 = torch.tensor(env.reset(), dtype=torch.float32, device=config.device).unsqueeze(0)
             done = False
             train_steps = 0
 
@@ -29,11 +29,11 @@ class DOPAnalytic:
                 output = agent.get_action(state0)
                 action0 = output[0]
                 head_index = output[1]
-                next_state, _, done, _ = env.step(action0.squeeze(0).numpy())
-                state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0)
+                next_state, _, done, _ = env.step(action0.squeeze(0).cpu().numpy())
+                state1 = torch.tensor(next_state, dtype=torch.float32, device=config.device).unsqueeze(0)
 
-                states.append(state0.flatten().numpy())
-                actions.append(action0.squeeze(0).numpy())
+                states.append(state0.flatten().cpu().numpy())
+                actions.append(action0.squeeze(0).cpu().numpy())
                 head_indices.append(head_index.item())
                 train_steps += 1
 
