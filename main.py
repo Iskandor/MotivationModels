@@ -26,6 +26,7 @@ import DQN_CartPole
 import PPO_AerisAvoidFragiles
 import PPO_AerisAvoidHazards
 import PPO_AerisNavigate
+import PPO_BitFlip
 import PPO_CartPole
 import PPO_Gravitar
 import PPO_LunarLander
@@ -42,106 +43,45 @@ import PPO_Venture
 from config import load_config_file
 from config.Config import Config
 
-
-def set_env_class_dqn(env):
-    env_class = None
-
-    if env == 'cart_pole':
-        env_class = DQN_CartPole
-
-    return env_class
-
-
-def set_env_class_ddpg(env):
-    env_class = None
-
-    if env == 'mountain_car':
-        env_class = DDPG_MountainCar
-    if env == 'lunar_lander':
-        env_class = DDPG_LunarLander
-    if env == 'half_cheetah':
-        env_class = DDPG_HalfCheetah
-    if env == 'hopper':
-        env_class = DDPG_Hopper
-    if env == 'ant':
-        env_class = DDPG_Ant
-    if env == 'reacher':
-        env_class = DDPG_Reacher
-    if env == 'aeris_navigate':
-        env_class = DDPG_AerisTargetNavigate
-    if env == 'aeris_hazards':
-        env_class = DDPG_AerisAvoidHazards
-    if env == 'aeris_fragiles':
-        env_class = DDPG_AerisAvoidFragiles
-    if env == 'aeris_gather':
-        env_class = DDPG_AerisFoodGather
-
-    return env_class
-
-
-def set_env_class_ppo(env):
-    env_class = None
-
-    if env == 'aeris_navigate':
-        env_class = PPO_AerisNavigate
-    if env == 'aeris_hazards':
-        env_class = PPO_AerisAvoidHazards
-    if env == 'aeris_fragiles':
-        env_class = PPO_AerisAvoidFragiles
-
-    if env == "gravitar":
-        env_class = PPO_Gravitar
-    if env == "montezuma":
-        env_class = PPO_Montezuma
-    if env == "pitfall":
-        env_class = PPO_Pitfall
-    if env == "private_eye":
-        env_class = PPO_PrivateEye
-    if env == "solaris":
-        env_class = PPO_Solaris
-    if env == "venture":
-        env_class = PPO_Venture
-
-    if env == "qbert":
-        env_class = PPO_QBert
-    if env == "mspacman":
-        env_class = PPO_Pacman
-    if env == "midnight_resistance":
-        env_class = PPO_MidnightResistance
-    if env == "cart_pole":
-        env_class = PPO_CartPole
-    if env == 'mountain_car':
-        env_class = PPO_MountainCar
-    if env == 'pendulum':
-        env_class = PPO_Pendulum
-    if env == 'lunar_lander':
-        env_class = PPO_LunarLander
-
-    return env_class
-
-
-def set_env_class_a2c(env):
-    env_class = None
-
-    if env == "breakout":
-        env_class = A2C_Breakout
-
-    return env_class
-
-
-def set_env_class(algorithm, env):
-    env_class = None
-
-    if algorithm == 'a2c':
-        env_class = set_env_class_a2c(env)
-    if algorithm == 'dqn':
-        env_class = set_env_class_dqn(env)
-    if algorithm == 'ddpg':
-        env_class = set_env_class_ddpg(env)
-    if algorithm == 'ppo':
-        env_class = set_env_class_ppo(env)
-
-    return env_class
+envs = {
+    'ddpg': {
+        'mountain_car': DDPG_MountainCar,
+        'lunar_lander': DDPG_LunarLander,
+        'half_cheetah': DDPG_HalfCheetah,
+        'hopper': DDPG_Hopper,
+        'ant': DDPG_Ant,
+        'reacher': DDPG_Reacher,
+        'aeris_navigate': DDPG_AerisTargetNavigate,
+        'aeris_hazards': DDPG_AerisAvoidHazards,
+        'aeris_fragiles': DDPG_AerisAvoidFragiles,
+        'aeris_gather': DDPG_AerisFoodGather,
+    },
+    'ppo': {
+        'aeris_navigate': PPO_AerisNavigate,
+        'aeris_hazards': PPO_AerisAvoidHazards,
+        'aeris_fragiles': PPO_AerisAvoidFragiles,
+        'gravitar': PPO_Gravitar,
+        'montezuma': PPO_Montezuma,
+        'pitfall': PPO_Pitfall,
+        'private_eye': PPO_PrivateEye,
+        'solaris': PPO_Solaris,
+        'venture': PPO_Venture,
+        'qbert': PPO_QBert,
+        'mspacman': PPO_Pacman,
+        'midnight_resistance': PPO_MidnightResistance,
+        'cart_pole': PPO_CartPole,
+        'mountain_car': PPO_MountainCar,
+        'pendulum': PPO_Pendulum,
+        'lunar_lander': PPO_LunarLander,
+        'bit_flip': PPO_BitFlip,
+    },
+    'dqn': {
+        'cart_pole': DQN_CartPole
+    },
+    'a2c': {
+        'breakout': A2C_Breakout
+    },
+}
 
 
 def run_ray_parallel(args, experiment):
@@ -169,7 +109,7 @@ def run_thread(thread_params):
 def run(id, algorithm, env, experiment):
     print('Starting experiment {0} on env {1} learning algorithm {2} model {3}'.format(id + experiment.shift, env, algorithm, experiment.model))
 
-    env_class = set_env_class(algorithm, env)
+    env_class = envs[algorithm][env]
 
     if experiment.model == 'baseline':
         env_class.run_baseline(experiment, id)
@@ -303,7 +243,7 @@ if __name__ == '__main__':
     update_config(args, experiment)
 
     if args.load != '':
-        env_class = set_env_class(args.algorithm, args.env)
+        env_class = envs[args.algorithm][args.env]
         env_class.test(experiment, args.load)
     else:
         if args.thread:

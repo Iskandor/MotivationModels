@@ -53,8 +53,8 @@ class ExperimentPPO:
         steps_per_episode = []
         train_ext_rewards = []
         reward_avg = RunningAverageWindow(100)
-        prob_avg = RunningAverageWindow(1000, 2)
-        value_avg = RunningAverageWindow(1000)
+        # prob_avg = RunningAverageWindow(1000, 2)
+        # value_avg = RunningAverageWindow(1000)
 
         while steps < step_limit:
             state0 = self.process_state(self._env.reset())
@@ -64,8 +64,8 @@ class ExperimentPPO:
 
             while not done:
                 value, action0, probs0 = agent.get_action(state0)
-                value_avg.update(value.numpy())
-                prob_avg.update(probs0.numpy())
+                # value_avg.update(value.numpy())
+                # prob_avg.update(probs0.numpy())
                 next_state, reward, done, info = self._env.step(agent.convert_action(action0.cpu()))
                 state1 = self.process_state(next_state)
 
@@ -93,7 +93,8 @@ class ExperimentPPO:
             train_ext_rewards.append(train_ext_reward)
             reward_avg.update(train_ext_reward)
 
-            print('Run {0:d} step {1:d} training [ext. reward {2:f} steps {3:d} mean reward {4:f}] prob {5:s} value {6:f}'.format(trial, steps, train_ext_reward, train_steps, reward_avg.value().item(), numpy.array2string(prob_avg.value()), value_avg.value().item()))
+            # print('Run {0:d} step {1:d} training [ext. reward {2:f} steps {3:d} mean reward {4:f}] prob {5:s} value {6:f}'.format(trial, steps, train_ext_reward, train_steps, reward_avg.value().item(), numpy.array2string(prob_avg.value()), value_avg.value().item()))
+            print('Run {0:d} step {1:d} training [ext. reward {2:f} steps {3:d} mean reward {4:f}]'.format(trial, steps, train_ext_reward, train_steps, reward_avg.value().item()))
             print(bar)
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))

@@ -8,7 +8,7 @@ class BitFlipEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
     def __init__(self):
-        self.dimension = 32
+        self.dimension = 12
         self.observation_space = spaces.Discrete(self.dimension * 2)
         self.action_space = spaces.Discrete(self.dimension)
         self._state = None
@@ -18,6 +18,7 @@ class BitFlipEnv(gym.Env):
         self._max_steps = 1000
 
     def step(self, action):
+        self._step += 1
         reward = 0.
         done = self._step == self._max_steps
 
@@ -29,7 +30,6 @@ class BitFlipEnv(gym.Env):
             done = True
 
         obs = self._obs
-        self._step += 1
 
         return obs, reward, done, {}
 
@@ -38,6 +38,7 @@ class BitFlipEnv(gym.Env):
         self._state = np.random.randint(2, size=self.dimension)
         self._goal = np.random.randint(2, size=self.dimension)
         self._obs = np.concatenate([self._state, self._goal])
+        return self._obs
 
     def render(self, mode='human'):
         print('{1:s} - {2:s}'.format(self._step, np.array2string(self._state), np.array2string(self._goal)))
