@@ -267,6 +267,7 @@ def update_config(args, experiment):
 
 if __name__ == '__main__':
     print(platform.system())
+    print(torch.__version__)
     print(torch.__config__.show())
     print(torch.__config__.parallel_info())
     # torch.autograd.set_detect_anomaly(True)
