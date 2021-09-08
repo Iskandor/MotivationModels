@@ -215,14 +215,16 @@ class DOPModelAeris(nn.Module):
         state = state.unsqueeze(1).repeat(1, self.actor.head_count, 1, 1).view(-1, self.state_dim[0], self.state_dim[1])
         # loss = self.actor.log_prob(prob, action) * error.unsqueeze(-1) * self.eta
         loss = -self.error(state, action).mean() * self.eta
-        regularization_term = self.regularization_term(action) * self.zeta
+        regularization_term = self.regularization_term(action) * self.eta
+
+        print(loss, regularization_term)
 
         return loss + regularization_term
 
     def regularization_term(self, action):
-        # mask = torch.empty(action.shape[0], 1)
-        # mask = nn.init.uniform_(mask) < 0.25
-        # action *= mask
+        mask = torch.empty(action.shape[0], 1)
+        mask = nn.init.uniform_(mask) < self.zeta
+        action *= mask
 
         regularization_term = torch.cdist(action, action)
 
