@@ -217,12 +217,12 @@ class DOPModelAeris(nn.Module):
         loss = -self.error(state, action).mean() * self.eta
         regularization_term = self.regularization_term(action) * self.eta
 
-        print(loss, regularization_term)
+        # print(loss, regularization_term)
 
         return loss + regularization_term
 
     def regularization_term(self, action):
-        mask = torch.empty(action.shape[0], 1)
+        mask = torch.empty(action.shape[0], 1, device=action.device)
         mask = nn.init.uniform_(mask) < self.zeta
         action *= mask
 
