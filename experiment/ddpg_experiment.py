@@ -1012,6 +1012,8 @@ class ExperimentDDPG:
             'ri': numpy.array(train_int_rewards),
             'fme': numpy.array(train_fm_errors[:step_limit]),
             'hid': numpy.stack(train_head_index),
+            'loss': numpy.array(agent.network.dop_model.log_loss[:step_limit]),
+            'regterm': numpy.array(agent.network.dop_model.log_regterm[:step_limit]),
             'ts': states,
             'ta': actions,
             'th': head_indices,

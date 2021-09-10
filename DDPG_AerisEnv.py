@@ -1,8 +1,7 @@
 import gym
 import gym_aeris.envs
 
-from agents import TYPE
-from agents.DDPGAgent import DDPGAerisAgent, DDPGAerisForwardModelAgent, DDPGAerisForwardModelEncoderAgent, DDPGAerisInverseModelAgent, DDPGAerisRNDModelAgent, DDPGAerisForwardInverseModelAgent, \
+from agents.DDPGAerisAgent import DDPGAerisAgent, DDPGAerisForwardModelAgent, DDPGAerisForwardModelEncoderAgent, DDPGAerisInverseModelAgent, DDPGAerisRNDModelAgent, DDPGAerisForwardInverseModelAgent, \
     DDPGAerisM2ModelAgent, DDPGAerisM2SModelAgent, DDPGAerisGatedMetacriticModelAgent, DDPGAerisMetaCriticRNDModelAgent, DDPGAerisQRNDModelAgent, DDPGAerisDOPAgent, DDPGAerisDOPRefAgent, \
     DDPGAerisDOPV2QAgent, DDPGAerisDOPV2Agent
 from experiment.ddpg_experiment import ExperimentDDPG
