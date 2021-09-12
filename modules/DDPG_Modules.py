@@ -100,6 +100,7 @@ class ActorNHeads(nn.Module):
 class DDPGNetwork(nn.Module):
     def __init__(self):
         super(DDPGNetwork, self).__init__()
+        self.critic_heads = 1
         self.critic = None
         self.actor = None
         self.critic_target = None

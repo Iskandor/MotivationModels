@@ -135,6 +135,8 @@ def run(id, algorithm, env, experiment):
         env_class.run_dop2_model(experiment, id)
     if experiment.model == 'dop_2q':
         env_class.run_dop2q_model(experiment, id)
+    if experiment.model == 'dop_3':
+        env_class.run_dop3_model(experiment, id)
     if experiment.model == 'dop_ref':
         env_class.run_dop_ref_model(experiment, id)
     if experiment.model == 's':
@@ -210,7 +212,7 @@ if __name__ == '__main__':
     print(torch.__version__)
     print(torch.__config__.show())
     print(torch.__config__.parallel_info())
-    # torch.autograd.set_detect_anomaly(True)
+    torch.autograd.set_detect_anomaly(True)
 
     for i in range(torch.cuda.device_count()):
         print('{0:d}. {1:s}'.format(i, torch.cuda.get_device_name(i)))

@@ -276,6 +276,48 @@ class DOPV2ModelAeris(nn.Module):
         return (loss_generator * self.eta) + loss_arbiter
 
 
+class DOPV3ModelAeris(nn.Module):
+    def __init__(self, state_dim, action_dim, config, features, actor, critic, motivator):
+        super(DOPV3ModelAeris, self).__init__()
+
+        self.state_dim = state_dim
+        self.action_dim = action_dim
+
+        self.motivator = motivator
+        self.features = features
+        self.actor = actor
+        self.critic = critic
+        self.eta = config.motivation_eta
+        self.zeta = config.motivation_zeta
+
+        self.log_loss = []
+
+    def forward(self, state, action):
+        predicted_code = self.motivator(state, action)
+        return predicted_code
+
+    def error(self, state, action):
+        return self.motivator.error(state, action)
+
+    def motivator_loss_function(self, state, action, prediction=None):
+        return self.motivator.loss_function(state, action, prediction)
+
+    def generator_loss_function(self, state):
+        if self.features is not None:
+            x = self.features(state)
+        else:
+            x = state
+        action = self.actor(x).view(-1, self.action_dim)
+        state = state.unsqueeze(1).repeat(1, self.actor.head_count, 1, 1).view(-1, self.state_dim[0], self.state_dim[1])
+
+        _, value_int = self.critic(state, action)
+        actor_loss = -value_int.mean() * self.eta
+
+        self.log_loss.append(-actor_loss.item())
+
+        return actor_loss
+
+
 class DOPV2BModelAeris(nn.Module):
     def __init__(self, state_dim, action_dim, config, features, actor, motivator, arbiter):
         super(DOPV2BModelAeris, self).__init__()

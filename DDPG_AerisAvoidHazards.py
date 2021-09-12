@@ -55,6 +55,10 @@ def run_dop2q_model(config, i):
     DDPG_AerisEnv.run_dop2q_model(env_name, config, i)
 
 
+def run_dop3_model(config, i):
+    DDPG_AerisEnv.run_dop3_model(env_name, config, i)
+
+
 def run_metalearner_model(config, i):
     DDPG_AerisEnv.run_metalearner_model(env_name, config, i)
 

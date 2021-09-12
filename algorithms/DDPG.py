@@ -23,20 +23,44 @@ class DDPG:
             masks = sample.mask.to(self.device)
 
             if self.motivation:
-                rewards += self.motivation.reward_sample(memory, indices)
+                if self.network.critic_heads == 1:
+                    rewards += self.motivation.reward_sample(memory, indices)
+                else:
+                    ext_reward = rewards
+                    int_reward = self.motivation.reward_sample(memory, indices)
+                    rewards = (ext_reward, int_reward)
 
             self.train(states, actions, next_states, rewards, masks)
 
     def train(self, states, actions, next_states, rewards, masks):
-        expected_values = rewards + masks * self._gamma * self.network.value_target(next_states, self.network.action_target(next_states))
+        if self.network.critic_heads == 1:
+            value = self.network.value(states, actions)
+            value_target = self.network.value_target(next_states, self.network.action_target(next_states))
+
+            expected_values = rewards + masks * self._gamma * value_target
+            loss = torch.nn.functional.mse_loss(value, expected_values)
+
+        else:
+            value_ext, value_int = self.network.value(states, actions)
+            value_target_ext, value_target_int = self.network.value_target(next_states, self.network.action_target(next_states))
+
+            ext_reward, int_reward = rewards
+
+            expected_values_ext = ext_reward + masks * self._gamma * value_target_ext
+            expected_values_int = int_reward + masks * self._gamma * value_target_int
+            loss = torch.nn.functional.mse_loss(value_ext, expected_values_ext) + torch.nn.functional.mse_loss(value_int, expected_values_int)
 
         self._critic_optimizer.zero_grad()
-        loss = torch.nn.functional.mse_loss(self.network.value(states, actions), expected_values)
         loss.backward()
         self._critic_optimizer.step()
 
+        if self.network.critic_heads == 1:
+            actor_value = self.network.value(states, self.network.action(states))
+        else:
+            actor_value, _ = self.network.value(states, self.network.action(states))
+
         self._actor_optimizer.zero_grad()
-        loss = -self.network.value(states, self.network.action(states)).mean()
+        loss = -actor_value.mean()
         loss.backward()
         self._actor_optimizer.step()
 
