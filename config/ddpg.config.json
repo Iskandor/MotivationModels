@@ -1245,7 +1245,7 @@
       "forward_model_kernels_count": 32,
       "motivation_eta": 1000,
       "forward_model_batch_size": 8,
-      "dop_heads": 2,
+      "dop_heads": 4,
       "motivation_zeta": 0
     }
   },

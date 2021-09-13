@@ -212,7 +212,7 @@ if __name__ == '__main__':
     print(torch.__version__)
     print(torch.__config__.show())
     print(torch.__config__.parallel_info())
-    torch.autograd.set_detect_anomaly(True)
+    # torch.autograd.set_detect_anomaly(True)
 
     for i in range(torch.cuda.device_count()):
         print('{0:d}. {1:s}'.format(i, torch.cuda.get_device_name(i)))
