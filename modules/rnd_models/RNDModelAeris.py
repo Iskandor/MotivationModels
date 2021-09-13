@@ -193,6 +193,7 @@ class DOPModelAeris(nn.Module):
         self.actor = actor
         self.eta = config.motivation_eta
         self.zeta = config.motivation_zeta
+        self.mask = None
 
         self.log_loss = []
         self.log_regterm = []
@@ -226,13 +227,24 @@ class DOPModelAeris(nn.Module):
         return (loss + regularization_term) * self.eta
 
     def regularization_term(self, action):
-        mask = torch.empty(action.shape[0], 1, device=action.device)
-        mask = nn.init.uniform_(mask) < self.zeta
-        action *= mask
+        # mask = torch.empty(action.shape[0], 1, device=action.device)
+        # mask = nn.init.uniform_(mask) < self.zeta
+        # action *= mask
 
-        regularization_term = torch.cdist(action, action)
+        if self.mask is None:
+            self.init_mask(action)
+
+        regularization_term = torch.cdist(action, action) * self.mask
+        regularization_term = (regularization_term + 1).log()
 
         return -regularization_term.mean()
+
+    def init_mask(self, action):
+        self.mask = torch.ones((action.shape[0], action.shape[0]), device=action.device)
+        for i in range(action.shape[0]):
+            for j in range(action.shape[0]):
+                if (i % self.actor.head_count) - 1 == (j % self.actor.head_count) - 1:
+                    self.mask[i][j] = 0
 
 
 class DOPV2ModelAeris(nn.Module):
@@ -311,11 +323,11 @@ class DOPV3ModelAeris(nn.Module):
         state = state.unsqueeze(1).repeat(1, self.actor.head_count, 1, 1).view(-1, self.state_dim[0], self.state_dim[1])
 
         _, value_int = self.critic(state, action)
-        actor_loss = -value_int.mean() * self.eta
+        actor_loss = -value_int.mean()
 
         self.log_loss.append(-actor_loss.item())
 
-        return actor_loss
+        return actor_loss * self.eta
 
 
 class DOPV2BModelAeris(nn.Module):

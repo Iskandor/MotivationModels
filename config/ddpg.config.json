@@ -1220,7 +1220,7 @@
       "critic_h1": 256,
       "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
-      "motivation_eta": 1000,
+      "motivation_eta": 1,
       "forward_model_batch_size": 8,
       "dop_heads": 2,
       "motivation_zeta": 0
@@ -1243,7 +1243,7 @@
       "critic_h1": 256,
       "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
-      "motivation_eta": 1000,
+      "motivation_eta": 1,
       "forward_model_batch_size": 8,
       "dop_heads": 4,
       "motivation_zeta": 0
