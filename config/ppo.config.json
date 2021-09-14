@@ -373,14 +373,14 @@
       "beta": 0.001,
       "batch_size": 512,
       "trajectory_size": 4096,
-      "ppo_epochs": 10,
+      "ppo_epochs": 4,
       "lr": 0.0002,
       "actor_loss_weight": 0.5,
-      "actor_h1": 64,
-      "actor_h2": 32,
+      "actor_h1": 128,
+      "actor_h2": 64,
       "critic_loss_weight": 1,
       "critic_h1": 128,
-      "critic_h2": 32
+      "critic_h2": 64
     }
   },
   "lunar_lander": {

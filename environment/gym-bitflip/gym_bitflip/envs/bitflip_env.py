@@ -8,14 +8,14 @@ class BitFlipEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
     def __init__(self):
-        self.dimension = 12
-        self.observation_space = spaces.Discrete(self.dimension * 2)
+        self.dimension = 8
+        self.observation_space = spaces.Box(low=0, high=1, shape=(self.dimension * 2,), dtype=np.int32)
         self.action_space = spaces.Discrete(self.dimension)
         self._state = None
         self._goal = None
         self._obs = None
         self._step = 0
-        self._max_steps = 1000
+        self._max_steps = pow(self.dimension, 2) * 2
 
     def step(self, action):
         self._step += 1
