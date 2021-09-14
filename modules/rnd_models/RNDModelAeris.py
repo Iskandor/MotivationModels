@@ -208,43 +208,39 @@ class DOPModelAeris(nn.Module):
     def motivator_loss_function(self, state, action, prediction=None):
         return self.motivator.loss_function(state, action, prediction)
 
-    def generator_loss_function(self, state):
+    def generator_loss_function(self, state, next_state):
         if self.features is not None:
             x = self.features(state)
+            nx = self.features(next_state)
         else:
             x = state
-        action = self.actor(x)
-        action = action.view(-1, self.action_dim)
+            nx = next_state
+
         # prob = prob.view(-1, self.action_dim)
-        state = state.unsqueeze(1).repeat(1, self.actor.head_count, 1, 1).view(-1, self.state_dim[0], self.state_dim[1])
         # loss = self.actor.log_prob(prob, action) * error.unsqueeze(-1) * self.eta
+
+        action = self.actor(x).view(-1, self.action_dim)
+        state = state.unsqueeze(1).repeat(1, self.actor.head_count, 1, 1).view(-1, self.state_dim[0], self.state_dim[1])
         loss = -self.error(state, action).mean()
-        regularization_term = self.regularization_term(action)
+
+        next_action = self.actor(nx)
+
+        regularization_term = self.regularization_term(action.view(-1, self.actor.head_count, self.action_dim), next_action)
 
         self.log_loss.append(-loss.item())
         self.log_regterm.append(-regularization_term.item())
 
         return (loss + regularization_term) * self.eta
 
-    def regularization_term(self, action):
+    def regularization_term(self, action, next_action):
         # mask = torch.empty(action.shape[0], 1, device=action.device)
         # mask = nn.init.uniform_(mask) < self.zeta
         # action *= mask
 
-        if self.mask is None:
-            self.init_mask(action)
+        repulsive_term = torch.cdist(action, action)
+        attractive_term = torch.cdist(action, next_action)
 
-        regularization_term = torch.cdist(action, action) * self.mask
-        regularization_term = (regularization_term + 1).log()
-
-        return -regularization_term.mean()
-
-    def init_mask(self, action):
-        self.mask = torch.ones((action.shape[0], action.shape[0]), device=action.device)
-        for i in range(action.shape[0]):
-            for j in range(action.shape[0]):
-                if (i % self.actor.head_count) - 1 == (j % self.actor.head_count) - 1:
-                    self.mask[i][j] = 0
+        return attractive_term.mean() * 0.5 - repulsive_term.mean()
 
 
 class DOPV2ModelAeris(nn.Module):

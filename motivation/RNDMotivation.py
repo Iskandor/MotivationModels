@@ -141,9 +141,10 @@ class DOPMotivation:
         if generator_indices:
             sample = generator_memory.sample(generator_indices)
             states = sample.state.to(self._device)
+            next_states = sample.next_state.to(self._device)
 
             self._generator_optimizer.zero_grad()
-            loss = self._network.generator_loss_function(states)
+            loss = self._network.generator_loss_function(states, next_states)
             loss.backward()
             self._generator_optimizer.step()
 
