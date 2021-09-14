@@ -3,8 +3,8 @@ from torch import nn
 from torch.distributions import Categorical, Normal
 
 from agents import TYPE
-from algorithms.PPO import PPO
-from algorithms.ReplayBuffer import PPOTrajectoryBuffer
+from algorithms.PPO import PPO, PPO2
+from algorithms.ReplayBuffer import PPOTrajectoryBuffer, PPOTrajectoryBuffer2
 from modules.PPO_Modules import PPOSimpleNetwork, PPOAerisNetwork, PPOAtariNetwork, PPOAtariNetworkFM, PPOAerisNetworkRND, PPOAerisNetworkDOP, PPOAerisNetworkDOPRef, PPOAtariNetworkRND
 from motivation.ForwardModelMotivation import ForwardModelMotivation
 from motivation.RNDMotivation import RNDMotivation, DOPMotivation
@@ -17,7 +17,7 @@ class PPOAgent:
         self.action_dim = action_dim
         self.config = config
         self.network = None
-        self.memory = PPOTrajectoryBuffer(config.trajectory_size, config.batch_size, config.n_env)
+        self.memory = PPOTrajectoryBuffer2(config.trajectory_size, config.batch_size, config.n_env)
         self.algorithm = None
         self.action_type = None
 
@@ -27,8 +27,8 @@ class PPOAgent:
 
     def init_algorithm(self, config, memory, action_type, motivation=None):
         self.action_type = action_type
-        algorithm = PPO(self.network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size, memory, config.beta, config.gamma,
-                        ppo_epochs=config.ppo_epochs, n_env=config.n_env, device=config.device, motivation=motivation)
+        algorithm = PPO2(self.network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size, memory, config.beta, config.gamma,
+                         ppo_epochs=config.ppo_epochs, n_env=config.n_env, device=config.device, motivation=motivation)
 
         return algorithm
 
@@ -41,8 +41,8 @@ class PPOAgent:
         if self.action_type == TYPE.discrete:
             a = torch.argmax(action, dim=1).numpy()
 
-            if len(a) == 1:
-                a = a.item()
+            # if len(a) == 1:
+            #     a = a.item()
 
             return a
         if self.action_type == TYPE.continuous:
