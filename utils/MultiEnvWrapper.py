@@ -61,10 +61,11 @@ class MultiEnvParallel:
         done = self.dones
         info = {}
         for i in self.infos:
-            for k in i:
-                if k not in info:
-                    info[k] = []
-                info[k].append(i[k])
+            if i is not None:
+                for k in i:
+                    if k not in info:
+                        info[k] = []
+                    info[k].append(i[k])
 
         for k in info:
             info[k] = numpy.stack(info[k])
