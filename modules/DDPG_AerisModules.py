@@ -385,7 +385,11 @@ class DDPGAerisNetworkDOPV3(DDPGAerisNetwork):
         _, value_int = self.critic(state, action)
         value_int = value_int.view(-1, self.head_count).detach()
         action = action.view(-1, self.head_count, self.action_dim)
-        argmax = value_int.argmax(dim=1)
+
+        probs = torch.softmax(value_int, dim=1)
+        dist = Categorical(probs)
+        argmax = dist.sample()
+        # argmax = value_int.argmax(dim=1)
         action = action.gather(dim=1, index=argmax.unsqueeze(-1).unsqueeze(-1).repeat(1, 1, self.action_dim)).squeeze(1)
 
         return action, argmax

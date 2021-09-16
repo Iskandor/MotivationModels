@@ -310,7 +310,7 @@ class DOPV3ModelAeris(nn.Module):
     def motivator_loss_function(self, state, action, prediction=None):
         return self.motivator.loss_function(state, action, prediction)
 
-    def generator_loss_function(self, state):
+    def generator_loss_function(self, state, next_state):
         if self.features is not None:
             x = self.features(state)
         else:
