@@ -108,7 +108,7 @@ class ExperimentNEnvPPO:
 
             agent.train(state0, value, action0, probs0, state1, reward, done)
 
-            state0 = self.process_state(s)
+            state0 = state1
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
 
@@ -194,7 +194,7 @@ class ExperimentNEnvPPO:
 
             agent.train(state0, value, action0, probs0, state1, reward, done)
 
-            state0 = self.process_state(s)
+            state0 = state1
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
 
