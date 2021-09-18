@@ -4,7 +4,7 @@ import numpy as np
 from torch.distributions import Categorical, MultivariateNormal, Normal
 
 from agents import TYPE
-from modules import init_orthogonal, init_uniform
+from modules import init_orthogonal, init_uniform, init_xavier_uniform
 from modules.forward_models.ForwardModelAtari import ForwardModelAtari
 from modules.rnd_models.RNDModelAeris import RNDModelAeris, QRNDModelAeris, DOPModelAeris
 from modules.rnd_models.RNDModelAtari import RNDModelAtari
@@ -220,24 +220,13 @@ class PPOAerisNetwork(torch.nn.Module):
         self.channels = input_shape[0]
         self.width = input_shape[1]
 
-        fc_count = config.critic_kernels_count * self.width // 4
-
         self.features = nn.Sequential(
             nn.Conv1d(self.channels, config.critic_kernels_count, kernel_size=8, stride=4, padding=2),
             nn.ReLU(),
-            nn.Conv1d(config.critic_kernels_count, config.critic_kernels_count * 2, kernel_size=4, stride=2, padding=1),
-            nn.ReLU(),
-            nn.Conv1d(config.critic_kernels_count * 2, config.critic_kernels_count * 2, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(fc_count, fc_count),
-            nn.ReLU()
         )
 
         init_orthogonal(self.features[0], np.sqrt(2))
-        init_orthogonal(self.features[2], np.sqrt(2))
-        init_orthogonal(self.features[4], np.sqrt(2))
-        init_orthogonal(self.features[7], np.sqrt(2))
 
         fc_count = config.critic_kernels_count * self.width // 4
 
@@ -249,8 +238,8 @@ class PPOAerisNetwork(torch.nn.Module):
             nn.ReLU(),
             nn.Linear(config.critic_h1, 1))
 
-        nn.init.xavier_uniform_(self.critic[0].weight)
-        nn.init.xavier_uniform_(self.critic[2].weight)
+        init_xavier_uniform(self.critic[0])
+        init_xavier_uniform(self.critic[2])
         # nn.init.uniform_(self.critic[5].weight, -0.003, 0.003)
 
         fc_count = config.actor_kernels_count * self.width // 4
@@ -262,7 +251,7 @@ class PPOAerisNetwork(torch.nn.Module):
             nn.Linear(fc_count, config.actor_h1),
             nn.ReLU()]
 
-        nn.init.xavier_uniform_(self.layers_actor[0].weight)
+        init_xavier_uniform(self.layers_actor[0])
         # nn.init.xavier_uniform_(self.layers_actor[3].weight)
 
         self.actor = Actor(action_dim, self.layers_actor, head)
