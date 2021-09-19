@@ -237,10 +237,11 @@ class DOPModelAeris(nn.Module):
         # mask = nn.init.uniform_(mask) < self.zeta
         # action *= mask
 
-        repulsive_term = torch.cdist(action, action)
-        attractive_term = torch.cdist(action, next_action)
+        repulsive_term = torch.cdist(action, action.detach())
+        # attractive_term = torch.cdist(action, next_action.detach())
+        # attractive_term.mean() -
 
-        return attractive_term.mean() - repulsive_term.mean()
+        return repulsive_term.mean()
 
 
 class DOPV2ModelAeris(nn.Module):
