@@ -225,7 +225,7 @@ class DOPModelAeris(nn.Module):
 
         next_action = self.actor(nx)
 
-        regularization_term = self.regularization_term(action.view(-1, self.actor.head_count, self.action_dim), next_action)
+        regularization_term = self.regularization_term(action.view(-1, self.actor.head_count, self.action_dim), next_action) * self.zeta
 
         self.log_loss.append(-loss.item())
         self.log_regterm.append(-regularization_term.item())
@@ -240,7 +240,7 @@ class DOPModelAeris(nn.Module):
         repulsive_term = torch.cdist(action, action)
         attractive_term = torch.cdist(action, next_action)
 
-        return attractive_term.mean() * 0.5 - repulsive_term.mean()
+        return attractive_term.mean() - repulsive_term.mean()
 
 
 class DOPV2ModelAeris(nn.Module):
