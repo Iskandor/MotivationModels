@@ -85,7 +85,7 @@ class ExperimentNEnvPPO:
             else:
                 train_ext_reward += reward
             var = probs0[:, self._env.action_space.shape[0]:]
-            train_var += var.numpy()
+            train_var += var.cpu().numpy()
 
             env_indices = numpy.nonzero(numpy.squeeze(done, axis=1))[0]
 
@@ -105,6 +105,7 @@ class ExperimentNEnvPPO:
 
                 train_ext_reward[i] = 0
                 train_steps[i] = 0
+                train_var[i].fill(0)
 
                 next_state[i] = self._env.reset(i)
 
