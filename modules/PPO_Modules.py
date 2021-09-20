@@ -63,7 +63,7 @@ class ContinuousHead(nn.Module):
         mu = self.mu(x)
         var = self.var(x)
 
-        dist = Normal(mu, var.sqrt())
+        dist = Normal(mu, var.sqrt().clamp(min=1e-3))
         action = dist.sample()
 
         return action, torch.cat([mu, var], dim=1)
