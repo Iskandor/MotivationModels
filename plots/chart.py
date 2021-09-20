@@ -76,7 +76,7 @@ def plot_baseline(data, path, window=1000):
 
 def plot_baseline_details(data, path, window=1000):
     num_rows = 1
-    num_cols = 1
+    num_cols = 2
     for i in tqdm(range(data['re'].shape[0])):
         fig = plt.figure(figsize=(num_cols * 7.00, num_rows * 7.00))
         ax = plt.subplot(num_rows, num_cols, 1)
@@ -89,6 +89,17 @@ def plot_baseline_details(data, path, window=1000):
         mu, sigma = prepare_data(data['re'][i], window)
         plot_curve(ax, mu, sigma, t, 'blue')
         plt.legend(['external reward'], loc=4)
+
+        ax = plt.subplot(num_rows, num_cols, 2)
+        ax.set_xlabel('steps')
+        ax.set_ylabel('mean var / epoch')
+        ax.grid()
+
+        color_cycle = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
+        t = range(data['var'].shape[1])
+        for j in range(data['var'].shape[2]):
+            mu, sigma = prepare_data(data['var'][i, :, j], window)
+            plot_curve(ax, mu, sigma, t, color_cycle[j])
 
         plt.savefig("{0:s}_{1:d}.png".format(path, i))
         plt.close()
@@ -424,7 +435,7 @@ def plot_m2_model_details(data, path, window=1000):
 
 def plot_dop_model_details(data, path, window=1000):
     num_rows = 2
-    num_cols = 2
+    num_cols = 3
 
     hid_norm = np.expand_dims(np.sum(data['hid'], axis=2), 2)
 
@@ -439,17 +450,84 @@ def plot_dop_model_details(data, path, window=1000):
 
         mu, sigma = prepare_data(data['re'][i], window)
         plot_curve(ax, mu, sigma, t, 'blue')
-        mu, sigma = prepare_data(data['ri'][i], window)
-        plot_curve(ax, mu, sigma, t, 'red')
-        plt.legend(['external reward', 'internal reward'], loc=4)
+        plt.legend(['external reward'], loc=4)
 
         ax = plt.subplot(num_rows, num_cols, 2)
         color_cycle = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
         t = range(data['hid'].shape[1])
         data_hid = np.divide(data['hid'][i], hid_norm[i])
+        unstacked_data = []
         for j in range(data['hid'].shape[2]):
-            mu, sigma = prepare_data(data_hid[:, j], window)
-            plot_curve(ax, mu, sigma, t, color_cycle[j])
+            mu, _ = prepare_data(data_hid[:, j], window)
+            unstacked_data.append(mu)
+
+        ax.stackplot(t, np.stack(unstacked_data), colors=color_cycle)
+        ax.grid()
+
+        ax = plt.subplot(num_rows, num_cols, 3)
+        ax.set_xlabel('steps')
+        ax.set_ylabel('error')
+        ax.set_yscale('log', nonpositive='clip')
+        ax.grid()
+
+        t = range(data['fme'].shape[1])
+
+        mu, sigma = prepare_data(data['fme'][i], window)
+        plot_curve(ax, mu, sigma, t, 'green')
+        plt.legend(['prediction error'], loc=1)
+
+        t = range(data['loss'].shape[1])
+
+        ax = plt.subplot(num_rows, num_cols, 4)
+        mu, sigma = prepare_data(data['loss'][i], window)
+        plot_curve(ax, mu, sigma, t, 'blue')
+        mu, sigma = prepare_data(data['regterm'][i], window)
+        plot_curve(ax, mu, sigma, t, 'red')
+        plt.legend(['motivation loss', 'regularization term'], loc=1)
+
+        colors = []
+        for head in data['th'][i]:
+            colors.append(color_cycle[int(head)])
+
+        ax = plt.subplot(num_rows, num_cols, 5)
+        plt.scatter(data['ts'][i][:, 0], data['ts'][i][:, 1], marker='o', c=colors, s=8)
+
+        ax = plt.subplot(num_rows, num_cols, 6)
+        plt.scatter(data['ta'][i][:, 0], data['ta'][i][:, 1], marker='o', c=colors, s=8)
+
+        plt.savefig("{0:s}_{1:d}.png".format(path, i))
+        plt.close()
+
+
+def plot_dop2_model_details(data, path, window=1000):
+    num_rows = 2
+    num_cols = 3
+
+    hid_norm = np.expand_dims(np.sum(data['hid'], axis=2), 2)
+
+    for i in tqdm(range(data['re'].shape[0])):
+        fig = plt.figure(figsize=(num_cols * 7.00, num_rows * 7.00))
+        ax = plt.subplot(num_rows, num_cols, 1)
+        ax.set_xlabel('steps')
+        ax.set_ylabel('reward')
+        ax.grid()
+
+        t = range(data['re'].shape[1])
+
+        mu, sigma = prepare_data(data['re'][i], window)
+        plot_curve(ax, mu, sigma, t, 'blue')
+        plt.legend(['external reward'], loc=4)
+
+        ax = plt.subplot(num_rows, num_cols, 2)
+        color_cycle = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
+        t = range(data['hid'].shape[1])
+        data_hid = np.divide(data['hid'][i], hid_norm[i])
+        unstacked_data = []
+        for j in range(data['hid'].shape[2]):
+            mu, _ = prepare_data(data_hid[:, j], window)
+            unstacked_data.append(mu)
+
+        ax.stackplot(t, np.stack(unstacked_data), colors=color_cycle)
         ax.grid()
 
         ax = plt.subplot(num_rows, num_cols, 3)
@@ -465,13 +543,88 @@ def plot_dop_model_details(data, path, window=1000):
         plt.legend(['prediction error'], loc=1)
 
         ax = plt.subplot(num_rows, num_cols, 4)
-        ax.set_xlabel('reward magnitude')
-        ax.set_ylabel('log count')
+        ax.set_xlabel('steps')
+        ax.grid()
+        t = range(data['aa'].shape[1])
+        mu, sigma = prepare_data(data['aa'][i], window)
+        plot_curve(ax, mu, sigma, t, 'darkcyan')
+        plt.legend(['arbiter accuracy'], loc=1)
+
+        colors = []
+        for head in data['th'][i]:
+            colors.append(color_cycle[int(head)])
+
+        ax = plt.subplot(num_rows, num_cols, 5)
+        plt.scatter(data['ts'][i][:, 0], data['ts'][i][:, 1], marker='o', c=colors, s=8)
+
+        ax = plt.subplot(num_rows, num_cols, 6)
+        plt.scatter(data['ta'][i][:, 0], data['ta'][i][:, 1], marker='o', c=colors, s=8)
+
+        plt.savefig("{0:s}_{1:d}.png".format(path, i))
+        plt.close()
+
+
+def plot_dop3_model_details(data, path, window=1000):
+    num_rows = 2
+    num_cols = 3
+
+    hid_norm = np.expand_dims(np.sum(data['hid'], axis=2), 2)
+
+    for i in tqdm(range(data['re'].shape[0])):
+        fig = plt.figure(figsize=(num_cols * 7.00, num_rows * 7.00))
+        ax = plt.subplot(num_rows, num_cols, 1)
+        ax.set_xlabel('steps')
+        ax.set_ylabel('reward')
+        ax.grid()
+
+        t = range(data['re'].shape[1])
+
+        mu, sigma = prepare_data(data['re'][i], window)
+        plot_curve(ax, mu, sigma, t, 'blue')
+        plt.legend(['external reward'], loc=4)
+
+        ax = plt.subplot(num_rows, num_cols, 2)
+        color_cycle = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
+        t = range(data['hid'].shape[1])
+        data_hid = np.divide(data['hid'][i], hid_norm[i])
+        unstacked_data = []
+        for j in range(data['hid'].shape[2]):
+            mu, _ = prepare_data(data_hid[:, j], window)
+            unstacked_data.append(mu)
+
+        ax.stackplot(t, np.stack(unstacked_data), colors=color_cycle)
+        ax.grid()
+
+        ax = plt.subplot(num_rows, num_cols, 3)
+        ax.set_xlabel('steps')
+        ax.set_ylabel('error')
         ax.set_yscale('log', nonpositive='clip')
         ax.grid()
-        bins = np.linspace(0, 1, 50)
-        ax.hist(data['fme'][i], bins, color='darkcyan')
-        plt.legend(['prediction error reward'], loc=1)
+
+        t = range(data['fme'].shape[1])
+
+        mu, sigma = prepare_data(data['fme'][i], window)
+        plot_curve(ax, mu, sigma, t, 'green')
+        plt.legend(['prediction error'], loc=1)
+
+        t = range(data['loss'].shape[1])
+
+        ax = plt.subplot(num_rows, num_cols, 4)
+        mu, sigma = prepare_data(data['loss'][i], window)
+        plot_curve(ax, mu, sigma, t, 'blue')
+        # mu, sigma = prepare_data(data['regterm'][i], window)
+        # plot_curve(ax, mu, sigma, t, 'red')
+        plt.legend(['motivation loss', 'regularization term'], loc=1)
+
+        colors = []
+        for head in data['th'][i]:
+            colors.append(color_cycle[int(head)])
+
+        ax = plt.subplot(num_rows, num_cols, 5)
+        plt.scatter(data['ts'][i][:, 0], data['ts'][i][:, 1], marker='o', c=colors, s=8)
+
+        ax = plt.subplot(num_rows, num_cols, 6)
+        plt.scatter(data['ta'][i][:, 0], data['ta'][i][:, 1], marker='o', c=colors, s=8)
 
         plt.savefig("{0:s}_{1:d}.png".format(path, i))
         plt.close()

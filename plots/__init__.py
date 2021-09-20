@@ -1,7 +1,7 @@
 import os
 
 from plots.dataloader import prepare_data
-from plots.chart import plot_multiple_models, plot_baseline_details, plot_forward_model_details, plot_dop_model_details
+from plots.chart import plot_multiple_models, plot_baseline_details, plot_forward_model_details, plot_dop_model_details, plot_dop2_model_details, plot_dop3_model_details
 
 root = 'C:/GIT/Experiments/plots'
 
@@ -45,3 +45,7 @@ def plot(name, config, plot_overview=True, plot_details=[], window=1000):
                     plot_forward_model_details(d, path, window=window)
                 if model == 'dop':
                     plot_dop_model_details(d, path, window=window)
+                if model == 'dop_2':
+                    plot_dop2_model_details(d, path, window=window)
+                if model == 'dop_3':
+                    plot_dop3_model_details(d, path, window=window)

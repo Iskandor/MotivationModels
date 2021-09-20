@@ -16,7 +16,7 @@ def prepare_data(keys):
         id = key['id']
 
         path = os.path.join(root, algorithm, model, env, id)
-        data.append(load_data(path, ['re', 're_raw', 'ri', 'hid']))
+        data.append(load_data(path, ['re', 're_raw', 'ri', 'hid', 'aa', 'var'], ['loss', 'regterm']))
 
     return data
 
@@ -31,6 +31,14 @@ def expand_data_legacy(data):
     return np.stack(d)
 
 
+def align_data(data, steps):
+    if data.shape[0] < steps:
+        zeros = np.zeros(steps - data.shape[0])
+        data = np.concatenate([zeros, data])
+
+    return data
+
+
 def expand_data(data, steps=None):
     d = []
     for i, r in enumerate(data):
@@ -41,7 +49,7 @@ def expand_data(data, steps=None):
     return np.concatenate(d)
 
 
-def load_data(folder, expand_keys=[]):
+def load_data(folder, expand_keys=[], align_keys=[]):
     print(glob.glob(str(folder) + '/*.npy'))
 
     data = None
@@ -59,14 +67,17 @@ def load_data(folder, expand_keys=[]):
             steps = d['steps']
             del d['steps']
 
+        total_steps = np.sum(steps)
+
         for k in list(d.keys()):
             if k in expand_keys:
-                if len(d[k].shape) == 2 and d[k].shape[1] == 2:
-                    data[k].append(expand_data(d[k], None))
-                else:
-                    data[k].append(expand_data(d[k], steps))
+                data[k].append(expand_data(d[k], steps))
+            elif k in align_keys:
+                data[k].append(align_data(d[k], total_steps))
             else:
                 data[k].append(d[k])
+
+
 
     for k in list(d.keys()):
         data[k] = np.stack(data[k])
