@@ -178,20 +178,17 @@ class DDPGAerisNetworkDOP(DDPGAerisNetwork):
 
         fc_count = config.critic_kernels_count * self.width // 4
 
-        self.layers_actor = [
+        self.actor = nn.Sequential(
             nn.Conv1d(self.channels, config.actor_kernels_count, kernel_size=8, stride=4, padding=2),
             nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(fc_count, config.actor_h1),
-            nn.ReLU()
-        ]
+            ActorNHeads(self.head_count, fc_count, action_dim, config)
+        )
 
-        init_xavier_uniform(self.layers_actor[0])
-        init_xavier_uniform(self.layers_actor[3])
+        init_xavier_uniform(self.actor[0])
 
-        self.actor = ActorNHeads(self.head_count, action_dim, self.layers_actor, config)
         self.motivator = QRNDModelAeris(input_shape, action_dim, config)
-        self.dop_model = DOPModelAeris(input_shape, action_dim, config, None, self.actor, self.motivator)
+        self.dop_model = DOPModelAeris(self.head_count, input_shape, action_dim, config, None, self.actor, self.motivator)
         self.argmax = None
 
         self.critic_target = copy.deepcopy(self.critic)
@@ -244,16 +241,14 @@ class DDPGAerisNetworkDOPV2(DDPGAerisNetwork):
 
         fc_count = config.critic_kernels_count * self.width // 4
 
-        self.layers_actor = [
+        self.actor = nn.Sequential(
             nn.Conv1d(self.channels, config.actor_kernels_count, kernel_size=8, stride=4, padding=2),
             nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(fc_count, config.actor_h1),
-            nn.ReLU()
-        ]
+            ActorNHeads(self.head_count, fc_count, action_dim, config)
+        )
 
-        init_xavier_uniform(self.layers_actor[0])
-        init_xavier_uniform(self.layers_actor[3])
+        init_xavier_uniform(self.actor[0])
 
         self.arbiter = nn.Sequential(
             nn.Conv1d(self.channels, config.forward_model_kernels_count, kernel_size=8, stride=4, padding=2),
@@ -274,9 +269,8 @@ class DDPGAerisNetworkDOPV2(DDPGAerisNetwork):
         init_xavier_uniform(self.arbiter[7])
         init_xavier_uniform(self.arbiter[9])
 
-        self.actor = ActorNHeads(self.head_count, action_dim, self.layers_actor, config)
         self.motivator = QRNDModelAeris(input_shape, action_dim, config)
-        self.dop_model = DOPV2ModelAeris(input_shape, action_dim, config, None, self.actor, self.motivator, self.arbiter)
+        self.dop_model = DOPV2ModelAeris(self.head_count, input_shape, action_dim, config, None, self.actor, self.motivator, self.arbiter)
 
         self.critic_target = copy.deepcopy(self.critic)
         self.actor_target = copy.deepcopy(self.actor)
@@ -332,25 +326,22 @@ class DDPGAerisNetworkDOPV3(DDPGAerisNetwork):
 
         fc_count = config.critic_kernels_count * self.width // 4
 
-        self.layers_actor = [
+        self.actor = nn.Sequential(
             nn.Conv1d(self.channels, config.actor_kernels_count, kernel_size=8, stride=4, padding=2),
             nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(fc_count, config.actor_h1),
-            nn.ReLU()
-        ]
+            ActorNHeads(self.head_count, fc_count, action_dim, config)
+        )
 
-        init_xavier_uniform(self.layers_actor[0])
-        init_xavier_uniform(self.layers_actor[3])
+        init_xavier_uniform(self.actor[0])
 
-        self.actor = ActorNHeads(self.head_count, action_dim, self.layers_actor, config)
         self.critic = Critic2Heads(input_shape, action_dim, config)
         self.actor_target = copy.deepcopy(self.actor)
         self.critic_target = copy.deepcopy(self.critic)
         self.hard_update()
 
         self.motivator = QRNDModelAeris(input_shape, action_dim, config)
-        self.dop_model = DOPV3ModelAeris(input_shape, action_dim, config, None, self.actor, self.critic, self.motivator)
+        self.dop_model = DOPV3ModelAeris(self.head_count, input_shape, action_dim, config, None, self.actor, self.critic, self.motivator)
 
     def action(self, state):
         actions = self.actor(state)
@@ -393,83 +384,6 @@ class DDPGAerisNetworkDOPV3(DDPGAerisNetwork):
         action = action.gather(dim=1, index=argmax.unsqueeze(-1).unsqueeze(-1).repeat(1, 1, self.action_dim)).squeeze(1)
 
         return action, argmax
-
-
-class DDPGAerisNetworkDOPV2B(DDPGAerisNetwork):
-    def __init__(self, input_shape, action_dim, config):
-        super(DDPGAerisNetworkDOPV2B, self).__init__(input_shape, action_dim, config)
-
-        self.action_dim = action_dim
-        self.channels = input_shape[0]
-        self.width = input_shape[1]
-        self.head_count = config.dop_heads
-        self.argmax = None
-
-        fc_count = config.critic_kernels_count * self.width // 4
-
-        self.layers_actor = [
-            nn.Conv1d(self.channels, config.actor_kernels_count, kernel_size=8, stride=4, padding=2),
-            nn.ReLU(),
-            nn.Flatten(),
-            nn.Linear(fc_count, config.actor_h1),
-            nn.ReLU()
-        ]
-
-        init_xavier_uniform(self.layers_actor[0])
-        init_xavier_uniform(self.layers_actor[3])
-
-        self.arbiter = nn.Sequential(
-            nn.Conv1d(self.channels + action_dim, config.actor_kernels_count, kernel_size=8, stride=4, padding=2),
-            nn.ReLU(),
-            nn.Flatten(),
-            nn.Linear(fc_count, fc_count),
-            nn.ReLU(),
-            nn.Linear(fc_count, 1),
-            nn.Sigmoid()
-        )
-
-        init_xavier_uniform(self.arbiter[0])
-        init_xavier_uniform(self.arbiter[3])
-        init_xavier_uniform(self.arbiter[5])
-
-        self.actor = ActorNHeads(self.head_count, action_dim, self.layers_actor, config)
-        self.motivator = QRNDModelAeris(input_shape, action_dim, config)
-        self.dop_model = DOPV2ModelAeris(input_shape, action_dim, config, None, self.actor, self.motivator, self.arbiter)
-
-        self.critic_target = copy.deepcopy(self.critic)
-        self.actor_target = copy.deepcopy(self.actor)
-        self.hard_update()
-
-    def action(self, state):
-        x = state
-        action = self.actor(x).view(-1, self.action_dim)
-
-        s = state.unsqueeze(1).repeat(1, self.head_count, 1, 1).view(-1, self.channels, self.width)
-        a = action.unsqueeze(2).repeat(1, 1, state.shape[2])
-        x = torch.cat([s, a], dim=1)
-        argmax = self.arbiter(x).view(-1, self.head_count).argmax(dim=1)
-        action = action.view(-1, self.head_count, self.action_dim)
-        action = action.gather(dim=1, index=argmax.unsqueeze(-1).unsqueeze(-1).repeat(1, 1, self.action_dim))
-
-        self.argmax = argmax
-
-        return action.squeeze(1)
-
-    def index(self):
-        return self.argmax
-
-    def action_target(self, state):
-        with torch.no_grad():
-            action = self.actor_target(state).view(-1, self.action_dim)
-
-            s = state.unsqueeze(1).repeat(1, self.head_count, 1, 1).view(-1, self.channels, self.width)
-            a = action.unsqueeze(2).repeat(1, 1, state.shape[2])
-            x = torch.cat([s, a], dim=1)
-            argmax = self.arbiter(x).view(-1, self.head_count).argmax(dim=1)
-            action = action.view(-1, self.head_count, self.action_dim)
-            action = action.gather(dim=1, index=argmax.unsqueeze(-1).unsqueeze(-1).repeat(1, 1, self.action_dim))
-
-        return action.squeeze(1)
 
 
 class DDPGAerisNetworkDOPV2Q(DDPGAerisNetwork):

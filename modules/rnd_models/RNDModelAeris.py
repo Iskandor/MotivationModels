@@ -182,9 +182,10 @@ class QRNDModelAeris(nn.Module):
 
 
 class DOPModelAeris(nn.Module):
-    def __init__(self, state_dim, action_dim, config, features, actor, motivator):
+    def __init__(self, head_count, state_dim, action_dim, config, features, actor, motivator):
         super(DOPModelAeris, self).__init__()
 
+        self.head_count = head_count
         self.state_dim = state_dim
         self.action_dim = action_dim
 
@@ -208,46 +209,41 @@ class DOPModelAeris(nn.Module):
     def motivator_loss_function(self, state, action, prediction=None):
         return self.motivator.loss_function(state, action, prediction)
 
-    def generator_loss_function(self, state, next_state):
+    def generator_loss_function(self, state):
         if self.features is not None:
             x = self.features(state)
-            nx = self.features(next_state)
         else:
             x = state
-            nx = next_state
 
         # prob = prob.view(-1, self.action_dim)
         # loss = self.actor.log_prob(prob, action) * error.unsqueeze(-1) * self.eta
 
         action = self.actor(x).view(-1, self.action_dim)
-        state = state.unsqueeze(1).repeat(1, self.actor.head_count, 1, 1).view(-1, self.state_dim[0], self.state_dim[1])
+        state = state.unsqueeze(1).repeat(1, self.head_count, 1, 1).view(-1, self.state_dim[0], self.state_dim[1])
         loss = -self.error(state, action).mean()
 
-        next_action = self.actor(nx)
-
-        regularization_term = self.regularization_term(action.view(-1, self.actor.head_count, self.action_dim), next_action) * self.zeta
+        regularization_term = self.regularization_term(action.view(-1, self.head_count, self.action_dim)) * self.zeta
 
         self.log_loss.append(-loss.item())
         self.log_regterm.append(-regularization_term.item())
 
         return (loss + regularization_term) * self.eta
 
-    def regularization_term(self, action, next_action):
+    def regularization_term(self, action):
         # mask = torch.empty(action.shape[0], 1, device=action.device)
         # mask = nn.init.uniform_(mask) < self.zeta
         # action *= mask
 
         repulsive_term = torch.cdist(action, action.detach())
-        # attractive_term = torch.cdist(action, next_action.detach())
-        # attractive_term.mean() -
 
         return repulsive_term.mean()
 
 
 class DOPV2ModelAeris(nn.Module):
-    def __init__(self, state_dim, action_dim, config, features, actor, motivator, arbiter):
+    def __init__(self, head_count, state_dim, action_dim, config, features, actor, motivator, arbiter):
         super(DOPV2ModelAeris, self).__init__()
 
+        self.head_count = head_count
         self.state_dim = state_dim
         self.action_dim = action_dim
 
@@ -274,11 +270,11 @@ class DOPV2ModelAeris(nn.Module):
             x = state
         action = self.actor(x)
         action = action.view(-1, self.action_dim)
-        state = state.unsqueeze(1).repeat(1, self.actor.head_count, 1, 1).view(-1, self.state_dim[0], self.state_dim[1])
+        state = state.unsqueeze(1).repeat(1, self.head_count, 1, 1).view(-1, self.state_dim[0], self.state_dim[1])
         error = self.error(state, action)
 
         index = self.arbiter(x)
-        index_target = one_hot_code(torch.argmax(error.view(-1, self.actor.head_count, 1).detach(), dim=1), self.actor.head_count)
+        index_target = one_hot_code(torch.argmax(error.view(-1, self.head_count, 1).detach(), dim=1), self.head_count)
 
         loss_arbiter = nn.functional.mse_loss(index, index_target, reduction='mean')
         loss_generator = -error.unsqueeze(-1).mean()
@@ -286,9 +282,10 @@ class DOPV2ModelAeris(nn.Module):
 
 
 class DOPV3ModelAeris(nn.Module):
-    def __init__(self, state_dim, action_dim, config, features, actor, critic, motivator):
+    def __init__(self, head_count, state_dim, action_dim, config, features, actor, critic, motivator):
         super(DOPV3ModelAeris, self).__init__()
 
+        self.head_count = head_count
         self.state_dim = state_dim
         self.action_dim = action_dim
 
@@ -311,13 +308,13 @@ class DOPV3ModelAeris(nn.Module):
     def motivator_loss_function(self, state, action, prediction=None):
         return self.motivator.loss_function(state, action, prediction)
 
-    def generator_loss_function(self, state, next_state):
+    def generator_loss_function(self, state):
         if self.features is not None:
             x = self.features(state)
         else:
             x = state
         action = self.actor(x).view(-1, self.action_dim)
-        state = state.unsqueeze(1).repeat(1, self.actor.head_count, 1, 1).view(-1, self.state_dim[0], self.state_dim[1])
+        state = state.unsqueeze(1).repeat(1, self.head_count, 1, 1).view(-1, self.state_dim[0], self.state_dim[1])
 
         _, value_int = self.critic(state, action)
         actor_loss = -value_int.mean()
@@ -325,51 +322,6 @@ class DOPV3ModelAeris(nn.Module):
         self.log_loss.append(-actor_loss.item())
 
         return actor_loss * self.eta
-
-
-class DOPV2BModelAeris(nn.Module):
-    def __init__(self, state_dim, action_dim, config, features, actor, motivator, arbiter):
-        super(DOPV2BModelAeris, self).__init__()
-
-        self.state_dim = state_dim
-        self.action_dim = action_dim
-
-        self.motivator = motivator
-        self.features = features
-        self.actor = actor
-        self.arbiter = arbiter
-        self.eta = config.motivation_eta
-
-    def forward(self, state, action):
-        predicted_code = self.motivator(state, action)
-        return predicted_code
-
-    def error(self, state, action):
-        return self.motivator.error(state, action)
-
-    def motivator_loss_function(self, state, action, prediction=None):
-        return self.motivator.loss_function(state, action, prediction)
-
-    def generator_loss_function(self, state):
-        if self.features is not None:
-            x = self.features(state)
-        else:
-            x = state
-
-        action = self.actor(x)
-        action = action.view(-1, self.action_dim)
-        s = state.unsqueeze(1).repeat(1, self.actor.head_count, 1, 1).view(-1, self.state_dim[0], self.state_dim[1])
-        a = action.unsqueeze(2).repeat(1, 1, state.shape[2])
-
-        error = self.error(s, action)
-
-        x = torch.cat([s, a], dim=1)
-        index = self.arbiter(x).view(-1, self.actor.head_count)
-        index_target = one_hot_code(torch.argmax(error.view(-1, self.actor.head_count, 1).detach(), dim=1), self.actor.head_count)
-
-        loss_arbiter = nn.functional.binary_cross_entropy(index, index_target, reduction='mean')
-        loss_generator = -error.unsqueeze(-1).mean()
-        return (loss_generator * self.eta) + (loss_arbiter * 10)
 
 
 class DOPV2QModelAeris(nn.Module):
