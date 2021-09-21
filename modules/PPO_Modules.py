@@ -51,7 +51,7 @@ class ContinuousHead(nn.Module):
         )
         self.var = nn.Sequential(
             nn.Linear(input_dim, action_dim),
-            nn.Sigmoid()
+            nn.Softplus()
         )
 
         init_uniform(self.mu[0], 0.03)
