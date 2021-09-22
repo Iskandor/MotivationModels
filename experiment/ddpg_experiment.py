@@ -945,6 +945,7 @@ class ExperimentDDPG:
 
         steps_per_episode = []
         train_fm_errors = []
+        train_values = []
         train_ext_rewards = []
         train_int_rewards = []
         train_head_index = []
@@ -964,7 +965,9 @@ class ExperimentDDPG:
 
             while not done:
                 agent.motivation.update_state_average(state0)
-                action0, head_index = agent.get_action(state0)
+                with torch.no_grad():
+                    action0, head_index = agent.get_action(state0)
+                    value = agent.network.value(state0, action0)
                 next_state, reward, done, _ = self._env.step(agent.convert_action(action0))
                 reward = self.transform_reward(reward)
                 state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0).to(config.device)
@@ -979,6 +982,7 @@ class ExperimentDDPG:
                 train_fm_error = agent.motivation.error(state0, action0).item()
                 train_fm_errors.append(train_fm_error)
                 head_index_density[head_index.item()] += 1
+                train_values.append(value.item())
 
                 state0 = state1
 
@@ -1012,6 +1016,7 @@ class ExperimentDDPG:
             'ri': numpy.array(train_int_rewards),
             'fme': numpy.array(train_fm_errors[:step_limit]),
             'hid': numpy.stack(train_head_index),
+            'value': numpy.array(train_values[:step_limit]),
             'loss': numpy.array(agent.network.dop_model.log_loss[:step_limit]),
             'regterm': numpy.array(agent.network.dop_model.log_regterm[:step_limit]),
             'ts': states,

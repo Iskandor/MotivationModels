@@ -152,26 +152,6 @@
       "forward_model_variant": "A"
     },
     "8": {
-      "descriptor": "sigmoid",
-      "model": "baseline",
-      "n_env": 32,
-      "trials": 5,
-      "steps": 4,
-      "gamma": "0.99",
-      "beta": 0,
-      "batch_size": 1024,
-      "trajectory_size": 8192,
-      "ppo_epochs": 10,
-      "lr": 0.0002,
-      "actor_loss_weight": 1,
-      "actor_kernels_count": 32,
-      "actor_h1": 256,
-      "critic_loss_weight": 1,
-      "critic_kernels_count": 32,
-      "critic_h1": 256
-    },
-    "9": {
-      "descriptor": "sigmoid",
       "model": "baseline",
       "n_env": 32,
       "trials": 5,
@@ -184,13 +164,12 @@
       "lr": 0.0002,
       "actor_loss_weight": 0.1,
       "actor_kernels_count": 32,
-      "actor_h1": 256,
+      "actor_h1": 64,
       "critic_loss_weight": 1,
       "critic_kernels_count": 32,
-      "critic_h1": 256
+      "critic_h1": 512
     },
-    "10": {
-      "descriptor": "sigmoid",
+    "9": {
       "model": "baseline",
       "n_env": 32,
       "trials": 5,
@@ -203,10 +182,28 @@
       "lr": 0.0002,
       "actor_loss_weight": 0.01,
       "actor_kernels_count": 32,
-      "actor_h1": 256,
+      "actor_h1": 64,
       "critic_loss_weight": 1,
       "critic_kernels_count": 32,
-      "critic_h1": 256
+      "critic_h1": 512
+    },
+    "10": {
+      "model": "baseline",
+      "n_env": 32,
+      "trials": 5,
+      "steps": 4,
+      "gamma": "0.99",
+      "beta": 0,
+      "batch_size": 1024,
+      "trajectory_size": 8192,
+      "ppo_epochs": 10,
+      "lr": 0.0002,
+      "actor_loss_weight": 0.001,
+      "actor_kernels_count": 32,
+      "actor_h1": 64,
+      "critic_loss_weight": 1,
+      "critic_kernels_count": 32,
+      "critic_h1": 512
     },
     "11": {
       "descriptor": "softplus",

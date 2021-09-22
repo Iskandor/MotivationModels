@@ -71,11 +71,21 @@ class ActorNHeads(nn.Module):
             nn.Tanh())
             for _ in range(head_count)])
 
+        # self.xavier_init()
+        self.orthogonal_init(head_count, input_dim, action_dim, config)
+
+    def xavier_init(self):
+        for i, h in enumerate(self.heads):
+            init_xavier_uniform(h[0])
+            init_xavier_uniform(h[2])
+            init_xavier_uniform(h[4])
+
+    def orthogonal_init(self, head_count, input_dim, action_dim, config):
         weight1 = torch.zeros(head_count * config.actor_h1, input_dim)
-        nn.init.orthogonal_(weight1, 3)
+        nn.init.orthogonal_(weight1, 1)
         weight1 = weight1.reshape(head_count, config.actor_h1, input_dim)
         weight2 = torch.zeros(head_count * config.actor_h1, config.actor_h1)
-        nn.init.orthogonal_(weight2, 3)
+        nn.init.orthogonal_(weight2, 1)
         weight2 = weight2.reshape(head_count, config.actor_h1, config.actor_h1)
         weight3 = torch.zeros(head_count * action_dim, config.actor_h1)
         nn.init.orthogonal_(weight3, 3)

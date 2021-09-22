@@ -1361,7 +1361,7 @@
       "motivation_eta": 1000,
       "forward_model_batch_size": 8,
       "dop_heads": 2,
-      "motivation_zeta": 1
+      "motivation_zeta": 0
     },
     "60": {
       "model": "dop",
@@ -1384,7 +1384,7 @@
       "motivation_eta": 100,
       "forward_model_batch_size": 8,
       "dop_heads": 2,
-      "motivation_zeta": 1
+      "motivation_zeta": 0
     },
     "61": {
       "model": "dop",
@@ -1407,7 +1407,7 @@
       "motivation_eta": 10,
       "forward_model_batch_size": 8,
       "dop_heads": 2,
-      "motivation_zeta": 1
+      "motivation_zeta": 0
     }
   },
   "aeris_hazards": {
