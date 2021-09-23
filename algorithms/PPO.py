@@ -166,6 +166,8 @@ class PPO2:
         self._n_env = n_env
 
         self._memory = memory
+        self.diff_mean = []
+        self.diff_max = []
 
         if self._n_env > 1:
             self._trajectories = [[] for _ in range(self._n_env)]
@@ -197,12 +199,6 @@ class PPO2:
             probs = probs.reshape(-1, *probs.shape[2:])[permutation]
             adv_values = adv_values.reshape(-1, *adv_values.shape[2:])[permutation]
             ref_values = ref_values.reshape(-1, *ref_values.shape[2:])[permutation]
-
-            # states = states.reshape(-1, *states.shape[2:])
-            # actions = actions.reshape(-1, *actions.shape[2:])
-            # probs = probs.reshape(-1, *probs.shape[2:])
-            # adv_values = adv_values.reshape(-1, *adv_values.shape[2:])
-            # ref_values = ref_values.reshape(-1, *ref_values.shape[2:])
 
             self._train(states, actions, probs, adv_values, ref_values)
 
@@ -239,6 +235,11 @@ class PPO2:
 
         log_probs = self._network.actor.log_prob(probs, old_actions)
         old_logprobs = self._network.actor.log_prob(old_probs, old_actions)
+
+        diff_mean = (log_probs - old_logprobs).mean().cpu().item()
+        self.diff_mean.append(diff_mean)
+        diff_max = (log_probs - old_logprobs).max().cpu().item()
+        self.diff_max.append(diff_max)
 
         ratio = torch.exp(log_probs - old_logprobs) * adv_value
         clipped_ratio = torch.clamp(ratio, 1.0 - self._epsilon, 1.0 + self._epsilon) * adv_value
