@@ -120,7 +120,7 @@ def run_vdop_model(env_name, config, i):
     experiment = ExperimentDDPG(env_name, env, config)
 
     agent = DDPGAerisVanillaDOPAgent(state_dim, action_dim, config)
-    experiment.run_dop_model(agent, i)
+    experiment.run_vdop_model(agent, i)
 
     env.close()
 
