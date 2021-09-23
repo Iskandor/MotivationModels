@@ -936,6 +936,94 @@ class ExperimentDDPG:
         }
         numpy.save('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
 
+    def run_vdop_model(self, agent, trial):
+        config = self._config
+        trial = trial + config.shift
+
+        step_limit = int(config.steps * 1e6)
+        steps = 0
+
+        steps_per_episode = []
+        train_fm_errors = []
+        train_values = []
+        train_ext_rewards = []
+        train_int_rewards = []
+        train_head_index = []
+        reward_avg = RunningAverageWindow(100)
+        step_avg = RunningAverageWindow(100)
+
+        bar = ProgressBar(config.steps * 1e6, max_width=40)
+        exploration = GaussianExploration(config.sigma, 0.01, config.steps * config.exploration_time * 1e6)
+
+        while steps < step_limit:
+            state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0).to(config.device)
+            done = False
+            train_ext_reward = 0
+            train_int_reward = 0
+            train_steps = 0
+            head_index_density = numpy.zeros(config.dop_heads)
+
+            while not done:
+                agent.motivation.update_state_average(state0)
+                with torch.no_grad():
+                    action0, head_index = agent.get_action(state0)
+                    value = agent.network.value(state0, action0)
+                next_state, reward, done, _ = self._env.step(agent.convert_action(action0))
+                reward = self.transform_reward(reward)
+                state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0).to(config.device)
+                reward = torch.tensor([reward], dtype=torch.float32).unsqueeze(0)
+                mask = torch.tensor([done], dtype=torch.float32).unsqueeze(0)
+
+                agent.train(state0, action0, state1, reward, mask)
+                train_steps += 1
+
+                train_ext_reward += reward.item()
+                train_int_reward += agent.motivation.reward(state0, action0).item()
+                train_fm_error = agent.motivation.error(state0, action0).item()
+                train_fm_errors.append(train_fm_error)
+                head_index_density[head_index.item()] += 1
+                train_values.append(value.item())
+
+                state0 = state1
+
+            steps += train_steps
+            if steps > step_limit:
+                train_steps -= steps - step_limit
+            bar.numerator = steps
+            exploration.update(steps)
+
+            reward_avg.update(train_ext_reward)
+            step_avg.update(train_steps)
+            steps_per_episode.append(train_steps)
+            train_ext_rewards.append(train_ext_reward)
+            train_int_rewards.append(train_int_reward)
+            train_head_index.append(head_index_density)
+
+            print('Run {0:d} step {1:d} sigma {2:f} training [ext. reward {3:f} int. reward {4:f} steps {5:d} ({6:f})] avg. ext. reward {7:f} density {8:s}'.format(
+                trial, steps, exploration.sigma, train_ext_reward, train_int_reward, train_steps, train_int_reward / train_steps, reward_avg.value().item(), numpy.array2string(head_index_density)))
+            print(bar)
+
+        print('Saving agent...')
+        agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
+
+        print('Running analysis...')
+        states, actions, head_indices = DOPAnalytic.head_analyze(self._env, agent, config)
+
+        print('Saving data...')
+        save_data = {
+            'steps': numpy.array(steps_per_episode),
+            're': numpy.array(train_ext_rewards),
+            'ri': numpy.array(train_int_rewards),
+            'fme': numpy.array(train_fm_errors[:step_limit]),
+            'hid': numpy.stack(train_head_index),
+            'value': numpy.array(train_values[:step_limit]),
+            'loss': numpy.array(agent.network.dop_model.log_loss[:step_limit]),
+            'ts': states,
+            'ta': actions,
+            'th': head_indices,
+        }
+        numpy.save('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
+
     def run_dop_model(self, agent, trial):
         config = self._config
         trial = trial + config.shift

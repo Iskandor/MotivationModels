@@ -10,7 +10,7 @@ from modules.encoders.EncoderAeris import EncoderAeris
 from modules.forward_models.ForwardModelAeris import ForwardModelAeris, ForwardModelEncoderAeris
 from modules.inverse_models.InverseModelAeris import InverseModelAeris
 from modules.metacritic_models.MetaCriticModelAeris import MetaCriticModelAeris, MetaCriticRNDModelAeris
-from modules.rnd_models.RNDModelAeris import RNDModelAeris, QRNDModelAeris, DOPModelAeris, DOPV2ModelAeris, DOPV2QModelAeris, DOPV3ModelAeris
+from modules.rnd_models.RNDModelAeris import RNDModelAeris, QRNDModelAeris, DOPModelAeris, DOPV2ModelAeris, DOPV2QModelAeris, DOPV3ModelAeris, VanillaQRNDModelAeris, VanillaDOPModelAeris
 
 
 class Critic2Heads(nn.Module):
@@ -165,6 +165,67 @@ class DDPGAerisNetworkQRND(DDPGAerisNetwork):
     def __init__(self, input_shape, action_dim, config):
         super(DDPGAerisNetworkQRND, self).__init__(input_shape, action_dim, config)
         self.qrnd_model = QRNDModelAeris(input_shape, action_dim, config)
+
+
+class DDPGAerisNetworkVanillaDOP(DDPGAerisNetwork):
+    def __init__(self, input_shape, action_dim, config):
+        super(DDPGAerisNetworkVanillaDOP, self).__init__(input_shape, action_dim, config)
+
+        self.action_dim = action_dim
+        self.channels = input_shape[0]
+        self.width = input_shape[1]
+        self.head_count = config.dop_heads
+
+        fc_count = config.critic_kernels_count * self.width // 4
+
+        self.actor = nn.Sequential(
+            nn.Conv1d(self.channels, config.actor_kernels_count, kernel_size=8, stride=4, padding=2),
+            nn.ReLU(),
+            nn.Flatten(),
+            ActorNHeads(self.head_count, fc_count, action_dim, config, init='xavier')
+        )
+
+        init_xavier_uniform(self.actor[0])
+
+        self.motivator = VanillaQRNDModelAeris(input_shape, action_dim, config)
+        self.dop_model = VanillaDOPModelAeris(self.head_count, input_shape, action_dim, config, None, self.actor, self.motivator)
+        self.argmax = None
+
+        self.critic_target = copy.deepcopy(self.critic)
+        self.actor_target = copy.deepcopy(self.actor)
+        self.hard_update()
+
+    def action(self, state):
+        x = state
+        action = self.actor(x)
+
+        state = state.unsqueeze(1).repeat(1, self.head_count, 1, 1).view(-1, self.channels, self.width)
+        action = action.view(-1, self.action_dim)
+
+        error = self.motivator.error(state, action).view(-1, self.head_count).detach()
+        action = action.view(-1, self.head_count, self.action_dim)
+        argmax = error.argmax(dim=1)
+        action = action.gather(dim=1, index=argmax.unsqueeze(-1).unsqueeze(-1).repeat(1, 1, self.action_dim))
+        self.argmax = argmax
+
+        return action.squeeze(1)
+
+    def index(self):
+        return self.argmax
+
+    def action_target(self, state):
+        with torch.no_grad():
+            action = self.actor_target(state)
+
+            state = state.unsqueeze(1).repeat(1, self.head_count, 1, 1).view(-1, self.channels, self.width)
+            action = action.view(-1, self.action_dim)
+
+            error = self.motivator.error(state, action).view(-1, self.head_count).detach()
+            action = action.view(-1, self.head_count, self.action_dim)
+            argmax = error.argmax(dim=1)
+            action = action.gather(dim=1, index=argmax.unsqueeze(-1).unsqueeze(-1).repeat(1, 1, self.action_dim))
+
+        return action.squeeze(1)
 
 
 class DDPGAerisNetworkDOP(DDPGAerisNetwork):

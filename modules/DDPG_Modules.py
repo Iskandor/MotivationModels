@@ -59,7 +59,7 @@ class Actor(nn.Module):
 
 
 class ActorNHeads(nn.Module):
-    def __init__(self, head_count, input_dim, action_dim, config):
+    def __init__(self, head_count, input_dim, action_dim, config, init='orto'):
         super(ActorNHeads, self).__init__()
 
         self.heads = nn.ModuleList([nn.Sequential(
@@ -71,8 +71,10 @@ class ActorNHeads(nn.Module):
             nn.Tanh())
             for _ in range(head_count)])
 
-        # self.xavier_init()
-        self.orthogonal_init(head_count, input_dim, action_dim, config)
+        if init == 'xavier':
+            self.xavier_init()
+        if init == 'orto':
+            self.orthogonal_init(head_count, input_dim, action_dim, config)
 
     def xavier_init(self):
         for i, h in enumerate(self.heads):

@@ -39,6 +39,10 @@ def run_qrnd_model(config, i):
     DDPG_AerisEnv.run_qrnd_model(env_name, config, i)
 
 
+def run_vdop_model(config, i):
+    DDPG_AerisEnv.run_vdop_model(env_name, config, i)
+
+
 def run_dop_model(config, i):
     DDPG_AerisEnv.run_dop_model(env_name, config, i)
 
