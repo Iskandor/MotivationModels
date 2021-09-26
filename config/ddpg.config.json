@@ -1429,9 +1429,9 @@
       "critic_lr": 0.0002,
       "critic_kernels_count": 32,
       "critic_h1": 256,
-      "forward_model_lr": 0.001,
+      "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
-      "motivation_eta": 1,
+      "motivation_eta": 100,
       "forward_model_batch_size": 8,
       "dop_heads": 4,
       "motivation_zeta": 0

@@ -220,7 +220,7 @@ class VanillaQRNDModelAeris(nn.Module):
         init_orthogonal(self.target_model[0], np.sqrt(2))
         init_orthogonal(self.target_model[2], np.sqrt(2))
         init_orthogonal(self.target_model[4], np.sqrt(2))
-        init_orthogonal(self.target_model[7], 1)
+        init_orthogonal(self.target_model[7], 0.1)
 
         for param in self.target_model.parameters():
             param.requires_grad = False
