@@ -7,8 +7,8 @@ import numpy as np
 class BitFlipEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self):
-        self.dimension = 8
+    def __init__(self, dimension=8):
+        self.dimension = dimension
         self.observation_space = spaces.Box(low=0, high=1, shape=(self.dimension * 2,), dtype=np.int32)
         self.action_space = spaces.Discrete(self.dimension)
         self._state = None
@@ -45,3 +45,18 @@ class BitFlipEnv(gym.Env):
 
     def close(self):
         pass
+
+
+class BitFlipEnv8(BitFlipEnv):
+    def __init__(self):
+        super(BitFlipEnv8, self).__init__(8)
+
+
+class BitFlipEnv12(BitFlipEnv):
+    def __init__(self):
+        super(BitFlipEnv12, self).__init__(12)
+
+
+class BitFlipEnv16(BitFlipEnv):
+    def __init__(self):
+        super(BitFlipEnv16, self).__init__(16)

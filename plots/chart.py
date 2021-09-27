@@ -76,7 +76,7 @@ def plot_baseline(data, path, window=1000):
 
 def plot_baseline_details(data, path, window=1000):
     num_rows = 1
-    num_cols = 2
+    num_cols = 3
     for i in tqdm(range(data['re'].shape[0])):
         fig = plt.figure(figsize=(num_cols * 7.00, num_rows * 7.00))
         ax = plt.subplot(num_rows, num_cols, 1)
@@ -99,7 +99,13 @@ def plot_baseline_details(data, path, window=1000):
         t = range(data['var'].shape[1])
         for j in range(data['var'].shape[2]):
             mu, sigma = prepare_data(data['var'][i, :, j], window)
-            plot_curve(ax, mu, sigma, t, color_cycle[j])
+            plot_curve(ax, mu, sigma, t, color_cycle[j], alpha=0.5)
+
+        ax = plt.subplot(num_rows, num_cols, 3)
+        ax.set_xlabel('steps')
+
+        ax.plot(data['diff_mean'][i], color='blue', alpha=0.5)
+        ax.plot(data['diff_max'][i], color='red', alpha=0.5)
 
         plt.savefig("{0:s}_{1:d}.png".format(path, i))
         plt.close()
