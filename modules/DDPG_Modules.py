@@ -65,8 +65,6 @@ class ActorNHeads(nn.Module):
         self.heads = nn.ModuleList([nn.Sequential(
             nn.Linear(input_dim, config.actor_h1),
             nn.ReLU(),
-            nn.Linear(config.actor_h1, config.actor_h1),
-            nn.ReLU(),
             nn.Linear(config.actor_h1, action_dim),
             nn.Tanh())
             for _ in range(head_count)])
@@ -80,23 +78,18 @@ class ActorNHeads(nn.Module):
         for i, h in enumerate(self.heads):
             init_xavier_uniform(h[0])
             init_xavier_uniform(h[2])
-            init_xavier_uniform(h[4])
 
     def orthogonal_init(self, head_count, input_dim, action_dim, config):
         weight1 = torch.zeros(head_count * config.actor_h1, input_dim)
         nn.init.orthogonal_(weight1, 1)
         weight1 = weight1.reshape(head_count, config.actor_h1, input_dim)
-        weight2 = torch.zeros(head_count * config.actor_h1, config.actor_h1)
-        nn.init.orthogonal_(weight2, 1)
-        weight2 = weight2.reshape(head_count, config.actor_h1, config.actor_h1)
-        weight3 = torch.zeros(head_count * action_dim, config.actor_h1)
-        nn.init.orthogonal_(weight3, 3)
-        weight3 = weight3.reshape(head_count, action_dim, config.actor_h1)
+        weight2 = torch.zeros(head_count * action_dim, config.actor_h1)
+        nn.init.orthogonal_(weight2, 3)
+        weight2 = weight2.reshape(head_count, action_dim, config.actor_h1)
 
         for i, h in enumerate(self.heads):
             init_custom(h[0], weight1[i])
             init_custom(h[2], weight2[i])
-            init_custom(h[4], weight3[i])
 
     def forward(self, x):
         actions = []

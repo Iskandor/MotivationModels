@@ -182,10 +182,13 @@ class DDPGAerisNetworkVanillaDOP(DDPGAerisNetwork):
             nn.Conv1d(self.channels, config.actor_kernels_count, kernel_size=8, stride=4, padding=2),
             nn.ReLU(),
             nn.Flatten(),
+            nn.Linear(fc_count, fc_count),
+            nn.ReLU(),
             ActorNHeads(self.head_count, fc_count, action_dim, config, init='xavier')
         )
 
         init_xavier_uniform(self.actor[0])
+        init_xavier_uniform(self.actor[3])
 
         self.motivator = VanillaQRNDModelAeris(input_shape, action_dim, config)
         self.dop_model = VanillaDOPModelAeris(self.head_count, input_shape, action_dim, config, None, self.actor, self.motivator)

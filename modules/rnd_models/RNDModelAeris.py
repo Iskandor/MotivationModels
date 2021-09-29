@@ -201,18 +201,18 @@ class VanillaQRNDModelAeris(nn.Module):
         self.channels = input_shape[0] + action_dim
         self.width = input_shape[1]
 
-        self.state_average = torch.zeros((1, input_shape[0], input_shape[1]))
+        self.state_average = torch.zeros((1, input_shape[0], input_shape[1]), device=config.device)
 
         fc_count = config.forward_model_kernels_count * self.width // 4
-        hidden_count = 64
+        hidden_count = 256
 
         self.target_model = nn.Sequential(
             nn.Conv1d(self.channels, config.forward_model_kernels_count, kernel_size=8, stride=4, padding=2),
-            nn.ELU(),
+            nn.ReLU(),
             nn.Conv1d(config.forward_model_kernels_count, config.forward_model_kernels_count * 2, kernel_size=4, stride=2, padding=1),
-            nn.ELU(),
+            nn.ReLU(),
             nn.Conv1d(config.forward_model_kernels_count * 2, config.forward_model_kernels_count * 2, kernel_size=3, stride=1, padding=1),
-            nn.ELU(),
+            nn.ReLU(),
             nn.Flatten(),
             nn.Linear(fc_count, hidden_count)
         )
@@ -227,16 +227,16 @@ class VanillaQRNDModelAeris(nn.Module):
 
         self.model = nn.Sequential(
             nn.Conv1d(self.channels, config.forward_model_kernels_count, kernel_size=8, stride=4, padding=2),
-            nn.ELU(),
+            nn.ReLU(),
             nn.Conv1d(config.forward_model_kernels_count, config.forward_model_kernels_count * 2, kernel_size=4, stride=2, padding=1),
-            nn.ELU(),
+            nn.ReLU(),
             nn.Conv1d(config.forward_model_kernels_count * 2, config.forward_model_kernels_count * 2, kernel_size=3, stride=1, padding=1),
-            nn.ELU(),
+            nn.ReLU(),
             nn.Flatten(),
             nn.Linear(fc_count, hidden_count),
-            nn.ELU(),
+            nn.ReLU(),
             nn.Linear(hidden_count, hidden_count),
-            nn.ELU(),
+            nn.ReLU(),
             nn.Linear(hidden_count, hidden_count)
         )
 
