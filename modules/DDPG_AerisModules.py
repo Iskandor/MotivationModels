@@ -184,13 +184,13 @@ class DDPGAerisNetworkVanillaDOP(DDPGAerisNetwork):
             nn.Flatten(),
             nn.Linear(fc_count, fc_count),
             nn.ReLU(),
-            ActorNHeads(self.head_count, fc_count, action_dim, config, init='xavier')
+            ActorNHeads(self.head_count, fc_count, action_dim, config, init='orto')
         )
 
         init_xavier_uniform(self.actor[0])
         init_xavier_uniform(self.actor[3])
 
-        self.motivator = VanillaQRNDModelAeris(input_shape, action_dim, config)
+        self.motivator = QRNDModelAeris(input_shape, action_dim, config)
         self.dop_model = VanillaDOPModelAeris(self.head_count, input_shape, action_dim, config, None, self.actor, self.motivator)
         self.argmax = None
 
