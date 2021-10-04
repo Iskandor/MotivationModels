@@ -109,11 +109,11 @@ class QRNDModelAeris(nn.Module):
 
         self.target_model_features = nn.Sequential(
             nn.Conv1d(self.channels, config.forward_model_kernels_count, kernel_size=8, stride=4, padding=2),
-            nn.Tanh(),
+            nn.ReLU(),
             nn.Conv1d(config.forward_model_kernels_count, config.forward_model_kernels_count * 2, kernel_size=4, stride=2, padding=1),
-            nn.Tanh(),
+            nn.ReLU(),
             nn.Conv1d(config.forward_model_kernels_count * 2, config.forward_model_kernels_count * 2, kernel_size=3, stride=1, padding=1),
-            nn.Tanh(),
+            nn.ReLU(),
             nn.Flatten(),
         )
 
@@ -129,19 +129,19 @@ class QRNDModelAeris(nn.Module):
 
         self.model_features = nn.Sequential(
             nn.Conv1d(self.channels, config.forward_model_kernels_count, kernel_size=8, stride=4, padding=2),
-            nn.Tanh(),
+            nn.ReLU(),
             nn.Conv1d(config.forward_model_kernels_count, config.forward_model_kernels_count * 2, kernel_size=4, stride=2, padding=1),
-            nn.Tanh(),
+            nn.ReLU(),
             nn.Conv1d(config.forward_model_kernels_count * 2, config.forward_model_kernels_count * 2, kernel_size=3, stride=1, padding=1),
-            nn.Tanh(),
+            nn.ReLU(),
             nn.Flatten(),
         )
 
         self.model = nn.Sequential(
             nn.Linear(fc_count, hidden_count),
-            nn.Tanh(),
+            nn.ReLU(),
             nn.Linear(hidden_count, hidden_count),
-            nn.Tanh(),
+            nn.ReLU(),
             nn.Linear(hidden_count, hidden_count)
         )
 
@@ -205,60 +205,64 @@ class VanillaQRNDModelAeris(nn.Module):
         fc_count = config.forward_model_kernels_count * self.width // 4
         hidden_count = 256
 
-        self.target_model = nn.Sequential(
+        self.target_model_features = nn.Sequential(
             nn.Conv1d(self.channels, config.forward_model_kernels_count, kernel_size=8, stride=4, padding=2),
-            nn.ReLU(),
+            nn.Tanh(),
             nn.Conv1d(config.forward_model_kernels_count, config.forward_model_kernels_count * 2, kernel_size=4, stride=2, padding=1),
-            nn.ReLU(),
+            nn.Tanh(),
             nn.Conv1d(config.forward_model_kernels_count * 2, config.forward_model_kernels_count * 2, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
+            nn.Tanh(),
             nn.Flatten(),
-            nn.Linear(fc_count, hidden_count)
         )
 
-        init_orthogonal(self.target_model[0], np.sqrt(2))
-        init_orthogonal(self.target_model[2], np.sqrt(2))
-        init_orthogonal(self.target_model[4], np.sqrt(2))
-        init_orthogonal(self.target_model[7], 0.1)
+        for param in self.target_model_features.parameters():
+            param.requires_grad = False
+
+        self.target_model = nn.Sequential(
+            nn.Linear(fc_count, hidden_count)
+        )
 
         for param in self.target_model.parameters():
             param.requires_grad = False
 
-        self.model = nn.Sequential(
+        self.model_features = nn.Sequential(
             nn.Conv1d(self.channels, config.forward_model_kernels_count, kernel_size=8, stride=4, padding=2),
-            nn.ReLU(),
+            nn.Tanh(),
             nn.Conv1d(config.forward_model_kernels_count, config.forward_model_kernels_count * 2, kernel_size=4, stride=2, padding=1),
-            nn.ReLU(),
+            nn.Tanh(),
             nn.Conv1d(config.forward_model_kernels_count * 2, config.forward_model_kernels_count * 2, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
+            nn.Tanh(),
             nn.Flatten(),
+        )
+
+        self.model = nn.Sequential(
             nn.Linear(fc_count, hidden_count),
-            nn.ReLU(),
+            nn.Tanh(),
             nn.Linear(hidden_count, hidden_count),
-            nn.ReLU(),
+            nn.Tanh(),
             nn.Linear(hidden_count, hidden_count)
         )
 
-        init_orthogonal(self.model[0], np.sqrt(2))
-        init_orthogonal(self.model[2], np.sqrt(2))
-        init_orthogonal(self.model[4], np.sqrt(2))
-        init_orthogonal(self.model[7], 0.1)
-        init_orthogonal(self.model[9], 0.1)
-        init_orthogonal(self.model[11], 0.01)
+        init_coupled_orthogonal([self.target_model_features[0], self.model_features[0]], np.sqrt(2))
+        init_coupled_orthogonal([self.target_model_features[2], self.model_features[2]], np.sqrt(2))
+        init_coupled_orthogonal([self.target_model_features[4], self.model_features[4]], np.sqrt(2))
+        init_coupled_orthogonal([self.target_model[0], self.model[0]], 0.1)
+        init_orthogonal(self.model[2], 0.1)
+        init_orthogonal(self.model[4], 0.01)
 
     def forward(self, state, action):
         x = state - self.state_average.expand(state.shape[0], *state.shape[1:])
         a = action.unsqueeze(2).repeat(1, 1, state.shape[2])
         x = torch.cat([x, a], dim=1)
+        x = self.model_features(x)
         predicted_code = self.model(x)
-        # x.view(-1, self.channels * self.width)
         return predicted_code
 
     def encode(self, state, action):
         x = state - self.state_average.expand(state.shape[0], *state.shape[1:])
         a = action.unsqueeze(2).repeat(1, 1, state.shape[2])
         x = torch.cat([x, a], dim=1)
-        # x.view(-1, self.channels * self.width)
+        x = self.target_model_features(x)
         return self.target_model(x)
 
     def error(self, state, action):

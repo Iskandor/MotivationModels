@@ -190,7 +190,7 @@ class DDPGAerisNetworkVanillaDOP(DDPGAerisNetwork):
         init_xavier_uniform(self.actor[0])
         init_xavier_uniform(self.actor[3])
 
-        self.motivator = QRNDModelAeris(input_shape, action_dim, config)
+        self.motivator = VanillaQRNDModelAeris(input_shape, action_dim, config)
         self.dop_model = VanillaDOPModelAeris(self.head_count, input_shape, action_dim, config, None, self.actor, self.motivator)
         self.argmax = None
 
