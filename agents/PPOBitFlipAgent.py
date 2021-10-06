@@ -1,6 +1,6 @@
 from agents.PPOAgent import PPOAgent
-from modules.PPO_BitFlipModules import PPOBitFlipNetwork, PPOBitFlipNetworkRND
-from motivation.RNDMotivation import RNDMotivation
+from modules.PPO_BitFlipModules import PPOBitFlipNetwork, PPOBitFlipNetworkRND, PPOBitFlipNetworkQRND
+from motivation.RNDMotivation import RNDMotivation, QRNDMotivation
 
 
 class PPOBitFlipAgent(PPOAgent):
@@ -24,3 +24,11 @@ class PPOBitFlipRNDAgent(PPOAgent):
         self.motivation.train(self.memory, indices)
         if indices is not None:
             self.memory.clear()
+
+
+class PPOBitFlipQRNDAgent(PPOBitFlipRNDAgent):
+    def __init__(self, input_shape, action_dim, config, action_type):
+        super().__init__(input_shape, action_dim, config, action_type)
+        self.network = PPOBitFlipNetworkQRND(input_shape, action_dim, config, head=action_type).to(config.device)
+        self.motivation = QRNDMotivation(self.network.qrnd_model, config.motivation_lr, config.motivation_eta, config.device)
+        self.algorithm = self.init_algorithm(config, self.memory, action_type, self.motivation)

@@ -50,6 +50,7 @@ def expand_data(data, steps=None):
 
 
 def load_data(folder, expand_keys=[], align_keys=[], ignore_stack=[]):
+    print(folder)
     print(glob.glob(str(folder) + '/*.npy'))
 
     data = None
@@ -71,14 +72,16 @@ def load_data(folder, expand_keys=[], align_keys=[], ignore_stack=[]):
 
         for k in list(d.keys()):
             if k in expand_keys:
-                data[k].append(expand_data(d[k], steps))
+                if k in data and d[k].size > 0:
+                    data[k].append(expand_data(d[k], steps))
             elif k in align_keys:
-                data[k].append(align_data(d[k], total_steps))
+                if k in data and d[k].size > 0:
+                    data[k].append(align_data(d[k], total_steps))
             else:
                 data[k].append(d[k])
 
     for k in list(d.keys()):
-        if k not in ignore_stack:
+        if k not in ignore_stack and len(data[k]) > 0:
             data[k] = np.stack(data[k])
 
     return data

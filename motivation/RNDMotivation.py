@@ -69,7 +69,8 @@ class QRNDMotivation:
         return self.reward(states, actions)
 
     def reward(self, state0, action0):
-        reward = torch.tanh(self.error(state0, action0)).unsqueeze(1)
+        with torch.no_grad():
+            reward = self.error(state0, action0).unsqueeze(1)
         return reward * self._eta
 
     def update_state_average(self, state):

@@ -1,1 +1,1 @@
-from gym_bitflip.envs.bitflip_env import BitFlipEnv8, BitFlipEnv12, BitFlipEnv16
+from gym_bitflip.envs.bitflip_env import BitFlipEnv

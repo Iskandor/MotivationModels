@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 from modules.PPO_Modules import Actor, Critic2Heads
-from modules.rnd_models.RNDModelBitFlip import RNDModelBitFlip
+from modules.rnd_models.RNDModelBitFlip import RNDModelBitFlip, QRNDModelBitFlip
 
 
 class PPOBitFlipNetwork(torch.nn.Module):
@@ -73,3 +73,9 @@ class PPOBitFlipNetworkRND(PPOBitFlipMotivationNetwork):
     def __init__(self, input_shape, action_dim, config, head):
         super(PPOBitFlipNetworkRND, self).__init__(input_shape, action_dim, config, head)
         self.rnd_model = RNDModelBitFlip(input_shape, action_dim, config)
+
+
+class PPOBitFlipNetworkQRND(PPOBitFlipMotivationNetwork):
+    def __init__(self, input_shape, action_dim, config, head):
+        super(PPOBitFlipNetworkQRND, self).__init__(input_shape, action_dim, config, head)
+        self.qrnd_model = QRNDModelBitFlip(input_shape, action_dim, config)
