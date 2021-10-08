@@ -575,6 +575,30 @@
       "critic_h2": 32,
       "motivation_lr": 0.001,
       "motivation_eta": 0.1
+    },
+    "9": {
+      "descriptor": "b8",
+      "model": "dop",
+      "n_env": 8,
+      "trials": 5,
+      "steps": 2,
+      "gamma": "0.99",
+      "beta": 0.001,
+      "batch_size": 512,
+      "trajectory_size": 4096,
+      "ppo_epochs": 8,
+      "lr": 0.0002,
+      "actor_loss_weight": 0.5,
+      "actor_h1": 64,
+      "actor_h2": 32,
+      "critic_loss_weight": 1,
+      "critic_h1": 64,
+      "critic_h2": 32,
+      "motivation_lr": 0.001,
+      "motivation_eta": 0,
+      "forward_model_batch_size": 64,
+      "dop_heads": 2,
+      "motivation_zeta": 0
     }
   },
   "lunar_lander": {

@@ -149,7 +149,7 @@ class DOPMotivation:
             self._generator_optimizer.step()
 
     def error(self, state0, action0):
-        return self._network.error(state0, action0).detach()
+        return self._network.motivator.error(state0, action0).detach()
 
     def reward_sample(self, memory, indices):
         sample = memory.sample(indices)

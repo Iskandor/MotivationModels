@@ -4,7 +4,7 @@ import numpy as np
 from torch.distributions import Categorical, MultivariateNormal, Normal
 
 from agents import TYPE
-from modules import init_orthogonal, init_uniform, init_xavier_uniform
+from modules import init_orthogonal, init_uniform, init_xavier_uniform, init_custom
 from modules.forward_models.ForwardModelAtari import ForwardModelAtari
 from modules.rnd_models.RNDModelAeris import RNDModelAeris, QRNDModelAeris, DOPModelAeris
 from modules.rnd_models.RNDModelAtari import RNDModelAtari
@@ -90,7 +90,7 @@ class ContinuousHead(nn.Module):
 
 
 class Actor(nn.Module):
-    def __init__(self, action_dim, layers, head):
+    def __init__(self, model, head):
         super(Actor, self).__init__()
         self.head = None
         if head == TYPE.discrete:
@@ -100,11 +100,10 @@ class Actor(nn.Module):
         if head == TYPE.multibinary:
             pass
 
-        layers.append(self.head(layers[-2].out_features, action_dim))
-        self.actor = nn.Sequential(*layers)
+        self.model = model
 
     def forward(self, x):
-        return self.actor(x)
+        return self.model(x)
 
     def log_prob(self, probs, actions):
         return self.head.log_prob(probs, actions)
@@ -114,8 +113,9 @@ class Actor(nn.Module):
 
 
 class ActorNHeads(nn.Module):
-    def __init__(self, head_count, action_dim, layers, head, config):
+    def __init__(self, head, head_count, dims, init='orto'):
         super(ActorNHeads, self).__init__()
+
         self.head = None
         if head == TYPE.discrete:
             self.head = DiscreteHead
@@ -124,22 +124,32 @@ class ActorNHeads(nn.Module):
         if head == TYPE.multibinary:
             pass
 
-        self.actor = nn.Sequential(*layers)
-        self.head_count = head_count
-        self.heads = [nn.Sequential(
-            nn.Linear(self.actor[-2].out_features, config.actor_h1),
+        self.heads = nn.ModuleList([nn.Sequential(
+            nn.Linear(dims[0], dims[1]),
             nn.ReLU(),
-            self.head(config.actor_h1, action_dim))
-            for _ in range(head_count)]
+            self.head(dims[1], dims[2]))
+            for _ in range(head_count)])
 
-        for h in self.heads:
-            nn.init.xavier_uniform_(h[0].weight)
-            nn.init.zeros_(h[0].bias)
+        if init == 'xavier':
+            self.xavier_init()
+        if init == 'orto':
+            self.orthogonal_init(head_count, dims)
+
+    def xavier_init(self):
+        for i, h in enumerate(self.heads):
+            init_xavier_uniform(h[0])
+
+    def orthogonal_init(self, head_count, dims):
+        weight1 = torch.zeros(head_count * dims[1], dims[0])
+        nn.init.orthogonal_(weight1, 1)
+        weight1 = weight1.reshape(head_count, dims[1], dims[0])
+
+        for i, h in enumerate(self.heads):
+            init_custom(h[0], weight1[i])
 
     def forward(self, x):
-        x = self.actor(x)
-        probs = []
         actions = []
+        probs = []
 
         for h in self.heads:
             a, p = h(x)
@@ -147,12 +157,6 @@ class ActorNHeads(nn.Module):
             probs.append(p)
 
         return torch.stack(actions, dim=1), torch.stack(probs, dim=1)
-
-    def log_prob(self, probs, actions):
-        return self.head.log_prob(probs, actions)
-
-    def entropy(self, probs):
-        return self.head.entropy(probs)
 
 
 class Critic2Heads(nn.Module):
@@ -199,12 +203,12 @@ class PPOSimpleNetwork(torch.nn.Module):
             torch.nn.Linear(state_dim, config.actor_h1),
             nn.ReLU(),
             torch.nn.Linear(config.actor_h1, config.actor_h2),
-            nn.ReLU()
+            nn.ReLU(),
         ]
         nn.init.xavier_uniform_(self.layers_actor[0].weight)
         nn.init.xavier_uniform_(self.layers_actor[2].weight)
 
-        self.actor = Actor(action_dim, self.layers_actor, head)
+        self.actor = Actor(self.layers_actor, head)
 
     def forward(self, state):
         value = self.critic(state)
@@ -249,12 +253,13 @@ class PPOAerisNetwork(torch.nn.Module):
             # nn.ReLU(),
             # nn.Flatten(),
             nn.Linear(fc_count, config.actor_h1),
-            nn.ReLU()]
+            nn.ReLU(),
+            ContinuousHead(config.actor_h1, action_dim)]
 
         init_xavier_uniform(self.layers_actor[0])
         # nn.init.xavier_uniform_(self.layers_actor[3].weight)
 
-        self.actor = Actor(action_dim, self.layers_actor, head)
+        self.actor = Actor(self.layers_actor, head)
 
     def forward(self, state):
         x = self.features(state)
@@ -409,13 +414,14 @@ class PPOAtariNetwork(torch.nn.Module):
         self.layers_policy = [
             torch.nn.Linear(self.feature_dim, self.feature_dim),
             torch.nn.ReLU(),
+            DiscreteHead(self.feature_dim, action_dim)
         ]
 
         init_orthogonal(self.layers_policy[0], 0.01)
 
         self.features = nn.Sequential(*self.layers_features)
         self.critic = nn.Sequential(*self.layers_value)
-        self.actor = Actor(action_dim, self.layers_policy, head)
+        self.actor = Actor(self.layers_policy, head)
 
     def forward(self, state):
         features = self.features(state)
