@@ -7,7 +7,27 @@ from etaprogress.progress import ProgressBar
 
 class DOPAnalytic:
     def __init__(self):
-        pass
+        self.source = 0
+        self.ext_gradient = []
+        self.dop_gradient = []
+        self.nheads = 0
+
+    def init_gradient_monitor(self, module, nheads):
+        module.register_backward_hook(self._backward_hook)
+        for _ in range(nheads):
+            self.ext_gradient.append([])
+            self.dop_gradient.append([])
+        self.nheads = nheads
+
+    def _backward_hook(self, module, grad_input, grad_output):
+        if self.source == 0:
+            for i in range(self.nheads):
+                self.ext_gradient[i].append(grad_input[i].mean().item())
+        else:
+            for i in range(self.nheads):
+                self.dop_gradient[i].append(grad_input[i].mean().item())
+        self.source = 1 - self.source
+
 
     @staticmethod
     def head_analyze(env, agent, config):

@@ -3,7 +3,7 @@ import os
 
 import numpy as np
 
-root = 'C:/Work/PHD/Experiments/data'
+root = 'C:/Git/Experiments/data'
 
 
 def prepare_data(keys):
@@ -16,7 +16,7 @@ def prepare_data(keys):
         id = key['id']
 
         path = os.path.join(root, algorithm, model, env, id)
-        data.append(load_data(path, ['re', 're_raw', 'ri', 'hid', 'aa', 'var'], ['loss', 'regterm'], ['diff_mean', 'diff_max']))
+        data.append(load_data(path, ['re', 're_raw', 'ri', 'hid', 'aa', 'var'], ['loss', 'regterm'], ['re', 're_raw', 'ri']))
 
     return data
 
@@ -49,7 +49,7 @@ def expand_data(data, steps=None):
     return np.concatenate(d)
 
 
-def load_data(folder, expand_keys=[], align_keys=[], ignore_stack=[]):
+def load_data(folder, expand_keys=[], align_keys=[], stack_keys=[]):
     print(folder)
     print(glob.glob(str(folder) + '/*.npy'))
 
@@ -81,7 +81,7 @@ def load_data(folder, expand_keys=[], align_keys=[], ignore_stack=[]):
                 data[k].append(d[k])
 
     for k in list(d.keys()):
-        if k not in ignore_stack and len(data[k]) > 0:
+        if k in stack_keys and len(data[k]) > 0:
             data[k] = np.stack(data[k])
 
     return data

@@ -940,6 +940,9 @@ class ExperimentDDPG:
         config = self._config
         trial = trial + config.shift
 
+        analytic = DOPAnalytic()
+        analytic.init_gradient_monitor(agent.network.actor[-1], config.dop_heads)
+
         step_limit = int(config.steps * 1e6)
         steps = 0
 
@@ -1016,8 +1019,8 @@ class ExperimentDDPG:
             'ri': numpy.array(train_int_rewards),
             'fme': numpy.array(train_fm_errors[:step_limit]),
             'hid': numpy.stack(train_head_index),
-            'value': numpy.array(train_values[:step_limit]),
-            'loss': numpy.array(agent.network.dop_model.log_loss[:step_limit]),
+            'ext_grad': numpy.array(analytic.ext_gradient[:step_limit]),
+            'dop_grad': numpy.array(analytic.dop_gradient[:step_limit]),
             'ts': states,
             'ta': actions,
             'th': head_indices,
