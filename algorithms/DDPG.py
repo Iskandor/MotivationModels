@@ -2,9 +2,10 @@ import torch
 
 
 class DDPG:
-    def __init__(self, network, actor_lr, critic_lr, gamma, tau, motivation=None, device='cpu'):
+    def __init__(self, network, actor_lr, critic_lr, gamma, tau, motivation=None, device='cpu', beta=1):
         self.network = network
         self.motivation = motivation
+        self._beta = beta
         self._gamma = gamma
         self._tau = tau
         self.device = device
@@ -60,7 +61,7 @@ class DDPG:
             actor_value, _ = self.network.value(states, self.network.action(states))
 
         self._actor_optimizer.zero_grad()
-        loss = -actor_value.mean()
+        loss = -actor_value.mean() * self._beta
         loss.backward()
         self._actor_optimizer.step()
 

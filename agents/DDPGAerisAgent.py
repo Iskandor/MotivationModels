@@ -176,7 +176,7 @@ class DDPGAerisVanillaDOPAgent(DDPGAgent):
         self.motivation_memory = MDPTrajectoryBuffer(self.config.forward_model_batch_size, self.config.forward_model_batch_size)
         self.network = DDPGAerisNetworkVanillaDOP(input_shape, action_dim, config).to(config.device)
         self.motivation = DOPMotivation(self.network.dop_model, config.forward_model_lr, config.actor_lr, config.motivation_eta, config.device)
-        self.algorithm = DDPG(self.network, config.actor_lr, config.critic_lr, config.gamma, config.tau, device=config.device)
+        self.algorithm = DDPG(self.network, config.actor_lr, config.critic_lr, config.gamma, config.tau, device=config.device, beta=config.beta)
 
     def get_action(self, state):
         action = self.network.action(state)
@@ -277,7 +277,7 @@ class DDPGAerisDOPV3Agent(DDPGAgent):
         self.motivation_memory = MDPTrajectoryBuffer(self.config.forward_model_batch_size, self.config.forward_model_batch_size)
         self.network = DDPGAerisNetworkDOPV3(input_shape, action_dim, config).to(config.device)
         self.motivation = DOPMotivation(self.network.dop_model, config.forward_model_lr, config.actor_lr, config.motivation_eta, config.device)
-        self.algorithm = DDPG(self.network, config.actor_lr, config.critic_lr, config.gamma, config.tau, device=config.device, motivation=self.motivation)
+        self.algorithm = DDPG(self.network, config.actor_lr, config.critic_lr, config.gamma, config.tau, motivation=self.motivation, device=config.device)
 
     def get_action(self, state):
         action = self.network.action(state)
