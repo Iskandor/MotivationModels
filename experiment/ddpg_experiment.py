@@ -982,7 +982,7 @@ class ExperimentDDPG:
 
                 train_ext_reward += reward.item()
                 train_int_reward += agent.motivation.reward(state0, action0).item()
-                train_fm_error = agent.motivation.error(state0, action0).item()
+                train_fm_error = agent.network.dop_model.error(state0).detach().cpu().numpy()
                 train_fm_errors.append(train_fm_error)
                 head_index_density[head_index.item()] += 1
                 train_values.append(value.item())
@@ -1010,19 +1010,20 @@ class ExperimentDDPG:
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
 
         print('Running analysis...')
-        states, actions, head_indices = DOPAnalytic.head_analyze(self._env, agent, config)
+        states, actions, all_actions, head_indices = DOPAnalytic.head_analyze(self._env, agent, config)
 
         print('Saving data...')
         save_data = {
             'steps': numpy.array(steps_per_episode),
             're': numpy.array(train_ext_rewards),
             'ri': numpy.array(train_int_rewards),
-            'fme': numpy.array(train_fm_errors[:step_limit]),
+            'fme': numpy.stack(train_fm_errors),
             'hid': numpy.stack(train_head_index),
             'ext_grad': numpy.array(analytic.ext_gradient[:step_limit]),
             'dop_grad': numpy.array(analytic.dop_gradient[:step_limit]),
             'ts': states,
             'ta': actions,
+            'taa': all_actions,
             'th': head_indices,
         }
         numpy.save('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
@@ -1098,7 +1099,7 @@ class ExperimentDDPG:
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
 
         print('Running analysis...')
-        states, actions, head_indices = DOPAnalytic.head_analyze(self._env, agent, config)
+        states, actions, _, head_indices = DOPAnalytic.head_analyze(self._env, agent, config)
 
         print('Saving data...')
         save_data = {
@@ -1187,7 +1188,7 @@ class ExperimentDDPG:
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
 
         print('Running analysis...')
-        states, actions, head_indices = DOPAnalytic.head_analyze(self._env, agent, config)
+        states, actions, _, head_indices = DOPAnalytic.head_analyze(self._env, agent, config)
 
         print('Saving data...')
         save_data = {
@@ -1270,7 +1271,7 @@ class ExperimentDDPG:
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
 
         print('Running analysis...')
-        states, actions, head_indices = DOPAnalytic.head_analyze(self._env, agent, config)
+        states, actions, _, head_indices = DOPAnalytic.head_analyze(self._env, agent, config)
 
         print('Saving data...')
         save_data = {

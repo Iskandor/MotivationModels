@@ -473,14 +473,15 @@ def plot_vdop_model_details(data, path, window=1000):
         ax = plt.subplot(num_rows, num_cols, 3)
         ax.set_xlabel('steps')
         ax.set_ylabel('error')
-        ax.set_yscale('log', nonpositive='clip')
+        # ax.set_yscale('log', nonpositive='clip')
         ax.grid()
 
         t = range(data['fme'][i].shape[0])
 
-        mu, sigma = prepare_data(data['fme'][i], window)
-        plot_curve(ax, mu, sigma, t, 'green')
-        plt.legend(['prediction error'], loc=1)
+        for j in range(data['fme'][i].shape[1]):
+            mu, sigma = prepare_data(data['fme'][i][:, j], window)
+            plot_curve(ax, mu, sigma, t, color_cycle[j])
+        plt.legend(['RND error'], loc=1)
 
         ax = plt.subplot(num_rows, num_cols, 4)
         t = range(data['ext_grad'][i].shape[1])
@@ -506,6 +507,9 @@ def plot_vdop_model_details(data, path, window=1000):
         plt.scatter(data['ts'][i][:, 0], data['ts'][i][:, 1], marker='o', c=colors, s=8)
 
         ax = plt.subplot(num_rows, num_cols, 7)
+        heads = data_hid.shape[1]
+        colors_all = color_cycle[:heads] * data['ta'][i].shape[0]
+        plt.scatter(data['taa'][i][:, 0], data['taa'][i][:, 1], marker='o', c=colors_all, s=8, alpha=0.3)
         plt.scatter(data['ta'][i][:, 0], data['ta'][i][:, 1], marker='o', c=colors, s=8)
 
         plt.savefig("{0:s}_{1:d}.png".format(path, i))

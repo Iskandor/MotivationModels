@@ -28,7 +28,6 @@ class DOPAnalytic:
                 self.dop_gradient[i].append(grad_input[i].mean().item())
         self.source = 1 - self.source
 
-
     @staticmethod
     def head_analyze(env, agent, config):
         step_limit = 2000
@@ -38,6 +37,7 @@ class DOPAnalytic:
 
         states = []
         actions = []
+        all_actions = []
         head_indices = []
 
         while steps < step_limit:
@@ -49,11 +49,13 @@ class DOPAnalytic:
                 output = agent.get_action(state0)
                 action0 = output[0]
                 head_index = output[1]
+                all_action0 = agent.get_actions(state0)
                 next_state, _, done, _ = env.step(action0.squeeze(0).cpu().numpy())
                 state1 = torch.tensor(next_state, dtype=torch.float32, device=config.device).unsqueeze(0)
 
                 states.append(state0.flatten().cpu().numpy())
                 actions.append(action0.squeeze(0).cpu().numpy())
+                all_actions.append(all_action0.squeeze(0).cpu().numpy())
                 head_indices.append(head_index.item())
                 train_steps += 1
 
@@ -64,6 +66,7 @@ class DOPAnalytic:
                 train_steps -= steps - step_limit
                 states = states[:step_limit]
                 actions = actions[:step_limit]
+                all_actions = all_actions[:step_limit]
                 head_indices = head_indices[:step_limit]
             bar.numerator = steps
             print(bar)
@@ -72,6 +75,7 @@ class DOPAnalytic:
 
         states = reducer.fit_transform(numpy.stack(states))
         actions = reducer.fit_transform(numpy.stack(actions))
+        all_actions = reducer.transform(numpy.concatenate(all_actions, axis=0))
         head_indices = numpy.stack(head_indices)
 
-        return states, actions, head_indices
+        return states, actions, all_actions, head_indices

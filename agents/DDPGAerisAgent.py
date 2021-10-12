@@ -183,6 +183,9 @@ class DDPGAerisVanillaDOPAgent(DDPGAgent):
         index = self.network.index()
         return action.detach(), index
 
+    def get_actions(self, state):
+        return self.network.all_actions(state).detach()
+
     def train(self, state0, action0, state1, reward, mask):
         self.memory.add(state0, action0, state1, reward, mask)
         self.motivation_memory.add(state0, action0, state1, reward, mask)

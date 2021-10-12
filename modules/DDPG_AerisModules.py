@@ -4,13 +4,14 @@ import torch
 import torch.nn as nn
 from torch.distributions import Categorical
 
-from modules import init_xavier_uniform
+from modules import init_xavier_uniform, init_uniform
 from modules.DDPG_Modules import DDPGNetwork, DDPGSimpleNetwork, ActorNHeads
 from modules.encoders.EncoderAeris import EncoderAeris
 from modules.forward_models.ForwardModelAeris import ForwardModelAeris, ForwardModelEncoderAeris
 from modules.inverse_models.InverseModelAeris import InverseModelAeris
 from modules.metacritic_models.MetaCriticModelAeris import MetaCriticModelAeris, MetaCriticRNDModelAeris
-from modules.rnd_models.RNDModelAeris import RNDModelAeris, QRNDModelAeris, DOPModelAeris, DOPV2ModelAeris, DOPV2QModelAeris, DOPV3ModelAeris, VanillaQRNDModelAeris, VanillaDOPModelAeris
+from modules.rnd_models.RNDModelAeris import RNDModelAeris, QRNDModelAeris, DOPModelAeris, DOPV2ModelAeris, DOPV2QModelAeris, DOPV3ModelAeris, VanillaQRNDModelAeris, VanillaDOPModelAeris, \
+    QRNDModelAerisFC
 
 
 class Critic2Heads(nn.Module):
@@ -68,9 +69,7 @@ class DDPGAerisNetwork(DDPGNetwork):
             nn.ReLU(),
             nn.Linear(config.critic_h1, 1))
 
-        nn.init.xavier_uniform_(self.critic[0].weight)
-        nn.init.xavier_uniform_(self.critic[3].weight)
-        nn.init.uniform_(self.critic[5].weight, -0.003, 0.003)
+        self._init_critic(self.critic)
 
         fc_count = config.actor_kernels_count * self.width // 4
 
@@ -90,6 +89,12 @@ class DDPGAerisNetwork(DDPGNetwork):
         self.critic_target = copy.deepcopy(self.critic)
         self.actor_target = copy.deepcopy(self.actor)
         self.hard_update()
+
+    @staticmethod
+    def _init_critic(critic):
+        init_xavier_uniform(critic[0])
+        init_xavier_uniform(critic[3])
+        init_uniform(critic[5], 0.003)
 
     def value(self, state, action):
         a = action.unsqueeze(state.ndim - 1).repeat(1, 1, state.shape[2])
@@ -190,13 +195,19 @@ class DDPGAerisNetworkVanillaDOP(DDPGAerisNetwork):
         init_xavier_uniform(self.actor[0])
         init_xavier_uniform(self.actor[3])
 
-        self.motivator = VanillaQRNDModelAeris(input_shape, action_dim, config)
+        # self.motivator = VanillaQRNDModelAeris(input_shape, action_dim, config)
+        self.motivator = QRNDModelAerisFC(input_shape, action_dim, config)
         self.dop_model = VanillaDOPModelAeris(self.head_count, input_shape, action_dim, config, None, self.actor, self.motivator)
         self.argmax = None
 
         self.critic_target = copy.deepcopy(self.critic)
         self.actor_target = copy.deepcopy(self.actor)
         self.hard_update()
+
+    def all_actions(self, state):
+        actions = self.actor(state).view(-1, self.action_dim)
+
+        return actions
 
     def action(self, state):
         x = state
@@ -241,6 +252,11 @@ class DDPGAerisNetworkDOP(DDPGAerisNetwork):
         self.head_count = config.dop_heads
 
         fc_count = config.critic_kernels_count * self.width // 4
+
+        self.critic = nn.ModuleList([copy.deepcopy(self.critic) for _ in range(self.head_count)])
+
+        for c in self.critic:
+            DDPGAerisNetworkDOP._init_critic(c)
 
         self.actor = nn.Sequential(
             nn.Conv1d(self.channels, config.actor_kernels_count, kernel_size=8, stride=4, padding=2),
