@@ -1967,7 +1967,7 @@
       "motivation_zeta": 0
     },
     "79": {
-      "descriptor": "rnd fc",
+      "descriptor": "rnd fc corto",
       "model": "vdop",
       "sigma": 0,
       "exploration_time": 0,
@@ -1993,7 +1993,7 @@
       "motivation_zeta": 0
     },
     "80": {
-      "descriptor": "vrnd",
+      "descriptor": "rnd fc orto",
       "model": "vdop",
       "sigma": 0,
       "exploration_time": 0,
@@ -2019,7 +2019,8 @@
       "motivation_zeta": 0
     },
     "81": {
-      "model": "dop",
+      "descriptor": "rnd fc xavier",
+      "model": "vdop",
       "sigma": 0,
       "exploration_time": 0,
       "trials": 15,

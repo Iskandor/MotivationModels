@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-from modules import init_orthogonal, init_coupled_orthogonal
+from modules import init_orthogonal, init_coupled_orthogonal, init_xavier_uniform
 from utils import one_hot_code
 
 
@@ -191,7 +191,7 @@ class QRNDModelAeris(nn.Module):
 
 
 class VanillaQRNDModelAeris(nn.Module):
-    def __init__(self, input_shape, action_dim, config):
+    def __init__(self, input_shape, action_dim, config, init='orto'):
         super(VanillaQRNDModelAeris, self).__init__()
 
         self.input_shape = input_shape
@@ -234,6 +234,24 @@ class VanillaQRNDModelAeris(nn.Module):
             nn.Linear(hidden_count, hidden_count)
         )
 
+        if init == 'orto':
+            self._orto_init()
+        if init == 'corto':
+            self._coupled_orto_init()
+
+    def _orto_init(self):
+        init_orthogonal(self.target_model[0], np.sqrt(2))
+        init_orthogonal(self.model[0], np.sqrt(2))
+        init_orthogonal(self.target_model[2], np.sqrt(2))
+        init_orthogonal(self.model[2], np.sqrt(2))
+        init_orthogonal(self.target_model[4], np.sqrt(2))
+        init_orthogonal(self.model[4], np.sqrt(2))
+        init_orthogonal(self.target_model[7], 0.1)
+        init_orthogonal(self.model[7], 0.1)
+        init_orthogonal(self.model[9], 0.1)
+        init_orthogonal(self.model[11], 0.01)
+
+    def _coupled_orto_init(self):
         init_coupled_orthogonal([self.target_model[0], self.model[0]], np.sqrt(2))
         init_coupled_orthogonal([self.target_model[2], self.model[2]], np.sqrt(2))
         init_coupled_orthogonal([self.target_model[4], self.model[4]], np.sqrt(2))
@@ -279,7 +297,7 @@ class VanillaQRNDModelAeris(nn.Module):
 
 
 class QRNDModelAerisFC(nn.Module):
-    def __init__(self, input_shape, action_dim, config):
+    def __init__(self, input_shape, action_dim, config, init='orto'):
         super(QRNDModelAerisFC, self).__init__()
 
         self.state_dim = input_shape[0] * input_shape[1]
@@ -316,13 +334,45 @@ class QRNDModelAerisFC(nn.Module):
             nn.Linear(hidden_count, hidden_count)
         )
 
+        if init == 'xavier':
+            self._xavier_init()
+        if init == 'orto':
+            self._orto_init()
+        if init == 'corto':
+            self._coupled_orto_init()
+
+    def _orto_init(self):
+        init_orthogonal(self.target_model[0], np.sqrt(2))
+        init_orthogonal(self.model[0], np.sqrt(2))
+        init_orthogonal(self.target_model[2], np.sqrt(2))
+        init_orthogonal(self.model[2], np.sqrt(2))
+        init_orthogonal(self.target_model[4], np.sqrt(2))
+        init_orthogonal(self.model[4], np.sqrt(2))
+        init_orthogonal(self.target_model[6], 0.1)
+        init_orthogonal(self.model[6], 0.1)
+        init_orthogonal(self.model[8], 0.1)
+        init_orthogonal(self.model[10], 0.01)
+
+    def _xavier_init(self):
+        init_xavier_uniform(self.target_model[0], np.sqrt(2))
+        init_xavier_uniform(self.model[0], np.sqrt(2))
+        init_xavier_uniform(self.target_model[2], np.sqrt(2))
+        init_xavier_uniform(self.model[2], np.sqrt(2))
+        init_xavier_uniform(self.target_model[4], np.sqrt(2))
+        init_xavier_uniform(self.model[4], np.sqrt(2))
+        init_xavier_uniform(self.target_model[6], 0.1)
+        init_xavier_uniform(self.model[6], 0.1)
+        init_xavier_uniform(self.model[8], 0.1)
+        init_xavier_uniform(self.model[10], 0.01)
+
+    def _coupled_orto_init(self):
         init_coupled_orthogonal([self.target_model[0], self.model[0]], np.sqrt(2))
         init_coupled_orthogonal([self.target_model[2], self.model[2]], np.sqrt(2))
         init_coupled_orthogonal([self.target_model[4], self.model[4]], np.sqrt(2))
-        init_orthogonal(self.target_model[6], 1)
-        init_orthogonal(self.model[6], 1)
-        init_orthogonal(self.model[8], 1)
-        init_orthogonal(self.model[10], 1)
+        init_orthogonal(self.target_model[6], 0.1)
+        init_orthogonal(self.model[6], 0.1)
+        init_orthogonal(self.model[8], 0.1)
+        init_orthogonal(self.model[10], 0.01)
 
     def prepare_input(self, state, action):
         x = state.view(state.shape[0], -1)
