@@ -967,10 +967,10 @@ class ExperimentDDPG:
             head_index_density = numpy.zeros(config.dop_heads)
 
             while not done:
-                agent.motivation.update_state_average(state0)
                 with torch.no_grad():
                     action0, head_index = agent.get_action(state0)
                     value = agent.network.value(state0, action0)
+                agent.motivation.update_state_average(state0, action0)
                 next_state, reward, done, _ = self._env.step(agent.convert_action(action0))
                 reward = self.transform_reward(reward)
                 state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0).to(config.device)

@@ -73,8 +73,8 @@ class QRNDMotivation:
             reward = self.error(state0, action0).unsqueeze(1)
         return reward * self._eta
 
-    def update_state_average(self, state):
-        self._network.update_state_average(state)
+    def update_state_average(self, state, action):
+        self._network.update_state_average(state, action)
 
 
 class DOPSimpleMotivation:
@@ -163,8 +163,8 @@ class DOPMotivation:
         reward = self.error(state0, action0).unsqueeze(1)
         return reward
 
-    def update_state_average(self, state):
-        self._network.motivator.update_state_average(state)
+    def update_state_average(self, state, action):
+        self._network.motivator.update_state_average(state, action)
 
 
 class DOPV2QMotivation:
