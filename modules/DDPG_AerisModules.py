@@ -547,18 +547,18 @@ class DDPGAerisNetworkDOPRef(DDPGAerisNetwork):
 
         fc_count = config.critic_kernels_count * self.width // 4
 
-        self.layers_actor = [
+        self.actor = nn.Sequential(
             nn.Conv1d(self.channels, config.actor_kernels_count, kernel_size=8, stride=4, padding=2),
             nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(fc_count, config.actor_h1),
-            nn.ReLU()
-        ]
+            nn.Linear(fc_count, fc_count),
+            nn.ReLU(),
+            ActorNHeads(self.head_count, fc_count, action_dim, config, init='xavier')
+        )
 
-        init_xavier_uniform(self.layers_actor[0])
-        init_xavier_uniform(self.layers_actor[3])
+        init_xavier_uniform(self.actor[0])
+        init_xavier_uniform(self.actor[3])
 
-        self.actor = ActorNHeads(self.head_count, action_dim, self.layers_actor, config)
         self.argmax = None
 
         self.critic_target = copy.deepcopy(self.critic)
