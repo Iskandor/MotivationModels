@@ -2071,6 +2071,7 @@
       "motivation_zeta": 0
     },
     "83": {
+      "descriptor": "rnd fc orto elu",
       "model": "vdop",
       "sigma": 0,
       "exploration_time": 0,
@@ -2087,7 +2088,33 @@
       "critic_lr": 0.0002,
       "critic_kernels_count": 32,
       "critic_h1": 256,
-      "forward_model_lr": 0.001,
+      "forward_model_lr": 0.0001,
+      "forward_model_kernels_count": 32,
+      "motivation_eta": 1,
+      "rnd_output": 256,
+      "forward_model_batch_size": 8,
+      "dop_heads": 4,
+      "motivation_zeta": 0
+    },
+    "84": {
+      "descriptor": "rnd fc orto full elu",
+      "model": "vdop",
+      "sigma": 0,
+      "exploration_time": 0,
+      "trials": 15,
+      "steps": 0.6,
+      "gamma": 0.99,
+      "tau ": 0.005,
+      "beta": 1,
+      "batch_size": 32,
+      "memory_size": 100000,
+      "actor_lr": 0.0001,
+      "actor_kernels_count": 32,
+      "actor_h1": 64,
+      "critic_lr": 0.0002,
+      "critic_kernels_count": 32,
+      "critic_h1": 256,
+      "forward_model_lr": 0.0001,
       "forward_model_kernels_count": 32,
       "motivation_eta": 1,
       "rnd_output": 256,
@@ -2152,7 +2179,8 @@
       "motivation_eta": 1,
       "forward_model_batch_size": 8,
       "dop_heads": 4,
-      "motivation_zeta": 0
+      "motivation_zeta": 0,
+      "rnd_output": 256
     },
     "4": {
       "model": "qrnd",
@@ -2175,7 +2203,8 @@
       "motivation_eta": 1,
       "forward_model_batch_size": 8,
       "dop_heads": 4,
-      "motivation_zeta": 0
+      "motivation_zeta": 0,
+      "rnd_output": 256
     },
     "5": {
       "model": "dop",
@@ -2198,7 +2227,8 @@
       "motivation_eta": 1000,
       "forward_model_batch_size": 8,
       "dop_heads": 4,
-      "motivation_zeta": 0
+      "motivation_zeta": 0,
+      "rnd_output": 256
     },
     "6": {
       "model": "dop_ref",

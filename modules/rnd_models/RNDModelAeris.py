@@ -19,7 +19,7 @@ class RNDModelAeris(nn.Module):
         self.width = input_shape[1]
 
         fc_count = config.forward_model_kernels_count * self.width // 4
-        hidden_count = 64
+        hidden_count = config.rnd_output
 
         self.target_model = nn.Sequential(
             nn.Conv1d(self.channels, config.forward_model_kernels_count, kernel_size=8, stride=4, padding=2),
@@ -102,10 +102,10 @@ class QRNDModelAeris(nn.Module):
         self.channels = input_shape[0] + action_dim
         self.width = input_shape[1]
 
-        self.state_average = torch.zeros((1, input_shape[0], input_shape[1]), device=config.device)
+        self.state_average = torch.zeros((1, self.channels, self.width), device=config.device)
 
         fc_count = config.forward_model_kernels_count * self.width // 4
-        hidden_count = 256
+        hidden_count = config.rnd_output
 
         self.target_model_features = nn.Sequential(
             nn.Conv1d(self.channels, config.forward_model_kernels_count, kernel_size=8, stride=4, padding=2),
@@ -152,18 +152,20 @@ class QRNDModelAeris(nn.Module):
         init_orthogonal(self.model[2], 0.1)
         init_orthogonal(self.model[4], 0.01)
 
-    def forward(self, state, action):
-        x = state - self.state_average.expand(state.shape[0], *state.shape[1:])
+    def prepare_input(self, state, action):
         a = action.unsqueeze(2).repeat(1, 1, state.shape[2])
-        x = torch.cat([x, a], dim=1)
+        x = torch.cat([state, a], dim=1)
+        x = x - self.state_average.expand(x.shape[0], *x.shape[1:])
+        return x
+
+    def forward(self, state, action):
+        x = self.prepare_input(state, action)
         x = self.model_features(x)
         predicted_code = self.model(x)
         return predicted_code
 
     def encode(self, state, action):
-        x = state - self.state_average.expand(state.shape[0], *state.shape[1:])
-        a = action.unsqueeze(2).repeat(1, 1, state.shape[2])
-        x = torch.cat([x, a], dim=1)
+        x = self.prepare_input(state, action)
         x = self.target_model_features(x)
         return self.target_model(x)
 
@@ -186,8 +188,10 @@ class QRNDModelAeris(nn.Module):
 
         return loss.sum(dim=0) / (mask.sum(dim=0) + 1e-8)
 
-    def update_state_average(self, state):
-        self.state_average = self.state_average * 0.999 + state * 0.001
+    def update_state_average(self, state, action):
+        a = action.unsqueeze(2).repeat(1, 1, state.shape[2])
+        x = torch.cat([state, a], dim=1)
+        self.state_average = self.state_average * 0.999 + x * 0.001
 
 
 class VanillaQRNDModelAeris(nn.Module):
@@ -200,7 +204,7 @@ class VanillaQRNDModelAeris(nn.Module):
         self.channels = input_shape[0] + action_dim
         self.width = input_shape[1]
 
-        self.state_average = torch.zeros((1, input_shape[0], input_shape[1]), device=config.device)
+        self.state_average = torch.zeros((1, self.channels, self.width), device=config.device)
 
         fc_count = config.forward_model_kernels_count * self.width // 4
         hidden_count = config.rnd_output
@@ -261,9 +265,9 @@ class VanillaQRNDModelAeris(nn.Module):
         init_orthogonal(self.model[11], 0.01)
 
     def prepare_input(self, state, action):
-        x = state - self.state_average.expand(state.shape[0], *state.shape[1:])
         a = action.unsqueeze(2).repeat(1, 1, state.shape[2])
-        x = torch.cat([x, a], dim=1)
+        x = torch.cat([state, a], dim=1)
+        x = x - self.state_average.expand(x.shape[0], *x.shape[1:])
         return x
 
     def forward(self, state, action):
@@ -294,8 +298,10 @@ class VanillaQRNDModelAeris(nn.Module):
 
         return loss.sum(dim=0) / (mask.sum(dim=0) + 1e-8)
 
-    def update_state_average(self, state):
-        self.state_average = self.state_average * 0.999 + state * 0.001
+    def update_state_average(self, state, action):
+        a = action.unsqueeze(2).repeat(1, 1, state.shape[2])
+        x = torch.cat([state, a], dim=1)
+        self.state_average = self.state_average * 0.999 + x * 0.001
 
 
 class QRNDModelAerisFC(nn.Module):
