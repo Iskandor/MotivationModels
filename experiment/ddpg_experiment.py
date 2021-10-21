@@ -1032,6 +1032,9 @@ class ExperimentDDPG:
         config = self._config
         trial = trial + config.shift
 
+        analytic = DOPAnalytic()
+        analytic.init_gradient_monitor(agent.network.actor[-1], config.dop_heads)
+
         step_limit = int(config.steps * 1e6)
         steps = 0
 
@@ -1056,10 +1059,10 @@ class ExperimentDDPG:
             head_index_density = numpy.zeros(config.dop_heads)
 
             while not done:
-                agent.motivation.update_state_average(state0)
                 with torch.no_grad():
                     action0, head_index = agent.get_action(state0)
                     value = agent.network.value(state0, action0)
+                agent.motivation.update_state_average(state0, action0)
                 next_state, reward, done, _ = self._env.step(agent.convert_action(action0))
                 reward = self.transform_reward(reward)
                 state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0).to(config.device)
@@ -1071,7 +1074,7 @@ class ExperimentDDPG:
 
                 train_ext_reward += reward.item()
                 train_int_reward += agent.motivation.reward(state0, action0).item()
-                train_fm_error = agent.motivation.error(state0, action0).item()
+                train_fm_error = agent.network.dop_model.error(state0).detach().cpu().numpy()
                 train_fm_errors.append(train_fm_error)
                 head_index_density[head_index.item()] += 1
                 train_values.append(value.item())
@@ -1099,20 +1102,20 @@ class ExperimentDDPG:
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
 
         print('Running analysis...')
-        states, actions, _, head_indices = DOPAnalytic.head_analyze(self._env, agent, config)
+        states, actions, all_actions, head_indices = DOPAnalytic.head_analyze(self._env, agent, config)
 
         print('Saving data...')
         save_data = {
             'steps': numpy.array(steps_per_episode),
             're': numpy.array(train_ext_rewards),
             'ri': numpy.array(train_int_rewards),
-            'fme': numpy.array(train_fm_errors[:step_limit]),
+            'fme': numpy.stack(train_fm_errors),
             'hid': numpy.stack(train_head_index),
-            'value': numpy.array(train_values[:step_limit]),
-            'loss': numpy.array(agent.network.dop_model.log_loss[:step_limit]),
-            'regterm': numpy.array(agent.network.dop_model.log_regterm[:step_limit]),
+            'ext_grad': numpy.array(analytic.ext_gradient[:step_limit]),
+            'dop_grad': numpy.array(analytic.dop_gradient[:step_limit]),
             'ts': states,
             'ta': actions,
+            'taa': all_actions,
             'th': head_indices,
         }
         numpy.save('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)

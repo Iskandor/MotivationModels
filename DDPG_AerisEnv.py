@@ -18,6 +18,9 @@ def create_env(env_id):
     if env_id == 'FoodGathering-v0':
         env = gym_aeris.envs.FoodGatheringEnv()
 
+    # GridTargetSearchAEnv-v0
+    # GridTargetSearchBEnv-v0
+
     return env
 
 

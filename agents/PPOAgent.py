@@ -6,8 +6,9 @@ from agents import TYPE
 from algorithms.PPO import PPO, PPO2
 from algorithms.ReplayBuffer import PPOTrajectoryBuffer, PPOTrajectoryBuffer2
 from modules.PPO_Modules import PPOSimpleNetwork, PPOAerisNetwork, PPOAtariNetwork, PPOAtariNetworkFM, PPOAerisNetworkRND, PPOAerisNetworkDOP, PPOAerisNetworkDOPRef, PPOAtariNetworkRND
+from motivation.DOPMotivation import DOPMotivation
 from motivation.ForwardModelMotivation import ForwardModelMotivation
-from motivation.RNDMotivation import RNDMotivation, DOPMotivation
+from motivation.RNDMotivation import RNDMotivation
 from utils import one_hot_code
 
 

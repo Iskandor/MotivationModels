@@ -1,7 +1,8 @@
 from agents.PPOAgent import PPOAgent
 from algorithms.ReplayBuffer import MDPTrajectoryBuffer
 from modules.PPO_BitFlipModules import PPOBitFlipNetwork, PPOBitFlipNetworkRND, PPOBitFlipNetworkQRND, PPOBitFlipNetworkDOP
-from motivation.RNDMotivation import RNDMotivation, QRNDMotivation, DOPMotivation
+from motivation.DOPMotivation import DOPMotivation
+from motivation.RNDMotivation import RNDMotivation, QRNDMotivation
 
 
 class PPOBitFlipAgent(PPOAgent):

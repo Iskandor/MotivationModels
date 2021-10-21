@@ -4,6 +4,7 @@ import numpy as np
 
 from modules import init_orthogonal, init_coupled_orthogonal, init_xavier_uniform
 from utils import one_hot_code
+from utils.RunningAverage import RunningStats
 
 
 class RNDModelAeris(nn.Module):
@@ -102,7 +103,7 @@ class QRNDModelAeris(nn.Module):
         self.channels = input_shape[0] + action_dim
         self.width = input_shape[1]
 
-        self.state_average = torch.zeros((1, self.channels, self.width), device=config.device)
+        self.state_stats = RunningStats((self.channels, self.width), config.device)
 
         fc_count = config.forward_model_kernels_count * self.width // 4
         hidden_count = config.rnd_output
@@ -155,7 +156,9 @@ class QRNDModelAeris(nn.Module):
     def prepare_input(self, state, action):
         a = action.unsqueeze(2).repeat(1, 1, state.shape[2])
         x = torch.cat([state, a], dim=1)
-        x = x - self.state_average.expand(x.shape[0], *x.shape[1:])
+        mean = self.state_stats.mean.expand(x.shape[0], *x.shape[1:])
+        std = self.state_stats.std.expand(x.shape[0], *x.shape[1:])
+        x = (x - mean) / std
         return x
 
     def forward(self, state, action):
@@ -191,7 +194,7 @@ class QRNDModelAeris(nn.Module):
     def update_state_average(self, state, action):
         a = action.unsqueeze(2).repeat(1, 1, state.shape[2])
         x = torch.cat([state, a], dim=1)
-        self.state_average = self.state_average * 0.999 + x * 0.001
+        self.state_stats.update(x)
 
 
 class VanillaQRNDModelAeris(nn.Module):
@@ -204,7 +207,7 @@ class VanillaQRNDModelAeris(nn.Module):
         self.channels = input_shape[0] + action_dim
         self.width = input_shape[1]
 
-        self.state_average = torch.zeros((1, self.channels, self.width), device=config.device)
+        self.state_stats = RunningStats((self.channels, self.width), config.device)
 
         fc_count = config.forward_model_kernels_count * self.width // 4
         hidden_count = config.rnd_output
@@ -267,7 +270,9 @@ class VanillaQRNDModelAeris(nn.Module):
     def prepare_input(self, state, action):
         a = action.unsqueeze(2).repeat(1, 1, state.shape[2])
         x = torch.cat([state, a], dim=1)
-        x = x - self.state_average.expand(x.shape[0], *x.shape[1:])
+        mean = self.state_stats.mean.expand(x.shape[0], *x.shape[1:])
+        std = self.state_stats.std.expand(x.shape[0], *x.shape[1:])
+        x = (x - mean) / std
         return x
 
     def forward(self, state, action):
@@ -301,7 +306,7 @@ class VanillaQRNDModelAeris(nn.Module):
     def update_state_average(self, state, action):
         a = action.unsqueeze(2).repeat(1, 1, state.shape[2])
         x = torch.cat([state, a], dim=1)
-        self.state_average = self.state_average * 0.999 + x * 0.001
+        self.state_stats.update(x)
 
 
 class QRNDModelAerisFC(nn.Module):
@@ -311,17 +316,17 @@ class QRNDModelAerisFC(nn.Module):
         self.state_dim = input_shape[0] * input_shape[1]
         self.action_dim = action_dim
 
-        self.state_average = torch.zeros((1, self.state_dim + (self.action_dim * self.state_dim)), device=config.device)
+        self.state_stats = RunningStats((1, self.state_dim + (self.action_dim * self.state_dim)), config.device)
 
         hidden_count = config.rnd_output
 
         self.target_model = nn.Sequential(
             nn.Linear(self.state_dim + (self.action_dim * self.state_dim), self.state_dim * 2),
-            nn.ELU(),
+            nn.ReLU(),
             nn.Linear(self.state_dim * 2, self.state_dim * 2),
-            nn.ELU(),
+            nn.ReLU(),
             nn.Linear(self.state_dim * 2, self.state_dim * 2),
-            nn.ELU(),
+            nn.ReLU(),
             nn.Linear(self.state_dim * 2, hidden_count)
         )
 
@@ -330,11 +335,11 @@ class QRNDModelAerisFC(nn.Module):
 
         self.model = nn.Sequential(
             nn.Linear(self.state_dim + (self.action_dim * self.state_dim), self.state_dim * 2),
-            nn.ELU(),
+            nn.ReLU(),
             nn.Linear(self.state_dim * 2, self.state_dim * 2),
-            nn.ELU(),
+            nn.ReLU(),
             nn.Linear(self.state_dim * 2, self.state_dim * 2),
-            nn.ELU(),
+            nn.ReLU(),
             nn.Linear(self.state_dim * 2, hidden_count),
             nn.ReLU(),
             nn.Linear(hidden_count, hidden_count),
@@ -386,7 +391,9 @@ class QRNDModelAerisFC(nn.Module):
         x = state.view(state.shape[0], -1)
         a = action.unsqueeze(2).repeat(1, 1, x.shape[1]).view(x.shape[0], -1)
         x = torch.cat([x, a], dim=1)
-        x = x - self.state_average.expand(x.shape[0], x.shape[1])
+        mean = self.state_stats.mean.expand(x.shape[0], *x.shape[1:])
+        std = self.state_stats.std.expand(x.shape[0], *x.shape[1:])
+        x = (x - mean) / std
         return x
 
     def forward(self, state, action):
@@ -421,7 +428,7 @@ class QRNDModelAerisFC(nn.Module):
         x = state.view(state.shape[0], -1)
         a = action.unsqueeze(2).repeat(1, 1, x.shape[1]).view(x.shape[0], -1)
         x = torch.cat([x, a], dim=1)
-        self.state_average = self.state_average * 0.999 + x * 0.001
+        self.state_stats.update(x)
 
 
 class VanillaDOPModelAeris(nn.Module):

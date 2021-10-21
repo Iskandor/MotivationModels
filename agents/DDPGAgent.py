@@ -3,9 +3,10 @@ import torch
 from algorithms.DDPG import DDPG
 from algorithms.ReplayBuffer import ExperienceReplayBuffer, DOPReplayBuffer
 from modules.DDPG_Modules import DDPGSimpleNetwork, DDPGBulletNetwork, DDPGBulletNetworkFM, DDPGBulletNetworkSU, DDPGBulletNetworkRND, DDPGBulletNetworkSURND, DDPGBulletNetworkQRND, DDPGBulletNetworkDOP, DDPGBulletNetworkDOPSimple
+from motivation.DOPMotivation import DOPSimpleMotivation, DOPMotivation
 from motivation.ForwardModelMotivation import ForwardModelMotivation
 from motivation.MetaCriticMotivation import MetaCriticMotivation, MetaCriticRNDMotivation
-from motivation.RNDMotivation import RNDMotivation, QRNDMotivation, DOPMotivation, DOPSimpleMotivation
+from motivation.RNDMotivation import RNDMotivation, QRNDMotivation
 
 
 class DDPGAgent:

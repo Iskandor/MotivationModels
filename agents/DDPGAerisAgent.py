@@ -5,12 +5,13 @@ from algorithms.DDPG import DDPG
 from algorithms.ReplayBuffer import ExperienceReplayBuffer, M2ReplayBuffer, MDPTrajectoryBuffer
 from modules.DDPG_AerisModules import DDPGAerisNetwork, DDPGAerisNetworkFM, DDPGAerisNetworkFME, DDPGAerisNetworkIM, DDPGAerisNetworkFIM, DDPGAerisNetworkSU, DDPGAerisNetworkM2, DDPGAerisNetworkRND, \
     DDPGAerisNetworkQRND, DDPGAerisNetworkDOP, DDPGAerisNetworkDOPV2, DDPGAerisNetworkDOPV2Q, DDPGAerisNetworkDOPRef, DDPGAerisNetworkSURND, DDPGAerisNetworkDOPV3, DDPGAerisNetworkVanillaDOP
+from motivation.DOPMotivation import DOPMotivation, DOPV2QMotivation
 from motivation.ForwardInverseModelMotivation import ForwardInverseModelMotivation
 from motivation.ForwardModelMotivation import ForwardModelMotivation
 from motivation.M2Motivation import M2Motivation
 from motivation.M2SMotivation import M2SMotivation
 from motivation.MetaCriticMotivation import MetaCriticMotivation, MetaCriticRNDMotivation
-from motivation.RNDMotivation import RNDMotivation, QRNDMotivation, DOPMotivation, DOPV2QMotivation
+from motivation.RNDMotivation import RNDMotivation, QRNDMotivation
 
 
 class DDPGAerisAgent(DDPGAgent):
