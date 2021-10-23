@@ -267,45 +267,60 @@ class DDPGAerisNetworkDOP(DDPGAerisNetwork):
 
         init_xavier_uniform(self.actor[0])
 
-        self.motivator = QRNDModelAeris(input_shape, action_dim, config)
+        self.motivator = VanillaQRNDModelAeris(input_shape, action_dim, config)
         self.dop_model = DOPModelAeris(self.head_count, input_shape, action_dim, config, None, self.actor, self.motivator)
-        self.argmax = None
 
         self.critic_target = copy.deepcopy(self.critic)
         self.actor_target = copy.deepcopy(self.actor)
         self.hard_update()
 
-    def action(self, state):
-        x = state
-        action = self.actor(x)
-
+    def select_action(self, state, action):
         state = state.unsqueeze(1).repeat(1, self.head_count, 1, 1).view(-1, self.channels, self.width)
         action = action.view(-1, self.action_dim)
 
         error = self.motivator.error(state, action).view(-1, self.head_count).detach()
         action = action.view(-1, self.head_count, self.action_dim)
         argmax = error.argmax(dim=1)
-        action = action.gather(dim=1, index=argmax.unsqueeze(-1).unsqueeze(-1).repeat(1, 1, self.action_dim))
-        self.argmax = argmax
+        action = action.gather(dim=1, index=argmax.unsqueeze(-1).unsqueeze(-1).repeat(1, 1, self.action_dim)).squeeze(1)
+        action = torch.cat([action, argmax.unsqueeze(-1)], dim=1)
 
-        return action.squeeze(1)
+        return action
 
-    def index(self):
-        return self.argmax
+    def action(self, state):
+        action = self.actor(state)
+        action = self.select_action(state, action)
+
+        return action
 
     def action_target(self, state):
         with torch.no_grad():
             action = self.actor_target(state)
+        action = self.select_action(state, action)
 
-            state = state.unsqueeze(1).repeat(1, self.head_count, 1, 1).view(-1, self.channels, self.width)
-            action = action.view(-1, self.action_dim)
+        return action
 
-            error = self.motivator.error(state, action).view(-1, self.head_count).detach()
-            action = action.view(-1, self.head_count, self.action_dim)
-            argmax = error.argmax(dim=1)
-            action = action.gather(dim=1, index=argmax.unsqueeze(-1).unsqueeze(-1).repeat(1, 1, self.action_dim))
+    def value(self, state, action):
+        index = action[:, -1].type(torch.int32)
+        action = action[:, :-1]
+        a = action.unsqueeze(state.ndim - 1).repeat(1, 1, state.shape[2])
+        x = torch.cat([state, a], dim=1)
+        value = []
 
-        return action.squeeze(1)
+        for i, j in enumerate(index):
+            value.append(self.critic[j](x[i].unsqueeze(0)))
+        return torch.cat(value, dim=0)
+
+    def value_target(self, state, action):
+        index = action[:, -1].type(torch.int32)
+        action = action[:, :-1]
+        a = action.unsqueeze(state.ndim - 1).repeat(1, 1, state.shape[2])
+        x = torch.cat([state, a], dim=1)
+        value = []
+
+        with torch.no_grad():
+            for i, j in enumerate(index):
+                value.append(self.critic_target[j](x[i].unsqueeze(0)))
+        return torch.cat(value, dim=0)
 
 
 class DDPGAerisNetworkDOPV2(DDPGAerisNetwork):

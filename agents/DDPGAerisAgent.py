@@ -5,7 +5,7 @@ from algorithms.DDPG import DDPG
 from algorithms.ReplayBuffer import ExperienceReplayBuffer, M2ReplayBuffer, MDPTrajectoryBuffer
 from modules.DDPG_AerisModules import DDPGAerisNetwork, DDPGAerisNetworkFM, DDPGAerisNetworkFME, DDPGAerisNetworkIM, DDPGAerisNetworkFIM, DDPGAerisNetworkSU, DDPGAerisNetworkM2, DDPGAerisNetworkRND, \
     DDPGAerisNetworkQRND, DDPGAerisNetworkDOP, DDPGAerisNetworkDOPV2, DDPGAerisNetworkDOPV2Q, DDPGAerisNetworkDOPRef, DDPGAerisNetworkSURND, DDPGAerisNetworkDOPV3, DDPGAerisNetworkVanillaDOP
-from motivation.DOPMotivation import DOPMotivation, DOPV2QMotivation
+from motivation.DOPMotivation import DOPMotivation, DOPV2QMotivation, DOPMotivation2
 from motivation.ForwardInverseModelMotivation import ForwardInverseModelMotivation
 from motivation.ForwardModelMotivation import ForwardModelMotivation
 from motivation.M2Motivation import M2Motivation
@@ -204,13 +204,8 @@ class DDPGAerisDOPAgent(DDPGAgent):
         self.memory = ExperienceReplayBuffer(config.memory_size)
         self.motivation_memory = MDPTrajectoryBuffer(self.config.forward_model_batch_size, self.config.forward_model_batch_size)
         self.network = DDPGAerisNetworkDOP(input_shape, action_dim, config).to(config.device)
-        self.motivation = DOPMotivation(self.network.dop_model, config.forward_model_lr, config.actor_lr, config.motivation_eta, config.device)
+        self.motivation = DOPMotivation2(self.network.dop_model, config.forward_model_lr, config.actor_lr, config.motivation_eta, config.device)
         self.algorithm = DDPG(self.network, config.actor_lr, config.critic_lr, config.gamma, config.tau, device=config.device)
-
-    def get_action(self, state):
-        action = self.network.action(state)
-        index = self.network.index()
-        return action.detach(), index
 
     def train(self, state0, action0, state1, reward, mask):
         self.memory.add(state0, action0, state1, reward, mask)
