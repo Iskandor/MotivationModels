@@ -311,28 +311,38 @@ class DDPGAerisNetworkDOP(DDPGAerisNetwork):
 
         return action
 
-    def value(self, state, action):
+    def _value(self, critic, state, action, grad=True):
         index = action[:, -1].type(torch.int32)
         action = action[:, :-1]
         a = action.unsqueeze(state.ndim - 1).repeat(1, 1, state.shape[2])
         x = torch.cat([state, a], dim=1)
         value = []
 
-        for i, j in enumerate(index):
-            value.append(self.critic[j](x[i].unsqueeze(0)))
+        x_head = []
+        for i in range(self.head_count):
+            indices = (index == i).nonzero(as_tuple=False)
+            if indices.shape[0] > 0:
+                x_head.append(x[indices].squeeze(1))
+            else:
+                x_head.append([])
+
+        if grad:
+            for i in range(self.head_count):
+                if len(x_head[i]) > 0:
+                    value.append(critic[i](x_head[i]))
+        else:
+            with torch.no_grad():
+                for i in range(self.head_count):
+                    if len(x_head[i]) > 0:
+                        value.append(critic[i](x_head[i]))
+
         return torch.cat(value, dim=0)
+
+    def value(self, state, action):
+        return self._value(self.critic, state, action)
 
     def value_target(self, state, action):
-        index = action[:, -1].type(torch.int32)
-        action = action[:, :-1]
-        a = action.unsqueeze(state.ndim - 1).repeat(1, 1, state.shape[2])
-        x = torch.cat([state, a], dim=1)
-        value = []
-
-        with torch.no_grad():
-            for i, j in enumerate(index):
-                value.append(self.critic_target[j](x[i].unsqueeze(0)))
-        return torch.cat(value, dim=0)
+        return self._value(self.critic_target, state, action, grad=False)
 
 
 class DDPGAerisNetworkDOPV2(DDPGAerisNetwork):
