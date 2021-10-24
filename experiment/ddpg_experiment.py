@@ -968,8 +968,11 @@ class ExperimentDDPG:
 
             while not done:
                 with torch.no_grad():
-                    action0, head_index = agent.get_action(state0)
-                    value = agent.network.value(state0, action0)
+                    action_index = agent.get_action(state0)
+                    value = agent.network.value(state0, action_index)
+                action0 = action_index[:, :-1]
+                head_index = action_index[:, -1].type(torch.int32)
+
                 agent.motivation.update_state_average(state0, action0)
                 next_state, reward, done, _ = self._env.step(agent.convert_action(action0))
                 reward = self.transform_reward(reward)
@@ -977,7 +980,7 @@ class ExperimentDDPG:
                 reward = torch.tensor([reward], dtype=torch.float32).unsqueeze(0)
                 mask = torch.tensor([done], dtype=torch.float32).unsqueeze(0)
 
-                agent.train(state0, action0, state1, reward, mask)
+                agent.train(state0, action_index, state1, reward, mask)
                 train_steps += 1
 
                 train_ext_reward += reward.item()

@@ -5,7 +5,7 @@ from algorithms.DDPG import DDPG
 from algorithms.ReplayBuffer import ExperienceReplayBuffer, M2ReplayBuffer, MDPTrajectoryBuffer
 from modules.DDPG_AerisModules import DDPGAerisNetwork, DDPGAerisNetworkFM, DDPGAerisNetworkFME, DDPGAerisNetworkIM, DDPGAerisNetworkFIM, DDPGAerisNetworkSU, DDPGAerisNetworkM2, DDPGAerisNetworkRND, \
     DDPGAerisNetworkQRND, DDPGAerisNetworkDOP, DDPGAerisNetworkDOPV2, DDPGAerisNetworkDOPV2Q, DDPGAerisNetworkDOPRef, DDPGAerisNetworkSURND, DDPGAerisNetworkDOPV3, DDPGAerisNetworkVanillaDOP
-from motivation.DOPMotivation import DOPMotivation, DOPV2QMotivation, DOPMotivation2
+from motivation.DOPMotivation import DOPMotivation, DOPV2QMotivation
 from motivation.ForwardInverseModelMotivation import ForwardInverseModelMotivation
 from motivation.ForwardModelMotivation import ForwardModelMotivation
 from motivation.M2Motivation import M2Motivation
@@ -179,11 +179,6 @@ class DDPGAerisVanillaDOPAgent(DDPGAgent):
         self.motivation = DOPMotivation(self.network.dop_model, config.forward_model_lr, config.actor_lr, config.motivation_eta, config.device)
         self.algorithm = DDPG(self.network, config.actor_lr, config.critic_lr, config.gamma, config.tau, device=config.device, beta=config.beta)
 
-    def get_action(self, state):
-        action = self.network.action(state)
-        index = self.network.index()
-        return action.detach(), index
-
     def get_actions(self, state):
         return self.network.all_actions(state).detach()
 
@@ -204,7 +199,7 @@ class DDPGAerisDOPAgent(DDPGAgent):
         self.memory = ExperienceReplayBuffer(config.memory_size)
         self.motivation_memory = MDPTrajectoryBuffer(self.config.forward_model_batch_size, self.config.forward_model_batch_size)
         self.network = DDPGAerisNetworkDOP(input_shape, action_dim, config).to(config.device)
-        self.motivation = DOPMotivation2(self.network.dop_model, config.forward_model_lr, config.actor_lr, config.motivation_eta, config.device)
+        self.motivation = DOPMotivation(self.network.dop_model, config.forward_model_lr, config.actor_lr, config.motivation_eta, config.device)
         self.algorithm = DDPG(self.network, config.actor_lr, config.critic_lr, config.gamma, config.tau, device=config.device)
 
     def train(self, state0, action0, state1, reward, mask):
@@ -216,6 +211,9 @@ class DDPGAerisDOPAgent(DDPGAgent):
         self.motivation.train(self.motivation_memory, dop_indices, self.memory, ddpg_indices)
         if dop_indices is not None:
             self.motivation_memory.clear()
+
+    def get_actions(self, state):
+        return self.network.all_actions(state).detach()
 
 
 class DDPGAerisDOPV2Agent(DDPGAgent):

@@ -46,9 +46,9 @@ class DOPAnalytic:
             train_steps = 0
 
             while not done:
-                output = agent.get_action(state0)
-                action0 = output[0]
-                head_index = output[1]
+                action_index = agent.get_action(state0)
+                action0 = action_index[:, :-1]
+                head_index = action_index[:, -1].type(torch.int32)
                 all_action0 = agent.get_actions(state0)
                 next_state, _, done, _ = env.step(action0.squeeze(0).cpu().numpy())
                 state1 = torch.tensor(next_state, dtype=torch.float32, device=config.device).unsqueeze(0)
