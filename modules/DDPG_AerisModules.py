@@ -269,7 +269,7 @@ class DDPGAerisNetworkDOP(DDPGAerisNetwork):
             nn.Conv1d(self.channels, config.actor_kernels_count, kernel_size=8, stride=4, padding=2),
             nn.ReLU(),
             nn.Flatten(),
-            ActorNHeads(self.head_count, fc_count, action_dim, config)
+            ActorNHeads(self.head_count, fc_count, action_dim, config, init='xavier')
         )
 
         init_xavier_uniform(self.actor[0])

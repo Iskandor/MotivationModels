@@ -90,6 +90,9 @@ class DOPMotivation:
     def update_state_average(self, state, action):
         self._network.motivator.update_state_average(state, action)
 
+    def update_error_average(self, state, action):
+        self._network.update_error_average(self.error(state, action))
+
 
 class DOPV2QMotivation:
     def __init__(self, network, motivator_lr, generator_lr, eta=1, device='cpu'):

@@ -11,13 +11,13 @@ class RNDModelAeris(nn.Module):
     def __init__(self, input_shape, action_dim, config):
         super(RNDModelAeris, self).__init__()
 
-        self.state_average = torch.zeros((1, input_shape[0], input_shape[1]), device=config.device)
-
         self.input_shape = input_shape
         self.action_dim = action_dim
 
         self.channels = input_shape[0]
         self.width = input_shape[1]
+
+        self.state_stats = RunningStats((self.channels, self.width), config.device)
 
         fc_count = config.forward_model_kernels_count * self.width // 4
         hidden_count = config.rnd_output
@@ -59,14 +59,12 @@ class RNDModelAeris(nn.Module):
         init_orthogonal(self.model[11], 0.01)
 
     def forward(self, state):
-        x = state - self.state_average.expand(state.shape[0], *state.shape[1:])
-        # x.view(-1, self.channels * self.width)
+        x = state - self.state_stats.mean.expand(state.shape[0], *state.shape[1:])
         predicted_code = self.model(x)
         return predicted_code
 
     def encode(self, state):
-        x = state - self.state_average.expand(state.shape[0], *state.shape[1:])
-        # x.view(-1, self.channels * self.width)
+        x = state - self.state_stats.mean.expand(state.shape[0], *state.shape[1:])
         return self.target_model(x)
 
     def error(self, state):
@@ -90,7 +88,7 @@ class RNDModelAeris(nn.Module):
         return loss.sum(dim=0) / (mask.sum(dim=0) + 1e-8)
 
     def update_state_average(self, state):
-        self.state_average = self.state_average * 0.999 + state * 0.001
+        self.state_stats.update(state)
 
 
 class QRNDModelAeris(nn.Module):
@@ -157,8 +155,7 @@ class QRNDModelAeris(nn.Module):
         a = action.unsqueeze(2).repeat(1, 1, state.shape[2])
         x = torch.cat([state, a], dim=1)
         mean = self.state_stats.mean.expand(x.shape[0], *x.shape[1:])
-        std = self.state_stats.std.expand(x.shape[0], *x.shape[1:])
-        x = (x - mean) / std
+        x = (x - mean)
         return x
 
     def forward(self, state, action):
@@ -271,8 +268,7 @@ class VanillaQRNDModelAeris(nn.Module):
         a = action.unsqueeze(2).repeat(1, 1, state.shape[2])
         x = torch.cat([state, a], dim=1)
         mean = self.state_stats.mean.expand(x.shape[0], *x.shape[1:])
-        std = self.state_stats.std.expand(x.shape[0], *x.shape[1:])
-        x = (x - mean) / std
+        x = (x - mean)
         return x
 
     def forward(self, state, action):
@@ -393,7 +389,7 @@ class QRNDModelAerisFC(nn.Module):
         x = torch.cat([x, a], dim=1)
         mean = self.state_stats.mean.expand(x.shape[0], *x.shape[1:])
         std = self.state_stats.std.expand(x.shape[0], *x.shape[1:])
-        x = (x - mean) / std
+        x = (x - mean) / (std + 1e-8)
         return x
 
     def forward(self, state, action):
@@ -444,32 +440,28 @@ class VanillaDOPModelAeris(nn.Module):
         self.actor = actor
         self.eta = config.motivation_eta
 
-        self.log_loss = []
+        self.error_stats = RunningStats(1, config.device)
 
     def forward(self, state, action):
         predicted_code = self.motivator(state, action)
         return predicted_code
 
     def error(self, state):
-        if self.features is not None:
-            x = self.features(state)
-        else:
-            x = state
-
-        action = self.actor(x).view(-1, self.action_dim)
+        action = self.actor(state).view(-1, self.action_dim)
         state = state.unsqueeze(1).repeat(1, self.head_count, 1, 1).view(-1, self.state_dim[0], self.state_dim[1])
+        std = self.error_stats.std
 
-        return self.motivator.error(state, action)
+        return self.motivator.error(state, action) / (std + 1e-8)
 
     def motivator_loss_function(self, state, action, prediction=None):
         return self.motivator.loss_function(state, action, prediction)
 
     def generator_loss_function(self, state):
         loss = -self.error(state).mean()
-
-        self.log_loss.append(-loss.item() * self.eta)
-
         return loss * self.eta
+
+    def update_error_average(self, error):
+        self.error_stats.update(error)
 
 
 class DOPModelAeris(nn.Module):

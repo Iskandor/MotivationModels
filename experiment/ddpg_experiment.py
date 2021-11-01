@@ -947,7 +947,7 @@ class ExperimentDDPG:
         steps = 0
 
         steps_per_episode = []
-        train_fm_errors = []
+        train_rnd_errors = []
         train_values = []
         train_ext_rewards = []
         train_int_rewards = []
@@ -973,6 +973,7 @@ class ExperimentDDPG:
                 action0 = action_index[:, :-1]
                 head_index = action_index[:, -1].type(torch.int32)
 
+                agent.motivation.update_error_average(state0, action0)
                 agent.motivation.update_state_average(state0, action0)
                 next_state, reward, done, _ = self._env.step(agent.convert_action(action0))
                 reward = self.transform_reward(reward)
@@ -985,8 +986,8 @@ class ExperimentDDPG:
 
                 train_ext_reward += reward.item()
                 train_int_reward += agent.motivation.reward(state0, action0).item()
-                train_fm_error = agent.network.dop_model.error(state0).detach().cpu().numpy()
-                train_fm_errors.append(train_fm_error)
+                train_rnd_error = agent.network.dop_model.error(state0).detach().cpu().numpy()
+                train_rnd_errors.append(train_rnd_error)
                 head_index_density[head_index.item()] += 1
                 train_values.append(value.item())
 
@@ -1020,7 +1021,7 @@ class ExperimentDDPG:
             'steps': numpy.array(steps_per_episode),
             're': numpy.array(train_ext_rewards),
             'ri': numpy.array(train_int_rewards),
-            'fme': numpy.stack(train_fm_errors),
+            'fme': numpy.stack(train_rnd_errors),
             'hid': numpy.stack(train_head_index),
             'ext_grad': numpy.array(analytic.ext_gradient[:step_limit]),
             'dop_grad': numpy.array(analytic.dop_gradient[:step_limit]),
