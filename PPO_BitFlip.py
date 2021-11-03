@@ -5,10 +5,11 @@ from agents.PPOBitFlipAgent import PPOBitFlipAgent, PPOBitFlipRNDAgent, PPOBitFl
 from experiment.ppo_nenv_experiment import ExperimentNEnvPPO
 from utils.MultiEnvWrapper import MultiEnvParallel
 
+dimension = 8
 
 def run_baseline(config, trial):
     print('Creating {0:d} environments'.format(config.n_env))
-    env = MultiEnvParallel([gym.make('gym_bitflip:bitflip-v0', dimension=8) for _ in range(config.n_env)], config.n_env, config.num_threads)
+    env = MultiEnvParallel([gym.make('gym_bitflip:bitflip-v0', dimension=dimension) for _ in range(config.n_env)], config.n_env, config.num_threads)
 
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.n
@@ -23,7 +24,7 @@ def run_baseline(config, trial):
 
 def run_rnd_model(config, trial):
     print('Creating {0:d} environments'.format(config.n_env))
-    env = MultiEnvParallel([gym.make('gym_bitflip:bitflip-v0', dimension=10) for _ in range(config.n_env)], config.n_env, config.num_threads)
+    env = MultiEnvParallel([gym.make('gym_bitflip:bitflip-v0', dimension=dimension) for _ in range(config.n_env)], config.n_env, config.num_threads)
 
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.n
@@ -38,7 +39,7 @@ def run_rnd_model(config, trial):
 
 def run_qrnd_model(config, trial):
     print('Creating {0:d} environments'.format(config.n_env))
-    env = MultiEnvParallel([gym.make('gym_bitflip:bitflip-v0', dimension=10) for _ in range(config.n_env)], config.n_env, config.num_threads)
+    env = MultiEnvParallel([gym.make('gym_bitflip:bitflip-v0', dimension=dimension) for _ in range(config.n_env)], config.n_env, config.num_threads)
 
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.n
@@ -53,7 +54,7 @@ def run_qrnd_model(config, trial):
 
 def run_dop_model(config, trial):
     print('Creating {0:d} environments'.format(config.n_env))
-    env = MultiEnvParallel([gym.make('gym_bitflip:bitflip-v0', dimension=8) for _ in range(config.n_env)], config.n_env, config.num_threads)
+    env = MultiEnvParallel([gym.make('gym_bitflip:bitflip-v0', dimension=dimension) for _ in range(config.n_env)], config.n_env, config.num_threads)
 
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.n

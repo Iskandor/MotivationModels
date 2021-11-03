@@ -1,5 +1,7 @@
 import torch
 
+from utils.RunningAverage import RunningStats
+
 
 class RNDMotivation:
     def __init__(self, network, lr, eta=1, device='cpu'):
@@ -7,6 +9,7 @@ class RNDMotivation:
         self._optimizer = torch.optim.Adam(self._network.parameters(), lr=lr)
         self._eta = eta
         self._device = device
+        self.reward_stats = RunningStats(1, device)
 
     def train(self, memory, indices):
         if indices:
@@ -36,6 +39,9 @@ class RNDMotivation:
 
     def update_state_average(self, state):
         self._network.update_state_average(state)
+
+    def update_reward_average(self, reward):
+        self.reward_stats.update(reward)
 
 
 class QRNDMotivation:

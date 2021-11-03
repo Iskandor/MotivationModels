@@ -17,12 +17,8 @@ class RNDModelBitFlip(nn.Module):
 
         self.target_model = nn.Sequential(
             nn.Linear(self.state_dim, self.state_dim * 4),
-            nn.ELU(),
-            nn.Linear(self.state_dim * 4, self.state_dim * 4),
-            nn.ELU(),
-            nn.Linear(self.state_dim * 4, self.state_dim * 4),
-            nn.ELU(),
-            nn.Linear(self.state_dim * 4, self.state_dim * 2),
+            nn.ReLU(),
+            nn.Linear(self.state_dim * 4, self.state_dim // 2),
         )
 
         for param in self.target_model.parameters():
@@ -30,24 +26,25 @@ class RNDModelBitFlip(nn.Module):
 
         self.model = nn.Sequential(
             nn.Linear(self.state_dim, self.state_dim * 4),
-            nn.ELU(),
-            nn.Linear(self.state_dim * 4, self.state_dim * 4),
-            nn.ELU(),
-            nn.Linear(self.state_dim * 4, self.state_dim * 4),
-            nn.ELU(),
-            nn.Linear(self.state_dim * 4, self.state_dim * 2),
-            nn.ELU(),
-            nn.Linear(self.state_dim * 2, self.state_dim * 2),
-            nn.ELU(),
-            nn.Linear(self.state_dim * 2, self.state_dim * 2),
+            nn.ReLU(),
+            nn.Linear(self.state_dim * 4, self.state_dim // 2),
+            nn.ReLU(),
+            nn.Linear(self.state_dim // 2, self.state_dim // 2),
+            nn.ReLU(),
+            nn.Linear(self.state_dim // 2, self.state_dim // 2),
         )
 
-        init_coupled_orthogonal([self.target_model[0], self.model[0]], np.sqrt(2))
-        init_coupled_orthogonal([self.target_model[2], self.model[2]], np.sqrt(2))
-        init_coupled_orthogonal([self.target_model[4], self.model[4]], np.sqrt(2))
-        init_coupled_orthogonal([self.target_model[6], self.model[6]], 1)
-        init_orthogonal(self.model[8], 0.1)
-        init_orthogonal(self.model[10], 0.01)
+        # init_coupled_orthogonal([self.target_model[0], self.model[0]], np.sqrt(2))
+        # init_coupled_orthogonal([self.target_model[2], self.model[2]], np.sqrt(2))
+        # init_coupled_orthogonal([self.target_model[4], self.model[4]], np.sqrt(2))
+        # init_coupled_orthogonal([self.target_model[6], self.model[6]], 0.1)
+
+        init_orthogonal(self.target_model[0], np.sqrt(2))
+        init_orthogonal(self.model[0], np.sqrt(2))
+        init_orthogonal(self.target_model[2], 1.0)
+        init_orthogonal(self.model[2], 0.1)
+        init_orthogonal(self.model[4], 0.1)
+        init_orthogonal(self.model[6], 0.01)
 
     def forward(self, state):
         x = state - self.state_average.expand(state.shape[0], *state.shape[1:])

@@ -54,13 +54,13 @@ class PPOBitFlipMotivationNetwork(torch.nn.Module):
         init_xavier_uniform(self.critic[0])
         init_xavier_uniform(self.critic[2])
 
-        self.layers_actor = [
+        self.layers_actor = nn.Sequential(
             torch.nn.Linear(state_dim, config.actor_h1),
             nn.ReLU(),
             torch.nn.Linear(config.actor_h1, config.actor_h2),
             nn.ReLU(),
             DiscreteHead(config.actor_h2, action_dim)
-        ]
+        )
         init_xavier_uniform(self.layers_actor[0])
         init_xavier_uniform(self.layers_actor[2])
 

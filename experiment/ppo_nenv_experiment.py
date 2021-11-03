@@ -5,7 +5,7 @@ from etaprogress.progress import ProgressBar
 from gym.wrappers.monitoring.video_recorder import VideoRecorder
 
 from utils import one_hot_code
-from utils.RunningAverage import RunningAverageWindow, StepCounter
+from utils.RunningAverage import RunningAverageWindow, StepCounter, RunningStats
 from concurrent.futures import ThreadPoolExecutor
 
 
@@ -164,6 +164,7 @@ class ExperimentNEnvPPO:
 
             ext_reward = torch.tensor(reward, dtype=torch.float32)
             int_reward = agent.motivation.reward(state0).cpu()
+            agent.motivation.update_reward_average(int_reward.detach())
 
             error = agent.motivation.error(state0).cpu().tolist()
             for i in range(n_env):

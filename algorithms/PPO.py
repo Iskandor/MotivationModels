@@ -52,8 +52,12 @@ class PPO:
                 dones = torch.stack(sample.mask[start_batch:end_batch])
 
                 if self._motivation:
-                    ext_adv_values, ext_ref_values = self.calc_advantage(values[:, 0], rewards[:, 0], dones.squeeze(), self._gamma[0])
-                    int_adv_values, int_ref_values = self.calc_advantage(values[:, 1], rewards[:, 1], dones.squeeze(), self._gamma[1])
+                    mean = self._motivation.reward_stats.mean
+                    std = self._motivation.reward_stats.std
+                    ext_reward = rewards[:, 0]
+                    int_reward = (rewards[:, 1] - mean) / std
+                    ext_adv_values, ext_ref_values = self.calc_advantage(values[:, 0], ext_reward, dones.squeeze(), self._gamma[0])
+                    int_adv_values, int_ref_values = self.calc_advantage(values[:, 1], int_reward, dones.squeeze(), self._gamma[1])
                     adv_values = ext_adv_values + int_adv_values
                     ref_values = torch.stack([ext_ref_values, int_ref_values], dim=1)
                 else:
@@ -77,8 +81,6 @@ class PPO:
             print("Trajectory {0:d} batch size {1:d} epochs {2:d} training time {3:.2f}s".format(self._trajectory_size, self._batch_size, self._ppo_epochs, end - start))
 
     def _train(self, states, actions, probs, adv_values, ref_values):
-        adv_values = (adv_values - torch.mean(adv_values)) / torch.std(adv_values)
-
         trajectory_size = self._trajectory_size - self._n_env
 
         for epoch in range(self._ppo_epochs):
@@ -185,8 +187,12 @@ class PPO2:
             dones = sample.mask
 
             if self._motivation:
-                ext_adv_values, ext_ref_values = self.calc_advantage(values[:, :, 0].unsqueeze(-1), rewards[:, :, 0].unsqueeze(-1), dones, self._gamma[0])
-                int_adv_values, int_ref_values = self.calc_advantage(values[:, :, 1].unsqueeze(-1), rewards[:, :, 1].unsqueeze(-1), dones, self._gamma[1])
+                mean = self._motivation.reward_stats.mean
+                std = self._motivation.reward_stats.std
+                ext_reward = rewards[:, :, 0].unsqueeze(-1)
+                int_reward = (rewards[:, :, 1].unsqueeze(-1) - mean) / std
+                ext_adv_values, ext_ref_values = self.calc_advantage(values[:, :, 0].unsqueeze(-1), ext_reward, dones, self._gamma[0])
+                int_adv_values, int_ref_values = self.calc_advantage(values[:, :, 1].unsqueeze(-1), int_reward, dones, self._gamma[1])
                 adv_values = ext_adv_values + int_adv_values
                 ref_values = torch.cat([ext_ref_values, int_ref_values], dim=2)
             else:

@@ -154,7 +154,7 @@ def plot_forward_model_details(data, path, window=1000):
         ax.set_yscale('log', nonpositive='clip')
         ax.grid()
 
-        t = range(data['fme'].shape[1])
+        t = range(data['fme'][i].shape[0])
 
         mu, sigma = prepare_data(data['fme'][i], window)
         plot_curve(ax, mu, sigma, t, 'green')
