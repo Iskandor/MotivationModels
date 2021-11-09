@@ -44,6 +44,7 @@ class ExperimentPPO:
             video_recorder.close()
 
     def run_baseline(self, agent, trial):
+
         config = self._config
         trial = trial + config.shift
         step_limit = int(config.steps * 1e6)

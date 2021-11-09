@@ -25,6 +25,8 @@ import DDPG_Reacher
 import DQN_CartPole
 import PPO_AerisAvoidFragiles
 import PPO_AerisAvoidHazards
+import PPO_AerisGridSearchA
+import PPO_AerisGridSearchB
 import PPO_AerisNavigate
 import PPO_BitFlip
 import PPO_CartPole
@@ -60,6 +62,8 @@ envs = {
         'aeris_navigate': PPO_AerisNavigate,
         'aeris_hazards': PPO_AerisAvoidHazards,
         'aeris_fragiles': PPO_AerisAvoidFragiles,
+        'aeris_grid_a': PPO_AerisGridSearchA,
+        'aeris_grid_b': PPO_AerisGridSearchB,
         'gravitar': PPO_Gravitar,
         'montezuma': PPO_Montezuma,
         'pitfall': PPO_Pitfall,

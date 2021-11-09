@@ -1,12 +1,9 @@
 import torch
-from torch import nn
-from torch.distributions import Categorical, Normal
 
 from agents import TYPE
-from algorithms.PPO import PPO, PPO2
-from algorithms.ReplayBuffer import PPOTrajectoryBuffer, PPOTrajectoryBuffer2
-from modules.PPO_Modules import PPOSimpleNetwork, PPOAerisNetwork, PPOAtariNetwork, PPOAtariNetworkFM, PPOAerisNetworkRND, PPOAerisNetworkDOP, PPOAerisNetworkDOPRef, PPOAtariNetworkRND
-from motivation.DOPMotivation import DOPMotivation
+from algorithms.PPO import PPO2
+from algorithms.ReplayBuffer import PPOTrajectoryBuffer2
+from modules.PPO_Modules import PPOSimpleNetwork, PPOAtariNetwork, PPOAtariNetworkFM, PPOAtariNetworkRND
 from motivation.ForwardModelMotivation import ForwardModelMotivation
 from motivation.RNDMotivation import RNDMotivation
 from utils import one_hot_code
@@ -41,10 +38,6 @@ class PPOAgent:
     def convert_action(self, action):
         if self.action_type == TYPE.discrete:
             a = torch.argmax(action, dim=1).numpy()
-
-            # if len(a) == 1:
-            #     a = a.item()
-
             return a
         if self.action_type == TYPE.continuous:
             return action.squeeze(0).numpy()
@@ -78,59 +71,6 @@ class PPOSimpleAgent(PPOAgent):
         super().__init__(state_dim, action_dim, config)
         self.network = PPOSimpleNetwork(state_dim, action_dim, config, head=action_type).to(config.device)
         self.algorithm = self.init_algorithm(config, self.memory, action_type)
-
-
-class PPOAerisAgent(PPOAgent):
-    def __init__(self, input_shape, action_dim, config, action_type):
-        super().__init__(input_shape, action_dim, config)
-        self.network = PPOAerisNetwork(input_shape, action_dim, config, head=action_type).to(config.device)
-        self.algorithm = self.init_algorithm(config, self.memory, action_type)
-
-
-class PPOAerisRNDAgent(PPOAgent):
-    def __init__(self, input_shape, action_dim, config, action_type):
-        super().__init__(input_shape, action_dim, config)
-        self.network = PPOAerisNetworkRND(input_shape, action_dim, config, head=action_type).to(config.device)
-        self.motivation = RNDMotivation(self.network.rnd_model, config.forward_model_lr, config.motivation_eta, self.memory, config.device)
-        self.algorithm = self.init_algorithm(config, self.memory, action_type, self.motivation)
-
-    def train(self, state0, value, action0, probs0, state1, reward, mask):
-        self.memory.add(state0.cpu(), value.cpu(), action0.cpu(), probs0.cpu(), state1.cpu(), reward.cpu(), mask.cpu())
-        indices = self.memory.indices()
-        self.algorithm.train(indices)
-        self.motivation.train(indices)
-        if indices is not None:
-            self.memory.clear()
-
-
-class PPOAerisDOPAgent(PPOAgent):
-    def __init__(self, input_shape, action_dim, config, action_type):
-        super().__init__(input_shape, action_dim, config)
-        self.network = PPOAerisNetworkDOP(input_shape, action_dim, config, head=action_type).to(config.device)
-        self.motivation = DOPMotivation(self.network.dop_model, config.forward_model_lr, config.forward_model_lr, config.motivation_eta, config.device)
-        self.algorithm = self.init_algorithm(config, self.memory, action_type)
-
-    def train(self, state0, value, action0, probs0, state1, reward, mask):
-        self.memory.add(state0.cpu(), value.cpu(), action0.cpu(), probs0.cpu(), state1.cpu(), reward.cpu(), mask.cpu())
-        indices = self.memory.indices()
-        self.algorithm.train(indices)
-        self.motivation.train(indices)
-        if indices is not None:
-            self.memory.clear()
-
-
-class PPOAerisDOPRefAgent(PPOAgent):
-    def __init__(self, input_shape, action_dim, config, action_type):
-        super().__init__(input_shape, action_dim, config)
-        self.network = PPOAerisNetworkDOPRef(input_shape, action_dim, config, head=action_type).to(config.device)
-        self.algorithm = self.init_algorithm(config, self.memory, action_type)
-
-    def train(self, state0, value, action0, probs0, state1, reward, mask):
-        self.memory.add(state0.cpu(), value.cpu(), action0.cpu(), probs0.cpu(), state1.cpu(), reward.cpu(), mask.cpu())
-        indices = self.memory.indices()
-        self.algorithm.train(indices)
-        if indices is not None:
-            self.memory.clear()
 
 
 class PPOAtariAgent(PPOAgent):
