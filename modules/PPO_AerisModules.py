@@ -171,23 +171,24 @@ class PPOAerisGridNetwork(torch.nn.Module):
             nn.ReLU(),
         )
 
-        init_xavier_uniform(self.features[0])
-        init_xavier_uniform(self.features[3])
+        init_orthogonal(self.features[0], np.sqrt(2))
+        init_orthogonal(self.features[3], np.sqrt(2))
 
         self.critic = nn.Sequential(
             nn.Linear(256, 256),
             nn.ReLU(),
             nn.Linear(256, 1))
 
-        init_xavier_uniform(self.critic[0])
-        init_xavier_uniform(self.critic[2])
+        init_orthogonal(self.critic[0], np.sqrt(2))
+        init_orthogonal(self.critic[2], 0.01)
 
         self.layers_actor = nn.Sequential(
             nn.Linear(256, 256),
             nn.ReLU(),
             DiscreteHead(256, action_dim))
 
-        init_xavier_uniform(self.layers_actor[0])
+        init_orthogonal(self.layers_actor[0], 0.01)
+        init_orthogonal(self.layers_actor[2], 0.01)
 
         self.actor = Actor(self.layers_actor, TYPE.discrete)
 

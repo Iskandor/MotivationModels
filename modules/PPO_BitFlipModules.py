@@ -30,6 +30,7 @@ class PPOBitFlipNetwork(torch.nn.Module):
         )
         init_xavier_uniform(self.layers_actor[0])
         init_xavier_uniform(self.layers_actor[2])
+        init_xavier_uniform(self.layers_actor[4])
 
         self.actor = Actor(self.layers_actor, head)
 
@@ -63,6 +64,7 @@ class PPOBitFlipMotivationNetwork(torch.nn.Module):
         )
         init_xavier_uniform(self.layers_actor[0])
         init_xavier_uniform(self.layers_actor[2])
+        init_xavier_uniform(self.layers_actor[4])
 
         self.actor = Actor(self.layers_actor, head)
 

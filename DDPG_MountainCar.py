@@ -1,6 +1,5 @@
 import gym
-from agents.DDPGAgent import DDPGBulletAgent, DDPGBulletForwardModelAgent, DDPGBulletGatedMetacriticModelAgent, DDPGBulletRNDModelAgent, DDPGBulletMetaCriticRNDModelAgent, DDPGBulletQRNDModelAgent, \
-    DDPGBulletDOPModelAgent, DDPGBulletDOPSimpleModelAgent
+from agents.DDPGAgent import DDPGBulletAgent, DDPGBulletForwardModelAgent, DDPGBulletGatedMetacriticModelAgent, DDPGBulletRNDModelAgent, DDPGBulletMetaCriticRNDModelAgent, DDPGBulletQRNDModelAgent
 from experiment.ddpg_experiment import ExperimentDDPG
 
 
@@ -73,7 +72,7 @@ def run_dop_model(config, i):
     action_dim = env.action_space.shape[0]
 
     experiment = ExperimentDDPG('MountainCarContinuous-v0', env, config)
-    agent = DDPGBulletDOPSimpleModelAgent(state_dim, action_dim, config)
+    agent = None
     experiment.run_dop_model(agent, i)
 
     env.close()

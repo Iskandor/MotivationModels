@@ -219,12 +219,6 @@ class DDPGBulletNetworkQRND(DDPGBulletNetwork):
         self.qrnd_model = QRNDModelBullet(state_dim, action_dim, config)
 
 
-class DDPGBulletNetworkDOPSimple(DDPGBulletNetwork):
-    def __init__(self, state_dim, action_dim, config):
-        super(DDPGBulletNetworkDOPSimple, self).__init__(state_dim, action_dim, config)
-        self.dop_model = DOPSimpleModelBullet(state_dim, action_dim, config, self.actor)
-
-
 class DDPGBulletNetworkDOP(DDPGBulletNetwork):
     def __init__(self, state_dim, action_dim, config):
         super(DDPGBulletNetworkDOP, self).__init__(state_dim, action_dim, config)

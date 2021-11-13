@@ -499,17 +499,25 @@ def plot_vdop_model_details(data, path, window=1000):
             plot_curve(ax, mu, sigma, t, color_cycle[j])
         ax.grid()
 
+        # ax = plt.subplot(num_rows, num_cols, 6)
+        # t = range(data['reg_grad'][i].shape[1])
+        #
+        # for j in range(data['reg_grad'][i].shape[0]):
+        #     mu, sigma = prepare_data(data['reg_grad'][i][j], window)
+        #     plot_curve(ax, mu, sigma, t, color_cycle[j])
+        # ax.grid()
+
         colors = []
         for head in data['th'][i]:
             colors.append(color_cycle[int(head)])
 
-        ax = plt.subplot(num_rows, num_cols, 6)
+        ax = plt.subplot(num_rows, num_cols, 7)
         plt.scatter(data['ts'][i][:, 0], data['ts'][i][:, 1], marker='o', c=colors, s=8)
 
-        ax = plt.subplot(num_rows, num_cols, 7)
+        ax = plt.subplot(num_rows, num_cols, 8)
         heads = data_hid.shape[1]
         colors_all = color_cycle[:heads] * data['ta'][i].shape[0]
-        plt.scatter(data['taa'][i][:, 0], data['taa'][i][:, 1], marker='o', c=colors_all, s=8, alpha=0.3)
+        # plt.scatter(data['taa'][i][:, 0], data['taa'][i][:, 1], marker='o', c=colors_all, s=8, alpha=0.3)
         plt.scatter(data['ta'][i][:, 0], data['ta'][i][:, 1], marker='o', c=colors, s=8)
 
         plt.savefig("{0:s}_{1:d}.png".format(path, i))

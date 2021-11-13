@@ -10,6 +10,7 @@ class DOPAnalytic:
         self.source = 0
         self.ext_gradient = []
         self.dop_gradient = []
+        self.reg_gradient = []
         self.nheads = 0
 
     def init_gradient_monitor(self, module, nheads):
@@ -17,16 +18,22 @@ class DOPAnalytic:
         for _ in range(nheads):
             self.ext_gradient.append([])
             self.dop_gradient.append([])
+            self.reg_gradient.append([])
         self.nheads = nheads
 
     def _backward_hook(self, module, grad_input, grad_output):
+        if self.source == 3:
+            self.source = 0
         if self.source == 0:
             for i in range(self.nheads):
                 self.ext_gradient[i].append(grad_input[i].mean().item())
-        else:
+        if self.source == 1:
+            for i in range(self.nheads):
+                self.reg_gradient[i].append(grad_input[i].mean().item())
+        if self.source == 2:
             for i in range(self.nheads):
                 self.dop_gradient[i].append(grad_input[i].mean().item())
-        self.source = 1 - self.source
+        self.source += 1
 
     @staticmethod
     def head_analyze(env, agent, config):

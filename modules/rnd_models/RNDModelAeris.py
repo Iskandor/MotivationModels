@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import numpy as np
+from scipy.spatial import distance
 
 from modules import init_orthogonal, init_coupled_orthogonal, init_xavier_uniform
 from utils import one_hot_code
@@ -318,11 +319,11 @@ class QRNDModelAerisFC(nn.Module):
 
         self.target_model = nn.Sequential(
             nn.Linear(self.state_dim + (self.action_dim * self.state_dim), self.state_dim * 2),
-            nn.ReLU(),
+            nn.ELU(),
             nn.Linear(self.state_dim * 2, self.state_dim * 2),
-            nn.ReLU(),
+            nn.ELU(),
             nn.Linear(self.state_dim * 2, self.state_dim * 2),
-            nn.ReLU(),
+            nn.ELU(),
             nn.Linear(self.state_dim * 2, hidden_count)
         )
 
@@ -331,11 +332,11 @@ class QRNDModelAerisFC(nn.Module):
 
         self.model = nn.Sequential(
             nn.Linear(self.state_dim + (self.action_dim * self.state_dim), self.state_dim * 2),
-            nn.ReLU(),
+            nn.ELU(),
             nn.Linear(self.state_dim * 2, self.state_dim * 2),
-            nn.ReLU(),
+            nn.ELU(),
             nn.Linear(self.state_dim * 2, self.state_dim * 2),
-            nn.ReLU(),
+            nn.ELU(),
             nn.Linear(self.state_dim * 2, hidden_count),
             nn.ReLU(),
             nn.Linear(hidden_count, hidden_count),
@@ -389,7 +390,9 @@ class QRNDModelAerisFC(nn.Module):
         x = torch.cat([x, a], dim=1)
         mean = self.state_stats.mean.expand(x.shape[0], *x.shape[1:])
         std = self.state_stats.std.expand(x.shape[0], *x.shape[1:])
-        x = (x - mean) / (std + 1e-8)
+        # x = (x - mean) / (std + 1e-8)
+        x = (x - mean)
+
         return x
 
     def forward(self, state, action):
@@ -439,6 +442,7 @@ class VanillaDOPModelAeris(nn.Module):
         self.features = features
         self.actor = actor
         self.eta = config.motivation_eta
+        self.zeta = config.motivation_zeta
 
         self.error_stats = RunningStats(1, config.device)
 
@@ -451,17 +455,26 @@ class VanillaDOPModelAeris(nn.Module):
         state = state.unsqueeze(1).repeat(1, self.head_count, 1, 1).view(-1, self.state_dim[0], self.state_dim[1])
         std = self.error_stats.std
 
-        return self.motivator.error(state, action) / (std + 1e-8)
+        # return self.motivator.error(state, action) / (std + 1e-8)
+        return self.motivator.error(state, action)
 
     def motivator_loss_function(self, state, action, prediction=None):
         return self.motivator.loss_function(state, action, prediction)
 
     def generator_loss_function(self, state):
         loss = -self.error(state).mean()
-        return loss * self.eta
+        reg_loss = self.regularization_term(state).mean() * self.zeta
+
+        return (loss + reg_loss) * self.eta
 
     def update_error_average(self, error):
         self.error_stats.update(error)
+
+    def regularization_term(self, state):
+        action = self.actor(state)
+        y = torch.nn.functional.cosine_similarity(action[..., None, :, :], action[..., :, None, :].detach(), dim=-1) - 1
+
+        return y
 
 
 class DOPModelAeris(nn.Module):

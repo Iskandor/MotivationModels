@@ -40,6 +40,14 @@ class DiscreteHead(nn.Module):
         entropy = -dist.entropy()
         return entropy.mean()
 
+    @property
+    def weight(self):
+        return self.logits.weight
+
+    @property
+    def bias(self):
+        return self.logits.bias
+
 
 class ContinuousHead(nn.Module):
     def __init__(self, input_dim, action_dim):
