@@ -1,6 +1,7 @@
 import time
 
 import gym
+import numpy as np
 import psutil
 import pybulletgym
 import numpy
@@ -806,7 +807,7 @@ class ExperimentDDPG:
         steps = 0
 
         steps_per_episode = []
-        train_fm_errors = []
+        train_rnd_errors = []
         train_ext_rewards = []
         train_int_rewards = []
         reward_avg = RunningAverageWindow(100)
@@ -819,6 +820,7 @@ class ExperimentDDPG:
             done = False
             train_ext_reward = 0
             train_int_reward = 0
+            train_rnd_error = 0
             train_steps = 0
 
             while not done:
@@ -835,21 +837,22 @@ class ExperimentDDPG:
 
                 train_ext_reward += reward.item()
                 train_int_reward += agent.motivation.reward(state0).item()
-                train_fm_error = agent.motivation.error(state0).item()
-                train_fm_errors.append(train_fm_error)
+                train_rnd_error += agent.motivation.error(state0).item()
 
                 state0 = state1
 
             steps += train_steps
             if steps > step_limit:
                 train_steps -= steps - step_limit
-            bar.numerator = steps
-            exploration.update(steps)
 
-            reward_avg.update(train_ext_reward)
             steps_per_episode.append(train_steps)
+            reward_avg.update(train_ext_reward)
             train_ext_rewards.append(train_ext_reward)
             train_int_rewards.append(train_int_reward)
+            train_rnd_errors.append(train_rnd_error / train_steps)
+
+            bar.numerator = steps
+            exploration.update(steps)
 
             print('Run {0:d} step {1:d} sigma {2:f} training [ext. reward {3:f} int. reward {4:f} steps {5:d} ({6:f})] avg. ext. reward {7:f}'.format(
                 trial, steps, exploration.sigma, train_ext_reward, train_int_reward, train_steps, train_int_reward / train_steps, reward_avg.value().item()))
@@ -862,7 +865,7 @@ class ExperimentDDPG:
             'steps': numpy.array(steps_per_episode),
             're': numpy.array(train_ext_rewards),
             'ri': numpy.array(train_int_rewards),
-            'fme': numpy.array(train_fm_errors[:step_limit])
+            'error': numpy.array(train_rnd_errors)
         }
         numpy.save('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
 
@@ -874,11 +877,10 @@ class ExperimentDDPG:
         steps = 0
 
         steps_per_episode = []
-        train_fm_errors = []
+        train_rnd_errors = []
         train_ext_rewards = []
         train_int_rewards = []
         reward_avg = RunningAverageWindow(100)
-        step_avg = RunningAverageWindow(100)
 
         bar = ProgressBar(config.steps * 1e6, max_width=40)
         exploration = GaussianExploration(config.sigma, 0.01, config.steps * config.exploration_time * 1e6)
@@ -888,6 +890,7 @@ class ExperimentDDPG:
             done = False
             train_ext_reward = 0
             train_int_reward = 0
+            train_rnd_error = 0
             train_steps = 0
 
             while not done:
@@ -904,8 +907,7 @@ class ExperimentDDPG:
 
                 train_ext_reward += reward.item()
                 train_int_reward += agent.motivation.reward(state0, action0).item()
-                train_fm_error = agent.motivation.error(state0, action0).item()
-                train_fm_errors.append(train_fm_error)
+                train_rnd_error += agent.motivation.error(state0, action0).item()
 
                 state0 = state1
 
@@ -916,10 +918,10 @@ class ExperimentDDPG:
             exploration.update(steps)
 
             reward_avg.update(train_ext_reward)
-            step_avg.update(train_steps)
             steps_per_episode.append(train_steps)
             train_ext_rewards.append(train_ext_reward)
             train_int_rewards.append(train_int_reward)
+            train_rnd_errors.append(train_rnd_error / train_steps)
 
             print('Run {0:d} step {1:d} sigma {2:f} training [ext. reward {3:f} int. reward {4:f} steps {5:d} ({6:f})] avg. ext. reward {7:f}'.format(
                 trial, steps, exploration.sigma, train_ext_reward, train_int_reward, train_steps, train_int_reward / train_steps, reward_avg.value().item()))
@@ -932,7 +934,7 @@ class ExperimentDDPG:
             'steps': numpy.array(steps_per_episode),
             're': numpy.array(train_ext_rewards),
             'ri': numpy.array(train_int_rewards),
-            'fme': numpy.array(train_fm_errors[:step_limit])
+            'error': numpy.array(train_rnd_errors)
         }
         numpy.save('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
 
@@ -948,12 +950,13 @@ class ExperimentDDPG:
 
         steps_per_episode = []
         train_rnd_errors = []
-        train_values = []
         train_ext_rewards = []
         train_int_rewards = []
         train_head_index = []
+        ext_gradient = []
+        reg_gradient = []
+        dop_gradient = []
         reward_avg = RunningAverageWindow(100)
-        step_avg = RunningAverageWindow(100)
 
         bar = ProgressBar(config.steps * 1e6, max_width=40)
         exploration = GaussianExploration(config.sigma, 0.01, config.steps * config.exploration_time * 1e6)
@@ -963,13 +966,13 @@ class ExperimentDDPG:
             done = False
             train_ext_reward = 0
             train_int_reward = 0
+            train_rnd_error = 0
             train_steps = 0
             head_index_density = numpy.zeros(config.dop_heads)
 
             while not done:
                 with torch.no_grad():
                     action_index = agent.get_action(state0)
-                    value = agent.network.value(state0, action_index)
                 action0 = action_index[:, :-1]
                 head_index = action_index[:, -1].type(torch.int32)
 
@@ -986,10 +989,8 @@ class ExperimentDDPG:
 
                 train_ext_reward += reward.item()
                 train_int_reward += agent.motivation.reward(state0, action0).item()
-                train_rnd_error = agent.network.dop_model.error(state0).detach().cpu().numpy()
-                train_rnd_errors.append(train_rnd_error)
+                train_rnd_error += agent.network.dop_model.error(state0).detach().cpu().numpy()
                 head_index_density[head_index.item()] += 1
-                train_values.append(value.item())
 
                 state0 = state1
 
@@ -1000,11 +1001,15 @@ class ExperimentDDPG:
             exploration.update(steps)
 
             reward_avg.update(train_ext_reward)
-            step_avg.update(train_steps)
             steps_per_episode.append(train_steps)
             train_ext_rewards.append(train_ext_reward)
             train_int_rewards.append(train_int_reward)
+            train_rnd_errors.append(train_rnd_error / train_steps)
             train_head_index.append(head_index_density)
+            ext_gradient.append(np.mean(np.array(analytic.ext_gradient)).item())
+            reg_gradient.append(np.mean(np.array(analytic.reg_gradient)).item())
+            dop_gradient.append(np.mean(np.array(analytic.dop_gradient)).item())
+            analytic.clear_gradients()
 
             print('Run {0:d} step {1:d} sigma {2:f} training [ext. reward {3:f} int. reward {4:f} steps {5:d} ({6:f})] avg. ext. reward {7:f} density {8:s}'.format(
                 trial, steps, exploration.sigma, train_ext_reward, train_int_reward, train_steps, train_int_reward / train_steps, reward_avg.value().item(), numpy.array2string(head_index_density)))
@@ -1021,11 +1026,11 @@ class ExperimentDDPG:
             'steps': numpy.array(steps_per_episode),
             're': numpy.array(train_ext_rewards),
             'ri': numpy.array(train_int_rewards),
-            'fme': numpy.stack(train_rnd_errors),
+            'error': numpy.stack(train_rnd_errors),
             'hid': numpy.stack(train_head_index),
-            'ext_grad': numpy.array(analytic.ext_gradient[:step_limit]),
-            'reg_grad': numpy.array(analytic.reg_gradient[:step_limit]),
-            'dop_grad': numpy.array(analytic.dop_gradient[:step_limit]),
+            'ext_grad': numpy.array(ext_gradient),
+            'reg_grad': numpy.array(reg_gradient),
+            'dop_grad': numpy.array(dop_gradient),
             'ts': states,
             'ta': actions,
             'taa': all_actions,
@@ -1044,13 +1049,14 @@ class ExperimentDDPG:
         steps = 0
 
         steps_per_episode = []
-        train_fm_errors = []
-        train_values = []
+        train_rnd_errors = []
         train_ext_rewards = []
         train_int_rewards = []
         train_head_index = []
+        ext_gradient = []
+        reg_gradient = []
+        dop_gradient = []
         reward_avg = RunningAverageWindow(100)
-        step_avg = RunningAverageWindow(100)
 
         bar = ProgressBar(config.steps * 1e6, max_width=40)
         exploration = GaussianExploration(config.sigma, 0.01, config.steps * config.exploration_time * 1e6)
@@ -1060,6 +1066,7 @@ class ExperimentDDPG:
             done = False
             train_ext_reward = 0
             train_int_reward = 0
+            train_rnd_error = 0
             train_steps = 0
             head_index_density = numpy.zeros(config.dop_heads)
 
@@ -1084,10 +1091,8 @@ class ExperimentDDPG:
 
                 train_ext_reward += reward.item()
                 train_int_reward += agent.motivation.reward(state0, action0).item()
-                train_fm_error = agent.network.dop_model.error(state0, action0).detach().cpu().numpy()
-                train_fm_errors.append(train_fm_error)
+                train_rnd_error += agent.network.dop_model.error(state0, action0).detach().cpu().numpy()
                 head_index_density[head_index.item()] += 1
-                train_values.append(value.item())
 
                 state0 = state1
 
@@ -1098,11 +1103,15 @@ class ExperimentDDPG:
             exploration.update(steps)
 
             reward_avg.update(train_ext_reward)
-            step_avg.update(train_steps)
             steps_per_episode.append(train_steps)
             train_ext_rewards.append(train_ext_reward)
             train_int_rewards.append(train_int_reward)
             train_head_index.append(head_index_density)
+            train_rnd_errors.append(train_rnd_error / train_steps)
+            ext_gradient.append(np.mean(np.array(analytic.ext_gradient)).item())
+            reg_gradient.append(np.mean(np.array(analytic.reg_gradient)).item())
+            dop_gradient.append(np.mean(np.array(analytic.dop_gradient)).item())
+            analytic.clear_gradients()
 
             print('Run {0:d} step {1:d} sigma {2:f} training [ext. reward {3:f} int. reward {4:f} steps {5:d} ({6:f})] avg. ext. reward {7:f} density {8:s}'.format(
                 trial, steps, exploration.sigma, train_ext_reward, train_int_reward, train_steps, train_int_reward / train_steps, reward_avg.value().item(), numpy.array2string(head_index_density)))
@@ -1119,11 +1128,11 @@ class ExperimentDDPG:
             'steps': numpy.array(steps_per_episode),
             're': numpy.array(train_ext_rewards),
             'ri': numpy.array(train_int_rewards),
-            'fme': numpy.stack(train_fm_errors),
+            'error': numpy.stack(train_rnd_errors),
             'hid': numpy.stack(train_head_index),
-            'ext_grad': numpy.array(analytic.ext_gradient[:step_limit]),
-            'reg_grad': numpy.array(analytic.reg_gradient[:step_limit]),
-            'dop_grad': numpy.array(analytic.dop_gradient[:step_limit]),
+            'ext_grad': numpy.array(ext_gradient),
+            'reg_grad': numpy.array(reg_gradient),
+            'dop_grad': numpy.array(dop_gradient),
             'ts': states,
             'ta': actions,
             'taa': all_actions,

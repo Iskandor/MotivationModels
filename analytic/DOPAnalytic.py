@@ -15,11 +15,18 @@ class DOPAnalytic:
 
     def init_gradient_monitor(self, module, nheads):
         module.register_backward_hook(self._backward_hook)
-        for _ in range(nheads):
+        self.nheads = nheads
+        self.clear_gradients()
+
+    def clear_gradients(self):
+        self.ext_gradient.clear()
+        self.dop_gradient.clear()
+        self.reg_gradient.clear()
+
+        for _ in range(self.nheads):
             self.ext_gradient.append([])
             self.dop_gradient.append([])
             self.reg_gradient.append([])
-        self.nheads = nheads
 
     def _backward_hook(self, module, grad_input, grad_output):
         if self.source == 3:
