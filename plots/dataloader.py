@@ -16,7 +16,7 @@ def prepare_data(keys):
         id = key['id']
 
         path = os.path.join(root, algorithm, model, env, id)
-        data.append(load_data(path, ['re', 're_raw', 'ri', 'hid', 'aa', 'var'], ['loss', 'regterm'], ['re', 're_raw', 'ri']))
+        data.append(load_data(path, ['re', 're_raw', 'ri', 'hid', 'aa', 'var', 'error', 'ext_grad', 'reg_grad', 'dop_grad'], ['loss', 'regterm'], ['re', 're_raw', 'ri']))
 
     return data
 

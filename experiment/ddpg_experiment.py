@@ -1004,11 +1004,11 @@ class ExperimentDDPG:
             steps_per_episode.append(train_steps)
             train_ext_rewards.append(train_ext_reward)
             train_int_rewards.append(train_int_reward)
-            train_rnd_errors.append(train_rnd_error / train_steps)
+            train_rnd_errors.append(np.array(train_rnd_error / train_steps))
             train_head_index.append(head_index_density)
-            ext_gradient.append(np.mean(np.array(analytic.ext_gradient)).item())
-            reg_gradient.append(np.mean(np.array(analytic.reg_gradient)).item())
-            dop_gradient.append(np.mean(np.array(analytic.dop_gradient)).item())
+            ext_gradient.append(np.mean(np.array(analytic.ext_gradient), axis=1))
+            reg_gradient.append(np.mean(np.array(analytic.reg_gradient), axis=1))
+            dop_gradient.append(np.mean(np.array(analytic.dop_gradient), axis=1))
             analytic.clear_gradients()
 
             print('Run {0:d} step {1:d} sigma {2:f} training [ext. reward {3:f} int. reward {4:f} steps {5:d} ({6:f})] avg. ext. reward {7:f} density {8:s}'.format(
@@ -1028,9 +1028,9 @@ class ExperimentDDPG:
             'ri': numpy.array(train_int_rewards),
             'error': numpy.stack(train_rnd_errors),
             'hid': numpy.stack(train_head_index),
-            'ext_grad': numpy.array(ext_gradient),
-            'reg_grad': numpy.array(reg_gradient),
-            'dop_grad': numpy.array(dop_gradient),
+            'ext_grad': numpy.stack(ext_gradient),
+            'reg_grad': numpy.stack(reg_gradient),
+            'dop_grad': numpy.stack(dop_gradient),
             'ts': states,
             'ta': actions,
             'taa': all_actions,
@@ -1106,11 +1106,11 @@ class ExperimentDDPG:
             steps_per_episode.append(train_steps)
             train_ext_rewards.append(train_ext_reward)
             train_int_rewards.append(train_int_reward)
+            train_rnd_errors.append(np.array(train_rnd_error / train_steps))
             train_head_index.append(head_index_density)
-            train_rnd_errors.append(train_rnd_error / train_steps)
-            ext_gradient.append(np.mean(np.array(analytic.ext_gradient)).item())
-            reg_gradient.append(np.mean(np.array(analytic.reg_gradient)).item())
-            dop_gradient.append(np.mean(np.array(analytic.dop_gradient)).item())
+            ext_gradient.append(np.mean(np.array(analytic.ext_gradient), axis=1))
+            reg_gradient.append(np.mean(np.array(analytic.reg_gradient), axis=1))
+            dop_gradient.append(np.mean(np.array(analytic.dop_gradient), axis=1))
             analytic.clear_gradients()
 
             print('Run {0:d} step {1:d} sigma {2:f} training [ext. reward {3:f} int. reward {4:f} steps {5:d} ({6:f})] avg. ext. reward {7:f} density {8:s}'.format(
@@ -1130,9 +1130,9 @@ class ExperimentDDPG:
             'ri': numpy.array(train_int_rewards),
             'error': numpy.stack(train_rnd_errors),
             'hid': numpy.stack(train_head_index),
-            'ext_grad': numpy.array(ext_gradient),
-            'reg_grad': numpy.array(reg_gradient),
-            'dop_grad': numpy.array(dop_gradient),
+            'ext_grad': numpy.stack(ext_gradient),
+            'reg_grad': numpy.stack(reg_gradient),
+            'dop_grad': numpy.stack(dop_gradient),
             'ts': states,
             'ta': actions,
             'taa': all_actions,

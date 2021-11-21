@@ -416,12 +416,14 @@ class QRNDModelAerisFC(nn.Module):
             loss = nn.functional.mse_loss(self(state, action), self.encode(state, action).detach(), reduction='sum')
         else:
             loss = nn.functional.mse_loss(prediction, self.encode(state, action).detach(), reduction='sum')
-        mask = torch.empty_like(loss)
-        mask = nn.init.uniform_(mask) < 0.25
+        # mask = torch.empty_like(loss)
+        # mask = nn.init.uniform_(mask) < 0.25
+        #
+        # loss *= mask
 
-        loss *= mask
+        # return loss.sum(dim=0) / (mask.sum(dim=0) + 1e-8)
 
-        return loss.sum(dim=0) / (mask.sum(dim=0) + 1e-8)
+        return loss.sum(dim=0)
 
     def update_state_average(self, state, action):
         x = state.view(state.shape[0], -1)
@@ -472,7 +474,8 @@ class VanillaDOPModelAeris(nn.Module):
 
     def regularization_term(self, state):
         action = self.actor(state)
-        y = torch.nn.functional.cosine_similarity(action[..., None, :, :], action[..., :, None, :].detach(), dim=-1) - 1
+        # y = torch.nn.functional.cosine_similarity(action[..., None, :, :], action[..., :, None, :].detach(), dim=-1) - 1
+        y = -torch.cdist(action, action.detach(), p=1)
 
         return y
 

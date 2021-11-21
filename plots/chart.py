@@ -476,36 +476,36 @@ def plot_vdop_model_details(data, path, window=1000):
         # ax.set_yscale('log', nonpositive='clip')
         ax.grid()
 
-        t = range(data['fme'][i].shape[0])
+        t = range(data['error'][i].shape[0])
 
-        for j in range(data['fme'][i].shape[1]):
-            mu, sigma = prepare_data(data['fme'][i][:, j], window)
+        for j in range(data['error'][i].shape[1]):
+            mu, sigma = prepare_data(data['error'][i][:, j], window)
             plot_curve(ax, mu, sigma, t, color_cycle[j])
         plt.legend(['RND error'], loc=1)
 
         ax = plt.subplot(num_rows, num_cols, 4)
-        t = range(data['ext_grad'][i].shape[1])
+        t = range(data['ext_grad'][i].shape[0])
 
-        for j in range(data['ext_grad'][i].shape[0]):
-            mu, sigma = prepare_data(data['ext_grad'][i][j], window)
+        for j in range(data['ext_grad'][i].shape[1]):
+            mu, sigma = prepare_data(data['ext_grad'][i][:, j], window)
             plot_curve(ax, mu, sigma, t, color_cycle[j])
         ax.grid()
 
         ax = plt.subplot(num_rows, num_cols, 5)
-        t = range(data['dop_grad'][i].shape[1])
+        t = range(data['dop_grad'][i].shape[0])
 
-        for j in range(data['dop_grad'][i].shape[0]):
-            mu, sigma = prepare_data(data['dop_grad'][i][j], window)
+        for j in range(data['dop_grad'][i].shape[1]):
+            mu, sigma = prepare_data(data['dop_grad'][i][:, j], window)
             plot_curve(ax, mu, sigma, t, color_cycle[j])
         ax.grid()
 
-        # ax = plt.subplot(num_rows, num_cols, 6)
-        # t = range(data['reg_grad'][i].shape[1])
-        #
-        # for j in range(data['reg_grad'][i].shape[0]):
-        #     mu, sigma = prepare_data(data['reg_grad'][i][j], window)
-        #     plot_curve(ax, mu, sigma, t, color_cycle[j])
-        # ax.grid()
+        ax = plt.subplot(num_rows, num_cols, 6)
+        t = range(data['reg_grad'][i].shape[0])
+
+        for j in range(data['reg_grad'][i].shape[1]):
+            mu, sigma = prepare_data(data['reg_grad'][i][:, j], window)
+            plot_curve(ax, mu, sigma, t, color_cycle[j])
+        ax.grid()
 
         colors = []
         for head in data['th'][i]:
