@@ -268,13 +268,14 @@ class PPOAtariNetwork(torch.nn.Module):
 
         init_orthogonal(self.layers_value[2], 0.01)
 
-        self.layers_policy = [
+        self.layers_policy = nn.Sequential(
             torch.nn.Linear(self.feature_dim, self.feature_dim),
             torch.nn.ReLU(),
             DiscreteHead(self.feature_dim, action_dim)
-        ]
+        )
 
         init_orthogonal(self.layers_policy[0], 0.01)
+        init_orthogonal(self.layers_policy[2], 0.01)
 
         self.features = nn.Sequential(*self.layers_features)
         self.critic = nn.Sequential(*self.layers_value)
