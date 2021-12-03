@@ -34,7 +34,7 @@ class ExperimentNEnvPPO:
     def test(self, agent):
         config = self._config
 
-        for i in range(3):
+        for i in range(5):
             video_path = 'ppo_{0}_{1}_{2:d}.mp4'.format(config.name, config.model, i)
             video_recorder = VideoRecorder(self._env, video_path, enabled=video_path is not None, fps=15)
             state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0).to(config.device)
@@ -122,10 +122,7 @@ class ExperimentNEnvPPO:
         print('Saving data...')
         save_data = {
             'steps': numpy.array(steps_per_episode),
-            're': numpy.array(train_ext_rewards),
-            'var': numpy.array(train_vars),
-            'diff_mean': numpy.array(agent.algorithm.diff_mean),
-            'diff_max': numpy.array(agent.algorithm.diff_max),
+            're': numpy.array(train_ext_rewards)
         }
         numpy.save('ppo_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
 
@@ -140,8 +137,8 @@ class ExperimentNEnvPPO:
         train_ext_reward = numpy.zeros((n_env, 1), dtype=numpy.float32)
         train_int_rewards = []
         train_int_reward = numpy.zeros((n_env, 1), dtype=numpy.float32)
-        train_error = [[] for _ in range(n_env)]
-        train_errors = numpy.array([], dtype=numpy.int32)
+        train_errors = []
+        train_error = numpy.zeros((n_env, 1), dtype=numpy.float32)
         train_steps = numpy.zeros((n_env, 1), dtype=numpy.int32)
         reward_avg = RunningAverageWindow(100)
         # time_avg = RunningAverageWindow(100)
@@ -153,6 +150,7 @@ class ExperimentNEnvPPO:
         state0 = self.process_state(s)
 
         while step_counter.running():
+            agent.motivation.update_state_average(state0)
             with torch.no_grad():
                 value, action0, probs0 = agent.get_action(state0)
 
@@ -163,16 +161,14 @@ class ExperimentNEnvPPO:
             # print('Duration {0:.3f}s'.format(time_avg.value()))
 
             ext_reward = torch.tensor(reward, dtype=torch.float32)
-            int_reward = agent.motivation.reward(state0).cpu()
-            agent.motivation.update_reward_average(int_reward.detach())
+            int_reward = agent.motivation.reward(state0).cpu().clip(0.0, 1.0)
+            # agent.motivation.update_reward_average(int_reward.detach())
 
-            error = agent.motivation.error(state0).cpu().tolist()
-            for i in range(n_env):
-                train_error[i].append(error[i])
-
+            error = agent.motivation.error(state0).cpu()
             train_steps += 1
             train_ext_reward += ext_reward.numpy()
             train_int_reward += int_reward.numpy()
+            train_error += error.numpy()
 
             env_indices = numpy.nonzero(numpy.squeeze(done, axis=1))[0]
 
@@ -184,7 +180,7 @@ class ExperimentNEnvPPO:
                 steps_per_episode.append(train_steps[i].item())
                 train_ext_rewards.append(train_ext_reward[i].item())
                 train_int_rewards.append(train_int_reward[i].item())
-                train_errors = numpy.concatenate([train_errors, numpy.array(train_error[i])])
+                train_errors.append(train_error[i].item())
                 reward_avg.update(train_ext_reward[i].item())
 
                 if train_steps[i].item() > 0:
@@ -196,7 +192,7 @@ class ExperimentNEnvPPO:
                 train_ext_reward[i] = 0
                 train_int_reward[i] = 0
                 train_steps[i] = 0
-                del train_error[i][:]
+                train_error[i] = 0
 
                 next_state[i] = self._env.reset(i)
 
@@ -216,7 +212,7 @@ class ExperimentNEnvPPO:
             'steps': numpy.array(steps_per_episode),
             're': numpy.array(train_ext_rewards),
             'ri': numpy.array(train_int_rewards),
-            'fme': numpy.array(train_errors[:step_counter.limit])
+            'error': numpy.array(train_errors)
         }
         numpy.save('ppo_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
 

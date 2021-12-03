@@ -32,7 +32,6 @@ import PPO_BitFlip
 import PPO_CartPole
 import PPO_Gravitar
 import PPO_LunarLander
-import PPO_MidnightResistance
 import PPO_Montezuma
 import PPO_MountainCar
 import PPO_Pacman
@@ -72,7 +71,6 @@ envs = {
         'venture': PPO_Venture,
         'qbert': PPO_QBert,
         'mspacman': PPO_Pacman,
-        'midnight_resistance': PPO_MidnightResistance,
         'cart_pole': PPO_CartPole,
         'mountain_car': PPO_MountainCar,
         'pendulum': PPO_Pendulum,

@@ -390,8 +390,8 @@ class QRNDModelAerisFC(nn.Module):
         x = torch.cat([x, a], dim=1)
         mean = self.state_stats.mean.expand(x.shape[0], *x.shape[1:])
         std = self.state_stats.std.expand(x.shape[0], *x.shape[1:])
-        # x = (x - mean) / (std + 1e-8)
-        x = (x - mean)
+        x = (x - mean) / (std + 1e-8)
+        # x = (x - mean)
 
         return x
 

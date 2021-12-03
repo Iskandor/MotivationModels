@@ -5,7 +5,7 @@ from agents import TYPE
 from agents.PPOAtariAgent import PPOAtariAgent, PPOAtariRNDAgent, PPOAtariForwardModelAgent
 from experiment.ppo_experiment import ExperimentPPO
 from experiment.ppo_nenv_experiment import ExperimentNEnvPPO
-from utils.AtariWrapper import WrapperAtari
+from utils.AtariWrapper import WrapperHardAtari
 from utils.MultiEnvWrapper import MultiEnvParallel
 
 
@@ -14,14 +14,14 @@ def encode_state(state):
 
 
 def test(config, path, env_name):
-    env = WrapperAtari(gym.make(env_name))
+    env = WrapperHardAtari(gym.make(env_name))
     input_shape = env.observation_space.shape
     action_dim = env.action_space.n
 
     experiment = ExperimentPPO(env_name, env, config)
     experiment.add_preprocess(encode_state)
 
-    agent = PPOAtariAgent(input_shape, action_dim, config, TYPE.discrete)
+    agent = PPOAtariRNDAgent(input_shape, action_dim, config, TYPE.discrete)
     agent.load(path)
     experiment.test(agent)
 
@@ -30,7 +30,7 @@ def test(config, path, env_name):
 
 def run_baseline(config, trial, env_name):
     print('Creating {0:d} environments'.format(config.n_env))
-    env = MultiEnvParallel([WrapperAtari(gym.make(env_name)) for _ in range(config.n_env)], config.n_env, config.num_threads)
+    env = MultiEnvParallel([WrapperHardAtari(gym.make(env_name)) for _ in range(config.n_env)], config.n_env, config.num_threads)
 
     input_shape = env.observation_space.shape
     action_dim = env.action_space.n
@@ -47,7 +47,7 @@ def run_baseline(config, trial, env_name):
 
 def run_rnd_model(config, trial, env_name):
     print('Creating {0:d} environments'.format(config.n_env))
-    env = MultiEnvParallel([WrapperAtari(gym.make(env_name)) for _ in range(config.n_env)], config.n_env, config.num_threads)
+    env = MultiEnvParallel([WrapperHardAtari(gym.make(env_name)) for _ in range(config.n_env)], config.n_env, config.num_threads)
 
     input_shape = env.observation_space.shape
     action_dim = env.action_space.n
@@ -64,7 +64,7 @@ def run_rnd_model(config, trial, env_name):
 
 def run_forward_model(config, trial, env_name):
     print('Creating {0:d} environments'.format(config.n_env))
-    env = MultiEnvParallel([WrapperAtari(gym.make(env_name)) for _ in range(config.n_env)], config.n_env, config.num_threads)
+    env = MultiEnvParallel([WrapperHardAtari(gym.make(env_name)) for _ in range(config.n_env)], config.n_env, config.num_threads)
 
     input_shape = env.observation_space.shape
     action_dim = env.action_space.n
