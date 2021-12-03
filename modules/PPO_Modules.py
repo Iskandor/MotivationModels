@@ -5,8 +5,6 @@ from torch.distributions import Categorical, Normal
 
 from agents import TYPE
 from modules import init_orthogonal, init_uniform, init_xavier_uniform, init_custom
-from modules.forward_models.ForwardModelAtari import ForwardModelAtari
-from modules.rnd_models.RNDModelAtari import RNDModelAtari
 
 
 class DiscreteHead(nn.Module):
@@ -187,16 +185,6 @@ class Critic2Heads(nn.Module):
     @property
     def bias(self):
         return self.ext.bias, self.int.bias
-
-class Residual(torch.nn.Module):
-    def __init__(self, features):
-        super(Residual, self).__init__()
-
-        self.layer = nn.Linear(features, features)
-        init_orthogonal(self.layer, 0.01)
-
-    def forward(self, x):
-        return x + self.layer(x)
 
 
 class PPOSimpleNetwork(torch.nn.Module):

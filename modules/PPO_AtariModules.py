@@ -3,7 +3,7 @@ import torch.nn as nn
 import numpy as np
 
 from modules import init_orthogonal
-from modules.PPO_Modules import Residual, DiscreteHead, Actor, Critic2Heads
+from modules.PPO_Modules import DiscreteHead, Actor, Critic2Heads
 from modules.forward_models.ForwardModelAtari import ForwardModelAtari
 from modules.rnd_models.RNDModelAtari import RNDModelAtari
 
