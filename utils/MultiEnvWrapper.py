@@ -52,7 +52,7 @@ class MultiEnvParallel:
         self.infos[index] = info
 
     def step(self, actions):
-        p = [(i, a) for i, a in zip(range(actions.shape[0]), actions)]
+        p = [(i, a) for i, a in zip(range(self.envs_count), actions)]
         with ThreadPoolExecutor(max_workers=self.threads_count) as executor:
             executor.map(self._step, p)
 

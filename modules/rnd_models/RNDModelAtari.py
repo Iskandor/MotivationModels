@@ -69,7 +69,7 @@ class RNDModelAtari(nn.Module):
     def forward(self, state):
         x = self.prepare_input(state)
         predicted_code = self.model(x)
-        target_code = self.target_model(x).detach()
+        target_code = self.target_model(x)
         return predicted_code, target_code
 
     def error(self, state):

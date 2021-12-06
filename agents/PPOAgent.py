@@ -2,7 +2,7 @@ import torch
 
 from agents import TYPE
 from algorithms.PPO import PPO
-from algorithms.ReplayBuffer import PPOTrajectoryBuffer2
+from algorithms.ReplayBuffer import PPOTrajectoryBuffer
 from modules.PPO_Modules import PPOSimpleNetwork
 from motivation.ForwardModelMotivation import ForwardModelMotivation
 from motivation.RNDMotivation import RNDMotivation
@@ -15,7 +15,7 @@ class PPOAgent:
         self.action_dim = action_dim
         self.config = config
         self.network = None
-        self.memory = PPOTrajectoryBuffer2(config.trajectory_size, config.batch_size, config.n_env)
+        self.memory = PPOTrajectoryBuffer(config.trajectory_size, config.batch_size, config.n_env)
         self.algorithm = None
         self.action_type = None
 
