@@ -8,7 +8,7 @@ from utils.RunningAverage import RunningStats
 
 class RNDModelAtari(nn.Module):
     def __init__(self, input_shape, action_dim, config):
-        super(QRNDModelAtari, self).__init__()
+        super(RNDModelAtari, self).__init__()
 
         self.input_shape = input_shape
         self.action_dim = action_dim
