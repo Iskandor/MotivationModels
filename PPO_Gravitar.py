@@ -1,6 +1,6 @@
 import PPO_HardAtariGame
 
-env_name = 'Gravitar-v0'
+env_name = 'GravitarNoFrameskip-v4'
 
 
 def test(config, path):
@@ -13,6 +13,10 @@ def run_baseline(config, trial):
 
 def run_rnd_model(config, trial):
     PPO_HardAtariGame.run_rnd_model(config, trial, env_name)
+
+
+def run_qrnd_model(config, trial):
+    PPO_HardAtariGame.run_qrnd_model(config, trial, env_name)
 
 
 def run_forward_model(config, trial):

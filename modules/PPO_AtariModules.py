@@ -5,7 +5,7 @@ import numpy as np
 from modules import init_orthogonal
 from modules.PPO_Modules import DiscreteHead, Actor, Critic2Heads
 from modules.forward_models.ForwardModelAtari import ForwardModelAtari
-from modules.rnd_models.RNDModelAtari import RNDModelAtari
+from modules.rnd_models.RNDModelAtari import QRNDModelAtari, RNDModelAtari
 
 
 class PPOAtariNetwork(torch.nn.Module):
@@ -93,3 +93,9 @@ class PPOAtariNetworkRND(PPOAtariMotivationNetwork):
     def __init__(self, input_shape, action_dim, config, head):
         super(PPOAtariNetworkRND, self).__init__(input_shape, action_dim, config, head)
         self.rnd_model = RNDModelAtari(input_shape, self.action_dim, config)
+
+
+class PPOAtariNetworkQRND(PPOAtariMotivationNetwork):
+    def __init__(self, input_shape, action_dim, config, head):
+        super(PPOAtariNetworkQRND, self).__init__(input_shape, action_dim, config, head)
+        self.qrnd_model = QRNDModelAtari(input_shape, self.action_dim, config)

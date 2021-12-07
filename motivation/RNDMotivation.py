@@ -53,15 +53,16 @@ class QRNDMotivation:
 
     def train(self, memory, indices):
         if indices:
-            sample = memory.sample(indices)
+            sample, size = memory.sample_batches(indices)
 
-            states = sample.state.to(self._device)
-            actions = sample.action.to(self._device)
+            for i in range(size):
+                states = sample.state[i].to(self._device)
+                actions = sample.action[i].to(self._device)
 
-            self._optimizer.zero_grad()
-            loss = self._network.loss_function(states, actions)
-            loss.backward()
-            self._optimizer.step()
+                self._optimizer.zero_grad()
+                loss = self._network.loss_function(states, actions)
+                loss.backward()
+                self._optimizer.step()
 
     def error(self, state0, action0):
         return self._network.error(state0, action0)
@@ -76,7 +77,7 @@ class QRNDMotivation:
 
     def reward(self, state0, action0):
         with torch.no_grad():
-            reward = self.error(state0, action0).unsqueeze(1)
+            reward = self.error(state0, action0)
         return reward * self._eta
 
     def update_state_average(self, state, action):
