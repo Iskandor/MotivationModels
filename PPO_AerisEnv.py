@@ -27,7 +27,7 @@ def create_env(env_id):
     return env
 
 
-def run_baseline(env_name, config, trial, agent_class):
+def run_env(env_name, config, trial, agent_class, experiment_type):
     print('Creating {0:d} environments'.format(config.n_env))
     env = MultiEnvParallel([create_env(env_name) for _ in range(config.n_env)], config.n_env, config.num_threads)
 
@@ -39,47 +39,25 @@ def run_baseline(env_name, config, trial, agent_class):
 
     print('Start training')
     experiment = ExperimentNEnvPPO(env_name, env, config)
+    method_to_call = getattr(experiment, experiment_type)
 
     agent = agent_class(input_shape, action_dim, config)
-    experiment.run_baseline(agent, trial)
+    method_to_call(agent, trial)
 
     env.close()
 
 
-def run_rnd_model(env_name, config, i):
-    env = create_env(env_name)
-    state_dim = env.observation_space.shape
-    action_dim = env.action_space.shape[0]
-
-    experiment = ExperimentPPO(env_name, env, config)
-
-    agent = PPOAerisRNDAgent(state_dim, action_dim, config)
-    experiment.run_rnd_model(agent, i)
-
-    env.close()
+def run_baseline(env_name, config, trial, agent_class):
+    run_env(env_name, config, trial, agent_class, 'run_baseline')
 
 
-def run_dop_model(env_name, config, i):
-    env = create_env(env_name)
-    state_dim = env.observation_space.shape
-    action_dim = env.action_space.shape[0]
-
-    experiment = ExperimentPPO(env_name, env, config)
-
-    agent = PPOAerisDOPAgent(state_dim, action_dim, config)
-    experiment.run_dop_model(agent, i)
-
-    env.close()
+def run_rnd_model(env_name, config, trial, agent_class):
+    run_env(env_name, config, trial, agent_class, 'run_rnd_model')
 
 
-def run_dop_ref_model(env_name, config, i):
-    env = create_env(env_name)
-    state_dim = env.observation_space.shape
-    action_dim = env.action_space.shape[0]
+def run_dop_model(env_name, config, trial, agent_class):
+    run_env(env_name, config, trial, agent_class, 'run_dop_model')
 
-    experiment = ExperimentPPO(env_name, env, config)
 
-    agent = PPOAerisDOPRefAgent(state_dim, action_dim, config)
-    experiment.run_baseline(agent, i)
-
-    env.close()
+def run_dop_ref_model(env_name, config, trial, agent_class):
+    run_env(env_name, config, trial, agent_class, 'run_baseline')

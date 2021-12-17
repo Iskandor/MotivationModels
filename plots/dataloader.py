@@ -16,7 +16,8 @@ def prepare_data(keys):
         id = key['id']
 
         path = os.path.join(root, algorithm, model, env, id)
-        data.append(load_data(path, ['re', 're_raw', 'ri', 'hid', 'aa', 'var', 'error', 'ext_grad', 'reg_grad', 'dop_grad'], ['loss', 'regterm'], ['re', 're_raw', 'ri']))
+        # data.append(load_data(path, ['re', 're_raw', 'ri', 'hid', 'aa', 'var', 'error', 'ext_grad', 'reg_grad', 'dop_grad'], ['loss', 'regterm'], ['re', 're_raw', 'ri']))
+        data.append(load_data2(path))
 
     return data
 
@@ -49,6 +50,25 @@ def expand_data(data, steps=None):
     return np.concatenate(d)
 
 
+def load_data2(folder):
+    print(folder)
+    print(glob.glob(str(folder) + '/*.npy'))
+
+    data = None
+
+    for file in glob.glob(str(folder) + '/*.npy'):
+        d = np.load(file, allow_pickle=True).item()
+        if data is None:
+            data = {}
+            for k in list(d.keys()):
+                data[k] = []
+
+        for k in list(d.keys()):
+            data[k].append(d[k])
+
+    return data
+
+
 def load_data(folder, expand_keys=[], align_keys=[], stack_keys=[]):
     print(folder)
     print(glob.glob(str(folder) + '/*.npy'))
@@ -66,7 +86,7 @@ def load_data(folder, expand_keys=[], align_keys=[], stack_keys=[]):
         steps = None
         if 'steps' in d:
             steps = d['steps']
-            del d['steps']
+            # del d['steps']
 
         total_steps = np.sum(steps)
 

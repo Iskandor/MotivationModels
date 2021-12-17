@@ -102,8 +102,8 @@ class ExperimentNEnvPPO:
                 # train_vars.append(train_var[i] / train_steps[i].item())
                 reward_avg.update(train_ext_reward[i].item())
 
-                print('Run {0:d} step {1:d} training [ext. reward {2:f} steps {3:d} avg. reward {4:f}]'.format(trial, step_counter.steps, train_ext_reward[i].item(), train_steps[i].item(),
-                                                                                                               reward_avg.value().item()))
+                print('Run {0:d} step {1:d} training [ext. reward {2:f} steps {3:d} avg. reward {4:f} score {5:f}]'.format(trial, step_counter.steps, train_ext_reward[i].item(), train_steps[i].item(),
+                                                                                                               reward_avg.value().item(), train_score[i].item()))
                 step_counter.print()
 
                 train_ext_reward[i] = 0
@@ -267,18 +267,18 @@ class ExperimentNEnvPPO:
             # print('Duration {0:.3f}s'.format(time_avg.value()))
 
             ext_reward = torch.tensor(reward, dtype=torch.float32)
-            int_reward = agent.motivation.reward(state0, action0).cpu().clip(0.0, 1.0)
+            error = agent.motivation.error(state0, action0).detach()
+            int_reward = agent.motivation.reward(error).cpu().clip(0.0, 1.0)
 
             if info is not None and 'raw_score' in info:
                 score = numpy.expand_dims(info['raw_score'], axis=1)
                 train_score += score
             # agent.motivation.update_reward_average(int_reward.detach())
 
-            error = agent.motivation.error(state0, action0).cpu()
             train_steps += 1
             train_ext_reward += ext_reward.numpy()
             train_int_reward += int_reward.numpy()
-            train_error += error.numpy()
+            train_error += error.cpu().numpy()
 
             env_indices = numpy.nonzero(numpy.squeeze(done, axis=1))[0]
 
@@ -340,6 +340,8 @@ class ExperimentNEnvPPO:
         train_ext_reward = numpy.zeros((n_env, 1), dtype=numpy.float32)
         train_int_rewards = []
         train_int_reward = numpy.zeros((n_env, 1), dtype=numpy.float32)
+        train_scores = []
+        train_score = numpy.zeros((n_env, 1), dtype=numpy.float32)
         train_error = [[] for _ in range(n_env)]
         train_errors = numpy.array([], dtype=numpy.int32)
         train_steps = numpy.zeros((n_env, 1), dtype=numpy.int32)
@@ -365,6 +367,10 @@ class ExperimentNEnvPPO:
             ext_reward = torch.tensor(reward, dtype=torch.float32)
             int_reward = agent.motivation.reward(state0, action0).cpu()
 
+            if info is not None and 'raw_score' in info:
+                score = numpy.expand_dims(info['raw_score'], axis=1)
+                train_score += score
+
             error = agent.motivation.error(state0, action0).cpu().tolist()
             for i in range(n_env):
                 train_error[i].append(error[i])
@@ -383,17 +389,19 @@ class ExperimentNEnvPPO:
                 steps_per_episode.append(train_steps[i].item())
                 train_ext_rewards.append(train_ext_reward[i].item())
                 train_int_rewards.append(train_int_reward[i].item())
+                train_scores.append(train_score[i].item())
                 train_errors = numpy.concatenate([train_errors, numpy.array(train_error[i])])
                 reward_avg.update(train_ext_reward[i].item())
 
                 if train_steps[i].item() > 0:
                     print('Run {0:d} step {1:d} training [ext. reward {2:f} int. reward {3:f} steps {4:d} ({5:f})  mean reward {6:f} density {7:s}]'.format(
                         trial, step_counter.steps, train_ext_reward[i].item(), train_int_reward[i].item(), train_steps[i].item(), train_int_reward[i].item() / train_steps[i].item(),
-                        reward_avg.value().item(), numpy.array2string(head_index_density[i])))
+                        reward_avg.value().item(), numpy.array2string(head_index_density[i]), train_score[i].item()))
                 step_counter.print()
 
                 train_ext_reward[i] = 0
                 train_int_reward[i] = 0
+                train_score[i] = 0
                 train_steps[i] = 0
                 head_index_density[i].fill(0)
                 del train_error[i][:]
@@ -414,6 +422,7 @@ class ExperimentNEnvPPO:
         print('Saving data...')
         save_data = {
             'steps': numpy.array(steps_per_episode),
+            'score': numpy.array(train_scores),
             're': numpy.array(train_ext_rewards),
             'ri': numpy.array(train_int_rewards),
             'fme': numpy.array(train_errors[:step_counter.limit])

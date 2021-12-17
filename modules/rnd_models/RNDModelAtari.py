@@ -99,12 +99,12 @@ class QRNDModelAtari(nn.Module):
         self.input_shape = input_shape
         self.action_dim = action_dim
 
-        input_channels = 1 + action_dim
+        input_channels = 1 + 1
         input_height = self.input_shape[1]
         input_width = self.input_shape[2]
         self.feature_dim = 512
         self.state_average = RunningStats((4, input_height, input_width), config.device)
-        self.action_average = RunningStats((action_dim, input_height, input_width), config.device)
+        self.action_average = RunningStats((1, input_height, input_width), config.device)
 
         fc_inputs_count = 64 * (input_width // 8) * (input_height // 8)
 
@@ -150,7 +150,7 @@ class QRNDModelAtari(nn.Module):
         init_orthogonal(self.model[11], np.sqrt(2))
 
     def prepare_input(self, state, action):
-        action = action.unsqueeze(2).unsqueeze(3).repeat(1, 1, state.shape[2], state.shape[3])
+        action = action.unsqueeze(2).unsqueeze(3).repeat(1, 1, state.shape[2], state.shape[3]).argmax(dim=1).unsqueeze(1) / self.action_dim
         action = action - self.action_average.mean
         state = state - self.state_average.mean
         x = torch.cat([state[:, 0, :, :].unsqueeze(1), action], dim=1)
@@ -165,7 +165,8 @@ class QRNDModelAtari(nn.Module):
     def error(self, state, action):
         with torch.no_grad():
             prediction, target = self(state, action)
-            error = torch.sum(torch.pow(target - prediction, 2), dim=1).unsqueeze(-1) / 2
+            error = torch.sum(torch.pow(target - prediction, 2), dim=1).unsqueeze(-1) / 8
+            # error = torch.mean(torch.pow(target - prediction, 2), dim=1).unsqueeze(-1)
 
         return error
 
@@ -177,8 +178,10 @@ class QRNDModelAtari(nn.Module):
         loss *= mask
 
         return loss.sum() / mask.sum()
+        # return loss.mean()
 
     def update_state_average(self, state, action):
-        action = action.unsqueeze(2).unsqueeze(3).repeat(1, 1, state.shape[2], state.shape[3])
+        action = action.unsqueeze(2).unsqueeze(3).repeat(1, 1, state.shape[2], state.shape[3]).argmax(dim=1).unsqueeze(1) / self.action_dim
+
         self.action_average.update(action)
         self.state_average.update(state)

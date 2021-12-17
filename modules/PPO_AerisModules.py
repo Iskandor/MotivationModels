@@ -96,16 +96,18 @@ class PPOAerisNetworkDOP(PPOAerisNetwork):
 
         fc_count = config.critic_kernels_count * self.width // 4
 
-        self.layers_actor = [
+        self.layers_actor = nn.Sequential(
             nn.Linear(fc_count, fc_count),
-            nn.ReLU()]
+            nn.ReLU(),
+            ActorNHeads(TYPE.continuous, self.head_count, [fc_count, config.actor_h1, action_dim], config)
+        )
 
         nn.init.xavier_uniform_(self.layers_actor[0].weight)
         nn.init.zeros_(self.layers_actor[0].bias)
 
         self.actor = ActorNHeads(self.head_count, action_dim, self.layers_actor, TYPE.continuous, config)
         self.motivator = QRNDModelAeris(input_shape, action_dim * 2, config)
-        self.dop_model = DOPModelAeris(input_shape, action_dim * 2, config, self.features, self.actor, self.motivator)
+        self.dop_model = DOPModelAeris(self.head_count, input_shape, action_dim * 2, config, self.features, self.actor, self.motivator)
         self.indices = []
 
     def forward(self, state):
@@ -129,6 +131,7 @@ class PPOAerisNetworkDOPRef(PPOAerisNetwork):
     def __init__(self, input_shape, action_dim, config):
         super(PPOAerisNetworkDOPRef, self).__init__(input_shape, action_dim, config)
 
+        self.config = config
         self.action_dim = action_dim
         self.channels = input_shape[0]
         self.width = input_shape[1]
@@ -136,14 +139,16 @@ class PPOAerisNetworkDOPRef(PPOAerisNetwork):
 
         fc_count = config.critic_kernels_count * self.width // 4
 
-        self.layers_actor = [
+        self.layers_actor = nn.Sequential(
             nn.Linear(fc_count, fc_count),
-            nn.ReLU()]
+            nn.ReLU(),
+            ActorNHeads(TYPE.continuous, self.head_count, [fc_count, config.actor_h1, action_dim], config)
+        )
 
         nn.init.xavier_uniform_(self.layers_actor[0].weight)
         nn.init.zeros_(self.layers_actor[0].bias)
 
-        self.actor = ActorNHeads(self.head_count, action_dim, self.layers_actor, TYPE.continuous, config)
+        self.actor = Actor(self.layers_actor, TYPE.continuous)
         self.indices = []
 
     def forward(self, state):
@@ -151,7 +156,7 @@ class PPOAerisNetworkDOPRef(PPOAerisNetwork):
         value = self.critic(x)
         action, probs = self.actor(x)
 
-        argmax = torch.randint(0, self.head_count, (state.shape[0],))
+        argmax = torch.randint(0, self.head_count, (state.shape[0],), device=self.config.device)
         action = action.gather(dim=1, index=argmax.unsqueeze(-1).unsqueeze(-1).repeat(1, 1, self.action_dim))
         probs = probs.gather(dim=1, index=argmax.unsqueeze(-1).unsqueeze(-1).repeat(1, 1, self.action_dim * 2))
 

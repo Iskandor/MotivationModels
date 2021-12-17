@@ -73,12 +73,10 @@ class QRNDMotivation:
         states = sample.state.to(self._device)
         actions = sample.action.to(self._device)
 
-        return self.reward(states, actions)
+        return self.reward(self.error(states, actions))
 
-    def reward(self, state0, action0):
-        with torch.no_grad():
-            reward = self.error(state0, action0)
-        return reward * self._eta
+    def reward(self, error):
+        return error * self._eta
 
     def update_state_average(self, state, action):
         self._network.update_state_average(state, action)
