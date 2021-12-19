@@ -174,7 +174,7 @@ class QRNDModelAtari(nn.Module):
         prediction, target = self(state, action)
         # loss = nn.functional.mse_loss(self(state), self.encode(state).detach(), reduction='none').sum(dim=1)
         loss = torch.pow(target - prediction, 2)
-        mask = torch.rand_like(loss) < 0.25
+        mask = torch.rand_like(loss) < 0.5
         loss *= mask
 
         return loss.sum() / mask.sum()
