@@ -346,6 +346,7 @@ class ExperimentNEnvPPO:
         train_errors = numpy.array([], dtype=numpy.int32)
         train_steps = numpy.zeros((n_env, 1), dtype=numpy.int32)
         head_index_density = numpy.zeros((n_env, config.dop_heads))
+        train_head_index = []
         reward_avg = RunningAverageWindow(100)
         # time_avg = RunningAverageWindow(100)
 
@@ -357,21 +358,22 @@ class ExperimentNEnvPPO:
 
         while step_counter.running():
             with torch.no_grad():
-                value, action0, probs0 = agent.get_action(state0)
-                head_index = agent.get_head_index().unsqueeze(-1)
+                value, action_index, probs0 = agent.get_action(state0)
+                action0, head_index = action_index
 
             next_state, reward, done, info = self._env.step(agent.convert_action(action0.cpu()))
 
-            head_index = one_hot_code(head_index, config.dop_heads).numpy()
+            head_index = one_hot_code(head_index.cpu(), config.dop_heads).numpy()
             head_index_density += head_index
+            error = agent.motivation.error(state0, action0)
             ext_reward = torch.tensor(reward, dtype=torch.float32)
-            int_reward = agent.motivation.reward(state0, action0).cpu()
+            int_reward = agent.motivation.reward(error).cpu().clip(0.0, 1.0)
 
             if info is not None and 'raw_score' in info:
                 score = numpy.expand_dims(info['raw_score'], axis=1)
                 train_score += score
 
-            error = agent.motivation.error(state0, action0).cpu().tolist()
+            error = error.squeeze(-1).cpu().tolist()
             for i in range(n_env):
                 train_error[i].append(error[i])
 
@@ -391,6 +393,7 @@ class ExperimentNEnvPPO:
                 train_int_rewards.append(train_int_reward[i].item())
                 train_scores.append(train_score[i].item())
                 train_errors = numpy.concatenate([train_errors, numpy.array(train_error[i])])
+                train_head_index.append(head_index_density)
                 reward_avg.update(train_ext_reward[i].item())
 
                 if train_steps[i].item() > 0:
@@ -410,7 +413,7 @@ class ExperimentNEnvPPO:
 
             state1 = self.process_state(next_state)
 
-            reward = torch.tensor(ext_reward, dtype=torch.float32)
+            reward = ext_reward
             done = torch.tensor(done, dtype=torch.float32)
 
             agent.train(state0, value, action0, probs0, state1, reward, done)
@@ -425,6 +428,7 @@ class ExperimentNEnvPPO:
             'score': numpy.array(train_scores),
             're': numpy.array(train_ext_rewards),
             'ri': numpy.array(train_int_rewards),
-            'fme': numpy.array(train_errors[:step_counter.limit])
+            'error': numpy.array(train_errors[:step_counter.limit]),
+            'hid': numpy.stack(train_head_index)
         }
         numpy.save('ppo_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)

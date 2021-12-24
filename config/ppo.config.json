@@ -738,7 +738,7 @@
       "model": "dop",
       "n_env": 128,
       "trials": 3,
-      "steps": 64,
+      "steps": 0.128,
       "gamma": "0.998,0.99",
       "beta": 0.001,
       "batch_size": 512,
@@ -748,7 +748,8 @@
       "actor_loss_weight": 1,
       "critic_loss_weight": 0.5,
       "motivation_lr": 0.0001,
-      "motivation_eta": 1
+      "motivation_eta": 1,
+      "dop_heads": 4
     }
   },
   "private_eye": {

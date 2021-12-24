@@ -9,25 +9,27 @@ class DOPMotivation:
         self._eta = eta
         self._device = device
 
-    def train(self, motivator_memory, motivator_indices, generator_memory, generator_indices):
+    def train(self, motivator_memory, motivator_indices, generator_memory, generator_indices, batch_size):
         if motivator_indices:
-            sample = motivator_memory.sample(motivator_indices)
-            states = sample.state.to(self._device)
-            actions = sample.action.to(self._device)[:, :-1]
+            sample, size = motivator_memory.sample_batches(motivator_indices, batch_size)
+            for i in range(size):
+                states = sample.state[i].to(self._device)
+                actions = sample.action[i].to(self._device)[:, :-1]
 
-            self._motivator_optimizer.zero_grad()
-            loss = self._network.motivator_loss_function(states, actions)
-            loss.backward()
-            self._motivator_optimizer.step()
+                self._motivator_optimizer.zero_grad()
+                loss = self._network.motivator_loss_function(states, actions)
+                loss.backward()
+                self._motivator_optimizer.step()
 
         if generator_indices:
-            sample = generator_memory.sample(generator_indices)
-            states = sample.state.to(self._device)
+            sample, size = generator_memory.sample_batches(generator_indices, batch_size)
+            for i in range(size):
+                states = sample.state[i].to(self._device)
 
-            self._generator_optimizer.zero_grad()
-            loss = self._network.generator_loss_function(states)
-            loss.backward()
-            self._generator_optimizer.step()
+                self._generator_optimizer.zero_grad()
+                loss = self._network.generator_loss_function(states)
+                loss.backward()
+                self._generator_optimizer.step()
 
     def error(self, state0, action0):
         return self._network.motivator.error(state0, action0).detach()
@@ -38,10 +40,10 @@ class DOPMotivation:
         states = sample.state.to(self._device)
         actions = sample.action.to(self._device)[:, :-1]
 
-        return self.reward(states, actions)
+        return self.reward(self.error(states, actions))
 
-    def reward(self, state0, action0):
-        reward = self.error(state0, action0).unsqueeze(1)
+    def reward(self, error):
+        reward = error * self._eta
         return reward
 
     def update_state_average(self, state, action):
@@ -93,7 +95,7 @@ class DOPV2QMotivation:
         return self.reward(states, actions)
 
     def reward(self, state0, action0):
-        reward = torch.tanh(self.error(state0, action0)).unsqueeze(1)
+        reward = self.error(state0, action0).unsqueeze(1)
         return reward * self._eta
 
     def update_state_average(self, state):

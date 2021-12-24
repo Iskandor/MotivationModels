@@ -32,7 +32,7 @@ class PPOBitFlipNetwork(torch.nn.Module):
         init_xavier_uniform(self.layers_actor[2])
         init_xavier_uniform(self.layers_actor[4])
 
-        self.actor = Actor(self.layers_actor, head)
+        self.actor = Actor(self.layers_actor, head, action_dim)
 
     def forward(self, state):
         value = self.critic(state)
@@ -66,7 +66,7 @@ class PPOBitFlipMotivationNetwork(torch.nn.Module):
         init_xavier_uniform(self.layers_actor[2])
         init_xavier_uniform(self.layers_actor[4])
 
-        self.actor = Actor(self.layers_actor, head)
+        self.actor = Actor(self.layers_actor, head, action_dim)
 
     def forward(self, state):
         value = self.critic(state)
@@ -102,7 +102,7 @@ class PPOBitFlipNetworkDOP(PPOBitFlipNetwork):
         )
         init_xavier_uniform(self.layers_actor[0])
 
-        self.actor = Actor(self.layers_actor, head)
+        self.actor = Actor(self.layers_actor, head, action_dim)
 
         self.motivator = QRNDModelBitFlip(input_shape, action_dim, config)
         self.dop_model = DOPModelBitFlip(self.head_count, input_shape, action_dim, config, None, self.actor, self.motivator)

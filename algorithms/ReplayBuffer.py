@@ -217,19 +217,23 @@ class PPOTrajectoryBuffer(object):
 
         return result
 
-    def sample_batches(self, indices):
+    def sample_batches(self, indices, batch_size=0):
+        if batch_size == 0:
+            batch_size = self.batch_size
+
         batch = PPO_Transition(
-            self.memory['state'].reshape(-1, self.batch_size, *self.memory['state'].shape[2:]),
-            self.memory['value'].reshape(-1, self.batch_size, *self.memory['value'].shape[2:]),
-            self.memory['action'].reshape(-1, self.batch_size, *self.memory['action'].shape[2:]),
-            self.memory['prob'].reshape(-1, self.batch_size, *self.memory['prob'].shape[2:]),
-            self.memory['next_state'].reshape(-1, self.batch_size, *self.memory['next_state'].shape[2:]),
-            self.memory['reward'].reshape(-1, self.batch_size, *self.memory['reward'].shape[2:]),
-            self.memory['mask'].reshape(-1, self.batch_size, *self.memory['mask'].shape[2:]))
-        return batch, self.capacity // self.batch_size
+            self.memory['state'].reshape(-1, batch_size, *self.memory['state'].shape[2:]),
+            self.memory['value'].reshape(-1, batch_size, *self.memory['value'].shape[2:]),
+            self.memory['action'].reshape(-1, batch_size, *self.memory['action'].shape[2:]),
+            self.memory['prob'].reshape(-1, batch_size, *self.memory['prob'].shape[2:]),
+            self.memory['next_state'].reshape(-1, batch_size, *self.memory['next_state'].shape[2:]),
+            self.memory['reward'].reshape(-1, batch_size, *self.memory['reward'].shape[2:]),
+            self.memory['mask'].reshape(-1, batch_size, *self.memory['mask'].shape[2:]))
+        return batch, self.capacity // batch_size
 
     def clear(self):
         self.index = 0
+
 
 class MDPTrajectoryBuffer(object):
     def __init__(self, capacity, batch_size, n_env=1):

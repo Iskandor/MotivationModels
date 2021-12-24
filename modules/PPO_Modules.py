@@ -5,6 +5,7 @@ from torch.distributions import Categorical, Normal
 
 from agents import TYPE
 from modules import init_orthogonal, init_uniform, init_xavier_uniform, init_custom
+from utils import one_hot_code
 
 
 class DiscreteHead(nn.Module):
@@ -95,8 +96,10 @@ class ContinuousHead(nn.Module):
 
 
 class Actor(nn.Module):
-    def __init__(self, model, head):
+    def __init__(self, model, head, action_dim):
         super(Actor, self).__init__()
+        self.action_dim = action_dim
+        self.head_type = head
         self.head = None
         if head == TYPE.discrete:
             self.head = DiscreteHead
@@ -115,6 +118,14 @@ class Actor(nn.Module):
 
     def entropy(self, probs):
         return self.head.entropy(probs)
+
+    def encode_action(self, action):
+        if self.head_type == TYPE.discrete:
+            return one_hot_code(action, self.action_dim)
+        if self.head_type == TYPE.continuous:
+            return action
+        if self.head_type == TYPE.multibinary:
+            return None  # not implemented
 
 
 class ActorNHeads(nn.Module):
@@ -211,7 +222,7 @@ class PPOSimpleNetwork(torch.nn.Module):
         nn.init.xavier_uniform_(self.layers_actor[0].weight)
         nn.init.xavier_uniform_(self.layers_actor[2].weight)
 
-        self.actor = Actor(self.layers_actor, head)
+        self.actor = Actor(self.layers_actor, head, action_dim)
 
     def forward(self, state):
         value = self.critic(state)

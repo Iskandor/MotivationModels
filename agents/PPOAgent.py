@@ -33,7 +33,7 @@ class PPOAgent:
     def get_action(self, state):
         value, action, probs = self.network(state)
 
-        return value.detach(), self.encode_action(action), probs.detach()
+        return value.detach(), action, probs.detach()
 
     def convert_action(self, action):
         if self.action_type == TYPE.discrete:
@@ -43,14 +43,6 @@ class PPOAgent:
             return action.squeeze(0).numpy()
         if self.action_type == TYPE.multibinary:
             return torch.argmax(action, dim=1).numpy()
-
-    def encode_action(self, action):
-        if self.action_type == TYPE.discrete:
-            return one_hot_code(action, self.action_dim)
-        if self.action_type == TYPE.continuous:
-            return action
-        if self.action_type == TYPE.multibinary:
-            return None  # not implemented
 
     def train(self, state0, value, action0, probs0, state1, reward, mask):
         self.memory.add(state0.cpu(), value.cpu(), action0.cpu(), probs0.cpu(), state1.cpu(), reward.cpu(), mask.cpu())

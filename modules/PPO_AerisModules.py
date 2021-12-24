@@ -50,7 +50,7 @@ class PPOAerisNetwork(torch.nn.Module):
         init_xavier_uniform(self.layers_actor[0])
         # nn.init.xavier_uniform_(self.layers_actor[3].weight)
 
-        self.actor = Actor(self.layers_actor, TYPE.continuous)
+        self.actor = Actor(self.layers_actor, TYPE.continuous, action_dim)
 
     def forward(self, state):
         x = self.features(state)
@@ -148,7 +148,7 @@ class PPOAerisNetworkDOPRef(PPOAerisNetwork):
         nn.init.xavier_uniform_(self.layers_actor[0].weight)
         nn.init.zeros_(self.layers_actor[0].bias)
 
-        self.actor = Actor(self.layers_actor, TYPE.continuous)
+        self.actor = Actor(self.layers_actor, TYPE.continuous, action_dim)
         self.indices = []
 
     def forward(self, state):
@@ -195,7 +195,7 @@ class PPOAerisGridNetwork(torch.nn.Module):
         init_orthogonal(self.layers_actor[0], 0.01)
         init_orthogonal(self.layers_actor[2], 0.01)
 
-        self.actor = Actor(self.layers_actor, TYPE.discrete)
+        self.actor = Actor(self.layers_actor, TYPE.discrete, action_dim)
 
     def forward(self, state):
         x = self.features(state)
