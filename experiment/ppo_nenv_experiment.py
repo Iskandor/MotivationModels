@@ -159,7 +159,8 @@ class ExperimentNEnvPPO:
         while step_counter.running():
             agent.motivation.update_state_average(state0)
             with torch.no_grad():
-                value, action0, probs0 = agent.get_action(state0)
+                features0 = agent.get_features(state0)
+                value, action0, probs0 = agent.get_action(features0)
 
             # start = time.time()
             next_state, reward, done, info = self._env.step(agent.convert_action(action0.cpu()))
@@ -210,11 +211,12 @@ class ExperimentNEnvPPO:
                 next_state[i] = self._env.reset(i)
 
             state1 = self.process_state(next_state)
+            features1 = agent.get_features(state1)
 
             reward = torch.cat([ext_reward, int_reward], dim=1)
             done = torch.tensor(done, dtype=torch.float32)
 
-            agent.train(state0, value, action0, probs0, state1, reward, done)
+            agent.train(state0, features0, value, action0, probs0, state1, features1, reward, done)
 
             state0 = state1
 
@@ -330,6 +332,9 @@ class ExperimentNEnvPPO:
         numpy.save('ppo_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
 
     def run_dop_model(self, agent, trial):
+        controller = agent[1]
+        agent = agent[0]
+
         config = self._config
         n_env = config.n_env
         trial = trial + config.shift
@@ -358,13 +363,12 @@ class ExperimentNEnvPPO:
 
         while step_counter.running():
             with torch.no_grad():
-                value, action_index, probs0 = agent.get_action(state0)
-                action0, head_index = action_index
+                head_value, head_index, head_probs = controller.get_action(state0)
+                value, action0, probs0 = agent.get_action(state0)
 
             next_state, reward, done, info = self._env.step(agent.convert_action(action0.cpu()))
 
-            head_index = one_hot_code(head_index.cpu(), config.dop_heads).numpy()
-            head_index_density += head_index
+            head_index_density += head_index.cpu().numpy()
             error = agent.motivation.error(state0, action0)
             ext_reward = torch.tensor(reward, dtype=torch.float32)
             int_reward = agent.motivation.reward(error).cpu().clip(0.0, 1.0)
@@ -413,10 +417,11 @@ class ExperimentNEnvPPO:
 
             state1 = self.process_state(next_state)
 
-            reward = ext_reward
+            reward = torch.cat([ext_reward, int_reward], dim=1)
             done = torch.tensor(done, dtype=torch.float32)
 
-            agent.train(state0, value, action0, probs0, state1, reward, done)
+            controller.train(state0, head_value, head_index, head_probs, state1, reward, done)
+            agent.train(state0, value, action0, probs0, state1, ext_reward, done)
 
             state0 = state1
 

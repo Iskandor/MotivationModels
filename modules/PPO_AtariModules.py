@@ -3,8 +3,9 @@ import torch.nn as nn
 import numpy as np
 
 from modules import init_orthogonal
-from modules.DOPModelAtari.DOPModelAtari import DOPModelAtari
+from modules.dop_models.DOPModelAtari import DOPModelAtari, DOPControllerAtari
 from modules.PPO_Modules import DiscreteHead, Actor, Critic2Heads, ActorNHeads
+from modules.encoders.EncoderAtari import EncoderAtari, AutoEncoderAtari
 from modules.forward_models.ForwardModelAtari import ForwardModelAtari
 from modules.rnd_models.RNDModelAtari import QRNDModelAtari, RNDModelAtari
 
@@ -85,6 +86,38 @@ class PPOAtariMotivationNetwork(PPOAtariNetwork):
         init_orthogonal(self.critic[2], 0.01)
 
 
+class PPOAtariSRMotivationNetwork(nn.Module):
+    def __init__(self, state_dim, action_dim, config, head):
+        super(PPOAtariSRMotivationNetwork, self).__init__()
+
+        self.critic = nn.Sequential(
+            torch.nn.Linear(state_dim, state_dim),
+            torch.nn.ReLU(),
+            Critic2Heads(state_dim)
+        )
+
+        init_orthogonal(self.critic[0], 0.1)
+        init_orthogonal(self.critic[2], 0.01)
+
+        self.actor = nn.Sequential(
+            torch.nn.Linear(state_dim, state_dim),
+            torch.nn.ReLU(),
+            DiscreteHead(state_dim, action_dim)
+        )
+
+        init_orthogonal(self.actor[0], 0.01)
+        init_orthogonal(self.actor[2], 0.01)
+
+        self.actor = Actor(self.actor, head, action_dim)
+
+    def forward(self, features):
+        value = self.critic(features)
+        action, probs = self.actor(features)
+        action = self.actor.encode_action(action)
+
+        return value, action, probs
+
+
 class PPOAtariNetworkFM(PPOAtariMotivationNetwork):
     def __init__(self, input_shape, action_dim, config, head):
         super(PPOAtariNetworkFM, self).__init__(input_shape, action_dim, config, head)
@@ -97,6 +130,13 @@ class PPOAtariNetworkRND(PPOAtariMotivationNetwork):
         self.rnd_model = RNDModelAtari(input_shape, self.action_dim, config)
 
 
+class PPOAtariNetworkSRRND(PPOAtariSRMotivationNetwork):
+    def __init__(self, input_shape, feature_dim, action_dim, config, head):
+        super(PPOAtariNetworkSRRND, self).__init__(feature_dim, action_dim, config, head)
+        self.encoder = AutoEncoderAtari(input_shape, feature_dim, config.norm)
+        self.rnd_model = RNDModelAtari(input_shape, action_dim, config)
+
+
 class PPOAtariNetworkQRND(PPOAtariMotivationNetwork):
     def __init__(self, input_shape, action_dim, config, head):
         super(PPOAtariNetworkQRND, self).__init__(input_shape, action_dim, config, head)
@@ -104,7 +144,7 @@ class PPOAtariNetworkQRND(PPOAtariMotivationNetwork):
 
 
 class PPOAtariNetworkDOP(PPOAtariNetwork):
-    def __init__(self, input_shape, action_dim, config, head):
+    def __init__(self, input_shape, action_dim, config, head, controller):
         super(PPOAtariNetworkDOP, self).__init__(input_shape, action_dim, config, head)
 
         self.head_count = config.dop_heads
@@ -121,27 +161,19 @@ class PPOAtariNetworkDOP(PPOAtariNetwork):
 
         self.motivator = QRNDModelAtari(input_shape, action_dim, config)
         self.dop_model = DOPModelAtari(config.dop_heads, input_shape, action_dim, config, self.features, self.actor, self.motivator)
+        self.controller = controller
 
     def forward(self, state):
+        _, head_index, _ = self.controller(state)
+        head_index = head_index.argmax(dim=1, keepdim=True)
         features = self.features(state)
         value = self.critic(features)
         action, probs = self.actor(features)
 
-        channels = state.shape[1]
-        h = state.shape[2]
-        w = state.shape[3]
-
         action = self.actor.encode_action(action.view(-1, 1))
-        probs = probs.view(-1, self.action_dim)
-        state = state.unsqueeze(1).repeat(1, self.head_count, 1, 1, 1).view(-1, channels, h, w)
-
-        error = self.motivator.error(state, action).view(-1, self.head_count).detach()
-        head_index = error.argmax(dim=1)
-
         action = action.view(-1, self.head_count, self.action_dim)
-        probs = probs.view(-1, self.head_count, self.action_dim)
 
-        action = action.gather(dim=1, index=head_index.unsqueeze(-1).unsqueeze(-1).repeat(1, 1, self.action_dim)).squeeze(1)
-        probs = probs.gather(dim=1, index=head_index.unsqueeze(-1).unsqueeze(-1).repeat(1, 1, self.action_dim)).squeeze(1)
+        action = action.gather(dim=1, index=head_index.unsqueeze(-1).repeat(1, 1, self.action_dim)).squeeze(1)
+        probs = probs.gather(dim=1, index=head_index.unsqueeze(-1).repeat(1, 1, self.action_dim)).squeeze(1)
 
-        return value, (action, head_index.unsqueeze(-1)), probs
+        return value, action, probs

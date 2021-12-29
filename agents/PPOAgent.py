@@ -23,7 +23,7 @@ class PPOAgent:
         #     config.batch_size *= len(config.gpus)
         #     self.network = nn.DataParallel(self.network, config.gpus)
 
-    def init_algorithm(self, config, memory, action_type, motivation=None):
+    def init_algorithm(self, config, memory, action_type, motivation=False):
         self.action_type = action_type
         algorithm = PPO(self.network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size, memory, config.beta, config.gamma,
                         ppo_epochs=config.ppo_epochs, n_env=config.n_env, device=config.device, motivation=motivation)

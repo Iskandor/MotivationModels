@@ -2,7 +2,7 @@ import gym
 import torch
 
 from agents import TYPE
-from agents.PPOAtariAgent import PPOAtariAgent, PPOAtariRNDAgent, PPOAtariForwardModelAgent, PPOAtariQRNDAgent, PPOAtariDOPAgent
+from agents.PPOAtariAgent import PPOAtariAgent, PPOAtariRNDAgent, PPOAtariForwardModelAgent, PPOAtariQRNDAgent, PPOAtariDOPAgent, PPOAtariDOPControllerAgent, PPOAtariSRRNDAgent
 from experiment.ppo_experiment import ExperimentPPO
 from experiment.ppo_nenv_experiment import ExperimentNEnvPPO
 from utils.AtariWrapper import WrapperHardAtari
@@ -56,7 +56,8 @@ def run_rnd_model(config, trial, env_name):
     experiment = ExperimentNEnvPPO(env_name, env, config)
 
     experiment.add_preprocess(encode_state)
-    agent = PPOAtariRNDAgent(input_shape, action_dim, config, TYPE.discrete)
+    # agent = PPOAtariRNDAgent(input_shape, action_dim, config, TYPE.discrete)
+    agent = PPOAtariSRRNDAgent(input_shape, action_dim, config, TYPE.discrete)
     experiment.run_rnd_model(agent, trial)
 
     env.close()
@@ -90,8 +91,9 @@ def run_dop_model(config, trial, env_name):
     experiment = ExperimentNEnvPPO(env_name, env, config)
 
     experiment.add_preprocess(encode_state)
-    agent = PPOAtariDOPAgent(input_shape, action_dim, config, TYPE.discrete)
-    experiment.run_dop_model(agent, trial)
+    controller = PPOAtariDOPControllerAgent(input_shape, config.dop_heads, config, TYPE.discrete)
+    agent = PPOAtariDOPAgent(input_shape, action_dim, config, TYPE.discrete, controller)
+    experiment.run_dop_model((agent, controller), trial)
 
     env.close()
 

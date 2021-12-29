@@ -201,5 +201,6 @@ class PPOAerisGridNetwork(torch.nn.Module):
         x = self.features(state)
         value = self.critic(x)
         action, probs = self.actor(x)
+        action = self.actor.encode_action(action)
 
         return value, action, probs

@@ -2,6 +2,42 @@ import torch
 import torch.nn as nn
 import numpy as np
 
+from agents import TYPE
+from modules import init_orthogonal
+from modules.PPO_Modules import Actor, DiscreteHead, Critic2Heads
+
+
+class DOPControllerAtari(nn.Module):
+    def __init__(self, state_dim, action_dim, config):
+        super(DOPControllerAtari, self).__init__()
+
+        self.critic = nn.Sequential(
+            torch.nn.Linear(state_dim, state_dim),
+            torch.nn.ReLU(),
+            Critic2Heads(state_dim)
+        )
+
+        init_orthogonal(self.critic[0], 0.1)
+        init_orthogonal(self.critic[2], 0.01)
+
+        self.actor = nn.Sequential(
+            torch.nn.Linear(state_dim, state_dim),
+            torch.nn.ReLU(),
+            DiscreteHead(state_dim, action_dim)
+        )
+
+        init_orthogonal(self.actor[0], 0.01)
+        init_orthogonal(self.actor[2], 0.01)
+
+        self.actor = Actor(self.actor, TYPE.discrete, action_dim)
+
+    def forward(self, state):
+        value = self.critic(state)
+        action, probs = self.actor(state)
+        action = self.actor.encode_action(action)
+
+        return value, action, probs
+
 
 class DOPModelAtari(nn.Module):
     def __init__(self, head_count, state_dim, action_dim, config, features, actor, motivator):
