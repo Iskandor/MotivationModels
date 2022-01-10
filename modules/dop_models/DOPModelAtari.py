@@ -8,13 +8,15 @@ from modules.PPO_Modules import Actor, DiscreteHead, Critic2Heads
 
 
 class DOPControllerAtari(nn.Module):
-    def __init__(self, state_dim, action_dim, config):
+    def __init__(self, state_dim, action_dim, config, features):
         super(DOPControllerAtari, self).__init__()
+
+        self.features = features
 
         self.critic = nn.Sequential(
             torch.nn.Linear(state_dim, state_dim),
             torch.nn.ReLU(),
-            Critic2Heads(state_dim)
+            torch.nn.Linear(state_dim, 1)
         )
 
         init_orthogonal(self.critic[0], 0.1)
@@ -32,11 +34,65 @@ class DOPControllerAtari(nn.Module):
         self.actor = Actor(self.actor, TYPE.discrete, action_dim)
 
     def forward(self, state):
-        value = self.critic(state)
-        action, probs = self.actor(state)
+        features = self.features(state)
+        value = self.critic(features)
+        action, probs = self.actor(features)
         action = self.actor.encode_action(action)
 
         return value, action, probs
+
+
+class DOPActorAtari(nn.Module):
+    def __init__(self, head_count, state_dim, action_dim, features, actor, critic):
+        super(DOPActorAtari, self).__init__()
+
+        self.head_count = head_count
+        self.state_dim = state_dim
+        self.action_dim = action_dim
+
+        self.features = features
+        self.actor = actor
+        self.critic = critic
+
+    def forward(self, state):
+        index = state[:, 0:1].type(torch.int64)
+        features = state[:, 1:]
+
+        value = self.critic(features)
+        all_action, all_probs = self.actor(features)
+
+        all_action = self.actor.encode_action(all_action.view(-1, 1))
+        action, probs = self.select_action(index, all_action, all_probs)
+
+        return value, action, probs
+
+    def select_action(self, index, all_action, all_probs):
+        all_action = all_action.view(-1, self.head_count, self.action_dim)
+        all_probs = all_probs.view(-1, self.head_count, self.action_dim)
+        action = all_action.gather(dim=1, index=index.unsqueeze(-1).repeat(1, 1, self.action_dim)).squeeze(1)
+        probs = all_probs.gather(dim=1, index=index.unsqueeze(-1).repeat(1, 1, self.action_dim)).squeeze(1)
+        return action, probs
+
+
+class DOPGeneratorAtari(nn.Module):
+    def __init__(self, head_count, state_dim, action_dim, features, actor, critic):
+        super(DOPGeneratorAtari, self).__init__()
+
+        self.head_count = head_count
+        self.state_dim = state_dim
+        self.action_dim = action_dim
+
+        self.features = features
+        self.actor = actor
+        self.critic = critic
+
+    def forward(self, state):
+        features = self.features(state)
+        values = self.critic(features)
+        action, probs = self.actor(features)
+        action = self.actor.encode_action(action.view(-1, 1)).view(-1, self.head_count, self.action_dim)
+
+        return values.unsqueeze(-1), action, probs
 
 
 class DOPModelAtari(nn.Module):

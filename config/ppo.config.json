@@ -1,6 +1,7 @@
 {
   "aeris_navigate": {
     "1": {
+      "descriptor": null,
       "model": "baseline",
       "n_env": 32,
       "trials": 5,
@@ -16,9 +17,15 @@
       "actor_h1": 256,
       "critic_loss_weight": 1,
       "critic_kernels_count": 32,
-      "critic_h1": 256
+      "critic_h1": 256,
+      "forward_model_lr": null,
+      "forward_model_kernels_count": null,
+      "forward_model_h2": null,
+      "motivation_eta": null,
+      "dop_heads": null
     },
     "2": {
+      "descriptor": null,
       "model": "rnd",
       "n_env": 32,
       "trials": 5,
@@ -38,9 +45,11 @@
       "forward_model_lr": 0.001,
       "forward_model_kernels_count": 32,
       "forward_model_h2": 128,
-      "motivation_eta": 1
+      "motivation_eta": 1,
+      "dop_heads": null
     },
     "3": {
+      "descriptor": null,
       "model": "dop_ref",
       "n_env": 32,
       "trials": 5,
@@ -57,9 +66,14 @@
       "critic_loss_weight": 1,
       "critic_kernels_count": 32,
       "critic_h1": 256,
+      "forward_model_lr": null,
+      "forward_model_kernels_count": null,
+      "forward_model_h2": null,
+      "motivation_eta": null,
       "dop_heads": 4
     },
     "4": {
+      "descriptor": null,
       "model": "dop",
       "n_env": 32,
       "trials": 5,
@@ -85,6 +99,7 @@
   },
   "aeris_grid_a": {
     "1": {
+      "descriptor": null,
       "model": "baseline",
       "n_env": 32,
       "trials": 5,
@@ -96,9 +111,20 @@
       "ppo_epochs": 4,
       "lr": 0.0001,
       "actor_loss_weight": 1,
-      "critic_loss_weight": 1
+      "critic_loss_weight": 1,
+      "forward_model_lr": null,
+      "motivation_eta": null,
+      "forward_model_variant": null,
+      "forward_model_batch_size": null,
+      "metacritic_lr": null,
+      "metacritic_h1": null,
+      "metacritic_h2": null,
+      "metacritic_eta": null,
+      "metacritic_variant": null,
+      "metacritic_batch_size": null
     },
     "2": {
+      "descriptor": null,
       "model": "rnd",
       "n_env": 32,
       "trials": 5,
@@ -112,11 +138,20 @@
       "actor_loss_weight": 1,
       "critic_loss_weight": 1,
       "forward_model_lr": 0.0001,
-      "motivation_eta": 1
+      "motivation_eta": 1,
+      "forward_model_variant": null,
+      "forward_model_batch_size": null,
+      "metacritic_lr": null,
+      "metacritic_h1": null,
+      "metacritic_h2": null,
+      "metacritic_eta": null,
+      "metacritic_variant": null,
+      "metacritic_batch_size": null
     }
   },
   "aeris_grid_b": {
     "1": {
+      "descriptor": null,
       "model": "baseline",
       "n_env": 32,
       "trials": 5,
@@ -128,9 +163,20 @@
       "ppo_epochs": 4,
       "lr": 0.0001,
       "actor_loss_weight": 1,
-      "critic_loss_weight": 1
+      "critic_loss_weight": 1,
+      "forward_model_lr": null,
+      "motivation_eta": null,
+      "forward_model_variant": null,
+      "forward_model_batch_size": null,
+      "metacritic_lr": null,
+      "metacritic_h1": null,
+      "metacritic_h2": null,
+      "metacritic_eta": null,
+      "metacritic_variant": null,
+      "metacritic_batch_size": null
     },
     "2": {
+      "descriptor": null,
       "model": "rnd",
       "n_env": 32,
       "trials": 5,
@@ -144,11 +190,20 @@
       "actor_loss_weight": 1,
       "critic_loss_weight": 1,
       "forward_model_lr": 0.0001,
-      "motivation_eta": 1
+      "motivation_eta": 1,
+      "forward_model_variant": null,
+      "forward_model_batch_size": null,
+      "metacritic_lr": null,
+      "metacritic_h1": null,
+      "metacritic_h2": null,
+      "metacritic_eta": null,
+      "metacritic_variant": null,
+      "metacritic_batch_size": null
     }
   },
   "aeris_hazards": {
     "1": {
+      "descriptor": null,
       "model": "baseline",
       "n_env": 32,
       "trials": 5,
@@ -164,9 +219,22 @@
       "actor_h1": 256,
       "critic_loss_weight": 1,
       "critic_kernels_count": 32,
-      "critic_h1": 256
+      "critic_h1": 256,
+      "forward_model_lr": null,
+      "forward_model_kernels_count": null,
+      "forward_model_h2": null,
+      "motivation_eta": null,
+      "forward_model_variant": null,
+      "forward_model_batch_size": null,
+      "metacritic_lr": null,
+      "metacritic_h1": null,
+      "metacritic_h2": null,
+      "metacritic_eta": null,
+      "metacritic_variant": null,
+      "metacritic_batch_size": null
     },
     "2": {
+      "descriptor": null,
       "model": "rnd",
       "n_env": 1,
       "trials": 15,
@@ -187,9 +255,17 @@
       "forward_model_kernels_count": 32,
       "forward_model_h2": 128,
       "motivation_eta": 1,
-      "forward_model_variant": "A"
+      "forward_model_variant": "A",
+      "forward_model_batch_size": null,
+      "metacritic_lr": null,
+      "metacritic_h1": null,
+      "metacritic_h2": null,
+      "metacritic_eta": null,
+      "metacritic_variant": null,
+      "metacritic_batch_size": null
     },
     "3": {
+      "descriptor": null,
       "model": "dop_ref",
       "n_env": 32,
       "trials": 5,
@@ -206,9 +282,21 @@
       "critic_loss_weight": 1,
       "critic_kernels_count": 32,
       "critic_h1": 256,
-      "forward_model_variant": 4
+      "forward_model_lr": null,
+      "forward_model_kernels_count": null,
+      "forward_model_h2": null,
+      "motivation_eta": null,
+      "forward_model_variant": 4,
+      "forward_model_batch_size": null,
+      "metacritic_lr": null,
+      "metacritic_h1": null,
+      "metacritic_h2": null,
+      "metacritic_eta": null,
+      "metacritic_variant": null,
+      "metacritic_batch_size": null
     },
     "4": {
+      "descriptor": null,
       "model": "dop",
       "n_env": 1,
       "trials": 15,
@@ -229,11 +317,19 @@
       "forward_model_kernels_count": 32,
       "forward_model_h2": 128,
       "motivation_eta": 1,
-      "forward_model_variant": "A"
+      "forward_model_variant": "A",
+      "forward_model_batch_size": null,
+      "metacritic_lr": null,
+      "metacritic_h1": null,
+      "metacritic_h2": null,
+      "metacritic_eta": null,
+      "metacritic_variant": null,
+      "metacritic_batch_size": null
     }
   },
   "aeris_fragiles": {
     "1": {
+      "descriptor": null,
       "model": "baseline",
       "n_env": 32,
       "trials": 5,
@@ -249,9 +345,22 @@
       "actor_h1": 256,
       "critic_loss_weight": 1,
       "critic_kernels_count": 32,
-      "critic_h1": 256
+      "critic_h1": 256,
+      "forward_model_lr": null,
+      "forward_model_h1": null,
+      "forward_model_h2": null,
+      "motivation_eta": null,
+      "forward_model_variant": null,
+      "forward_model_batch_size": null,
+      "metacritic_lr": null,
+      "metacritic_h1": null,
+      "metacritic_h2": null,
+      "metacritic_eta": null,
+      "metacritic_variant": null,
+      "metacritic_batch_size": null
     },
     "2": {
+      "descriptor": null,
       "model": "fm",
       "n_env": 1,
       "trials": 15,
@@ -272,9 +381,17 @@
       "forward_model_h1": 64,
       "forward_model_h2": 32,
       "motivation_eta": 1,
-      "forward_model_variant": "A"
+      "forward_model_variant": "A",
+      "forward_model_batch_size": null,
+      "metacritic_lr": null,
+      "metacritic_h1": null,
+      "metacritic_h2": null,
+      "metacritic_eta": null,
+      "metacritic_variant": null,
+      "metacritic_batch_size": null
     },
     "3": {
+      "descriptor": null,
       "model": "su",
       "n_env": 1,
       "trials": 15,
@@ -296,15 +413,18 @@
       "forward_model_h2": 32,
       "motivation_eta": 1,
       "forward_model_variant": "A",
+      "forward_model_batch_size": null,
       "metacritic_lr": 0.0002,
       "metacritic_h1": 64,
       "metacritic_h2": 32,
       "metacritic_eta": 1,
-      "metacritic_variant": "A"
+      "metacritic_variant": "A",
+      "metacritic_batch_size": null
     }
   },
   "cart_pole": {
     "1": {
+      "descriptor": null,
       "model": "baseline",
       "n_env": 1,
       "trials": 1,
@@ -320,7 +440,20 @@
       "actor_h2": 32,
       "critic_loss_weight": 1,
       "critic_h1": 128,
-      "critic_h2": 32
+      "critic_h2": 32,
+      "memory_size": null,
+      "forward_model_lr": null,
+      "forward_model_h1": null,
+      "forward_model_h2": null,
+      "forward_model_eta": null,
+      "forward_model_variant": null,
+      "forward_model_batch_size": null,
+      "metacritic_lr": null,
+      "metacritic_h1": null,
+      "metacritic_h2": null,
+      "metacritic_eta": null,
+      "metacritic_variant": null,
+      "metacritic_batch_size": null
     }
   },
   "bit_flip": {
@@ -341,7 +474,16 @@
       "actor_h2": 32,
       "critic_loss_weight": 1,
       "critic_h1": 64,
-      "critic_h2": 32
+      "critic_h2": 32,
+      "memory_size": null,
+      "motivation_lr": null,
+      "forward_model_h1": null,
+      "forward_model_h2": null,
+      "motivation_eta": null,
+      "forward_model_variant": null,
+      "forward_model_batch_size": null,
+      "dop_heads": null,
+      "motivation_zeta": null
     },
     "2": {
       "descriptor": "b8",
@@ -361,8 +503,15 @@
       "critic_loss_weight": 1,
       "critic_h1": 64,
       "critic_h2": 32,
+      "memory_size": null,
       "motivation_lr": 0.0001,
-      "motivation_eta": 0.1
+      "forward_model_h1": null,
+      "forward_model_h2": null,
+      "motivation_eta": 0.1,
+      "forward_model_variant": null,
+      "forward_model_batch_size": null,
+      "dop_heads": null,
+      "motivation_zeta": null
     },
     "3": {
       "descriptor": "b8",
@@ -382,8 +531,15 @@
       "critic_loss_weight": 1,
       "critic_h1": 64,
       "critic_h2": 32,
+      "memory_size": null,
       "motivation_lr": 0.0001,
-      "motivation_eta": 0.1
+      "forward_model_h1": null,
+      "forward_model_h2": null,
+      "motivation_eta": 0.1,
+      "forward_model_variant": null,
+      "forward_model_batch_size": null,
+      "dop_heads": null,
+      "motivation_zeta": null
     },
     "4": {
       "descriptor": "b8",
@@ -403,8 +559,12 @@
       "critic_loss_weight": 1,
       "critic_h1": 64,
       "critic_h2": 32,
+      "memory_size": null,
       "motivation_lr": 0.001,
+      "forward_model_h1": null,
+      "forward_model_h2": null,
       "motivation_eta": 1,
+      "forward_model_variant": null,
       "forward_model_batch_size": 64,
       "dop_heads": 4,
       "motivation_zeta": 0
@@ -412,6 +572,7 @@
   },
   "lunar_lander": {
     "1": {
+      "descriptor": null,
       "model": "baseline",
       "n_env": 1,
       "trials": 15,
@@ -427,11 +588,25 @@
       "actor_h2": 64,
       "critic_loss_weight": 1,
       "critic_h1": 256,
-      "critic_h2": 128
+      "critic_h2": 128,
+      "memory_size": null,
+      "forward_model_lr": null,
+      "forward_model_h1": null,
+      "forward_model_h2": null,
+      "forward_model_eta": null,
+      "forward_model_variant": null,
+      "forward_model_batch_size": null,
+      "metacritic_lr": null,
+      "metacritic_h1": null,
+      "metacritic_h2": null,
+      "metacritic_eta": null,
+      "metacritic_variant": null,
+      "metacritic_batch_size": null
     }
   },
   "mountain_car": {
     "1": {
+      "descriptor": null,
       "model": "baseline",
       "n_env": 1,
       "trials": 15,
@@ -447,9 +622,23 @@
       "actor_h2": 32,
       "critic_loss_weight": 1,
       "critic_h1": 64,
-      "critic_h2": 32
+      "critic_h2": 32,
+      "memory_size": null,
+      "forward_model_lr": null,
+      "forward_model_h1": null,
+      "forward_model_h2": null,
+      "forward_model_eta": null,
+      "forward_model_variant": null,
+      "forward_model_batch_size": null,
+      "metacritic_lr": null,
+      "metacritic_h1": null,
+      "metacritic_h2": null,
+      "metacritic_eta": null,
+      "metacritic_variant": null,
+      "metacritic_batch_size": null
     },
     "2": {
+      "descriptor": null,
       "model": "fm",
       "n_env": 1,
       "trials": 15,
@@ -466,13 +655,22 @@
       "critic_loss_weight": 1,
       "critic_h1": 64,
       "critic_h2": 32,
+      "memory_size": null,
       "forward_model_lr": 0.0001,
       "forward_model_h1": 64,
       "forward_model_h2": 32,
       "forward_model_eta": 1,
-      "forward_model_variant": "A"
+      "forward_model_variant": "A",
+      "forward_model_batch_size": null,
+      "metacritic_lr": null,
+      "metacritic_h1": null,
+      "metacritic_h2": null,
+      "metacritic_eta": null,
+      "metacritic_variant": null,
+      "metacritic_batch_size": null
     },
     "3": {
+      "descriptor": null,
       "model": "su",
       "n_env": 1,
       "trials": 15,
@@ -489,20 +687,24 @@
       "critic_loss_weight": 1,
       "critic_h1": 64,
       "critic_h2": 32,
+      "memory_size": null,
       "forward_model_lr": 0.0001,
       "forward_model_h1": 64,
       "forward_model_h2": 32,
       "forward_model_eta": 1,
       "forward_model_variant": "A",
+      "forward_model_batch_size": null,
       "metacritic_lr": 0.0002,
       "metacritic_h1": 64,
       "metacritic_h2": 32,
       "metacritic_eta": 1,
-      "metacritic_variant": "A"
+      "metacritic_variant": "A",
+      "metacritic_batch_size": null
     }
   },
   "mspacman": {
     "1": {
+      "descriptor": null,
       "model": "baseline",
       "n_env": 32,
       "trials": 8,
@@ -514,9 +716,15 @@
       "ppo_epochs": 4,
       "lr": 0.0002,
       "actor_loss_weight": 0.5,
-      "critic_loss_weight": 1
+      "critic_loss_weight": 1,
+      "motivation_lr": null,
+      "motivation_eta": null,
+      "metacritic_batch_size": null,
+      "metacritic_eta": null,
+      "metacritic_variant": null
     },
     "2": {
+      "descriptor": null,
       "model": "rnd",
       "n_env": 32,
       "trials": 8,
@@ -530,12 +738,18 @@
       "actor_loss_weight": 0.5,
       "critic_loss_weight": 1,
       "motivation_lr": 0.0001,
-      "motivation_eta": 1
+      "motivation_eta": 1,
+      "metacritic_batch_size": null,
+      "metacritic_eta": null,
+      "metacritic_variant": null
     }
   },
   "qbert": {
     "1": {
+      "descriptor": null,
       "model": "baseline",
+      "noisy": null,
+      "sigma": null,
       "trials": 1,
       "steps": 1,
       "gamma": "0.99",
@@ -549,10 +763,25 @@
       "actor_h2": 128,
       "critic_loss_weight": 1,
       "critic_h1": 256,
-      "critic_h2": 128
+      "critic_h2": 128,
+      "forward_model_lr": null,
+      "forward_model_h1": null,
+      "forward_model_h2": null,
+      "forward_model_eta": null,
+      "forward_model_variant": null,
+      "forward_model_batch_size": null,
+      "metacritic_lr": null,
+      "metacritic_h1": null,
+      "metacritic_h2": null,
+      "metacritic_eta": null,
+      "metacritic_variant": null,
+      "metacritic_batch_size": null
     },
     "2": {
+      "descriptor": null,
       "model": "fm",
+      "noisy": null,
+      "sigma": null,
       "trials": 1,
       "steps": 1,
       "gamma": "0.99",
@@ -572,10 +801,19 @@
       "forward_model_h2": 350,
       "forward_model_eta": 1,
       "forward_model_variant": "A",
-      "forward_model_batch_size": 32
+      "forward_model_batch_size": 32,
+      "metacritic_lr": null,
+      "metacritic_h1": null,
+      "metacritic_h2": null,
+      "metacritic_eta": null,
+      "metacritic_variant": null,
+      "metacritic_batch_size": null
     },
     "3": {
+      "descriptor": null,
       "model": "su",
+      "noisy": null,
+      "sigma": null,
       "trials": 1,
       "steps": 1,
       "gamma": "0.99",
@@ -606,6 +844,7 @@
   },
   "pendulum": {
     "1": {
+      "descriptor": null,
       "model": "baseline",
       "n_env": 1,
       "trials": 1,
@@ -621,11 +860,25 @@
       "actor_h2": 32,
       "critic_loss_weight": 1,
       "critic_h1": 64,
-      "critic_h2": 32
+      "critic_h2": 32,
+      "memory_size": null,
+      "forward_model_lr": null,
+      "forward_model_h1": null,
+      "forward_model_h2": null,
+      "forward_model_eta": null,
+      "forward_model_variant": null,
+      "forward_model_batch_size": null,
+      "metacritic_lr": null,
+      "metacritic_h1": null,
+      "metacritic_h2": null,
+      "metacritic_eta": null,
+      "metacritic_variant": null,
+      "metacritic_batch_size": null
     }
   },
   "gravitar": {
     "1": {
+      "descriptor": null,
       "model": "rnd",
       "n_env": 128,
       "trials": 2,
@@ -640,7 +893,11 @@
       "critic_loss_weight": 0.5,
       "motivation_lr": 0.0001,
       "motivation_eta": 1,
-      "norm": "l2"
+      "norm": "l2",
+      "frac_distance": null,
+      "metacritic_batch_size": null,
+      "metacritic_eta": null,
+      "metacritic_variant": null
     },
     "2": {
       "descriptor": "trajectory size : n_evn * 128",
@@ -659,14 +916,37 @@
       "motivation_lr": 0.0001,
       "motivation_eta": 1,
       "norm": "frac",
-      "frac_distance": 0.5
+      "frac_distance": 0.5,
+      "metacritic_batch_size": null,
+      "metacritic_eta": null,
+      "metacritic_variant": null
     },
     "": {
-      "descriptor": "skusit 32"
+      "descriptor": "skusit 32",
+      "model": null,
+      "n_env": null,
+      "trials": null,
+      "steps": null,
+      "gamma": null,
+      "beta": null,
+      "batch_size": null,
+      "trajectory_size": null,
+      "ppo_epochs": null,
+      "lr": null,
+      "actor_loss_weight": null,
+      "critic_loss_weight": null,
+      "motivation_lr": null,
+      "motivation_eta": null,
+      "norm": null,
+      "frac_distance": null,
+      "metacritic_batch_size": null,
+      "metacritic_eta": null,
+      "metacritic_variant": null
     }
   },
   "montezuma": {
     "1": {
+      "descriptor": null,
       "model": "baseline",
       "n_env": 128,
       "trials": 3,
@@ -678,9 +958,17 @@
       "ppo_epochs": 4,
       "lr": 0.0001,
       "actor_loss_weight": 1,
-      "critic_loss_weight": 0.5
+      "critic_loss_weight": 0.5,
+      "motivation_lr": null,
+      "motivation_eta": null,
+      "dop_heads": null,
+      "norm": null,
+      "metacritic_batch_size": null,
+      "metacritic_eta": null,
+      "metacritic_variant": null
     },
     "2": {
+      "descriptor": null,
       "model": "rnd",
       "n_env": 128,
       "trials": 3,
@@ -694,9 +982,15 @@
       "actor_loss_weight": 1,
       "critic_loss_weight": 0.5,
       "motivation_lr": 0.0001,
-      "motivation_eta": 1
+      "motivation_eta": 1,
+      "dop_heads": null,
+      "norm": null,
+      "metacritic_batch_size": null,
+      "metacritic_eta": null,
+      "metacritic_variant": null
     },
     "3": {
+      "descriptor": null,
       "model": "qrnd",
       "n_env": 128,
       "trials": 3,
@@ -710,13 +1004,19 @@
       "actor_loss_weight": 1,
       "critic_loss_weight": 0.5,
       "motivation_lr": 0.0001,
-      "motivation_eta": 1
+      "motivation_eta": 1,
+      "dop_heads": null,
+      "norm": null,
+      "metacritic_batch_size": null,
+      "metacritic_eta": null,
+      "metacritic_variant": null
     },
     "4": {
+      "descriptor": null,
       "model": "dop",
       "n_env": 128,
-      "trials": 3,
-      "steps": 128,
+      "trials": 1,
+      "steps": 64,
       "gamma": "0.998,0.99",
       "beta": 0.001,
       "batch_size": 512,
@@ -727,44 +1027,13 @@
       "critic_loss_weight": 0.5,
       "motivation_lr": 0.0001,
       "motivation_eta": 1,
-      "dop_heads": 4
+      "dop_heads": 4,
+      "norm": null,
+      "metacritic_batch_size": null,
+      "metacritic_eta": null,
+      "metacritic_variant": null
     },
     "5": {
-      "descriptor": "with sr module",
-      "model": "rnd",
-      "n_env": 128,
-      "trials": 1,
-      "steps": 128,
-      "gamma": "0.998,0.99",
-      "beta": 0.001,
-      "batch_size": 512,
-      "trajectory_size": 16384,
-      "ppo_epochs": 4,
-      "lr": 0.0001,
-      "actor_loss_weight": 1,
-      "critic_loss_weight": 0.5,
-      "motivation_lr": 0.0001,
-      "motivation_eta": 1
-    },
-    "6": {
-      "descriptor": "with ae module L1",
-      "model": "rnd",
-      "n_env": 128,
-      "trials": 1,
-      "steps": 64,
-      "gamma": "0.998,0.99",
-      "beta": 0.001,
-      "batch_size": 512,
-      "trajectory_size": 16384,
-      "ppo_epochs": 4,
-      "lr": 0.0001,
-      "actor_loss_weight": 1,
-      "critic_loss_weight": 0.5,
-      "motivation_lr": 0.0001,
-      "motivation_eta": 1,
-      "norm": "l1"
-    },
-    "7": {
       "descriptor": "with ae module L2",
       "model": "rnd",
       "n_env": 128,
@@ -780,47 +1049,16 @@
       "critic_loss_weight": 0.5,
       "motivation_lr": 0.0001,
       "motivation_eta": 1,
-      "norm": "l2"
-    },
-    "8": {
-      "descriptor": "with ae module L1",
-      "model": "rnd",
-      "n_env": 128,
-      "trials": 1,
-      "steps": 64,
-      "gamma": "0.998,0.99",
-      "beta": 0.001,
-      "batch_size": 512,
-      "trajectory_size": 16384,
-      "ppo_epochs": 4,
-      "lr": 0.0001,
-      "actor_loss_weight": 1,
-      "critic_loss_weight": 0.5,
-      "motivation_lr": 0.0001,
-      "motivation_eta": 1,
-      "norm": "l01"
-    },
-    "9": {
-      "descriptor": "with ae module L2",
-      "model": "rnd",
-      "n_env": 128,
-      "trials": 1,
-      "steps": 64,
-      "gamma": "0.998,0.99",
-      "beta": 0.001,
-      "batch_size": 512,
-      "trajectory_size": 16384,
-      "ppo_epochs": 4,
-      "lr": 0.0001,
-      "actor_loss_weight": 1,
-      "critic_loss_weight": 0.5,
-      "motivation_lr": 0.0001,
-      "motivation_eta": 1,
-      "norm": "l05"
+      "dop_heads": null,
+      "norm": "l2",
+      "metacritic_batch_size": null,
+      "metacritic_eta": null,
+      "metacritic_variant": null
     }
   },
   "private_eye": {
     "1": {
+      "descriptor": null,
       "model": "baseline",
       "n_env": 64,
       "trials": 15,
@@ -832,11 +1070,17 @@
       "ppo_epochs": 4,
       "lr": 0.0002,
       "actor_loss_weight": 0.5,
-      "critic_loss_weight": 1
+      "critic_loss_weight": 1,
+      "motivation_lr": null,
+      "motivation_eta": null,
+      "metacritic_batch_size": null,
+      "metacritic_eta": null,
+      "metacritic_variant": null
     }
   },
   "pitfall": {
     "1": {
+      "descriptor": null,
       "model": "baseline",
       "n_env": 64,
       "trials": 15,
@@ -848,11 +1092,17 @@
       "ppo_epochs": 4,
       "lr": 0.0002,
       "actor_loss_weight": 0.5,
-      "critic_loss_weight": 1
+      "critic_loss_weight": 1,
+      "motivation_lr": null,
+      "motivation_eta": null,
+      "metacritic_batch_size": null,
+      "metacritic_eta": null,
+      "metacritic_variant": null
     }
   },
   "solaris": {
     "1": {
+      "descriptor": null,
       "model": "baseline",
       "n_env": 128,
       "trials": 2,
@@ -864,9 +1114,15 @@
       "ppo_epochs": 4,
       "lr": 0.0001,
       "actor_loss_weight": 1,
-      "critic_loss_weight": 0.5
+      "critic_loss_weight": 0.5,
+      "motivation_lr": null,
+      "motivation_eta": null,
+      "metacritic_batch_size": null,
+      "metacritic_eta": null,
+      "metacritic_variant": null
     },
     "2": {
+      "descriptor": null,
       "model": "rnd",
       "n_env": 128,
       "trials": 2,
@@ -880,9 +1136,13 @@
       "actor_loss_weight": 1,
       "critic_loss_weight": 0.5,
       "motivation_lr": 0.0001,
-      "motivation_eta": 1
+      "motivation_eta": 1,
+      "metacritic_batch_size": null,
+      "metacritic_eta": null,
+      "metacritic_variant": null
     },
     "3": {
+      "descriptor": null,
       "model": "qrnd",
       "n_env": 128,
       "trials": 2,
@@ -896,11 +1156,15 @@
       "actor_loss_weight": 1,
       "critic_loss_weight": 0.5,
       "motivation_lr": 0.0001,
-      "motivation_eta": 1
+      "motivation_eta": 1,
+      "metacritic_batch_size": null,
+      "metacritic_eta": null,
+      "metacritic_variant": null
     }
   },
   "venture": {
     "1": {
+      "descriptor": null,
       "model": "baseline",
       "n_env": 64,
       "trials": 15,
@@ -912,7 +1176,12 @@
       "ppo_epochs": 4,
       "lr": 0.0002,
       "actor_loss_weight": 0.5,
-      "critic_loss_weight": 1
+      "critic_loss_weight": 1,
+      "motivation_lr": null,
+      "motivation_eta": null,
+      "metacritic_batch_size": null,
+      "metacritic_eta": null,
+      "metacritic_variant": null
     }
   }
 }

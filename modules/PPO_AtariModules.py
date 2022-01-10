@@ -3,7 +3,7 @@ import torch.nn as nn
 import numpy as np
 
 from modules import init_orthogonal
-from modules.dop_models.DOPModelAtari import DOPModelAtari, DOPControllerAtari
+from modules.dop_models.DOPModelAtari import DOPModelAtari, DOPControllerAtari, DOPActorAtari, DOPGeneratorAtari
 from modules.PPO_Modules import DiscreteHead, Actor, Critic2Heads, ActorNHeads
 from modules.encoders.EncoderAtari import EncoderAtari, AutoEncoderAtari, VAEAtari
 from modules.forward_models.ForwardModelAtari import ForwardModelAtari
@@ -133,7 +133,7 @@ class PPOAtariNetworkRND(PPOAtariMotivationNetwork):
 class PPOAtariNetworkSRRND(PPOAtariSRMotivationNetwork):
     def __init__(self, input_shape, feature_dim, action_dim, config, head):
         super(PPOAtariNetworkSRRND, self).__init__(feature_dim, action_dim, config, head)
-        self.encoder = VAEAtari(input_shape, feature_dim, config.norm)
+        self.encoder = AutoEncoderAtari(input_shape, feature_dim, config.norm)
         self.rnd_model = RNDModelAtari(input_shape, action_dim, config)
 
 
@@ -144,10 +144,20 @@ class PPOAtariNetworkQRND(PPOAtariMotivationNetwork):
 
 
 class PPOAtariNetworkDOP(PPOAtariNetwork):
-    def __init__(self, input_shape, action_dim, config, head, controller):
+    def __init__(self, input_shape, action_dim, config, head):
         super(PPOAtariNetworkDOP, self).__init__(input_shape, action_dim, config, head)
 
+        self.n_env = config.n_env
         self.head_count = config.dop_heads
+
+        self.critic_generator = nn.Sequential(
+            torch.nn.Linear(self.feature_dim, self.feature_dim),
+            torch.nn.ReLU(),
+            torch.nn.Linear(self.feature_dim, config.dop_heads)
+        )
+
+        init_orthogonal(self.critic_generator[0], 0.1)
+        init_orthogonal(self.critic_generator[2], 0.01)
 
         self.actor = nn.Sequential(
             torch.nn.Linear(self.feature_dim, self.feature_dim),
@@ -159,21 +169,26 @@ class PPOAtariNetworkDOP(PPOAtariNetwork):
 
         self.actor = Actor(self.actor, head, self.action_dim)
 
-        self.motivator = QRNDModelAtari(input_shape, action_dim, config)
-        self.dop_model = DOPModelAtari(config.dop_heads, input_shape, action_dim, config, self.features, self.actor, self.motivator)
-        self.controller = controller
+        self.qrnd_model = QRNDModelAtari(input_shape, action_dim, config)
+        # self.dop_model = DOPModelAtari(config.dop_heads, input_shape, action_dim, config, self.features, self.actor, self.motivator)
+
+        self.dop_actor = DOPActorAtari(config.dop_heads, input_shape, action_dim, self.features, self.actor, self.critic)
+        self.dop_generator = DOPGeneratorAtari(config.dop_heads, input_shape, action_dim, self.features, self.actor, self.critic_generator)
+        self.dop_controller = DOPControllerAtari(self.feature_dim, config.dop_heads, config, self.features)
 
     def forward(self, state):
-        _, head_index, _ = self.controller(state)
-        head_index = head_index.argmax(dim=1, keepdim=True)
+        head_value, head_action, head_probs = self.dop_controller(state)
+        all_values, all_action, all_probs = self.dop_generator(state)
+        index = head_action.argmax(dim=1, keepdim=True)
+
         features = self.features(state)
         value = self.critic(features)
-        action, probs = self.actor(features)
 
-        action = self.actor.encode_action(action.view(-1, 1))
-        action = action.view(-1, self.head_count, self.action_dim)
+        action, probs = self.dop_actor.select_action(index, all_action, all_probs)
+        x = self.prepare_input(index, features)
 
-        action = action.gather(dim=1, index=head_index.unsqueeze(-1).repeat(1, 1, self.action_dim)).squeeze(1)
-        probs = probs.gather(dim=1, index=head_index.unsqueeze(-1).repeat(1, 1, self.action_dim)).squeeze(1)
+        return x, value, action, probs, head_value, head_action, head_probs, all_values, all_action, all_probs
 
-        return value, action, probs
+    def prepare_input(self, index, features):
+        x = torch.cat([index, features], dim=1)
+        return x

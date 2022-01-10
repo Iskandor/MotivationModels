@@ -91,9 +91,8 @@ def run_dop_model(config, trial, env_name):
     experiment = ExperimentNEnvPPO(env_name, env, config)
 
     experiment.add_preprocess(encode_state)
-    controller = PPOAtariDOPControllerAgent(input_shape, config.dop_heads, config, TYPE.discrete)
-    agent = PPOAtariDOPAgent(input_shape, action_dim, config, TYPE.discrete, controller)
-    experiment.run_dop_model((agent, controller), trial)
+    agent = PPOAtariDOPAgent(input_shape, action_dim, config, TYPE.discrete)
+    experiment.run_dop_model(agent, trial)
 
     env.close()
 

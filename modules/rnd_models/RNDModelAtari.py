@@ -164,7 +164,7 @@ class QRNDModelAtari(nn.Module):
 
     def error(self, state, action):
         with torch.no_grad():
-            prediction, target = self(state, action)
+            prediction, target = self(state, action.view(-1, self.action_dim))
             error = torch.sum(torch.pow(target - prediction, 2), dim=1).unsqueeze(-1) / 8
             # error = torch.mean(torch.pow(target - prediction, 2), dim=1).unsqueeze(-1)
 

@@ -7,7 +7,7 @@ from utils import *
 
 class PPO:
     def __init__(self, network, lr, actor_loss_weight, critic_loss_weight, batch_size, trajectory_size, memory, p_beta, p_gamma,
-                 ppo_epochs=10, p_epsilon=0.1, p_lambda=0.95, weight_decay=0, device='cpu', n_env=1, motivation=False):
+                 ppo_epochs=10, p_epsilon=0.1, p_lambda=0.95, weight_decay=0, device='cpu', n_env=1, motivation=False, ncritic=False):
         self._network = network
         self._optimizer = torch.optim.Adam(self._network.parameters(), lr=lr, weight_decay=weight_decay)
         self._beta = p_beta
@@ -23,6 +23,7 @@ class PPO:
         self._trajectory = []
         self._ppo_epochs = ppo_epochs
         self._motivation = motivation
+        self._ncritic = ncritic
         self._n_env = n_env
 
         self._memory = memory
@@ -43,17 +44,25 @@ class PPO:
             dones = sample.mask
 
             if self._motivation:
-                # mean = self._motivation.reward_stats.mean
-                # std = self._motivation.reward_stats.std
-                ext_reward = rewards[:, :, 0].unsqueeze(-1)
-                # int_reward = (rewards[:, :, 1].unsqueeze(-1) - mean) / std
-                int_reward = rewards[:, :, 1].unsqueeze(-1)
-                ext_ref_values, ext_adv_values = self.calc_advantage(values[:, :, 0].unsqueeze(-1), ext_reward, dones, self._gamma[0])
-                int_ref_values, int_adv_values = self.calc_advantage(values[:, :, 1].unsqueeze(-1), int_reward, dones, self._gamma[1])
+                if self._ncritic:
+                    ext_reward = rewards[:, :, :, 0].unsqueeze(-1)
+                    int_reward = rewards[:, :, :, 1].unsqueeze(-1)
+
+                    ext_ref_values, ext_adv_values = self.calc_advantage_ncritic(values[:, :, :, 0].unsqueeze(-1), ext_reward, dones, self._gamma[0], self._n_env)
+                    int_ref_values, int_adv_values = self.calc_advantage_ncritic(values[:, :, :, 1].unsqueeze(-1), int_reward, dones, self._gamma[1], self._n_env)
+                else:
+                    ext_reward = rewards[:, :, 0].unsqueeze(-1)
+                    int_reward = rewards[:, :, 1].unsqueeze(-1)
+
+                    ext_ref_values, ext_adv_values = self.calc_advantage(values[:, :, 0].unsqueeze(-1), ext_reward, dones, self._gamma[0], self._n_env)
+                    int_ref_values, int_adv_values = self.calc_advantage(values[:, :, 1].unsqueeze(-1), int_reward, dones, self._gamma[1], self._n_env)
                 adv_values = ext_adv_values * 2.0 + int_adv_values * 1.0
                 ref_values = torch.cat([ext_ref_values, int_ref_values], dim=2)
             else:
-                ref_values, adv_values = self.calc_advantage(values, rewards, dones, self._gamma[0])
+                if self._ncritic:
+                    ref_values, adv_values = self.calc_advantage_ncritic(values, rewards, dones, self._gamma[0], self._n_env)
+                else:
+                    ref_values, adv_values = self.calc_advantage(values, rewards, dones, self._gamma[0], self._n_env)
 
             permutation = torch.randperm(self._trajectory_size)
 
@@ -101,6 +110,12 @@ class PPO:
         else:
             loss_value = torch.nn.functional.mse_loss(values, ref_value)
 
+        if self._ncritic:
+            adv_value = adv_value.view(-1, adv_value.shape[-1])
+            probs = probs.view(-1, probs.shape[-1])
+            old_probs = old_probs.view(-1, old_probs.shape[-1])
+            old_actions = old_actions.view(-1, old_actions.shape[-1])
+
         log_probs = self._network.actor.log_prob(probs, old_actions)
         old_logprobs = self._network.actor.log_prob(old_probs, old_actions)
 
@@ -115,13 +130,13 @@ class PPO:
 
         return loss
 
-    def calc_advantage(self, values, rewards, dones, gamma):
+    def calc_advantage(self, values, rewards, dones, gamma, n_env):
         buffer_size = rewards.shape[0]
 
-        returns = torch.zeros((buffer_size, self._n_env, 1))
-        advantages = torch.zeros((buffer_size, self._n_env, 1))
+        returns = torch.zeros((buffer_size, n_env, 1))
+        advantages = torch.zeros((buffer_size, n_env, 1))
 
-        last_gae = torch.zeros(self._n_env, 1)
+        last_gae = torch.zeros(n_env, 1)
 
         for n in reversed(range(buffer_size - 1)):
             delta = rewards[n] + dones[n] * gamma * values[n + 1] - values[n]
@@ -131,3 +146,15 @@ class PPO:
             advantages[n] = last_gae
 
         return returns, advantages
+
+    def calc_advantage_ncritic(self, values, rewards, dones, gamma, n_env):
+        buffer_size = rewards.shape[0]
+        ncritic = rewards.shape[2]
+
+        v = values.reshape(buffer_size, -1, 1)
+        r = rewards.reshape(buffer_size, -1, 1)
+        d = dones.reshape(buffer_size, -1, 1)
+
+        returns, advantages = self.calc_advantage(v, r, d, gamma, n_env * ncritic)
+
+        return returns.view(buffer_size, n_env, ncritic, 1), advantages.view(buffer_size, n_env, ncritic, 1)

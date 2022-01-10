@@ -126,21 +126,37 @@ class AutoEncoderAtari(nn.Module):
     def lk_norm(self, prediction, target, k):
         return torch.abs(target - prediction).pow(k).sum(dim=(1, 2, 3)).pow(1 / k)
 
-    def loss_function(self, state, next_states):
-        features = self.encoder(state)
+    def loss_function(self, states, next_states):
+        features = self.encoder(states)
         prediction = self.decoder_lin(features).reshape(-1, 128, self.input_height // 8, self.input_width // 8)
         prediction = self.decoder_conv(prediction)
 
         if self.norm == 'l1':
-            loss = self.l1_norm(prediction, state)
+            loss = self.l1_norm(prediction, states)
         if self.norm == 'l2':
-            loss = self.l2_norm(prediction, state)
+            loss = self.l2_norm(prediction, states)
         if self.norm == 'l01':
-            loss = self.l01_norm(prediction, state)
+            loss = self.l01_norm(prediction, states)
         if self.norm == 'l05':
-            loss = self.l05_norm(prediction, state)
+            loss = self.l05_norm(prediction, states)
 
-        return loss.mean()
+        variation_loss = self.variation_prior(states)
+        stability_loss = self.stability_prior(states, next_states)
+        loss = loss.mean()
+
+        print('AE loss: {0:f} Variation prior {1:f} Stability prior: {2:f}'.format(loss.item(), variation_loss.item(), stability_loss.item()))
+
+        return loss + variation_loss + stability_loss
+
+    def variation_prior(self, state):
+        sa = state[torch.randperm(state.shape[0])]
+        sb = state[torch.randperm(state.shape[0])]
+        variation_loss = torch.exp((self.encoder(sa) - self.encoder(sb).detach()).abs() * -1.0).mean()
+        return variation_loss
+
+    def stability_prior(self, state, next_state):
+        stability_loss = (self.encoder(next_state) - self.encoder(state).detach()).abs().pow(2).mean()
+        return stability_loss
 
 
 class VAEAtari(nn.Module):

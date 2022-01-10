@@ -154,9 +154,14 @@ class PPOTrajectoryBuffer(object):
         self.index = 0
         self.capacity = capacity
         self.batch_size = batch_size
+        self.override = {}
 
     def __len__(self):
         return self.index * self.n_env
+
+    def n_env_override(self, keys, n_env):
+        for key in keys:
+            self.override[key] = n_env
 
     def indices(self):
         ind = None
@@ -164,27 +169,30 @@ class PPOTrajectoryBuffer(object):
             ind = range(0, self.capacity)
         return ind
 
-    def dynamic_memory_init(self, state, value, action, prob, reward):
+    def dynamic_memory_init(self, state, value, action, prob, next_state, reward, mask):
+        self.memory_init('state', tuple(state.shape[1:]))
+        self.memory_init('value', tuple(value.shape[1:]))
+        self.memory_init('action', tuple(action.shape[1:]))
+        self.memory_init('prob', tuple(prob.shape[1:]))
+        self.memory_init('next_state', tuple(next_state.shape[1:]))
+        self.memory_init('reward', tuple(reward.shape[1:]))
+        self.memory_init('mask', tuple(mask.shape[1:]))
+
+    def memory_init(self, key, shape):
         steps_per_env = self.capacity // self.n_env
-        shape = (steps_per_env, self.n_env,) + tuple(state.shape[1:])
-        self.memory['state'] = torch.zeros(shape)
-        shape = (steps_per_env, self.n_env,) + tuple(value.shape[1:])
-        self.memory['value'] = torch.zeros(shape)
-        shape = (steps_per_env, self.n_env,) + tuple(action.shape[1:])
-        self.memory['action'] = torch.zeros(shape)
-        shape = (steps_per_env, self.n_env,) + tuple(prob.shape[1:])
-        self.memory['prob'] = torch.zeros(shape)
-        shape = (steps_per_env, self.n_env,) + tuple(state.shape[1:])
-        self.memory['next_state'] = torch.zeros(shape)
-        shape = (steps_per_env, self.n_env,) + tuple(reward.shape[1:])
-        self.memory['reward'] = torch.zeros(shape)
-        shape = (steps_per_env, self.n_env, 1)
-        self.memory['mask'] = torch.zeros(shape)
+        n_env = self.n_env
+
+        if key in self.override:
+            n_env = self.override[key]
+
+        shape = (steps_per_env, n_env, ) + shape
+
+        self.memory[key] = torch.zeros(shape)
 
     def add(self, state, value, action, prob, next_state, reward, mask):
 
         if len(self.memory) == 0:
-            self.dynamic_memory_init(state, value, action, prob, reward)
+            self.dynamic_memory_init(state, value, action, prob, next_state, reward, mask)
 
         self.memory['state'][self.index] = state
         self.memory['value'][self.index] = value

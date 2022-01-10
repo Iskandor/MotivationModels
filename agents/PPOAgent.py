@@ -10,23 +10,22 @@ from utils import one_hot_code
 
 
 class PPOAgent:
-    def __init__(self, state_dim, action_dim, config):
+    def __init__(self, state_dim, action_dim, action_type, config):
         self.state_dim = state_dim
         self.action_dim = action_dim
         self.config = config
         self.network = None
         self.memory = PPOTrajectoryBuffer(config.trajectory_size, config.batch_size, config.n_env)
         self.algorithm = None
-        self.action_type = None
+        self.action_type = action_type
 
         # if config.gpus and len(config.gpus) > 1:
         #     config.batch_size *= len(config.gpus)
         #     self.network = nn.DataParallel(self.network, config.gpus)
 
-    def init_algorithm(self, config, memory, action_type, motivation=False):
-        self.action_type = action_type
+    def init_algorithm(self, config, memory, n_env, motivation=False, ncritic=False):
         algorithm = PPO(self.network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size, memory, config.beta, config.gamma,
-                        ppo_epochs=config.ppo_epochs, n_env=config.n_env, device=config.device, motivation=motivation)
+                        ppo_epochs=config.ppo_epochs, n_env=n_env, device=config.device, motivation=motivation, ncritic=ncritic)
 
         return algorithm
 
@@ -60,6 +59,6 @@ class PPOAgent:
 
 class PPOSimpleAgent(PPOAgent):
     def __init__(self, state_dim, action_dim, config, action_type):
-        super().__init__(state_dim, action_dim, config)
+        super().__init__(state_dim, action_dim, config, action_type)
         self.network = PPOSimpleNetwork(state_dim, action_dim, config, head=action_type).to(config.device)
-        self.algorithm = self.init_algorithm(config, self.memory, action_type)
+        self.algorithm = self.init_algorithm(config, self.memory, config.n_env, action_type)
