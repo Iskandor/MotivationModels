@@ -18,9 +18,14 @@ def moving_average(a, n=3):
     return ret[n - 1:] / n
 
 
-def prepare_data_instance(data_x, data_y, window):
+def prepare_data_instance(data_x, data_y, window, smooth=True):
     dx = data_x.copy()
     dy = data_y
+
+    if smooth:
+        for i in range(len(dy))[1:]:
+            dy[i] = dy[i - 1] * 0.99 + dy[i] * 0.01
+
     for i in range(len(dx))[1:]:
         dx[i] += dx[i - 1]
     max_steps = dx[-1]
@@ -175,6 +180,7 @@ def plot_forward_model_details(data, path, window=1000, average_per_step=False):
         ax = plt.subplot(num_rows, num_cols, 2)
         ax.set_xlabel('steps')
         ax.set_ylabel('reward')
+        ax.set_yscale('log', nonpositive='clip')
         ax.grid()
 
         if average_per_step:
@@ -561,36 +567,34 @@ def plot_vdop_model_details(data, path, window=1000):
         plt.close()
 
 
-def plot_dop_model_details(data, path, window=1000):
+def plot_dop_model_details(data, path, window=1000, average_per_step=False):
     num_rows = 2
     num_cols = 3
 
-    hid_norm = np.expand_dims(np.sum(data['hid'], axis=2), 2)
-
-    for i in tqdm(range(data['re'].shape[0])):
+    for i in tqdm(range(len(data['re']))):
         fig = plt.figure(figsize=(num_cols * 7.00, num_rows * 7.00))
+
         ax = plt.subplot(num_rows, num_cols, 1)
         ax.set_xlabel('steps')
         ax.set_ylabel('reward')
         ax.grid()
 
-        t = range(data['re'].shape[1])
-
-        mu, sigma = prepare_data(data['re'][i], window)
-        plot_curve(ax, mu, sigma, t, 'blue')
+        iv, value = prepare_data_instance(data['steps'][i], data['re'][i], window)
+        plot_curve(ax, value, None, iv, 'blue')
         plt.legend(['external reward'], loc=4)
 
         ax = plt.subplot(num_rows, num_cols, 2)
-        color_cycle = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
-        t = range(data['hid'].shape[1])
-        data_hid = np.divide(data['hid'][i], hid_norm[i])
-        unstacked_data = []
-        for j in range(data['hid'].shape[2]):
-            mu, _ = prepare_data(data_hid[:, j], window)
-            unstacked_data.append(mu)
-
-        ax.stackplot(t, np.stack(unstacked_data), colors=color_cycle)
+        ax.set_xlabel('steps')
+        ax.set_ylabel('reward')
+        ax.set_yscale('log', nonpositive='clip')
         ax.grid()
+
+        if average_per_step:
+            data['ri'][i] = data['ri'][i] / data['steps'][i]
+
+        iv, value = prepare_data_instance(data['steps'][i], data['ri'][i], window)
+        plot_curve(ax, value, None, iv, 'red')
+        plt.legend(['internal reward'], loc=4)
 
         ax = plt.subplot(num_rows, num_cols, 3)
         ax.set_xlabel('steps')
@@ -598,30 +602,45 @@ def plot_dop_model_details(data, path, window=1000):
         ax.set_yscale('log', nonpositive='clip')
         ax.grid()
 
-        t = range(data['fme'].shape[1])
+        if average_per_step:
+            data['error'][i] = data['error'][i] / data['steps'][i]
 
-        mu, sigma = prepare_data(data['fme'][i], window)
-        plot_curve(ax, mu, sigma, t, 'green')
-        plt.legend(['prediction error'], loc=1)
+        iv, value = prepare_data_instance(data['steps'][i], data['error'][i], window)
+        plot_curve(ax, value, None, iv, 'green')
+        plt.legend(['error'], loc=1)
 
-        t = range(data['ext_grad'].shape[1])
-
+        data['hid'][i] = np.reshape(data['hid'][i], (-1, 4))
+        hid_norm = np.expand_dims(np.sum(data['hid'][i], axis=1), 1)
         ax = plt.subplot(num_rows, num_cols, 4)
-        mu, sigma = prepare_data(data['ext_grad'][i], window)
-        plot_curve(ax, mu, sigma, t, 'blue')
-        mu, sigma = prepare_data(data['dop_grad'][i], window)
-        plot_curve(ax, mu, sigma, t, 'red')
-        plt.legend(['ext. gradient', 'int. gradient'], loc=1)
+        color_cycle = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
 
-        colors = []
-        for head in data['th'][i]:
-            colors.append(color_cycle[int(head)])
+        data_hid = np.divide(data['hid'][i], hid_norm[i])
+        unstacked_data = []
+        for j in range(data['hid'][i].shape[1]):
+            iv, value = prepare_data_instance(data['steps'][i], data_hid[:, j], 1)
+            unstacked_data.append(value)
 
-        ax = plt.subplot(num_rows, num_cols, 5)
-        plt.scatter(data['ts'][i][:, 0], data['ts'][i][:, 1], marker='o', c=colors, s=8)
+        ax.stackplot(iv, np.stack(unstacked_data), colors=color_cycle)
+        ax.grid()
 
-        ax = plt.subplot(num_rows, num_cols, 6)
-        plt.scatter(data['ta'][i][:, 0], data['ta'][i][:, 1], marker='o', c=colors, s=8)
+        # t = range(data['ext_grad'].shape[1])
+        #
+        # ax = plt.subplot(num_rows, num_cols, 4)
+        # mu, sigma = prepare_data(data['ext_grad'][i], window)
+        # plot_curve(ax, mu, sigma, t, 'blue')
+        # mu, sigma = prepare_data(data['dop_grad'][i], window)
+        # plot_curve(ax, mu, sigma, t, 'red')
+        # plt.legend(['ext. gradient', 'int. gradient'], loc=1)
+        #
+        # colors = []
+        # for head in data['th'][i]:
+        #     colors.append(color_cycle[int(head)])
+        #
+        # ax = plt.subplot(num_rows, num_cols, 5)
+        # plt.scatter(data['ts'][i][:, 0], data['ts'][i][:, 1], marker='o', c=colors, s=8)
+        #
+        # ax = plt.subplot(num_rows, num_cols, 6)
+        # plt.scatter(data['ta'][i][:, 0], data['ta'][i][:, 1], marker='o', c=colors, s=8)
 
         plt.savefig("{0:s}_{1:d}.png".format(path, i))
         plt.close()

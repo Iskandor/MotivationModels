@@ -47,7 +47,7 @@ def plot(name, config, plot_overview=True, average_per_step=False, has_score=Fal
                 if model == 'qrnd':
                     plot_forward_model_details(d, path, window=window, average_per_step=average_per_step)
                 if model == 'dop':
-                    plot_dop_model_details(d, path, window=window)
+                    plot_dop_model_details(d, path, window=window, average_per_step=average_per_step)
                 if model == 'dop_2':
                     plot_dop2_model_details(d, path, window=window)
                 if model == 'dop_3':
