@@ -3,7 +3,7 @@ import os
 
 import numpy as np
 
-root = 'C:/Git/Experiments/data'
+from plots.paths import data_root
 
 
 def prepare_data(keys):
@@ -15,7 +15,7 @@ def prepare_data(keys):
         env = key['env']
         id = key['id']
 
-        path = os.path.join(root, algorithm, model, env, id)
+        path = os.path.join(data_root, algorithm, model, env, id)
         # data.append(load_data(path, ['re', 're_raw', 'ri', 'hid', 'aa', 'var', 'error', 'ext_grad', 'reg_grad', 'dop_grad'], ['loss', 'regterm'], ['re', 're_raw', 'ri']))
         data.append(load_data2(path))
 

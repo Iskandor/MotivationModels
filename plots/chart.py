@@ -1,6 +1,7 @@
 import matplotlib
 import numpy as np
 import matplotlib.pyplot as plt
+import umap
 from etaprogress.progress import ProgressBar
 
 # font = {'family': 'normal',
@@ -594,7 +595,7 @@ def plot_dop_model_details(data, path, window=1000, average_per_step=False):
 
         iv, value = prepare_data_instance(data['steps'][i], data['ri'][i], window)
         plot_curve(ax, value, None, iv, 'red')
-        plt.legend(['internal reward'], loc=4)
+        plt.legend(['internal reward'], loc=1)
 
         ax = plt.subplot(num_rows, num_cols, 3)
         ax.set_xlabel('steps')
@@ -610,17 +611,21 @@ def plot_dop_model_details(data, path, window=1000, average_per_step=False):
         plt.legend(['error'], loc=1)
 
         data['hid'][i] = np.reshape(data['hid'][i], (-1, 4))
-        hid_norm = np.expand_dims(np.sum(data['hid'][i], axis=1), 1)
         ax = plt.subplot(num_rows, num_cols, 4)
         color_cycle = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
 
-        data_hid = np.divide(data['hid'][i], hid_norm[i])
         unstacked_data = []
         for j in range(data['hid'][i].shape[1]):
-            iv, value = prepare_data_instance(data['steps'][i], data_hid[:, j], 1)
+            iv, value = prepare_data_instance(data['steps'][i], data['hid'][i][:, j], window)
             unstacked_data.append(value)
+        hid = np.stack(unstacked_data)
+        ax.stackplot(iv, hid, colors=color_cycle)
+        ax.grid()
 
-        ax.stackplot(iv, np.stack(unstacked_data), colors=color_cycle)
+        ax = plt.subplot(num_rows, num_cols, 5)
+        reducer = umap.UMAP()
+        embedding = reducer.fit_transform(np.transpose(hid))
+        plt.scatter(embedding[:, 0], embedding[:, 1], c=range(embedding.shape[0]), marker='o', cmap='rainbow', s=8)
         ax.grid()
 
         # t = range(data['ext_grad'].shape[1])
