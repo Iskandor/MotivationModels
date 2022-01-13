@@ -77,7 +77,7 @@ class RNDModelAtari(nn.Module):
         with torch.no_grad():
             prediction, target = self(state)
             if (self.config.norm == "l1"):
-                error = torch.sum(torch.abs(target - prediction))
+                error = torch.sum(torch.abs(target - prediction), dim=1).unsqueeze(-1)
             elif (self.config.norm == "l2"):
                 error = torch.sum(torch.pow(target - prediction, 2), dim=1).unsqueeze(-1) / 2
             elif (self.config.norm == "frac"):

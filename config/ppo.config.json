@@ -840,6 +840,43 @@
       "motivation_eta": 1,
       "norm": "frac",
       "frac_distance": 0.5
+    },
+    "3": {
+      "descriptor": "trajectory size : n_evn * 128",
+      "model": "rnd",
+      "n_env": 32,
+      "trials": 3,
+      "steps": 64,
+      "gamma": "0.998,0.99",
+      "beta": 0.001,
+      "batch_size": 512,
+      "trajectory_size": 4096,
+      "ppo_epochs": 4,
+      "lr": 0.0001,
+      "actor_loss_weight": 1,
+      "critic_loss_weight": 0.5,
+      "motivation_lr": 0.0001,
+      "motivation_eta": 1,
+      "norm": "l1"
+    },
+    "4": {
+      "descriptor": "trajectory size : n_evn * 128",
+      "model": "rnd",
+      "n_env": 32,
+      "trials": 3,
+      "steps": 64,
+      "gamma": "0.998,0.99",
+      "beta": 0.001,
+      "batch_size": 512,
+      "trajectory_size": 4096,
+      "ppo_epochs": 4,
+      "lr": 0.0001,
+      "actor_loss_weight": 1,
+      "critic_loss_weight": 0.5,
+      "motivation_lr": 0.0001,
+      "motivation_eta": 1,
+      "norm": "frac",
+      "frac_distance": 0.5
     }
   },
   "montezuma": {
