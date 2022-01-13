@@ -167,13 +167,17 @@ if __name__ == '__main__':
     #
     # plot('aeris_navigate_dop_reg_term', config, plot_details=[49, 51], window=10000)
 
+    # config = [
+    #     {'env': 'aeris_navigate', 'algorithm': 'ddpg', 'model': 'baseline', 'id': '1'},
+    #    {'env': 'aeris_navigate', 'algorithm': 'ddpg', 'model': 'baseline', 'id': '2'},
+    #    {'env': 'aeris_navigate', 'algorithm': 'ddpg', 'model': 'dop_ref', 'id': '19'},
+    #    {'env': 'aeris_navigate', 'algorithm': 'ddpg', 'model': 'dop', 'id': '55'},
+    #    {'env': 'aeris_navigate', 'algorithm': 'ddpg', 'model': 'dop', 'id': '56'},
+    #    {'env': 'aeris_navigate', 'algorithm': 'ddpg', 'model': 'dop', 'id': '57'},
+    #]
+
     config = [
-        {'env': 'aeris_navigate', 'algorithm': 'ddpg', 'model': 'baseline', 'id': '1'},
-        {'env': 'aeris_navigate', 'algorithm': 'ddpg', 'model': 'baseline', 'id': '2'},
-        {'env': 'aeris_navigate', 'algorithm': 'ddpg', 'model': 'dop_ref', 'id': '19'},
-        {'env': 'aeris_navigate', 'algorithm': 'ddpg', 'model': 'dop', 'id': '55'},
-        {'env': 'aeris_navigate', 'algorithm': 'ddpg', 'model': 'dop', 'id': '56'},
-        {'env': 'aeris_navigate', 'algorithm': 'ddpg', 'model': 'dop', 'id': '57'},
+        {'env': 'gravitar', 'algorithm': 'ppo', 'model': 'rnd', 'id': '1'}
     ]
 
-    plot('aeris_navigate_eta', config, plot_details=[55, 56, 57], window=10000)
+    plot('gravitar_final', config, plot_details=[1], window=100000, average_per_step=True, has_score=True)

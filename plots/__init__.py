@@ -5,8 +5,9 @@ from plots.chart import plot_multiple_models, plot_baseline_details, plot_forwar
 
 root = 'C:/GIT/Experiments/plots'
 
+root = "Q:\\Desktop\\skola MGR\\diplomka\\MotivationModels\\results\\plots"
 
-def plot(name, config, plot_overview=True, plot_details=[], window=1000):
+def plot(name, config, plot_overview=True, average_per_step=False, has_score=False, plot_details=[], window=1000):
     data = prepare_data(config)
     algorithm = config[0]['algorithm']
     env = config[0]['env']
@@ -22,7 +23,8 @@ def plot(name, config, plot_overview=True, plot_details=[], window=1000):
             legend,
             ['blue', 'red', 'green', 'yellow', 'orange', 'cyan', 'purple', 'gray', 'magenta', 'navy', 'maroon', 'brown', 'apricot', 'olive', 'beige'],
             path,
-            window)
+            window,
+            has_score)
 
         for index, key in enumerate(config):
             if int(key['id']) in plot_details:
@@ -39,12 +41,14 @@ def plot(name, config, plot_overview=True, plot_details=[], window=1000):
                 path = os.path.join(path, '{0:s}_{1:s}'.format(env, model))
                 if model == 'baseline':
                     plot_baseline_details(d, path, window=window)
+                if model == 'dop_ref':
+                    plot_baseline_details(d, path, window=window)
                 if model == 'rnd':
-                    plot_forward_model_details(d, path, window=window)
+                    plot_forward_model_details(d, path, window=window, average_per_step=average_per_step)
                 if model == 'qrnd':
-                    plot_forward_model_details(d, path, window=window)
+                    plot_forward_model_details(d, path, window=window, average_per_step=average_per_step)
                 if model == 'dop':
-                    plot_dop_model_details(d, path, window=window)
+                    plot_dop_model_details(d, path, window=window, average_per_step=average_per_step)
                 if model == 'dop_2':
                     plot_dop2_model_details(d, path, window=window)
                 if model == 'dop_3':

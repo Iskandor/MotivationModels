@@ -13,6 +13,7 @@ class RNDModelAtari(nn.Module):
         self.input_shape = input_shape
         self.action_dim = action_dim
 
+        self.config = config
         input_channels = 1
         input_height = self.input_shape[1]
         input_width = self.input_shape[2]
@@ -75,17 +76,22 @@ class RNDModelAtari(nn.Module):
     def error(self, state):
         with torch.no_grad():
             prediction, target = self(state)
-            error = torch.sum(torch.pow(target - prediction, 2), dim=1).unsqueeze(-1) / 2
-
+            if (self.config.norm == "l1"):
+                error = torch.sum(torch.abs(target - prediction))
+            elif (self.config.norm == "l2"):
+                error = torch.sum(torch.pow(target - prediction, 2), dim=1).unsqueeze(-1) / 2
+            elif (self.config.norm == "frac"):
+                f = self.config.frac_distance
+                error = torch.pow(torch.sum(torch.pow(torch.abs(target - prediction), f), dim=1), (1/f)).unsqueeze(-1)
         return error
 
     def loss_function(self, state):
         prediction, target = self(state)
         # loss = nn.functional.mse_loss(self(state), self.encode(state).detach(), reduction='none').sum(dim=1)
         loss = torch.pow(target - prediction, 2)
-        mask = torch.rand_like(loss) < 0.25
+        # mozno vypocitat aj loss pomocou fractional
+        mask = torch.rand_like(loss) < 32 / self.config.n_env
         loss *= mask
-
         return loss.sum() / mask.sum()
 
     def update_state_average(self, state):

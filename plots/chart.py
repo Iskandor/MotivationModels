@@ -18,6 +18,40 @@ def moving_average(a, n=3):
     return ret[n - 1:] / n
 
 
+def prepare_data_instance(data_x, data_y, window, smooth=False):
+    dx = data_x.copy()
+    dy = data_y
+
+    if smooth:
+        for i in range(len(dy))[1:]:
+            dy[i] = dy[i - 1] * 0.99 + dy[i] * 0.01
+
+    for i in range(len(dx))[1:]:
+        dx[i] += dx[i - 1]
+    max_steps = dx[-1]
+    data = np.interp(np.arange(start=0, stop=max_steps, step=window), dx, dy)
+
+    iv = list(range(0, max_steps, window))
+
+    return iv, data
+
+
+def prepare_data2(data_x, data_y, window):
+    data = []
+    max_steps = 0
+    iv = None
+
+    for x, y in zip(data_x, data_y):
+        iv, value = prepare_data_instance(x, y, window)
+        data.append(value)
+
+    data = np.stack(data)
+    sigma = data.std(axis=0)
+    mu = data.mean(axis=0)
+
+    return iv, mu, sigma
+
+
 def prepare_data(data, window):
     if len(data.shape) == 1:
         sigma = np.zeros_like(data)
@@ -40,18 +74,36 @@ def plot_curve(axis, mu, sigma, independent_values, color, alpha=1.0):
         axis.fill_between(independent_values, mu + sigma, mu - sigma, facecolor=color, alpha=0.1)
 
 
-def plot_multiple_models(data, legend, colors, path, window=1):
-    plt.figure(figsize=(6.40, 5.12))
-    plt.xlabel('steps')
-    plt.ylabel('external reward')
-    plt.grid()
+def plot_multiple_models(data, legend, colors, path, window=1, has_score=False):
+    num_rows = 1
+    num_cols = 1
 
-    t = range(data[0]['re'].shape[1])
+    if has_score:
+        num_cols = 2
+
+    plt.figure(figsize=(num_cols * 6.40, num_rows * 5.12))
+    ax = plt.subplot(num_rows, num_cols, 1)
+    ax.set_xlabel('steps')
+    ax.set_ylabel('external reward')
+    ax.grid()
+
     for index, d in enumerate(data):
-        mu, sigma = prepare_data(d['re'], window)
-        plot_curve(plt, mu, sigma, t, colors[index])
+        iv, mu, sigma = prepare_data2(d['steps'], d['re'], window)
+        plot_curve(ax, mu, sigma, iv, colors[index])
 
-    plt.legend(legend[:len(data)], loc=4)
+    ax.legend(legend[:len(data)], loc=4)
+
+    if has_score:
+        ax = plt.subplot(num_rows, num_cols, 2)
+        ax.set_xlabel('steps')
+        ax.set_ylabel('score')
+        ax.grid()
+
+        for index, d in enumerate(data):
+            iv, mu, sigma = prepare_data2(d['steps'], d['score'], window)
+            plot_curve(ax, mu, sigma, iv, colors[index])
+
+        ax.legend(legend[:len(data)], loc=4)
 
     plt.savefig(path + ".png")
     plt.close()
@@ -76,36 +128,17 @@ def plot_baseline(data, path, window=1000):
 
 def plot_baseline_details(data, path, window=1000):
     num_rows = 1
-    num_cols = 3
-    for i in tqdm(range(data['re'].shape[0])):
+    num_cols = 1
+    for i in tqdm(range(len(data['re']))):
         fig = plt.figure(figsize=(num_cols * 7.00, num_rows * 7.00))
         ax = plt.subplot(num_rows, num_cols, 1)
         ax.set_xlabel('steps')
         ax.set_ylabel('reward')
         ax.grid()
 
-        t = range(data['re'].shape[1])
-
-        mu, sigma = prepare_data(data['re'][i], window)
-        plot_curve(ax, mu, sigma, t, 'blue')
+        iv, value = prepare_data_instance(data['steps'][i], data['re'][i], window)
+        plot_curve(ax, value, None, iv, 'blue')
         plt.legend(['external reward'], loc=4)
-
-        ax = plt.subplot(num_rows, num_cols, 2)
-        ax.set_xlabel('steps')
-        ax.set_ylabel('mean var / epoch')
-        ax.grid()
-
-        color_cycle = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
-        t = range(data['var'].shape[1])
-        for j in range(data['var'].shape[2]):
-            mu, sigma = prepare_data(data['var'][i, :, j], window)
-            plot_curve(ax, mu, sigma, t, color_cycle[j], alpha=0.5)
-
-        ax = plt.subplot(num_rows, num_cols, 3)
-        ax.set_xlabel('steps')
-
-        ax.plot(data['diff_mean'][i], color='blue', alpha=0.5)
-        ax.plot(data['diff_max'][i], color='red', alpha=0.5)
 
         plt.savefig("{0:s}_{1:d}.png".format(path, i))
         plt.close()
@@ -130,23 +163,32 @@ def plot_forward_model(data, path, window=1000):
     plt.close()
 
 
-def plot_forward_model_details(data, path, window=1000):
-    num_rows = 3
+def plot_forward_model_details(data, path, window=1000, average_per_step=False):
+    num_rows = 2
     num_cols = 2
-    for i in tqdm(range(data['re'].shape[0])):
+    for i in tqdm(range(len(data['re']))):
         fig = plt.figure(figsize=(num_cols * 7.00, num_rows * 7.00))
         ax = plt.subplot(num_rows, num_cols, 1)
         ax.set_xlabel('steps')
         ax.set_ylabel('reward')
         ax.grid()
 
-        t = range(data['re'].shape[1])
+        iv, value = prepare_data_instance(data['steps'][i], data['re'][i], window)
+        plot_curve(ax, value, None, iv, 'blue')
+        plt.legend(['external reward'], loc=4)
 
-        mu, sigma = prepare_data(data['re'][i], window)
-        plot_curve(ax, mu, sigma, t, 'blue')
-        mu, sigma = prepare_data(data['ri'][i], window)
-        plot_curve(ax, mu, sigma, t, 'red')
-        plt.legend(['external reward', 'internal reward'], loc=4)
+        ax = plt.subplot(num_rows, num_cols, 2)
+        ax.set_xlabel('steps')
+        ax.set_ylabel('reward')
+        ax.set_yscale('log', nonpositive='clip')
+        ax.grid()
+
+        if average_per_step:
+            data['ri'][i] = data['ri'][i] / data['steps'][i]
+
+        iv, value = prepare_data_instance(data['steps'][i], data['ri'][i], window)
+        plot_curve(ax, value, None, iv, 'red')
+        plt.legend(['internal reward'], loc=4)
 
         ax = plt.subplot(num_rows, num_cols, 3)
         ax.set_xlabel('steps')
@@ -154,27 +196,28 @@ def plot_forward_model_details(data, path, window=1000):
         ax.set_yscale('log', nonpositive='clip')
         ax.grid()
 
-        t = range(data['fme'][i].shape[0])
+        if average_per_step:
+            data['error'][i] = data['error'][i] / data['steps'][i]
 
-        mu, sigma = prepare_data(data['fme'][i], window)
-        plot_curve(ax, mu, sigma, t, 'green')
-        plt.legend(['prediction error'], loc=1)
+        iv, value = prepare_data_instance(data['steps'][i], data['error'][i], window)
+        plot_curve(ax, value, None, iv, 'green')
+        plt.legend(['error'], loc=1)
 
-        ax = plt.subplot(num_rows, num_cols, 5)
+        ax = plt.subplot(num_rows, num_cols, 4)
         ax.set_xlabel('reward magnitude')
         ax.set_ylabel('log count')
         ax.set_yscale('log', nonpositive='clip')
         ax.grid()
-        bins = np.linspace(0, 1, 50)
-        ax.hist(data['fme'][i], bins, color='darkcyan')
-        plt.legend(['prediction error reward'], loc=1)
+        bins = np.linspace(0, data['ri'][i].max(), 50)
+        ax.hist(data['ri'][i], bins, color='darkcyan')
+        plt.legend(['reward'], loc=1)
 
         if 'sdm' in data.keys() and 'ldm' in data.keys():
-            ax = plt.subplot(num_rows, num_cols, 2)
+            ax = plt.subplot(num_rows, num_cols, 5)
             c = ax.pcolormesh(data['sdm'][i], cmap='Reds')
             fig.colorbar(c, ax=ax)
 
-            ax = plt.subplot(num_rows, num_cols, 4)
+            ax = plt.subplot(num_rows, num_cols, 6)
             c = ax.pcolormesh(data['ldm'][i], cmap='Blues')
             fig.colorbar(c, ax=ax)
 
@@ -524,36 +567,34 @@ def plot_vdop_model_details(data, path, window=1000):
         plt.close()
 
 
-def plot_dop_model_details(data, path, window=1000):
+def plot_dop_model_details(data, path, window=1000, average_per_step=False):
     num_rows = 2
     num_cols = 3
 
-    hid_norm = np.expand_dims(np.sum(data['hid'], axis=2), 2)
-
-    for i in tqdm(range(data['re'].shape[0])):
+    for i in tqdm(range(len(data['re']))):
         fig = plt.figure(figsize=(num_cols * 7.00, num_rows * 7.00))
+
         ax = plt.subplot(num_rows, num_cols, 1)
         ax.set_xlabel('steps')
         ax.set_ylabel('reward')
         ax.grid()
 
-        t = range(data['re'].shape[1])
-
-        mu, sigma = prepare_data(data['re'][i], window)
-        plot_curve(ax, mu, sigma, t, 'blue')
+        iv, value = prepare_data_instance(data['steps'][i], data['re'][i], window)
+        plot_curve(ax, value, None, iv, 'blue')
         plt.legend(['external reward'], loc=4)
 
         ax = plt.subplot(num_rows, num_cols, 2)
-        color_cycle = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
-        t = range(data['hid'].shape[1])
-        data_hid = np.divide(data['hid'][i], hid_norm[i])
-        unstacked_data = []
-        for j in range(data['hid'].shape[2]):
-            mu, _ = prepare_data(data_hid[:, j], window)
-            unstacked_data.append(mu)
-
-        ax.stackplot(t, np.stack(unstacked_data), colors=color_cycle)
+        ax.set_xlabel('steps')
+        ax.set_ylabel('reward')
+        ax.set_yscale('log', nonpositive='clip')
         ax.grid()
+
+        if average_per_step:
+            data['ri'][i] = data['ri'][i] / data['steps'][i]
+
+        iv, value = prepare_data_instance(data['steps'][i], data['ri'][i], window)
+        plot_curve(ax, value, None, iv, 'red')
+        plt.legend(['internal reward'], loc=4)
 
         ax = plt.subplot(num_rows, num_cols, 3)
         ax.set_xlabel('steps')
@@ -561,30 +602,45 @@ def plot_dop_model_details(data, path, window=1000):
         ax.set_yscale('log', nonpositive='clip')
         ax.grid()
 
-        t = range(data['fme'].shape[1])
+        if average_per_step:
+            data['error'][i] = data['error'][i] / data['steps'][i]
 
-        mu, sigma = prepare_data(data['fme'][i], window)
-        plot_curve(ax, mu, sigma, t, 'green')
-        plt.legend(['prediction error'], loc=1)
+        iv, value = prepare_data_instance(data['steps'][i], data['error'][i], window)
+        plot_curve(ax, value, None, iv, 'green')
+        plt.legend(['error'], loc=1)
 
-        t = range(data['ext_grad'].shape[1])
-
+        data['hid'][i] = np.reshape(data['hid'][i], (-1, 4))
+        hid_norm = np.expand_dims(np.sum(data['hid'][i], axis=1), 1)
         ax = plt.subplot(num_rows, num_cols, 4)
-        mu, sigma = prepare_data(data['ext_grad'][i], window)
-        plot_curve(ax, mu, sigma, t, 'blue')
-        mu, sigma = prepare_data(data['dop_grad'][i], window)
-        plot_curve(ax, mu, sigma, t, 'red')
-        plt.legend(['ext. gradient', 'int. gradient'], loc=1)
+        color_cycle = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
 
-        colors = []
-        for head in data['th'][i]:
-            colors.append(color_cycle[int(head)])
+        data_hid = np.divide(data['hid'][i], hid_norm[i])
+        unstacked_data = []
+        for j in range(data['hid'][i].shape[1]):
+            iv, value = prepare_data_instance(data['steps'][i], data_hid[:, j], 1)
+            unstacked_data.append(value)
 
-        ax = plt.subplot(num_rows, num_cols, 5)
-        plt.scatter(data['ts'][i][:, 0], data['ts'][i][:, 1], marker='o', c=colors, s=8)
+        ax.stackplot(iv, np.stack(unstacked_data), colors=color_cycle)
+        ax.grid()
 
-        ax = plt.subplot(num_rows, num_cols, 6)
-        plt.scatter(data['ta'][i][:, 0], data['ta'][i][:, 1], marker='o', c=colors, s=8)
+        # t = range(data['ext_grad'].shape[1])
+        #
+        # ax = plt.subplot(num_rows, num_cols, 4)
+        # mu, sigma = prepare_data(data['ext_grad'][i], window)
+        # plot_curve(ax, mu, sigma, t, 'blue')
+        # mu, sigma = prepare_data(data['dop_grad'][i], window)
+        # plot_curve(ax, mu, sigma, t, 'red')
+        # plt.legend(['ext. gradient', 'int. gradient'], loc=1)
+        #
+        # colors = []
+        # for head in data['th'][i]:
+        #     colors.append(color_cycle[int(head)])
+        #
+        # ax = plt.subplot(num_rows, num_cols, 5)
+        # plt.scatter(data['ts'][i][:, 0], data['ts'][i][:, 1], marker='o', c=colors, s=8)
+        #
+        # ax = plt.subplot(num_rows, num_cols, 6)
+        # plt.scatter(data['ta'][i][:, 0], data['ta'][i][:, 1], marker='o', c=colors, s=8)
 
         plt.savefig("{0:s}_{1:d}.png".format(path, i))
         plt.close()
