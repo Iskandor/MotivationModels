@@ -131,6 +131,8 @@ def run(id, algorithm, env, experiment):
         env_class.run_rnd_model(experiment, id)
     if experiment.model == 'qrnd':
         env_class.run_qrnd_model(experiment, id)
+    if experiment.model == 'sr_rnd':
+        env_class.run_sr_rnd_model(experiment, id)
     if experiment.model == 'vdop':
         env_class.run_vdop_model(experiment, id)
     if experiment.model == 'dop':

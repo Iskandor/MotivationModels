@@ -610,7 +610,6 @@ def plot_dop_model_details(data, path, window=1000, average_per_step=False):
         plot_curve(ax, value, None, iv, 'green')
         plt.legend(['error'], loc=1)
 
-        data['hid'][i] = np.reshape(data['hid'][i], (-1, 4))
         ax = plt.subplot(num_rows, num_cols, 4)
         color_cycle = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
 
@@ -623,8 +622,10 @@ def plot_dop_model_details(data, path, window=1000, average_per_step=False):
         ax.grid()
 
         ax = plt.subplot(num_rows, num_cols, 5)
+
         reducer = umap.UMAP()
         embedding = reducer.fit_transform(np.transpose(hid))
+
         plt.scatter(embedding[:, 0], embedding[:, 1], c=range(embedding.shape[0]), marker='o', cmap='rainbow', s=8)
         ax.grid()
 

@@ -19,6 +19,10 @@ def run_qrnd_model(config, trial):
     PPO_HardAtariGame.run_qrnd_model(config, trial, env_name)
 
 
+def run_sr_rnd_model(config, trial):
+    PPO_HardAtariGame.run_sr_rnd_model(config, trial, env_name)
+
+
 def run_dop_model(config, trial):
     PPO_HardAtariGame.run_dop_model(config, trial, env_name)
 

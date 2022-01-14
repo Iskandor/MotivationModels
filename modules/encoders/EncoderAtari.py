@@ -269,3 +269,117 @@ class VAEAtari(nn.Module):
         KLD = -0.5 * torch.sum(1 + var - mean.pow(2) - var.exp(), dim=1)
 
         return BCE.mean() + KLD.mean()
+
+
+class DDMEncoderAtari(nn.Module):
+    def __init__(self, input_shape, action_dim, feature_dim):
+        super(DDMEncoderAtari, self).__init__()
+
+        self.input_channels = input_shape[0]
+        self.input_height = input_shape[1]
+        self.input_width = input_shape[2]
+
+        fc_inputs_count = 128 * (self.input_width // 8) * (self.input_height // 8)
+
+        self.encoder = nn.Sequential(
+            nn.Conv2d(self.input_channels, 32, kernel_size=3, stride=2, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=2, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(fc_inputs_count, feature_dim)
+        )
+
+        init_orthogonal(self.encoder[0], np.sqrt(2))
+        init_orthogonal(self.encoder[2], np.sqrt(2))
+        init_orthogonal(self.encoder[4], np.sqrt(2))
+        init_orthogonal(self.encoder[6], np.sqrt(2))
+        init_orthogonal(self.encoder[9], np.sqrt(2))
+
+        self.forward_model = nn.Sequential(
+            nn.Linear(feature_dim + action_dim, feature_dim),
+            nn.ReLU(),
+            nn.Linear(feature_dim, feature_dim),
+            nn.ReLU(),
+            nn.Linear(feature_dim, feature_dim)
+        )
+
+        init_orthogonal(self.forward_model[0], np.sqrt(2))
+        init_orthogonal(self.forward_model[2], np.sqrt(2))
+        init_orthogonal(self.forward_model[4], np.sqrt(2))
+
+        self.inverse_model = nn.Sequential(
+            nn.Linear(feature_dim + feature_dim, feature_dim),
+            nn.ReLU(),
+            nn.Linear(feature_dim, feature_dim),
+            nn.ReLU(),
+            nn.Linear(feature_dim, action_dim),
+            nn.Tanh()
+        )
+
+        init_orthogonal(self.inverse_model[0], np.sqrt(2))
+        init_orthogonal(self.inverse_model[2], np.sqrt(2))
+        init_orthogonal(self.inverse_model[4], np.sqrt(2))
+
+        self.decoder_lin = nn.Sequential(
+            nn.Linear(feature_dim, fc_inputs_count),
+            nn.ReLU()
+        )
+
+        init_orthogonal(self.decoder_lin[0], np.sqrt(2))
+
+        self.decoder_conv = nn.Sequential(
+            nn.ConvTranspose2d(128, 64, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.ConvTranspose2d(64, 64, kernel_size=3, stride=2, padding=1, output_padding=1),
+            nn.ReLU(),
+            nn.ConvTranspose2d(64, 32, kernel_size=3, stride=2, padding=1, output_padding=1),
+            nn.ReLU(),
+            nn.ConvTranspose2d(32, self.input_channels, kernel_size=3, stride=2, padding=1, output_padding=1),
+        )
+
+        init_orthogonal(self.decoder_conv[0], np.sqrt(2))
+        init_orthogonal(self.decoder_conv[2], np.sqrt(2))
+        init_orthogonal(self.decoder_conv[4], np.sqrt(2))
+        init_orthogonal(self.decoder_conv[6], np.sqrt(2))
+
+    def forward(self, state):
+        return self.encoder(state)
+
+    def predict(self, state, action, next_state):
+        features = self.encoder(state)
+        next_features = self.encoder(next_state)
+
+        x = torch.cat([features, action], dim=1)
+        next_feature_pred = self.forward_model(x)
+
+        x = torch.cat([features, next_features], dim=1)
+        action_pred = self.inverse_model(x)
+
+        state_pred = self.decoder_lin(features).reshape(-1, 128, self.input_height // 8, self.input_width // 8)
+        state_pred = self.decoder_conv(state_pred)
+
+        next_state_pred = self.decoder_lin(next_feature_pred).reshape(-1, 128, self.input_height // 8, self.input_width // 8)
+        next_state_pred = self.decoder_conv(next_state_pred)
+
+        return state_pred, next_feature_pred, next_state_pred, action_pred
+
+    def loss_function(self, states, actions, next_states):
+        state_pred, next_feature_pred, next_state_pred, action_pred = self.predict(states, actions, next_states)
+        next_feature_target = self.encoder(next_states)
+
+        ae_loss = nn.functional.mse_loss(state_pred, states)
+        next_feature_loss = nn.functional.mse_loss(next_feature_pred, next_feature_target.detach())
+        forward_model_loss = nn.functional.mse_loss(next_state_pred, next_states)
+        inverse_model_loss = nn.functional.mse_loss(action_pred, actions)
+
+        print('AE loss: {0:f} forward model loss {1:f} next features loss: {2:f} inverse model loss {3:f}'.format(
+            ae_loss.item(), forward_model_loss.item(), next_feature_loss.item(), inverse_model_loss.item()))
+
+        loss = ae_loss + next_feature_loss + forward_model_loss + inverse_model_loss
+
+        return loss

@@ -1,9 +1,11 @@
+import torch
+
 from agents.PPOAgent import PPOAgent
 from algorithms.ReplayBuffer import PPOTrajectoryBuffer
 from modules.dop_models.DOPModelAtari import DOPControllerAtari
 from modules.PPO_AtariModules import PPOAtariNetworkFM, PPOAtariNetwork, PPOAtariNetworkRND, PPOAtariNetworkQRND, PPOAtariNetworkDOP, PPOAtariMotivationNetwork, PPOAtariNetworkSRRND
 from motivation.DOPMotivation import DOPMotivation
-from motivation.Encoder import Encoder
+from motivation.Encoder import Encoder, DDMEncoder
 from motivation.ForwardModelMotivation import ForwardModelMotivation
 from motivation.RNDMotivation import RNDMotivation, QRNDMotivation
 
@@ -35,7 +37,7 @@ class PPOAtariSRRNDAgent(PPOAgent):
     def __init__(self, input_shape, action_dim, config, action_type):
         super().__init__(input_shape, action_dim, action_type, config)
         self.network = PPOAtariNetworkSRRND(input_shape, 512, action_dim, config, head=action_type).to(config.device)
-        self.encoder = Encoder(self.network.encoder, 0.0001, config.device)
+        self.encoder = DDMEncoder(self.network.encoder, 0.0001, config.device)
         self.encoder_memory = PPOTrajectoryBuffer(config.trajectory_size, config.batch_size, config.n_env)
         self.motivation = RNDMotivation(self.network.rnd_model, config.motivation_lr, config.motivation_eta, config.device)
         self.algorithm = self.init_algorithm(config, self.memory, config.n_env, motivation=True)
@@ -79,7 +81,7 @@ class PPOAtariDOPControllerAgent(PPOAgent):
     def __init__(self, network, input_shape, action_dim, config, action_type):
         super().__init__(input_shape, action_dim, action_type, config)
         self.network = network.to(config.device)
-        self.algorithm = self.init_algorithm(config, self.memory, config.n_env, motivation=False)
+        self.algorithm = self.init_algorithm(config, self.memory, config.n_env, motivation=True)
 
     def train(self, state0, value, action0, probs0, state1, reward, mask):
         self.memory.add(state0.cpu(), value.cpu(), action0.cpu(), probs0.cpu(), state1.cpu(), reward.cpu(), mask.cpu())
@@ -137,10 +139,10 @@ class PPOAtariDOPAgent(PPOAgent):
         self.generator_agent = PPOAtariDOPGeneratorAgent(self.network.dop_generator, input_shape, action_dim, config, action_type)
         self.controller_agent = PPOAtariDOPControllerAgent(self.network.dop_controller, input_shape, action_dim, config, action_type)
 
-    def train(self, actor_state0, state0, value, action0, probs0, head_value, head_action, head_probs, all_values, all_action, all_probs, state1, ext_reward, int_reward, mask):
+    def train(self, actor_state0, state0, value, action0, probs0, head_value, head_action, head_probs, all_values, all_action, all_probs, state1, ext_reward, all_int_reward, int_reward, mask):
         self.actor_agent.train(actor_state0, value, action0, probs0, state1, ext_reward, mask)
-        self.generator_agent.train(state0, all_values, all_action, all_probs, state1, int_reward.view(-1, self.head_count, 1), mask.unsqueeze(1).repeat(1, self.head_count, 1))
-        self.controller_agent.train(state0, head_value, head_action, head_probs, state1, ext_reward, mask)
+        self.generator_agent.train(state0, all_values, all_action, all_probs, state1, all_int_reward.view(-1, self.head_count, 1), mask.unsqueeze(1).repeat(1, self.head_count, 1))
+        self.controller_agent.train(state0, head_value, head_action, head_probs, state1, torch.cat([ext_reward, int_reward], dim=1), mask)
 
         self.memory.add(state0.cpu(), value.cpu(), action0.cpu(), probs0.cpu(), state1.cpu(), ext_reward.cpu(), mask.cpu())
         indices = self.memory.indices()
