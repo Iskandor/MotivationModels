@@ -7,6 +7,27 @@ from modules import init_orthogonal
 from modules.PPO_Modules import Actor, DiscreteHead, Critic2Heads
 
 
+class Aggregator(nn.Module):
+    def __init__(self, n_env, state_dim, frequency):
+        super(Aggregator, self).__init__()
+
+        self.buffer = torch.zeros(frequency, n_env, state_dim)
+        self.index = frequency - 1
+        self.frequency = frequency
+
+    def forward(self, state):
+        aggregated_value = None
+
+        self.buffer[self.index] = state
+        self.index += 1
+
+        if self.index == self.frequency:
+            aggregated_value = self.buffer.mean(dim=0)
+            self.buffer.zero_()
+
+        return aggregated_value
+
+
 class DOPControllerAtari(nn.Module):
     def __init__(self, state_dim, action_dim, config, features):
         super(DOPControllerAtari, self).__init__()

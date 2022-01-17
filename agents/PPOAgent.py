@@ -23,12 +23,6 @@ class PPOAgent:
         #     config.batch_size *= len(config.gpus)
         #     self.network = nn.DataParallel(self.network, config.gpus)
 
-    def init_algorithm(self, config, memory, n_env, motivation=False, ncritic=False):
-        algorithm = PPO(self.network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size, memory, config.beta, config.gamma,
-                        ppo_epochs=config.ppo_epochs, n_env=n_env, device=config.device, motivation=motivation, ncritic=ncritic)
-
-        return algorithm
-
     def get_action(self, state):
         value, action, probs = self.network(state)
 
@@ -46,7 +40,7 @@ class PPOAgent:
     def train(self, state0, value, action0, probs0, state1, reward, mask):
         self.memory.add(state0.cpu(), value.cpu(), action0.cpu(), probs0.cpu(), state1.cpu(), reward.cpu(), mask.cpu())
         indices = self.memory.indices()
-        self.algorithm.train(indices)
+        self.algorithm.train(self.memory, indices)
         if indices is not None:
             self.memory.clear()
 

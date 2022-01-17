@@ -175,6 +175,26 @@ class ActorNHeads(nn.Module):
         return torch.stack(actions, dim=1), torch.stack(probs, dim=1)
 
 
+class CriticHead(nn.Module):
+    def __init__(self, input_dim, base, n_heads=1):
+        super(CriticHead, self).__init__()
+        self.base = base
+        self.value = nn.Linear(input_dim, n_heads)
+
+    def forward(self, x):
+        x = self.base(x)
+        value = self.value(x)
+        return value
+
+    @property
+    def weight(self):
+        return self.value.weight
+
+    @property
+    def bias(self):
+        return self.value.bias
+
+
 class Critic2Heads(nn.Module):
     def __init__(self, input_dim):
         super(Critic2Heads, self).__init__()

@@ -6,10 +6,10 @@ from utils import *
 
 
 class PPO:
-    def __init__(self, network, lr, actor_loss_weight, critic_loss_weight, batch_size, trajectory_size, memory, p_beta, p_gamma,
-                 ppo_epochs=10, p_epsilon=0.1, p_lambda=0.95, weight_decay=0, device='cpu', n_env=1, motivation=False, ncritic=False):
+    def __init__(self, network, lr, actor_loss_weight, critic_loss_weight, batch_size, trajectory_size, p_beta, p_gamma,
+                 ppo_epochs=10, p_epsilon=0.1, p_lambda=0.95, ext_adv_scale=1, int_adv_scale=1, device='cpu', n_env=1, motivation=False, ncritic=False):
         self._network = network
-        self._optimizer = torch.optim.Adam(self._network.parameters(), lr=lr, weight_decay=weight_decay)
+        self._optimizer = torch.optim.Adam(self._network.parameters(), lr=lr)
         self._beta = p_beta
         self._gamma = [float(g) for g in p_gamma.split(',')]
         self._epsilon = p_epsilon
@@ -26,15 +26,16 @@ class PPO:
         self._ncritic = ncritic
         self._n_env = n_env
 
-        self._memory = memory
+        self.ext_adv_scale = ext_adv_scale
+        self.int_adv_scale = int_adv_scale
 
         if self._n_env > 1:
             self._trajectories = [[] for _ in range(self._n_env)]
 
-    def train(self, indices):
+    def train(self, memory, indices):
         if indices:
             start = time.time()
-            sample = self._memory.sample(indices, False)
+            sample = memory.sample(indices, False)
 
             states = sample.state
             values = sample.value
@@ -56,13 +57,14 @@ class PPO:
 
                     ext_ref_values, ext_adv_values = self.calc_advantage(values[:, :, 0].unsqueeze(-1), ext_reward, dones, self._gamma[0], self._n_env)
                     int_ref_values, int_adv_values = self.calc_advantage(values[:, :, 1].unsqueeze(-1), int_reward, dones, self._gamma[1], self._n_env)
-                adv_values = ext_adv_values * 2.0 + int_adv_values * 1.0
+                adv_values = ext_adv_values * self.ext_adv_scale + int_adv_values * self.int_adv_scale
                 ref_values = torch.cat([ext_ref_values, int_ref_values], dim=2)
             else:
                 if self._ncritic:
                     ref_values, adv_values = self.calc_advantage_ncritic(values, rewards, dones, self._gamma[0], self._n_env)
                 else:
                     ref_values, adv_values = self.calc_advantage(values, rewards, dones, self._gamma[0], self._n_env)
+                adv_values *= self.ext_adv_scale
 
             permutation = torch.randperm(self._trajectory_size)
 
