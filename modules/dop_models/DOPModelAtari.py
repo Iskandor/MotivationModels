@@ -63,6 +63,35 @@ class DOPControllerAtari(nn.Module):
         return value, action, probs
 
 
+class DOPActorAtari2(nn.Module):
+    def __init__(self, head_count, state_dim, action_dim, features, actor, critic):
+        super(DOPActorAtari2, self).__init__()
+
+        self.head_count = head_count
+        self.state_dim = state_dim
+        self.action_dim = action_dim
+
+        self.features = features
+        self.actor = actor
+        self.critic = critic
+
+    def forward(self, state):
+        features = self.features(state)
+        value = self.critic(features).view(-1, self.head_count, 2)
+        action, probs = self.actor(features)
+        action = self.actor.encode_action(action.view(-1, 1)).view(-1, self.head_count, self.action_dim)
+
+        return value, action, probs
+
+    def select_action(self, index, all_action, all_probs):
+        index = index.argmax(dim=1, keepdim=True)
+        all_action = all_action.view(-1, self.head_count, self.action_dim)
+        all_probs = all_probs.view(-1, self.head_count, self.action_dim)
+        action = all_action.gather(dim=1, index=index.unsqueeze(-1).repeat(1, 1, self.action_dim)).squeeze(1)
+        probs = all_probs.gather(dim=1, index=index.unsqueeze(-1).repeat(1, 1, self.action_dim)).squeeze(1)
+        return action, probs
+
+
 class DOPActorAtari(nn.Module):
     def __init__(self, head_count, state_dim, action_dim, features, actor, critic):
         super(DOPActorAtari, self).__init__()

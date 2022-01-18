@@ -3,8 +3,8 @@ import torch.nn as nn
 import numpy as np
 
 from modules import init_orthogonal
-from modules.dop_models.DOPModelAtari import DOPModelAtari, DOPControllerAtari, DOPActorAtari, DOPGeneratorAtari, Aggregator
-from modules.PPO_Modules import DiscreteHead, Actor, Critic2Heads, ActorNHeads, CriticHead
+from modules.dop_models.DOPModelAtari import DOPModelAtari, DOPControllerAtari, DOPActorAtari, DOPGeneratorAtari, Aggregator, DOPActorAtari2
+from modules.PPO_Modules import DiscreteHead, Actor, Critic2Heads, ActorNHeads, CriticHead, Critic2NHeads
 from modules.encoders.EncoderAtari import EncoderAtari, AutoEncoderAtari, VAEAtari, DDMEncoderAtari
 from modules.forward_models.ForwardModelAtari import ForwardModelAtari
 from modules.rnd_models.RNDModelAtari import QRNDModelAtari, RNDModelAtari
@@ -200,3 +200,45 @@ class PPOAtariNetworkDOP(PPOAtariNetwork):
     def prepare_input(self, index, features):
         x = torch.cat([index, features], dim=1)
         return x
+
+
+class PPOAtariNetworkDOP2(PPOAtariNetwork):
+    def __init__(self, input_shape, action_dim, config, head):
+        super(PPOAtariNetworkDOP2, self).__init__(input_shape, action_dim, config, head)
+
+        self.n_env = config.n_env
+        self.head_count = config.dop_heads
+
+        self.critic = nn.Sequential(
+            torch.nn.Linear(self.feature_dim, self.feature_dim),
+            torch.nn.ReLU(),
+            Critic2NHeads(self.feature_dim, config.dop_heads)
+        )
+
+        init_orthogonal(self.critic[0], 0.1)
+        init_orthogonal(self.critic[2], 0.01)
+
+        self.actor = nn.Sequential(
+            torch.nn.Linear(self.feature_dim, self.feature_dim),
+            torch.nn.ReLU(),
+            ActorNHeads(head, config.dop_heads, dims=[self.feature_dim, self.feature_dim, action_dim], init='orto')
+        )
+
+        init_orthogonal(self.actor[0], 0.01)
+
+        self.actor = Actor(self.actor, head, self.action_dim)
+
+        self.qrnd_model = QRNDModelAtari(input_shape, action_dim, config)
+        self.dop_actor = DOPActorAtari2(config.dop_heads, input_shape, action_dim, self.features, self.actor, self.critic)
+
+        # self.dop_controller_aggregator = Aggregator(config.n_env, self.feature_dim, 512)
+        self.dop_controller = DOPControllerAtari(self.feature_dim, config.dop_heads, config, self.features)
+        # self.dop_controller_feature = None
+
+    def forward(self, state):
+        value, action, probs = self.dop_actor(state)
+
+        # self.dop_controller_feature = self.dop_controller_aggregator(features)
+        head_value, head_action, head_probs = self.dop_controller(state)
+
+        return value, action, probs, head_value, head_action, head_probs

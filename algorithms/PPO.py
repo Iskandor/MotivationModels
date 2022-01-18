@@ -51,14 +51,17 @@ class PPO:
 
                     ext_ref_values, ext_adv_values = self.calc_advantage_ncritic(values[:, :, :, 0].unsqueeze(-1), ext_reward, dones, self._gamma[0], self._n_env)
                     int_ref_values, int_adv_values = self.calc_advantage_ncritic(values[:, :, :, 1].unsqueeze(-1), int_reward, dones, self._gamma[1], self._n_env)
+                    ref_values = torch.cat([ext_ref_values, int_ref_values], dim=3)
                 else:
                     ext_reward = rewards[:, :, 0].unsqueeze(-1)
                     int_reward = rewards[:, :, 1].unsqueeze(-1)
 
                     ext_ref_values, ext_adv_values = self.calc_advantage(values[:, :, 0].unsqueeze(-1), ext_reward, dones, self._gamma[0], self._n_env)
                     int_ref_values, int_adv_values = self.calc_advantage(values[:, :, 1].unsqueeze(-1), int_reward, dones, self._gamma[1], self._n_env)
+                    ref_values = torch.cat([ext_ref_values, int_ref_values], dim=2)
+
                 adv_values = ext_adv_values * self.ext_adv_scale + int_adv_values * self.int_adv_scale
-                ref_values = torch.cat([ext_ref_values, int_ref_values], dim=2)
+
             else:
                 if self._ncritic:
                     ref_values, adv_values = self.calc_advantage_ncritic(values, rewards, dones, self._gamma[0], self._n_env)
@@ -100,6 +103,14 @@ class PPO:
     def calc_loss(self, states, ref_value, adv_value, old_actions, old_probs):
         values, _, probs = self._network(states)
 
+        if self._ncritic:
+            values = values.view(-1, values.shape[-1])
+            adv_value = adv_value.view(-1, adv_value.shape[-1])
+            ref_value = ref_value.view(-1, ref_value.shape[-1])
+            probs = probs.view(-1, probs.shape[-1])
+            old_probs = old_probs.view(-1, old_probs.shape[-1])
+            old_actions = old_actions.view(-1, old_actions.shape[-1])
+
         if self._motivation:
             ext_value = values[:, 0]
             int_value = values[:, 1]
@@ -111,12 +122,6 @@ class PPO:
             loss_value = loss_ext_value + loss_int_value
         else:
             loss_value = torch.nn.functional.mse_loss(values, ref_value)
-
-        if self._ncritic:
-            adv_value = adv_value.view(-1, adv_value.shape[-1])
-            probs = probs.view(-1, probs.shape[-1])
-            old_probs = old_probs.view(-1, old_probs.shape[-1])
-            old_actions = old_actions.view(-1, old_actions.shape[-1])
 
         log_probs = self._network.actor.log_prob(probs, old_actions)
         old_logprobs = self._network.actor.log_prob(old_probs, old_actions)

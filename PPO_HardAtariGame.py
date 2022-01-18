@@ -2,7 +2,7 @@ import gym
 import torch
 
 from agents import TYPE
-from agents.PPOAtariAgent import PPOAtariAgent, PPOAtariRNDAgent, PPOAtariForwardModelAgent, PPOAtariQRNDAgent, PPOAtariDOPAgent, PPOAtariSRRNDAgent
+from agents.PPOAtariAgent import PPOAtariAgent, PPOAtariRNDAgent, PPOAtariForwardModelAgent, PPOAtariQRNDAgent, PPOAtariDOPAgent, PPOAtariSRRNDAgent, PPOAtariDOPAgent2
 from experiment.ppo_nenv_experiment import ExperimentNEnvPPO
 from utils.AtariWrapper import WrapperHardAtari
 from utils.MultiEnvWrapper import MultiEnvParallel
@@ -105,7 +105,7 @@ def run_dop_model(config, trial, env_name):
     experiment = ExperimentNEnvPPO(env_name, env, config)
 
     experiment.add_preprocess(encode_state)
-    agent = PPOAtariDOPAgent(input_shape, action_dim, config, TYPE.discrete)
+    agent = PPOAtariDOPAgent2(input_shape, action_dim, config, TYPE.discrete)
     experiment.run_dop_model(agent, trial)
 
     env.close()

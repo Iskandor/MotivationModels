@@ -218,6 +218,29 @@ class Critic2Heads(nn.Module):
         return self.ext.bias, self.int.bias
 
 
+class Critic2NHeads(nn.Module):
+    def __init__(self, input_dim, n_heads):
+        super(Critic2NHeads, self).__init__()
+        self.ext = nn.Linear(input_dim, n_heads)
+        self.int = nn.Linear(input_dim, n_heads)
+
+        init_orthogonal(self.ext, 0.01)
+        init_orthogonal(self.int, 0.01)
+
+    def forward(self, x):
+        ext_value = self.ext(x)
+        int_value = self.int(x)
+        return torch.cat([ext_value, int_value], dim=1).squeeze(-1)
+
+    @property
+    def weight(self):
+        return self.ext.weight, self.int.weight
+
+    @property
+    def bias(self):
+        return self.ext.bias, self.int.bias
+
+
 class PPOSimpleNetwork(torch.nn.Module):
     def __init__(self, state_dim, action_dim, config, head):
         super(PPOSimpleNetwork, self).__init__()

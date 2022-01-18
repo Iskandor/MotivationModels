@@ -24,7 +24,7 @@ class PPOAerisRNDAgent(PPOAgent):
                              device=config.device, motivation=True)
 
     def train(self, state0, value, action0, probs0, state1, reward, mask):
-        self.memory.add(state0.cpu(), value.cpu(), action0.cpu(), probs0.cpu(), state1.cpu(), reward.cpu(), mask.cpu())
+        self.memory.add(state=state0.cpu(), value=value.cpu(), action=action0.cpu(), prob=probs0.cpu(), reward=reward.cpu(), mask=mask.cpu())
         indices = self.memory.indices()
         self.algorithm.train(self.memory, indices)
         self.motivation.train(self.memory, indices)
@@ -41,7 +41,7 @@ class PPOAerisDOPAgent(PPOAgent):
                              config.beta, config.gamma, ppo_epochs=config.ppo_epochs, n_env=config.n_env, device=config.device)
 
     def train(self, state0, value, action0, probs0, state1, reward, mask):
-        self.memory.add(state0.cpu(), value.cpu(), action0.cpu(), probs0.cpu(), state1.cpu(), reward.cpu(), mask.cpu())
+        self.memory.add(state=state0.cpu(), value=value.cpu(), action=action0.cpu(), prob=probs0.cpu(), reward=reward.cpu(), mask=mask.cpu())
         indices = self.memory.indices()
         self.algorithm.train(self.memory, indices)
         self.motivation.train(self.memory, indices, self.memory, indices)

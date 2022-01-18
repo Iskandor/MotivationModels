@@ -206,7 +206,7 @@ class ExperimentNEnvPPO:
             state1 = self.process_state(next_state)
 
             reward = torch.cat([ext_reward, int_reward], dim=1)
-            done = torch.tensor(done, dtype=torch.float32)
+            done = torch.tensor(1 - done, dtype=torch.float32)
 
             agent.train(state0, value, action0, probs0, state1, reward, done)
 
@@ -305,7 +305,7 @@ class ExperimentNEnvPPO:
             state1 = self.process_state(next_state)
 
             reward = torch.cat([ext_reward, int_reward], dim=1)
-            done = torch.tensor(done, dtype=torch.float32)
+            done = torch.tensor(1 - done, dtype=torch.float32)
 
             agent.train(state0, value, action0, probs0, state1, reward, done)
 
@@ -399,7 +399,7 @@ class ExperimentNEnvPPO:
             features1 = agent.get_features(state1)
 
             reward = torch.cat([ext_reward, int_reward], dim=1)
-            done = torch.tensor(done, dtype=torch.float32)
+            done = torch.tensor(1 - done, dtype=torch.float32)
 
             agent.train(state0, features0, value, action0, probs0, state1, features1, reward, done)
 
@@ -443,28 +443,31 @@ class ExperimentNEnvPPO:
             s[i] = self._env.reset(i)
 
         state0 = self.process_state(s)
+        ext_reward = torch.zeros((n_env, config.dop_heads, 1), dtype=torch.float32, device=config.device)
 
         while step_counter.running():
             with torch.no_grad():
-                actor_state, value, action0, probs0, head_value, head_action, head_probs, all_values, all_action, all_probs = agent.get_action(state0)
-            agent.motivation.update_state_average(state0, action0)
-            next_state, reward, done, info = self._env.step(agent.convert_action(action0.cpu()))
+                value, action0, probs0, head_value, head_action, head_probs, selected_action = agent.get_action(state0)
+            agent.motivation.update_state_average(state0, selected_action)
+            next_state, reward, done, info = self._env.step(agent.convert_action(selected_action.cpu()))
 
             head_index_density += head_action.cpu().numpy()
-            error = agent.motivation.error(agent.extend_state(state0), all_action)
-            ext_reward = torch.tensor(reward, dtype=torch.float32)
-            int_reward = agent.motivation.reward(error).cpu().clip(0.0, 1.0)
+            error = agent.motivation.error(agent.extend_state(state0), action0)
+
+            ext_reward.zero_()
+            ext_reward = ext_reward.scatter(1, head_action.argmax(dim=1, keepdim=True).unsqueeze(-1), torch.tensor(reward, dtype=torch.float32, device=config.device).unsqueeze(-1))
+            int_reward = agent.motivation.reward(error).cpu().clip(0.0, 1.0).view(-1, config.dop_heads, 1)
 
             if info is not None and 'raw_score' in info:
                 score = numpy.expand_dims(info['raw_score'], axis=1)
                 train_score += score
 
-            sel_error = agent.motivation.error(state0, action0)
+            sel_error = agent.motivation.error(state0, selected_action)
             sel_int_reward = agent.motivation.reward(sel_error).cpu().clip(0.0, 1.0)
             sel_error = sel_error.cpu()
 
             train_steps += 1
-            train_ext_reward += ext_reward.numpy()
+            train_ext_reward += reward
             train_int_reward += sel_int_reward.numpy()
             train_error += sel_error.numpy()
 
@@ -500,10 +503,10 @@ class ExperimentNEnvPPO:
 
             state1 = self.process_state(next_state)
 
-            # reward = torch.cat([ext_reward, int_reward], dim=1)
-            done = torch.tensor(done, dtype=torch.float32)
+            reward = torch.cat([ext_reward.cpu(), int_reward], dim=2)
+            done = torch.tensor(1 - done, dtype=torch.float32)
 
-            agent.train(actor_state, state0, value, action0, probs0, head_value, head_action, head_probs, all_values, all_action, all_probs, state1, ext_reward, int_reward, sel_int_reward, done)
+            agent.train(state0, value, action0, selected_action, probs0, head_value, head_action, head_probs, state1, reward, done)
 
             state0 = state1
 

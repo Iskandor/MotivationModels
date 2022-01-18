@@ -2,7 +2,7 @@ import torch
 
 from agents import TYPE
 from algorithms.PPO import PPO
-from algorithms.ReplayBuffer import PPOTrajectoryBuffer
+from algorithms.ReplayBuffer import GenericTrajectoryBuffer
 from modules.PPO_Modules import PPOSimpleNetwork
 from motivation.ForwardModelMotivation import ForwardModelMotivation
 from motivation.RNDMotivation import RNDMotivation
@@ -15,7 +15,7 @@ class PPOAgent:
         self.action_dim = action_dim
         self.config = config
         self.network = None
-        self.memory = PPOTrajectoryBuffer(config.trajectory_size, config.batch_size, config.n_env)
+        self.memory = GenericTrajectoryBuffer(config.trajectory_size, config.batch_size, config.n_env)
         self.algorithm = None
         self.action_type = action_type
 
@@ -38,7 +38,7 @@ class PPOAgent:
             return torch.argmax(action, dim=1).numpy()
 
     def train(self, state0, value, action0, probs0, state1, reward, mask):
-        self.memory.add(state0.cpu(), value.cpu(), action0.cpu(), probs0.cpu(), state1.cpu(), reward.cpu(), mask.cpu())
+        self.memory.add(state=state0.cpu(), value=value.cpu(), action=action0.cpu(), prob=probs0.cpu(), reward=reward.cpu(), mask=mask.cpu())
         indices = self.memory.indices()
         self.algorithm.train(self.memory, indices)
         if indices is not None:
