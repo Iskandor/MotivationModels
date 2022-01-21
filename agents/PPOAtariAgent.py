@@ -43,7 +43,7 @@ class PPOAtariSRRNDAgent(PPOAgent):
     def __init__(self, input_shape, action_dim, config, action_type):
         super().__init__(input_shape, action_dim, action_type, config)
         self.network = PPOAtariNetworkSRRND(input_shape, 512, action_dim, config, head=action_type).to(config.device)
-        self.encoder = DDMEncoder(self.network.encoder, 0.0001, config.device)
+        self.encoder = Encoder(self.network.encoder, 0.00001, config.device)
         self.encoder_memory = GenericTrajectoryBuffer(config.trajectory_size, config.batch_size, config.n_env)
         self.motivation = RNDMotivation(self.network.rnd_model, config.motivation_lr, config.motivation_eta, config.device)
         self.algorithm = PPO(self.network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size,
@@ -52,7 +52,7 @@ class PPOAtariSRRNDAgent(PPOAgent):
 
     def train(self, state0, features0, value, action0, probs0, state1, features1, reward, mask):
         self.memory.add(state=features0.cpu(), value=value.cpu(), action=action0.cpu(), prob=probs0.cpu(), reward=reward.cpu(), mask=mask.cpu())
-        self.encoder_memory.add(state=state0.cpu(), value=value.cpu(), action=action0.cpu(), prob=probs0.cpu(), reward=reward.cpu(), mask=mask.cpu())
+        self.encoder_memory.add(state=state0.cpu(), next_state=state1.cpu())
         indices = self.memory.indices()
         memory_indices = self.encoder_memory.indices()
         self.algorithm.train(self.memory, indices)

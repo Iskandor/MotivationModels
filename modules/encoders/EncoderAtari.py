@@ -383,3 +383,101 @@ class DDMEncoderAtari(nn.Module):
         loss = ae_loss + next_feature_loss + forward_model_loss + inverse_model_loss
 
         return loss
+
+
+class ST_DIM_CNN(nn.Module):
+
+    def __init__(self, input_shape, feature_dim):
+        super().__init__()
+        self.feature_size = feature_dim
+        self.hidden_size = self.feature_size
+
+        self.input_channels = input_shape[0]
+        self.input_height = input_shape[1]
+        self.input_width = input_shape[2]
+
+        self.final_conv_size = 128 * (self.input_width // 8) * (self.input_height // 8)
+        self.main = nn.Sequential(
+            nn.Conv2d(self.input_channels, 32, kernel_size=3, stride=2, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=2, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(self.final_conv_size, feature_dim)
+        )
+
+        init_orthogonal(self.main[0], nn.init.calculate_gain('relu'))
+        init_orthogonal(self.main[2], nn.init.calculate_gain('relu'))
+        init_orthogonal(self.main[4], nn.init.calculate_gain('relu'))
+        init_orthogonal(self.main[6], nn.init.calculate_gain('relu'))
+        # init_orthogonal(self.main[9], nn.init.calculate_gain('relu'))
+
+        self.local_layer_depth = self.main[4].out_channels
+
+    def forward(self, inputs, fmaps=False):
+        f5 = self.main[:6](inputs)
+        f7 = self.main[6:8](f5)
+        out = self.main[8:](f7)
+
+        if fmaps:
+            return {
+                'f5': f5.permute(0, 2, 3, 1),
+                'f7': f7.permute(0, 2, 3, 1),
+                'out': out
+            }
+        return out
+
+
+class ST_DIMEncoderAtari(nn.Module):
+    def __init__(self, input_shape, feature_dim, config):
+        super(ST_DIMEncoderAtari, self).__init__()
+
+        self.config = config
+        self.input_channels = input_shape[0]
+        self.input_height = input_shape[1]
+        self.input_width = input_shape[2]
+
+        self.encoder = ST_DIM_CNN(input_shape, feature_dim)
+        self.classifier1 = nn.Linear(self.encoder.hidden_size, self.encoder.local_layer_depth)  # x1 = global, x2=patch, n_channels = 32
+        self.classifier2 = nn.Linear(self.encoder.local_layer_depth, self.encoder.local_layer_depth)
+
+    def forward(self, state):
+        return self.encoder(state)
+
+    def loss_function(self, states, next_states):
+        f_t_maps, f_t_prev_maps = self.encoder(next_states, fmaps=True), self.encoder(states, fmaps=True)
+
+        # Loss 1: Global at time t, f5 patches at time t-1
+        f_t, f_t_prev = f_t_maps['out'], f_t_prev_maps['f5']
+        sy = f_t_prev.size(1)
+        sx = f_t_prev.size(2)
+
+        N = f_t.size(0)
+        loss1 = 0.
+        for y in range(sy):
+            for x in range(sx):
+                predictions = self.classifier1(f_t)
+                positive = f_t_prev[:, y, x, :]
+                logits = torch.matmul(predictions, positive.t())
+                step_loss = nn.functional.cross_entropy(logits, torch.arange(N).to(self.config.device))
+                loss1 += step_loss
+        loss1 = loss1 / (sx * sy)
+
+        # Loss 2: f5 patches at time t, with f5 patches at time t-1
+        f_t = f_t_maps['f5']
+        loss2 = 0.
+        for y in range(sy):
+            for x in range(sx):
+                predictions = self.classifier2(f_t[:, y, x, :])
+                positive = f_t_prev[:, y, x, :]
+                logits = torch.matmul(predictions, positive.t())
+                step_loss = nn.functional.cross_entropy(logits, torch.arange(N).to(self.config.device))
+                loss2 += step_loss
+        loss2 = loss2 / (sx * sy)
+        loss = loss1 + loss2
+
+        return loss

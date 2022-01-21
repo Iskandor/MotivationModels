@@ -5,7 +5,7 @@ import numpy as np
 from modules import init_orthogonal
 from modules.dop_models.DOPModelAtari import DOPModelAtari, DOPControllerAtari, DOPActorAtari, DOPGeneratorAtari, Aggregator, DOPActorAtari2
 from modules.PPO_Modules import DiscreteHead, Actor, Critic2Heads, ActorNHeads, CriticHead, Critic2NHeads
-from modules.encoders.EncoderAtari import EncoderAtari, AutoEncoderAtari, VAEAtari, DDMEncoderAtari
+from modules.encoders.EncoderAtari import EncoderAtari, AutoEncoderAtari, VAEAtari, DDMEncoderAtari, ST_DIMEncoderAtari
 from modules.forward_models.ForwardModelAtari import ForwardModelAtari
 from modules.rnd_models.RNDModelAtari import QRNDModelAtari, RNDModelAtari
 
@@ -133,7 +133,7 @@ class PPOAtariNetworkRND(PPOAtariMotivationNetwork):
 class PPOAtariNetworkSRRND(PPOAtariSRMotivationNetwork):
     def __init__(self, input_shape, feature_dim, action_dim, config, head):
         super(PPOAtariNetworkSRRND, self).__init__(feature_dim, action_dim, config, head)
-        self.encoder = DDMEncoderAtari(input_shape, action_dim, feature_dim)
+        self.encoder = ST_DIMEncoderAtari(input_shape, feature_dim, config)
         self.rnd_model = RNDModelAtari(input_shape, action_dim, config)
 
 
