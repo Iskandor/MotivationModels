@@ -55,7 +55,7 @@ class DOPControllerAtari(nn.Module):
         self.actor = Actor(self.actor, TYPE.discrete, action_dim)
 
     def forward(self, state):
-        features = self.features(state)
+        features = self.features(state).detach()
         value = self.critic(features)
         action, probs = self.actor(features)
         action = self.actor.encode_action(action)

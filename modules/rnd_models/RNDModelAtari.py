@@ -99,35 +99,16 @@ class QRNDModelAtari(nn.Module):
         self.input_shape = input_shape
         self.action_dim = action_dim
 
-        input_channels = 1 + 1
+        input_channels = 1
         input_height = self.input_shape[1]
         input_width = self.input_shape[2]
         self.feature_dim = 512
         self.state_average = RunningStats((4, input_height, input_width), config.device)
-        self.action_average = RunningStats((1, input_height, input_width), config.device)
+        self.action_average = RunningStats(action_dim, config.device)
 
         fc_inputs_count = 64 * (input_width // 8) * (input_height // 8)
 
-        self.target_model = nn.Sequential(
-            nn.Conv2d(input_channels, 32, kernel_size=8, stride=4, padding=2),
-            nn.ELU(),
-            nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1),
-            nn.ELU(),
-            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
-            nn.ELU(),
-            nn.Flatten(),
-            nn.Linear(fc_inputs_count, self.feature_dim)
-        )
-
-        init_orthogonal(self.target_model[0], np.sqrt(2))
-        init_orthogonal(self.target_model[2], np.sqrt(2))
-        init_orthogonal(self.target_model[4], np.sqrt(2))
-        init_orthogonal(self.target_model[7], np.sqrt(2))
-
-        for param in self.target_model.parameters():
-            param.requires_grad = False
-
-        self.model = nn.Sequential(
+        self.target_model_state = nn.Sequential(
             nn.Conv2d(input_channels, 32, kernel_size=8, stride=4, padding=2),
             nn.ELU(),
             nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1),
@@ -136,30 +117,87 @@ class QRNDModelAtari(nn.Module):
             nn.ELU(),
             nn.Flatten(),
             nn.Linear(fc_inputs_count, self.feature_dim),
+            nn.ELU()
+        )
+
+        init_orthogonal(self.target_model_state[0], np.sqrt(2))
+        init_orthogonal(self.target_model_state[2], np.sqrt(2))
+        init_orthogonal(self.target_model_state[4], np.sqrt(2))
+        init_orthogonal(self.target_model_state[7], np.sqrt(2))
+
+        for param in self.target_model_state.parameters():
+            param.requires_grad = False
+
+        self.target_model_action = nn.Sequential(
+            nn.Linear(action_dim, self.feature_dim // 2),
+            nn.ELU(),
+            nn.Linear(self.feature_dim // 2, self.feature_dim // 2),
+            nn.ELU(),
+        )
+        init_orthogonal(self.target_model_action[0], np.sqrt(2))
+        init_orthogonal(self.target_model_action[2], np.sqrt(2))
+
+        for param in self.target_model_action.parameters():
+            param.requires_grad = False
+
+        self.target_model = nn.Linear(self.feature_dim + self.feature_dim // 2, self.feature_dim)
+        init_orthogonal(self.target_model, np.sqrt(2))
+
+        for param in self.target_model.parameters():
+            param.requires_grad = False
+
+        self.model_state = nn.Sequential(
+            nn.Conv2d(input_channels, 32, kernel_size=8, stride=4, padding=2),
+            nn.ELU(),
+            nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1),
+            nn.ELU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
+            nn.ELU(),
+            nn.Flatten(),
+            nn.Linear(fc_inputs_count, self.feature_dim),
+            nn.ELU()
+        )
+        init_orthogonal(self.model_state[0], np.sqrt(2))
+        init_orthogonal(self.model_state[2], np.sqrt(2))
+        init_orthogonal(self.model_state[4], np.sqrt(2))
+        init_orthogonal(self.model_state[7], np.sqrt(2))
+
+        self.model_action = nn.Sequential(
+            nn.Linear(action_dim, self.feature_dim // 2),
+            nn.ELU(),
+            nn.Linear(self.feature_dim // 2, self.feature_dim // 2),
+            nn.ELU()
+        )
+        init_orthogonal(self.model_action[0], np.sqrt(2))
+        init_orthogonal(self.model_action[2], np.sqrt(2))
+
+        self.model = nn.Sequential(
+            nn.Linear(self.feature_dim + self.feature_dim // 2, self.feature_dim),
             nn.ELU(),
             nn.Linear(self.feature_dim, self.feature_dim),
             nn.ELU(),
             nn.Linear(self.feature_dim, self.feature_dim)
         )
-
         init_orthogonal(self.model[0], np.sqrt(2))
         init_orthogonal(self.model[2], np.sqrt(2))
         init_orthogonal(self.model[4], np.sqrt(2))
-        init_orthogonal(self.model[7], np.sqrt(2))
-        init_orthogonal(self.model[9], np.sqrt(2))
-        init_orthogonal(self.model[11], np.sqrt(2))
 
     def prepare_input(self, state, action):
-        action = action.unsqueeze(2).unsqueeze(3).repeat(1, 1, state.shape[2], state.shape[3]).argmax(dim=1).unsqueeze(1) / self.action_dim
         action = action - self.action_average.mean
         state = state - self.state_average.mean
-        x = torch.cat([state[:, 0, :, :].unsqueeze(1), action], dim=1)
-        return x
+        return state[:, 0, :, :].unsqueeze(1), action
 
     def forward(self, state, action):
-        x = self.prepare_input(state, action)
-        predicted_code = self.model(x)
-        target_code = self.target_model(x)
+        s, a = self.prepare_input(state, action)
+
+        ts, ta = self.target_model_state(s), self.target_model_action(a)
+        ps, pa = self.model_state(s), self.model_action(a)
+
+        p = torch.cat([ps, pa], dim=1)
+        t = torch.cat([ts, ta], dim=1)
+
+        predicted_code = self.model(p)
+        target_code = self.target_model(t)
         return predicted_code, target_code
 
     def error(self, state, action):
@@ -181,7 +219,5 @@ class QRNDModelAtari(nn.Module):
         # return loss.mean()
 
     def update_state_average(self, state, action):
-        action = action.unsqueeze(2).unsqueeze(3).repeat(1, 1, state.shape[2], state.shape[3]).argmax(dim=1).unsqueeze(1) / self.action_dim
-
         self.action_average.update(action)
         self.state_average.update(state)

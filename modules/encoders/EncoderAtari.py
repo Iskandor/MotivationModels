@@ -414,7 +414,7 @@ class ST_DIM_CNN(nn.Module):
         init_orthogonal(self.main[2], nn.init.calculate_gain('relu'))
         init_orthogonal(self.main[4], nn.init.calculate_gain('relu'))
         init_orthogonal(self.main[6], nn.init.calculate_gain('relu'))
-        # init_orthogonal(self.main[9], nn.init.calculate_gain('relu'))
+        init_orthogonal(self.main[9], nn.init.calculate_gain('relu'))
 
         self.local_layer_depth = self.main[4].out_channels
 
