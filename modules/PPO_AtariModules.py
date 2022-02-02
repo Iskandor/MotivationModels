@@ -7,7 +7,7 @@ from modules.dop_models.DOPModelAtari import DOPModelAtari, DOPControllerAtari, 
 from modules.PPO_Modules import DiscreteHead, Actor, Critic2Heads, ActorNHeads, CriticHead, Critic2NHeads
 from modules.encoders.EncoderAtari import EncoderAtari, AutoEncoderAtari, VAEAtari, DDMEncoderAtari, ST_DIMEncoderAtari
 from modules.forward_models.ForwardModelAtari import ForwardModelAtari
-from modules.rnd_models.RNDModelAtari import QRNDModelAtari, RNDModelAtari
+from modules.rnd_models.RNDModelAtari import QRNDModelAtari, RNDModelAtari, CNDModelAtari
 
 
 class PPOAtariNetwork(torch.nn.Module):
@@ -137,6 +137,13 @@ class PPOAtariNetworkSRRND(PPOAtariSRMotivationNetwork):
         self.rnd_model = RNDModelAtari(input_shape, action_dim, config)
 
 
+class PPOAtariNetworkCND(PPOAtariSRMotivationNetwork):
+    def __init__(self, input_shape, feature_dim, action_dim, config, head):
+        super(PPOAtariNetworkCND, self).__init__(feature_dim, action_dim, config, head)
+        self.encoder = ST_DIMEncoderAtari(input_shape, feature_dim, config)
+        self.cnd_model = CNDModelAtari(input_shape, action_dim, config, self.encoder)
+
+
 class PPOAtariNetworkQRND(PPOAtariSRMotivationNetwork):
     def __init__(self, input_shape, feature_dim, action_dim, config, head):
         super(PPOAtariNetworkQRND, self).__init__(feature_dim, action_dim, config, head)
@@ -210,6 +217,8 @@ class PPOAtariNetworkDOP2(PPOAtariNetwork):
         self.n_env = config.n_env
         self.head_count = config.dop_heads
 
+        self.features = ST_DIMEncoderAtari(input_shape, self.feature_dim, config)
+
         self.critic = nn.Sequential(
             torch.nn.Linear(self.feature_dim, self.feature_dim),
             torch.nn.ReLU(),
@@ -219,15 +228,15 @@ class PPOAtariNetworkDOP2(PPOAtariNetwork):
         init_orthogonal(self.critic[0], 0.1)
         init_orthogonal(self.critic[2], 0.01)
 
-        self.actor = nn.Sequential(
+        actor = nn.Sequential(
             torch.nn.Linear(self.feature_dim, self.feature_dim),
             torch.nn.ReLU(),
             ActorNHeads(head, config.dop_heads, dims=[self.feature_dim, self.feature_dim, action_dim], init='orto')
         )
 
-        init_orthogonal(self.actor[0], 0.01)
+        init_orthogonal(actor[0], 0.01)
 
-        self.actor = Actor(self.actor, head, self.action_dim)
+        self.actor = Actor(actor, head, self.action_dim)
 
         self.qrnd_model = QRNDModelAtari(input_shape, action_dim, config)
         self.dop_actor = DOPActorAtari2(config.dop_heads, input_shape, action_dim, self.features, self.actor, self.critic)

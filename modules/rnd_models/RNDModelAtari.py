@@ -92,6 +92,66 @@ class RNDModelAtari(nn.Module):
         self.state_average.update(state)
 
 
+class CNDModelAtari(nn.Module):
+    def __init__(self, input_shape, action_dim, config, target_model):
+        super(CNDModelAtari, self).__init__()
+
+        self.input_shape = input_shape
+        self.action_dim = action_dim
+
+        input_channels = 4
+        input_height = self.input_shape[1]
+        input_width = self.input_shape[2]
+        self.feature_dim = 512
+
+        fc_inputs_count = 128 * (input_width // 8) * (input_height // 8)
+
+        self.target_model = target_model
+
+        self.model = nn.Sequential(
+            nn.Conv2d(input_channels, 32, kernel_size=3, stride=2, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=2, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(fc_inputs_count, self.feature_dim),
+            nn.ELU(),
+            nn.Linear(self.feature_dim, self.feature_dim),
+            nn.ELU(),
+            nn.Linear(self.feature_dim, self.feature_dim)
+        )
+
+        init_orthogonal(self.model[0], np.sqrt(2))
+        init_orthogonal(self.model[2], np.sqrt(2))
+        init_orthogonal(self.model[4], np.sqrt(2))
+        init_orthogonal(self.model[6], np.sqrt(2))
+        init_orthogonal(self.model[9], np.sqrt(2))
+        init_orthogonal(self.model[11], np.sqrt(2))
+        init_orthogonal(self.model[13], np.sqrt(2))
+
+    def forward(self, state):
+        predicted_code = self.model(state)
+        target_code = self.target_model(state).detach()
+        return predicted_code, target_code
+
+    def error(self, state):
+        with torch.no_grad():
+            prediction, target = self(state)
+            error = torch.sum(torch.pow(target - prediction, 2), dim=1).unsqueeze(-1) / 2
+
+        return error
+
+    def loss_function(self, state):
+        prediction, target = self(state)
+        loss = torch.pow(target - prediction, 2)
+
+        return loss.mean()
+
+
 class QRNDModelAtari(nn.Module):
     def __init__(self, input_shape, action_dim, config):
         super(QRNDModelAtari, self).__init__()
