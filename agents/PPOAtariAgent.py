@@ -149,8 +149,8 @@ class PPOAtariDOPControllerAgent(PPOAgent):
         super().__init__(input_shape, action_dim, action_type, config)
         self.network = network.to(config.device)
         self.algorithm = PPO(self.network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size,
-                             config.beta, config.gamma, ext_adv_scale=2, int_adv_scale=1, ppo_epochs=config.ppo_epochs, n_env=config.n_env,
-                             device=config.device, motivation=True, ncritic=False)
+                             config.beta, config.gamma, ppo_epochs=config.ppo_epochs, n_env=config.n_env,
+                             device=config.device, motivation=False, ncritic=False)
 
 
 class PPOAtariDOPActorAgent(PPOAgent):
@@ -244,7 +244,7 @@ class PPOAtariDOPAgent2(PPOAgent):
     def train(self, state0, value, action0, selected_action, probs0, head_value, head_action, head_probs, state1, reward, mask):
         head_reward = reward.gather(1, head_action.cpu().argmax(dim=1, keepdim=True).unsqueeze(-1).repeat(1, 1, 2)).squeeze(1)
 
-        self.controller_agent.train(state0, head_value, head_action, head_probs, state1, head_reward, mask)
+        self.controller_agent.train(state0, head_value, head_action, head_probs, state1, head_reward[:, 0].unsqueeze(-1), mask)
 
         self.memory.add(state=state0.cpu(), value=value.cpu(), action=action0.cpu(), prob=probs0.cpu(), reward=reward.cpu(), mask=mask.unsqueeze(1).repeat(1, self.head_count, 1).cpu())
         indices = self.memory.indices()

@@ -45,6 +45,8 @@ def plot(name, config, plot_overview=True, average_per_step=False, has_score=Fal
                     plot_forward_model_details(d, path, window=window, average_per_step=average_per_step)
                 if model == 'sr_rnd':
                     plot_forward_model_details(d, path, window=window, average_per_step=average_per_step)
+                if model == 'cnd':
+                    plot_forward_model_details(d, path, window=window, average_per_step=average_per_step)
                 if model == 'qrnd':
                     plot_forward_model_details(d, path, window=window, average_per_step=average_per_step)
                 if model == 'dop':

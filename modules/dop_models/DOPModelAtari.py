@@ -37,7 +37,8 @@ class DOPControllerAtari(nn.Module):
         self.critic = nn.Sequential(
             torch.nn.Linear(state_dim, state_dim),
             torch.nn.ReLU(),
-            Critic2Heads(state_dim)
+            # Critic2Heads(state_dim)
+            torch.nn.Linear(state_dim, 1)
         )
 
         init_orthogonal(self.critic[0], 0.1)
