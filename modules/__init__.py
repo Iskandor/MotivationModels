@@ -49,3 +49,8 @@ def __init_general(function, layer, gain):
             nn.init.zeros_(b)
     else:
         nn.init.zeros_(layer.bias)
+
+
+def init_general_wb(function, weight, bias, gain):
+    function(weight, gain)
+    nn.init.zeros_(bias)

@@ -3,36 +3,44 @@ import torch.nn as nn
 import numpy as np
 
 from agents import TYPE
-from modules import init_orthogonal
+from modules import init_orthogonal, init_general_wb
 from modules.PPO_Modules import Actor, DiscreteHead, Critic2Heads
 
 
 class Aggregator(nn.Module):
-    def __init__(self, n_env, state_dim, frequency):
+    def __init__(self, n_env, feature_dim, state_dim, frequency, device):
         super(Aggregator, self).__init__()
 
-        self.buffer = torch.zeros(frequency, n_env, state_dim)
-        self.index = frequency - 1
         self.frequency = frequency
+        self.index = frequency - 1
+
+        self.model = nn.GRUCell(feature_dim, state_dim, device=device)
+        init_general_wb(nn.init.orthogonal_, self.model.weight_hh, self.model.bias_hh, 0.1)
+        init_general_wb(nn.init.orthogonal_, self.model.weight_ih, self.model.bias_ih, 0.1)
+
+        self.output = None
+        self.context = torch.zeros((n_env, state_dim), device=device)
 
     def forward(self, state):
-        aggregated_value = None
-
-        self.buffer[self.index] = state
         self.index += 1
+        x = self.model(state, self.context)
+        self.context = x
 
         if self.index == self.frequency:
-            aggregated_value = self.buffer.mean(dim=0)
-            self.buffer.zero_()
+            self.output = x
+            self.index = 0
 
-        return aggregated_value
+        return self.output
+
+    def reset_context(self, i):
+        self.context[i].fill_(0)
 
 
 class DOPControllerAtari(nn.Module):
-    def __init__(self, state_dim, action_dim, config, features):
+    def __init__(self, feature_dim, state_dim, action_dim, config):
         super(DOPControllerAtari, self).__init__()
 
-        self.features = features
+        self.aggregator = Aggregator(config.n_env, feature_dim, state_dim, 512, config.device)
 
         self.critic = nn.Sequential(
             torch.nn.Linear(state_dim, state_dim),
@@ -54,29 +62,27 @@ class DOPControllerAtari(nn.Module):
 
         self.actor = Actor(self.actor, TYPE.discrete, action_dim)
 
-    def forward(self, state):
-        features = self.features(state).detach()
-        value = self.critic(features)
-        action, probs = self.actor(features)
+    def forward(self, features):
+        state = self.aggregator(features)
+        value = self.critic(state)
+        action, probs = self.actor(state)
         action = self.actor.encode_action(action)
 
         return value, action, probs
 
 
 class DOPActorAtari2(nn.Module):
-    def __init__(self, head_count, state_dim, action_dim, features, actor, critic):
+    def __init__(self, head_count, state_dim, action_dim, actor, critic):
         super(DOPActorAtari2, self).__init__()
 
         self.head_count = head_count
         self.state_dim = state_dim
         self.action_dim = action_dim
 
-        self.features = features
         self.actor = actor
         self.critic = critic
 
-    def forward(self, state):
-        features = self.features(state).detach()
+    def forward(self, features):
         value = self.critic(features).view(-1, self.head_count, 2)
         action, probs = self.actor(features)
         action = self.actor.encode_action(action.view(-1, 1)).view(-1, self.head_count, self.action_dim)

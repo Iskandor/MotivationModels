@@ -222,6 +222,8 @@ class PPOAtariNetworkDOP2(PPOAtariNetwork):
         self.critic = nn.Sequential(
             torch.nn.Linear(self.feature_dim, self.feature_dim),
             torch.nn.ReLU(),
+            torch.nn.Linear(self.feature_dim, self.feature_dim),
+            torch.nn.ReLU(),
             Critic2NHeads(self.feature_dim, config.dop_heads)
         )
 
@@ -229,6 +231,8 @@ class PPOAtariNetworkDOP2(PPOAtariNetwork):
         init_orthogonal(self.critic[2], 0.01)
 
         actor = nn.Sequential(
+            torch.nn.Linear(self.feature_dim, self.feature_dim),
+            torch.nn.ReLU(),
             torch.nn.Linear(self.feature_dim, self.feature_dim),
             torch.nn.ReLU(),
             ActorNHeads(head, config.dop_heads, dims=[self.feature_dim, self.feature_dim, action_dim], init='orto')
@@ -239,16 +243,13 @@ class PPOAtariNetworkDOP2(PPOAtariNetwork):
         self.actor = Actor(actor, head, self.action_dim)
 
         self.qrnd_model = QRNDModelAtari(input_shape, action_dim, config)
-        self.dop_actor = DOPActorAtari2(config.dop_heads, input_shape, action_dim, self.features, self.actor, self.critic)
+        self.dop_actor = DOPActorAtari2(config.dop_heads, input_shape, action_dim, self.actor, self.critic)
 
-        # self.dop_controller_aggregator = Aggregator(config.n_env, self.feature_dim, 512)
-        self.dop_controller = DOPControllerAtari(self.feature_dim, config.dop_heads, config, self.features)
-        # self.dop_controller_feature = None
+        self.dop_controller = DOPControllerAtari(self.feature_dim, 256, config.dop_heads, config)
 
     def forward(self, state):
-        value, action, probs = self.dop_actor(state)
-
-        # self.dop_controller_feature = self.dop_controller_aggregator(features)
-        head_value, head_action, head_probs = self.dop_controller(state)
+        features = self.features(state).detach()
+        value, action, probs = self.dop_actor(features)
+        head_value, head_action, head_probs = self.dop_controller(features)
 
         return value, action, probs, head_value, head_action, head_probs

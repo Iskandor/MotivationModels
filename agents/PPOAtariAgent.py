@@ -233,7 +233,7 @@ class PPOAtariDOPAgent2(PPOAgent):
 
         self.network = PPOAtariNetworkDOP2(input_shape, action_dim, config, action_type).to(config.device)
         # self.motivation = DOPMotivation(self.network.dop_model, config.motivation_lr, config.lr, config.motivation_eta, config.device)
-        self.encoder = Encoder(self.network.features, 0.00001, config.device)
+        self.encoder = Encoder(self.network.features, 1e-5, config.device)
         self.motivation = QRNDMotivation(self.network.qrnd_model, config.motivation_lr, config.motivation_eta, config.device)
         self.algorithm = PPO(self.network.dop_actor, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size,
                              config.beta, config.gamma, ext_adv_scale=2, int_adv_scale=1, ppo_epochs=config.ppo_epochs, n_env=config.n_env,
