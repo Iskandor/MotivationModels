@@ -11,41 +11,60 @@ class Aggregator(nn.Module):
     def __init__(self, n_env, feature_dim, state_dim, frequency, device):
         super(Aggregator, self).__init__()
 
+        self.state_dim = state_dim
         self.frequency = frequency
-        self.index = frequency - 1
+        self.index = torch.zeros((n_env,), dtype=torch.int32, device=device)
 
-        self.model = nn.GRUCell(feature_dim, state_dim, device=device)
-        init_general_wb(nn.init.orthogonal_, self.model.weight_hh, self.model.bias_hh, 0.1)
-        init_general_wb(nn.init.orthogonal_, self.model.weight_ih, self.model.bias_ih, 0.1)
+        self.memory = nn.GRUCell(feature_dim, state_dim, device=device)
+        self.model = nn.Linear(state_dim, state_dim)
+        init_general_wb(nn.init.orthogonal_, self.memory.weight_hh, self.memory.bias_hh, 0.1)
+        init_general_wb(nn.init.orthogonal_, self.memory.weight_ih, self.memory.bias_ih, 0.1)
 
-        self.output = None
-        self.context = torch.zeros((n_env, state_dim), device=device)
+        self.output = torch.zeros((n_env, state_dim), device=device, dtype=torch.float32)
+        self.context = torch.zeros((n_env, state_dim), device=device, dtype=torch.float32)
+        self.rewards = np.zeros((n_env, 1))
+        self.masks = np.zeros((n_env, 1))
 
     def forward(self, state):
-        self.index += 1
-        x = self.model(state, self.context)
+        x = self.memory(state, self.context)
         self.context = x
 
-        if self.index == self.frequency:
-            self.output = x
-            self.index = 0
+        mask = (self.index == 0).unsqueeze(1).repeat(1, self.state_dim)
+        self.output = self.output * ~mask + self.model(torch.relu(x)) * mask
 
         return self.output
 
-    def reset_context(self, i):
-        self.context[i].fill_(0)
+    def reset(self, indices):
+        self.index += 1
+        indices += self.indices(self.frequency)
 
+        if len(indices) > 0:
+            self.context[indices] *= 0.
+            self.rewards[indices] = 0
+            self.masks[indices] = 0
+            self.index[indices] = 0
+
+    def indices(self, trigger):
+        return (self.index == trigger).nonzero().flatten().cpu().tolist()
+
+    def add_reward(self, reward):
+        self.rewards += reward
+        return self.rewards / (self.index.unsqueeze(1).cpu().numpy() + 1)
+
+    def add_mask(self, mask):
+        self.masks = np.maximum(self.masks, mask)
+        return self.masks
 
 class DOPControllerAtari(nn.Module):
-    def __init__(self, feature_dim, state_dim, action_dim, config):
+    def __init__(self, feature_dim, state_dim, action_dim, frequency, config):
         super(DOPControllerAtari, self).__init__()
 
-        self.aggregator = Aggregator(config.n_env, feature_dim, state_dim, 512, config.device)
+        self.aggregator = Aggregator(config.n_env, feature_dim, state_dim, frequency, config.device)
 
         self.critic = nn.Sequential(
             torch.nn.Linear(state_dim, state_dim),
             torch.nn.ReLU(),
-            Critic2Heads(state_dim)
+            torch.nn.Linear(state_dim, 1)
         )
 
         init_orthogonal(self.critic[0], 0.1)
@@ -62,13 +81,21 @@ class DOPControllerAtari(nn.Module):
 
         self.actor = Actor(self.actor, TYPE.discrete, action_dim)
 
+    def state(self, features):
+        return self.aggregator(features)
+
     def forward(self, features):
-        state = self.aggregator(features)
-        value = self.critic(state)
-        action, probs = self.actor(state)
+        value = self.critic(features)
+        action, probs = self.actor(features)
         action = self.actor.encode_action(action)
 
         return value, action, probs
+
+    def aggregator_indices(self):
+        return self.aggregator.indices(trigger=0)
+
+    def aggregate_values(self, reward, mask):
+        return self.aggregator.add_reward(reward), self.aggregator.add_mask(mask)
 
 
 class DOPActorAtari2(nn.Module):

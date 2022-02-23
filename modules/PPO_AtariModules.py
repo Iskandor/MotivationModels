@@ -217,11 +217,9 @@ class PPOAtariNetworkDOP2(PPOAtariNetwork):
         self.n_env = config.n_env
         self.head_count = config.dop_heads
 
-        self.features = ST_DIMEncoderAtari(input_shape, self.feature_dim, config)
+        self.encoder = ST_DIMEncoderAtari(input_shape, self.feature_dim, config)
 
         self.critic = nn.Sequential(
-            torch.nn.Linear(self.feature_dim, self.feature_dim),
-            torch.nn.ReLU(),
             torch.nn.Linear(self.feature_dim, self.feature_dim),
             torch.nn.ReLU(),
             Critic2NHeads(self.feature_dim, config.dop_heads)
@@ -231,8 +229,6 @@ class PPOAtariNetworkDOP2(PPOAtariNetwork):
         init_orthogonal(self.critic[2], 0.01)
 
         actor = nn.Sequential(
-            torch.nn.Linear(self.feature_dim, self.feature_dim),
-            torch.nn.ReLU(),
             torch.nn.Linear(self.feature_dim, self.feature_dim),
             torch.nn.ReLU(),
             ActorNHeads(head, config.dop_heads, dims=[self.feature_dim, self.feature_dim, action_dim], init='orto')
@@ -245,11 +241,10 @@ class PPOAtariNetworkDOP2(PPOAtariNetwork):
         self.qrnd_model = QRNDModelAtari(input_shape, action_dim, config)
         self.dop_actor = DOPActorAtari2(config.dop_heads, input_shape, action_dim, self.actor, self.critic)
 
-        self.dop_controller = DOPControllerAtari(self.feature_dim, 256, config.dop_heads, config)
+        self.dop_controller = DOPControllerAtari(self.feature_dim, 256, config.dop_heads, 128, config)
 
-    def forward(self, state):
-        features = self.features(state).detach()
-        value, action, probs = self.dop_actor(features)
-        head_value, head_action, head_probs = self.dop_controller(features)
+    def forward(self, features0_0, features0_1):
+        value, action, probs = self.dop_actor(features0_0)
+        head_value, head_action, head_probs = self.dop_controller(features0_1)
 
         return value, action, probs, head_value, head_action, head_probs
