@@ -730,11 +730,11 @@
       "dop_heads": 4
     },
     "5": {
-      "descriptor": "ddm",
+      "descriptor": "st-dim",
       "model": "sr_rnd",
       "n_env": 128,
-      "trials": 1,
-      "steps": 64,
+      "trials": 2,
+      "steps": 128,
       "gamma": "0.998,0.99",
       "beta": 0.001,
       "batch_size": 512,
@@ -744,8 +744,7 @@
       "actor_loss_weight": 1,
       "critic_loss_weight": 0.5,
       "motivation_lr": 0.0001,
-      "motivation_eta": 1,
-      "norm": "l2"
+      "motivation_eta": 1
     },
     "6": {
       "model": "dop",
@@ -782,6 +781,7 @@
       "dop_heads": 2
     },
     "8": {
+      "descriptor": "ref",
       "model": "dop",
       "n_env": 128,
       "trials": 1,
@@ -837,7 +837,7 @@
       "model": "qrnd",
       "n_env": 128,
       "trials": 2,
-      "steps": 64,
+      "steps": 128,
       "gamma": "0.998,0.99",
       "beta": 0.001,
       "batch_size": 512,
@@ -853,6 +853,23 @@
       "model": "cnd",
       "n_env": 128,
       "trials": 2,
+      "steps": 32,
+      "gamma": "0.998,0.99",
+      "beta": 0.001,
+      "batch_size": 512,
+      "trajectory_size": 16384,
+      "ppo_epochs": 4,
+      "lr": 0.0001,
+      "actor_loss_weight": 1,
+      "critic_loss_weight": 0.5,
+      "motivation_lr": 0.0001,
+      "motivation_eta": 10
+    },
+    "13": {
+      "descriptor": "12 + smaller distiller",
+      "model": "cnd",
+      "n_env": 128,
+      "trials": 2,
       "steps": 64,
       "gamma": "0.998,0.99",
       "beta": 0.001,
@@ -863,7 +880,24 @@
       "actor_loss_weight": 1,
       "critic_loss_weight": 0.5,
       "motivation_lr": 0.0001,
-      "motivation_eta": 1
+      "motivation_eta": 4
+    },
+    "14": {
+      "descriptor": "12 + smaller distiller",
+      "model": "cnd",
+      "n_env": 128,
+      "trials": 2,
+      "steps": 64,
+      "gamma": "0.998,0.99",
+      "beta": 0.001,
+      "batch_size": 512,
+      "trajectory_size": 16384,
+      "ppo_epochs": 4,
+      "lr": 0.0001,
+      "actor_loss_weight": 1,
+      "critic_loss_weight": 0.5,
+      "motivation_lr": 0.0001,
+      "motivation_eta": 8
     }
   },
   "private_eye": {

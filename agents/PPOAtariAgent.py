@@ -2,10 +2,10 @@ import torch
 
 from agents.PPOAgent import PPOAgent
 from algorithms.PPO import PPO
-from algorithms.ReplayBuffer import GenericTrajectoryBuffer
+from algorithms.ReplayBuffer import GenericTrajectoryBuffer, GenericAsyncTrajectoryBuffer
 from modules.dop_models.DOPModelAtari import DOPControllerAtari
 from modules.PPO_AtariModules import PPOAtariNetworkFM, PPOAtariNetwork, PPOAtariNetworkRND, PPOAtariNetworkQRND, PPOAtariNetworkDOP, PPOAtariMotivationNetwork, PPOAtariNetworkSRRND, \
-    PPOAtariNetworkDOP2, PPOAtariNetworkCND
+    PPOAtariNetworkDOP, PPOAtariNetworkCND
 from motivation.DOPMotivation import DOPMotivation
 from motivation.Encoder import Encoder, DDMEncoder
 from motivation.ForwardModelMotivation import ForwardModelMotivation
@@ -144,13 +144,22 @@ class PPOAtariQRNDAgent(PPOAgent):
 
         return features
 
+
 class PPOAtariDOPControllerAgent(PPOAgent):
     def __init__(self, network, input_shape, action_dim, config, action_type):
         super().__init__(input_shape, action_dim, action_type, config)
         self.network = network.to(config.device)
-        self.algorithm = PPO(self.network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size,
-                             config.beta, config.gamma, ppo_epochs=config.ppo_epochs, n_env=config.n_env,
+        self.memory = GenericAsyncTrajectoryBuffer(512, 512, config.n_env)
+        self.algorithm = PPO(self.network, config.lr, config.actor_loss_weight, config.critic_loss_weight, 512, 512,
+                             config.beta, config.gamma, ext_adv_scale=1, int_adv_scale=1, ppo_epochs=config.ppo_epochs, n_env=1,
                              device=config.device, motivation=False, ncritic=False)
+
+    def train(self, state0, value, action0, probs0, reward, mask):
+            self.memory.add(self.network.aggregator_indices(), state=state0.cpu(), value=value.cpu(), action=action0.cpu(), prob=probs0.cpu(), reward=reward.cpu(), mask=mask.cpu())
+            indices = self.memory.indices()
+            self.algorithm.train(self.memory, indices)
+            if indices is not None:
+                self.memory.clear()
 
 
 class PPOAtariDOPActorAgent(PPOAgent):
@@ -189,64 +198,23 @@ class PPOAtariDOPAgent(PPOAgent):
         self.h = input_shape[1]
         self.w = input_shape[2]
 
-        self.network = PPOAtariNetworkDOP(input_shape, action_dim, config, action_type).to(config.device)
-        # self.motivation = DOPMotivation(self.network.dop_model, config.motivation_lr, config.lr, config.motivation_eta, config.device)
-        self.motivation = QRNDMotivation(self.network.qrnd_model, config.motivation_lr, config.motivation_eta, config.device)
-        self.algorithm = None
-
-        self.actor_agent = PPOAtariDOPActorAgent(self.network.dop_actor, input_shape, action_dim, config, action_type)
-        self.generator_agent = PPOAtariDOPGeneratorAgent(self.network.dop_generator, input_shape, action_dim, config, action_type)
-        self.controller_agent = PPOAtariDOPControllerAgent(self.network.dop_controller, input_shape, action_dim, config, action_type)
-
-    def train(self, actor_state0, state0, value, action0, probs0, head_value, head_action, head_probs, all_values, all_action, all_probs, state1, ext_reward, all_int_reward, int_reward, mask):
-        self.actor_agent.train(actor_state0, value, action0, probs0, state1, ext_reward, mask)
-        self.generator_agent.train(state0, all_values, all_action, all_probs, state1, all_int_reward.view(-1, self.head_count, 1), mask.unsqueeze(1).repeat(1, self.head_count, 1))
-        self.controller_agent.train(state0, head_value, head_action, head_probs, state1, torch.cat([ext_reward, int_reward], dim=1), mask)
-
-        self.memory.add(state=state0.cpu(), action=action0.cpu())
-        indices = self.memory.indices()
-        self.motivation.train(self.memory, indices)
-        if indices is not None:
-            self.memory.clear()
-
-    def get_action(self, state):
-        actor_state, value, action, probs, head_value, head_action, head_probs, all_values, all_action, all_probs = self.network(state)
-
-        return actor_state, value.detach(), action, probs.detach(), head_value.detach(), head_action, head_probs.detach(), all_values.detach(), all_action, all_probs.detach()
-
-    def extend_state(self, state):
-        return state.unsqueeze(1).repeat(1, self.head_count, 1, 1, 1).view(-1, self.channels, self.h, self.w)
-
-
-class PPOAtariDOPAgent2(PPOAgent):
-    def __init__(self, input_shape, action_dim, config, action_type):
-        super().__init__(input_shape, action_dim, action_type, config)
-
-        self.head_count = config.dop_heads
-        self.channels = input_shape[0]
-        self.h = input_shape[1]
-        self.w = input_shape[2]
-
         self.memory = GenericTrajectoryBuffer(config.trajectory_size, config.batch_size // config.dop_heads, config.n_env)
         self.qrnd_memory = GenericTrajectoryBuffer(config.trajectory_size, config.batch_size, config.n_env)
         self.encoder_memory = GenericTrajectoryBuffer(config.trajectory_size // 8, config.batch_size, config.n_env)
 
-        self.network = PPOAtariNetworkDOP2(input_shape, action_dim, config, action_type).to(config.device)
-        # self.motivation = DOPMotivation(self.network.dop_model, config.motivation_lr, config.lr, config.motivation_eta, config.device)
-        self.encoder = Encoder(self.network.features, 0.00001, config.device)
+        self.network = PPOAtariNetworkDOP(input_shape, action_dim, config, action_type).to(config.device)
+        self.encoder = Encoder(self.network.encoder, 1e-5, config.device)
         self.motivation = QRNDMotivation(self.network.qrnd_model, config.motivation_lr, config.motivation_eta, config.device)
         self.algorithm = PPO(self.network.dop_actor, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size,
                              config.beta, config.gamma, ext_adv_scale=2, int_adv_scale=1, ppo_epochs=config.ppo_epochs, n_env=config.n_env,
                              device=config.device, motivation=True, ncritic=True)
 
-        self.controller_agent = PPOAtariDOPControllerAgent(self.network.dop_controller, input_shape, action_dim, config, action_type)
+        self.controller = PPOAtariDOPControllerAgent(self.network.dop_controller, input_shape, action_dim, config, action_type)
 
-    def train(self, state0, value, action0, selected_action, probs0, head_value, head_action, head_probs, state1, reward, mask):
-        head_reward = reward.gather(1, head_action.cpu().argmax(dim=1, keepdim=True).unsqueeze(-1).repeat(1, 1, 2)).squeeze(1)
+    def train(self, features0_0, features0_1, state0, value, action0, selected_action, probs0, head_value, head_action, head_probs, state1, reward0_0, reward0_1, mask0_0, mask0_1):
+        self.controller.train(features0_1, head_value, head_action, head_probs, reward0_1, mask0_1)
 
-        self.controller_agent.train(state0, head_value, head_action, head_probs, state1, head_reward[:, 0].unsqueeze(-1), mask)
-
-        self.memory.add(state=state0.cpu(), value=value.cpu(), action=action0.cpu(), prob=probs0.cpu(), reward=reward.cpu(), mask=mask.unsqueeze(1).repeat(1, self.head_count, 1).cpu())
+        self.memory.add(state=features0_0.cpu(), value=value.cpu(), action=action0.cpu(), prob=probs0.cpu(), reward=reward0_0.cpu(), mask=mask0_0.unsqueeze(1).repeat(1, self.head_count, 1).cpu())
         indices = self.memory.indices()
         self.algorithm.train(self.memory, indices)
         if indices is not None:
@@ -264,11 +232,17 @@ class PPOAtariDOPAgent2(PPOAgent):
         if indices is not None:
             self.encoder_memory.clear()
 
-    def get_action(self, state):
-        value, action, probs, head_value, head_action, head_probs = self.network(state)
+    def get_action(self, features0_0, features0_1):
+        value, action, probs, head_value, head_action, head_probs = self.network(features0_0, features0_1)
         selected_action, _ = self.network.dop_actor.select_action(head_action, action, probs)
 
         return value.detach(), action, probs.detach(), head_value.detach(), head_action, head_probs.detach(), selected_action.detach()
+
+    def get_features(self, state):
+        features0_0 = self.network.encoder(state).detach()
+        features0_1 = self.network.dop_controller.state(features0_0)
+
+        return features0_0, features0_1
 
     def extend_state(self, state):
         return state.unsqueeze(1).repeat(1, self.head_count, 1, 1, 1).view(-1, self.channels, self.h, self.w)

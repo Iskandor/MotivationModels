@@ -186,7 +186,7 @@ class GenericTrajectoryBuffer(object):
 
     def memory_init(self, key, shape):
         steps_per_env = self.capacity // self.n_env
-        shape = (steps_per_env, self.n_env, ) + shape
+        shape = (steps_per_env, self.n_env,) + shape
         self.memory[key] = torch.zeros(shape)
 
     def add(self, **kwargs):
@@ -221,3 +221,82 @@ class GenericTrajectoryBuffer(object):
 
     def clear(self):
         self.index = 0
+
+
+class GenericAsyncTrajectoryBuffer(object):
+    def __init__(self, capacity, batch_size, n_env=1):
+        self.keys = []
+        self.n_env = n_env
+        self.memory = {}
+        self.index = 0
+        self.capacity = capacity
+        self.batch_size = batch_size
+        self.transition = None
+
+    def __len__(self):
+        return self.index
+
+    def indices(self):
+        ind = None
+        if len(self) >= self.capacity:
+            ind = range(0, self.capacity)
+        return ind
+
+    def memory_init(self, key):
+        self.memory[key] = [[] for _ in range(self.n_env)]
+
+    def add(self, indices, **kwargs):
+        if len(self.keys) == 0:
+            for key in kwargs:
+                self.keys.append(key)
+                self.memory_init(key)
+            self.transition = namedtuple('transition', self.keys)
+
+        for i in indices:
+            for key in kwargs:
+                self.memory[key][i].append(kwargs[key][i])
+
+        self.index += len(indices)
+
+    def extract_value(self, key):
+        v = []
+        for i in range(self.n_env):
+            if len(self.memory[key][i]) > 0:
+                v.append(torch.stack(self.memory[key][i]))
+        return torch.cat(v, dim=0)
+
+    def sample(self, indices, reshape_to_batch=True):
+        if reshape_to_batch:
+            values = []
+
+            for k in self.keys:
+                v = self.extract_value(k)
+                values.append(v.reshape(-1, 1, *v.shape[2:]))
+
+        else:
+            values = []
+
+            for k in self.keys:
+                values.append(self.extract_value(k).unsqueeze(1))
+
+        result = self.transition(*values)
+
+        return result
+
+    def sample_batches(self, indices, batch_size=0):
+        if batch_size == 0:
+            batch_size = self.batch_size
+
+        values = []
+
+        for k in self.keys:
+            v = self.extract_value(k)
+            values.append(v.reshape(-1, batch_size, *v.shape[2:]))
+
+        batch = self.transition(*values)
+        return batch, self.capacity // batch_size
+
+    def clear(self):
+        self.index = 0
+        for key in self.keys:
+            self.memory_init(key)

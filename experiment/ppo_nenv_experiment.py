@@ -545,15 +545,17 @@ class ExperimentNEnvPPO:
 
         while step_counter.running():
             with torch.no_grad():
-                value, action0, probs0, head_value, head_action, head_probs, selected_action = agent.get_action(state0)
+                features0_0, features0_1 = agent.get_features(state0)
+                value, action0, probs0, head_value, head_action, head_probs, selected_action = agent.get_action(features0_0, features0_1)
             agent.motivation.update_state_average(state0, selected_action)
-            next_state, reward, done, info = self._env.step(agent.convert_action(selected_action.cpu()))
+            next_state, reward0_0, done0_0, info = self._env.step(agent.convert_action(selected_action.cpu()))
 
+            reward0_1, done0_1 = agent.controller.network.aggregate_values(reward0_0, done0_0)
             head_index_density += head_action.cpu().numpy()
             error = agent.motivation.error(agent.extend_state(state0), action0)
 
             ext_reward.zero_()
-            ext_reward = ext_reward.scatter(1, head_action.argmax(dim=1, keepdim=True).unsqueeze(-1), torch.tensor(reward, dtype=torch.float32, device=config.device).unsqueeze(-1))
+            ext_reward = ext_reward.scatter(1, head_action.argmax(dim=1, keepdim=True).unsqueeze(-1), torch.tensor(reward0_0, dtype=torch.float32, device=config.device).unsqueeze(-1))
             int_reward = agent.motivation.reward(error).cpu().clip(0.0, 1.0).view(-1, config.dop_heads, 1)
 
             if info is not None and 'raw_score' in info:
@@ -565,11 +567,11 @@ class ExperimentNEnvPPO:
             sel_error = sel_error.cpu()
 
             train_steps += 1
-            train_ext_reward += reward
+            train_ext_reward += reward0_0
             train_int_reward += sel_int_reward.numpy()
             train_error += sel_error.numpy()
 
-            env_indices = numpy.nonzero(numpy.squeeze(done, axis=1))[0]
+            env_indices = numpy.nonzero(numpy.squeeze(done0_0, axis=1))[0]
 
             for i in env_indices:
                 if step_counter.steps + train_steps[i] > step_counter.limit:
@@ -601,12 +603,15 @@ class ExperimentNEnvPPO:
 
             state1 = self.process_state(next_state)
 
-            reward = torch.cat([ext_reward.cpu(), int_reward], dim=2)
-            done = torch.tensor(1 - done, dtype=torch.float32)
+            reward0_0 = torch.cat([ext_reward.cpu(), int_reward], dim=2)
+            reward0_1 = torch.tensor(reward0_1, dtype=torch.float32)
+            done0_0 = torch.tensor(1 - done0_0, dtype=torch.float32)
+            done0_1 = torch.tensor(1 - done0_1, dtype=torch.float32)
 
-            agent.train(state0, value, action0, selected_action, probs0, head_value, head_action, head_probs, state1, reward, done)
+            agent.train(features0_0, features0_1, state0, value, action0, selected_action, probs0, head_value, head_action, head_probs, state1, reward0_0, reward0_1, done0_0, done0_1)
 
             state0 = state1
+            agent.controller.network.aggregator.reset(env_indices.tolist())
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
 
