@@ -3,7 +3,7 @@ import torch.nn as nn
 import numpy as np
 
 from modules import init_orthogonal
-from modules.dop_models.DOPModelAtari import DOPModelAtari, DOPControllerAtari, DOPActorAtari, DOPGeneratorAtari, Aggregator, DOPActorAtari2
+from modules.dop_models.DOPModelAtari import DOPModelAtari, DOPControllerAtari, DOPActorAtari, DOPGeneratorAtari
 from modules.PPO_Modules import DiscreteHead, Actor, Critic2Heads, ActorNHeads, CriticHead, Critic2NHeads
 from modules.encoders.EncoderAtari import EncoderAtari, AutoEncoderAtari, VAEAtari, DDMEncoderAtari, ST_DIMEncoderAtari
 from modules.forward_models.ForwardModelAtari import ForwardModelAtari
@@ -158,65 +158,6 @@ class PPOAtariNetworkDOP(PPOAtariNetwork):
         self.n_env = config.n_env
         self.head_count = config.dop_heads
 
-        self.critic_base = nn.Sequential(
-            torch.nn.Linear(self.feature_dim, self.feature_dim),
-            torch.nn.ReLU(),
-        )
-        init_orthogonal(self.critic_base[0], 0.1)
-
-        self.critic = CriticHead(self.feature_dim, self.critic_base)
-        init_orthogonal(self.critic, 0.01)
-
-        self.critic_generator = CriticHead(self.feature_dim, self.critic_base, config.dop_heads)
-        init_orthogonal(self.critic_generator, 0.01)
-
-        self.actor = nn.Sequential(
-            torch.nn.Linear(self.feature_dim, self.feature_dim),
-            torch.nn.ReLU(),
-            ActorNHeads(head, config.dop_heads, dims=[self.feature_dim, self.feature_dim, action_dim], init='orto')
-        )
-
-        init_orthogonal(self.actor[0], 0.01)
-
-        self.actor = Actor(self.actor, head, self.action_dim)
-
-        self.qrnd_model = QRNDModelAtari(input_shape, action_dim, config)
-        # self.dop_model = DOPModelAtari(config.dop_heads, input_shape, action_dim, config, self.features, self.actor, self.motivator)
-
-        self.dop_actor = DOPActorAtari(config.dop_heads, input_shape, action_dim, self.features, self.actor, self.critic)
-        self.dop_generator = DOPGeneratorAtari(config.dop_heads, input_shape, action_dim, self.features, self.actor, self.critic_generator)
-
-        # self.dop_controller_aggregator = Aggregator(config.n_env, self.feature_dim, 512)
-        self.dop_controller = DOPControllerAtari(self.feature_dim, config.dop_heads, config, self.features)
-        # self.dop_controller_feature = None
-
-    def forward(self, state):
-        features = self.features(state)
-        # self.dop_controller_feature = self.dop_controller_aggregator(features)
-
-        head_value, head_action, head_probs = self.dop_controller(state)
-        all_values, all_action, all_probs = self.dop_generator(state)
-        index = head_action.argmax(dim=1, keepdim=True)
-
-        value = self.critic(features)
-
-        action, probs = self.dop_actor.select_action(index, all_action, all_probs)
-        x = self.prepare_input(index, features)
-
-        return x, value, action, probs, head_value, head_action, head_probs, all_values, all_action, all_probs
-
-    def prepare_input(self, index, features):
-        x = torch.cat([index, features], dim=1)
-        return x
-
-
-class PPOAtariNetworkDOP2(PPOAtariNetwork):
-    def __init__(self, input_shape, action_dim, config, head):
-        super(PPOAtariNetworkDOP2, self).__init__(input_shape, action_dim, config, head)
-
-        self.n_env = config.n_env
-        self.head_count = config.dop_heads
-
         self.encoder = ST_DIMEncoderAtari(input_shape, self.feature_dim, config)
 
         self.critic = nn.Sequential(
@@ -239,7 +180,7 @@ class PPOAtariNetworkDOP2(PPOAtariNetwork):
         self.actor = Actor(actor, head, self.action_dim)
 
         self.qrnd_model = QRNDModelAtari(input_shape, action_dim, config)
-        self.dop_actor = DOPActorAtari2(config.dop_heads, input_shape, action_dim, self.actor, self.critic)
+        self.dop_actor = DOPActorAtari(config.dop_heads, input_shape, action_dim, self.actor, self.critic)
 
         self.dop_controller = DOPControllerAtari(self.feature_dim, 256, config.dop_heads, 128, config)
 

@@ -5,7 +5,7 @@ from algorithms.PPO import PPO
 from algorithms.ReplayBuffer import GenericTrajectoryBuffer, GenericAsyncTrajectoryBuffer
 from modules.dop_models.DOPModelAtari import DOPControllerAtari
 from modules.PPO_AtariModules import PPOAtariNetworkFM, PPOAtariNetwork, PPOAtariNetworkRND, PPOAtariNetworkQRND, PPOAtariNetworkDOP, PPOAtariMotivationNetwork, PPOAtariNetworkSRRND, \
-    PPOAtariNetworkDOP2, PPOAtariNetworkCND
+    PPOAtariNetworkDOP, PPOAtariNetworkCND
 from motivation.DOPMotivation import DOPMotivation
 from motivation.Encoder import Encoder, DDMEncoder
 from motivation.ForwardModelMotivation import ForwardModelMotivation
@@ -198,50 +198,11 @@ class PPOAtariDOPAgent(PPOAgent):
         self.h = input_shape[1]
         self.w = input_shape[2]
 
-        self.network = PPOAtariNetworkDOP(input_shape, action_dim, config, action_type).to(config.device)
-        # self.motivation = DOPMotivation(self.network.dop_model, config.motivation_lr, config.lr, config.motivation_eta, config.device)
-        self.motivation = QRNDMotivation(self.network.qrnd_model, config.motivation_lr, config.motivation_eta, config.device)
-        self.algorithm = None
-
-        self.actor_agent = PPOAtariDOPActorAgent(self.network.dop_actor, input_shape, action_dim, config, action_type)
-        self.generator_agent = PPOAtariDOPGeneratorAgent(self.network.dop_generator, input_shape, action_dim, config, action_type)
-        self.controller_agent = PPOAtariDOPControllerAgent(self.network.dop_controller, input_shape, action_dim, config, action_type)
-
-    def train(self, actor_state0, state0, value, action0, probs0, head_value, head_action, head_probs, all_values, all_action, all_probs, state1, ext_reward, all_int_reward, int_reward, mask):
-        self.actor_agent.train(actor_state0, value, action0, probs0, state1, ext_reward, mask)
-        self.generator_agent.train(state0, all_values, all_action, all_probs, state1, all_int_reward.view(-1, self.head_count, 1), mask.unsqueeze(1).repeat(1, self.head_count, 1))
-        self.controller_agent.train(state0, head_value, head_action, head_probs, state1, torch.cat([ext_reward, int_reward], dim=1), mask)
-
-        self.memory.add(state=state0.cpu(), action=action0.cpu())
-        indices = self.memory.indices()
-        self.motivation.train(self.memory, indices)
-        if indices is not None:
-            self.memory.clear()
-
-    def get_action(self, state):
-        actor_state, value, action, probs, head_value, head_action, head_probs, all_values, all_action, all_probs = self.network(state)
-
-        return actor_state, value.detach(), action, probs.detach(), head_value.detach(), head_action, head_probs.detach(), all_values.detach(), all_action, all_probs.detach()
-
-    def extend_state(self, state):
-        return state.unsqueeze(1).repeat(1, self.head_count, 1, 1, 1).view(-1, self.channels, self.h, self.w)
-
-
-class PPOAtariDOPAgent2(PPOAgent):
-    def __init__(self, input_shape, action_dim, config, action_type):
-        super().__init__(input_shape, action_dim, action_type, config)
-
-        self.head_count = config.dop_heads
-        self.channels = input_shape[0]
-        self.h = input_shape[1]
-        self.w = input_shape[2]
-
         self.memory = GenericTrajectoryBuffer(config.trajectory_size, config.batch_size // config.dop_heads, config.n_env)
         self.qrnd_memory = GenericTrajectoryBuffer(config.trajectory_size, config.batch_size, config.n_env)
         self.encoder_memory = GenericTrajectoryBuffer(config.trajectory_size // 8, config.batch_size, config.n_env)
 
-        self.network = PPOAtariNetworkDOP2(input_shape, action_dim, config, action_type).to(config.device)
-        # self.motivation = DOPMotivation(self.network.dop_model, config.motivation_lr, config.lr, config.motivation_eta, config.device)
+        self.network = PPOAtariNetworkDOP(input_shape, action_dim, config, action_type).to(config.device)
         self.encoder = Encoder(self.network.encoder, 1e-5, config.device)
         self.motivation = QRNDMotivation(self.network.qrnd_model, config.motivation_lr, config.motivation_eta, config.device)
         self.algorithm = PPO(self.network.dop_actor, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size,

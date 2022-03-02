@@ -98,9 +98,9 @@ class DOPControllerAtari(nn.Module):
         return self.aggregator.add_reward(reward), self.aggregator.add_mask(mask)
 
 
-class DOPActorAtari2(nn.Module):
+class DOPActorAtari(nn.Module):
     def __init__(self, head_count, state_dim, action_dim, actor, critic):
-        super(DOPActorAtari2, self).__init__()
+        super(DOPActorAtari, self).__init__()
 
         self.head_count = head_count
         self.state_dim = state_dim
@@ -118,38 +118,6 @@ class DOPActorAtari2(nn.Module):
 
     def select_action(self, index, all_action, all_probs):
         index = index.argmax(dim=1, keepdim=True)
-        all_action = all_action.view(-1, self.head_count, self.action_dim)
-        all_probs = all_probs.view(-1, self.head_count, self.action_dim)
-        action = all_action.gather(dim=1, index=index.unsqueeze(-1).repeat(1, 1, self.action_dim)).squeeze(1)
-        probs = all_probs.gather(dim=1, index=index.unsqueeze(-1).repeat(1, 1, self.action_dim)).squeeze(1)
-        return action, probs
-
-
-class DOPActorAtari(nn.Module):
-    def __init__(self, head_count, state_dim, action_dim, features, actor, critic):
-        super(DOPActorAtari, self).__init__()
-
-        self.head_count = head_count
-        self.state_dim = state_dim
-        self.action_dim = action_dim
-
-        self.features = features
-        self.actor = actor
-        self.critic = critic
-
-    def forward(self, state):
-        index = state[:, 0:1].type(torch.int64)
-        features = state[:, 1:]
-
-        value = self.critic(features)
-        all_action, all_probs = self.actor(features)
-
-        all_action = self.actor.encode_action(all_action.view(-1, 1))
-        action, probs = self.select_action(index, all_action, all_probs)
-
-        return value, action, probs
-
-    def select_action(self, index, all_action, all_probs):
         all_action = all_action.view(-1, self.head_count, self.action_dim)
         all_probs = all_probs.view(-1, self.head_count, self.action_dim)
         action = all_action.gather(dim=1, index=index.unsqueeze(-1).repeat(1, 1, self.action_dim)).squeeze(1)
