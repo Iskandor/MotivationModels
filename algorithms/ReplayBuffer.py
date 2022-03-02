@@ -271,13 +271,13 @@ class GenericAsyncTrajectoryBuffer(object):
 
             for k in self.keys:
                 v = self.extract_value(k)
-                values.append(v.reshape(-1, *v.shape[2:]))
+                values.append(v.reshape(-1, 1, *v.shape[2:]))
 
         else:
             values = []
 
             for k in self.keys:
-                values.append(self.extract_value(k))
+                values.append(self.extract_value(k).unsqueeze(1))
 
         result = self.transition(*values)
 

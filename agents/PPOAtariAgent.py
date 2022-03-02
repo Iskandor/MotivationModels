@@ -151,11 +151,10 @@ class PPOAtariDOPControllerAgent(PPOAgent):
         self.network = network.to(config.device)
         self.memory = GenericAsyncTrajectoryBuffer(512, 512, config.n_env)
         self.algorithm = PPO(self.network, config.lr, config.actor_loss_weight, config.critic_loss_weight, 512, 512,
-                             config.beta, config.gamma, ext_adv_scale=1, int_adv_scale=1, ppo_epochs=config.ppo_epochs, n_env=config.n_env,
+                             config.beta, config.gamma, ext_adv_scale=1, int_adv_scale=1, ppo_epochs=config.ppo_epochs, n_env=1,
                              device=config.device, motivation=False, ncritic=False)
 
     def train(self, state0, value, action0, probs0, reward, mask):
-            # poriesit masku
             self.memory.add(self.network.aggregator_indices(), state=state0.cpu(), value=value.cpu(), action=action0.cpu(), prob=probs0.cpu(), reward=reward.cpu(), mask=mask.cpu())
             indices = self.memory.indices()
             self.algorithm.train(self.memory, indices)
