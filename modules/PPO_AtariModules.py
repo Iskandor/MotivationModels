@@ -182,7 +182,7 @@ class PPOAtariNetworkDOP(PPOAtariNetwork):
         self.qrnd_model = QRNDModelAtari(input_shape, action_dim, config)
         self.dop_actor = DOPActorAtari(config.dop_heads, input_shape, action_dim, self.actor, self.critic)
 
-        self.dop_controller = DOPControllerAtari(self.feature_dim, 256, config.dop_heads, 128, config)
+        self.dop_controller = DOPControllerAtari(self.feature_dim, 256, config.dop_heads, config)
 
     def forward(self, features0_0, features0_1):
         value, action, probs = self.dop_actor(features0_0)

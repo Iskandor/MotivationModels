@@ -162,33 +162,6 @@ class PPOAtariDOPControllerAgent(PPOAgent):
                 self.memory.clear()
 
 
-class PPOAtariDOPActorAgent(PPOAgent):
-    def __init__(self, network, input_shape, action_dim, config, action_type):
-        super().__init__(input_shape, action_dim, action_type, config)
-        self.network = network.to(config.device)
-        self.algorithm = PPO(self.network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size,
-                             config.beta, config.gamma, ext_adv_scale=2, ppo_epochs=config.ppo_epochs, n_env=config.n_env, device=config.device, motivation=False, ncritic=False)
-
-
-class PPOAtariDOPActorAgent2(PPOAgent):
-    def __init__(self, network, input_shape, action_dim, config, action_type):
-        super().__init__(input_shape, action_dim, action_type, config)
-        self.network = network.to(config.device)
-        self.algorithm = PPO(self.network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size,
-                             config.beta, config.gamma, ext_adv_scale=2, int_adv_scale=1, ppo_epochs=config.ppo_epochs, n_env=config.n_env,
-                             device=config.device, motivation=True, ncritic=True)
-
-
-class PPOAtariDOPGeneratorAgent(PPOAgent):
-    def __init__(self, network, input_shape, action_dim, config, action_type):
-        super().__init__(input_shape, action_dim, action_type, config)
-        self.network = network.to(config.device)
-        self.memory = GenericTrajectoryBuffer(config.trajectory_size, config.batch_size // config.dop_heads, config.n_env)
-        # self.memory.n_env_override(['value', 'action', 'prob', 'reward', 'mask'], config.n_env * config.dop_heads)
-        self.algorithm = PPO(self.network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size,
-                             config.beta, config.gamma, ext_adv_scale=1, ppo_epochs=config.ppo_epochs, n_env=config.n_env, device=config.device, motivation=False, ncritic=True)
-
-
 class PPOAtariDOPAgent(PPOAgent):
     def __init__(self, input_shape, action_dim, config, action_type):
         super().__init__(input_shape, action_dim, action_type, config)

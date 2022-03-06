@@ -778,7 +778,8 @@
       "critic_loss_weight": 0.5,
       "motivation_lr": 0.0001,
       "motivation_eta": 1,
-      "dop_heads": 2
+      "dop_heads": 2,
+      "dop_frequency": 128
     },
     "8": {
       "descriptor": "ref",
@@ -862,15 +863,46 @@
       "lr": 0.0001,
       "actor_loss_weight": 1,
       "critic_loss_weight": 0.5,
+      "motivation_lr": 0.00001,
+      "motivation_eta": 0.5
+    },
+    "13": {
+      "model": "cnd",
+      "n_env": 128,
+      "trials": 2,
+      "steps": 64,
+      "gamma": "0.998,0.99",
+      "beta": 0.001,
+      "batch_size": 512,
+      "trajectory_size": 16384,
+      "ppo_epochs": 4,
+      "lr": 0.0001,
+      "actor_loss_weight": 1,
+      "critic_loss_weight": 0.5,
+      "motivation_lr": 0.0001,
+      "motivation_eta": 5
+    },
+    "14": {
+      "model": "cnd",
+      "n_env": 128,
+      "trials": 2,
+      "steps": 64,
+      "gamma": "0.998,0.99",
+      "beta": 0.001,
+      "batch_size": 512,
+      "trajectory_size": 16384,
+      "ppo_epochs": 4,
+      "lr": 0.0001,
+      "actor_loss_weight": 1,
+      "critic_loss_weight": 0.5,
       "motivation_lr": 0.0001,
       "motivation_eta": 10
     },
-    "13": {
-      "descriptor": "12 + smaller distiller",
-      "model": "cnd",
+    "15": {
+      "model": "dop",
       "n_env": 128,
       "trials": 2,
-      "steps": 64,
+      "steps": 32,
       "gamma": "0.998,0.99",
       "beta": 0.001,
       "batch_size": 512,
@@ -880,14 +912,15 @@
       "actor_loss_weight": 1,
       "critic_loss_weight": 0.5,
       "motivation_lr": 0.0001,
-      "motivation_eta": 4
+      "motivation_eta": 1,
+      "dop_heads": 2,
+      "dop_frequency": 32
     },
-    "14": {
-      "descriptor": "12 + smaller distiller",
-      "model": "cnd",
+    "16": {
+      "model": "dop",
       "n_env": 128,
       "trials": 2,
-      "steps": 64,
+      "steps": 32,
       "gamma": "0.998,0.99",
       "beta": 0.001,
       "batch_size": 512,
@@ -897,7 +930,45 @@
       "actor_loss_weight": 1,
       "critic_loss_weight": 0.5,
       "motivation_lr": 0.0001,
-      "motivation_eta": 8
+      "motivation_eta": 1,
+      "dop_heads": 2,
+      "dop_frequency": 64
+    },
+    "17": {
+      "model": "dop",
+      "n_env": 128,
+      "trials": 2,
+      "steps": 32,
+      "gamma": "0.998,0.99",
+      "beta": 0.001,
+      "batch_size": 512,
+      "trajectory_size": 16384,
+      "ppo_epochs": 4,
+      "lr": 0.0001,
+      "actor_loss_weight": 1,
+      "critic_loss_weight": 0.5,
+      "motivation_lr": 0.0001,
+      "motivation_eta": 1,
+      "dop_heads": 2,
+      "dop_frequency": 256
+    },
+    "18": {
+      "model": "dop",
+      "n_env": 128,
+      "trials": 2,
+      "steps": 32,
+      "gamma": "0.998,0.99",
+      "beta": 0.001,
+      "batch_size": 512,
+      "trajectory_size": 16384,
+      "ppo_epochs": 4,
+      "lr": 0.0001,
+      "actor_loss_weight": 1,
+      "critic_loss_weight": 0.5,
+      "motivation_lr": 0.0001,
+      "motivation_eta": 1,
+      "dop_heads": 2,
+      "dop_frequency": 512
     }
   },
   "private_eye": {

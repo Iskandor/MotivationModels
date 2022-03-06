@@ -56,10 +56,10 @@ class Aggregator(nn.Module):
         return self.masks
 
 class DOPControllerAtari(nn.Module):
-    def __init__(self, feature_dim, state_dim, action_dim, frequency, config):
+    def __init__(self, feature_dim, state_dim, action_dim, config):
         super(DOPControllerAtari, self).__init__()
 
-        self.aggregator = Aggregator(config.n_env, feature_dim, state_dim, frequency, config.device)
+        self.aggregator = Aggregator(config.n_env, feature_dim, state_dim, config.dop_frequency, config.device)
 
         self.critic = nn.Sequential(
             torch.nn.Linear(state_dim, state_dim),
