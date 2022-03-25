@@ -166,6 +166,7 @@ class PPOAtariDOPAgent(PPOAgent):
     def __init__(self, input_shape, action_dim, config, action_type):
         super().__init__(input_shape, action_dim, action_type, config)
 
+        gamma = config.gamma.split(',')
         self.head_count = config.dop_heads
         self.channels = input_shape[0]
         self.h = input_shape[1]
@@ -180,11 +181,11 @@ class PPOAtariDOPAgent(PPOAgent):
         self.encoder = Encoder(self.network.encoder, 1e-5, config.device)
         self.motivation = QRNDMotivation(self.network.qrnd_model, config.motivation_lr, config.motivation_eta, config.device)
         self.algorithm_external = PPO(self.network.dop_actor, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size,
-                                      config.beta, config.gamma, ext_adv_scale=1, int_adv_scale=1, ppo_epochs=config.ppo_epochs, n_env=config.n_env,
+                                      config.beta, gamma[0], ext_adv_scale=1, int_adv_scale=1, ppo_epochs=config.ppo_epochs, n_env=config.n_env,
                                       device=config.device, motivation=False, mode=MODE.gate)
 
         self.algorithm_internal = PPO(self.network.dop_actor, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size // config.dop_heads, config.trajectory_size,
-                                      config.beta, config.gamma, ext_adv_scale=1, int_adv_scale=1, ppo_epochs=config.ppo_epochs, n_env=config.n_env,
+                                      config.beta, gamma[1], ext_adv_scale=1, int_adv_scale=1, ppo_epochs=config.ppo_epochs, n_env=config.n_env,
                                       device=config.device, motivation=False, mode=MODE.multicritic)
 
         self.controller = PPOAtariDOPControllerAgent(self.network.dop_controller, input_shape, action_dim, config, action_type)
@@ -192,18 +193,18 @@ class PPOAtariDOPAgent(PPOAgent):
     def train(self, features0_0, features0_1, state0, value, action0, probs0, head_value, head_action, head_probs, state1, reward0_0, reward0_1, mask0_0, mask0_1):
         self.controller.train(features0_1, head_value, head_action, head_probs, reward0_1, mask0_1)
 
-        # value_mask = head_action.unsqueeze(-1).repeat(1, 1, 2) * 2 - 1
-        # value_mask[:, :, 1] = 1
-        #
-        # action0 = selected_action.unsqueeze(1).repeat(1, self.head_count, 1)
-
         index = head_action.argmax(dim=1, keepdim=True).unsqueeze(-1)
         gated_action = torch.gather(action0, dim=1, index=index.repeat(1, 1, action0.shape[2])).squeeze(1)
         gated_probs = torch.gather(probs0, dim=1, index=index.repeat(1, 1, probs0.shape[2])).squeeze(1)
         gated_value = torch.gather(value[:, :, 0], dim=1, index=index.squeeze(-1))
         gated_reward = torch.gather(reward0_0[:, :, 0], dim=1, index=index.squeeze(-1))
 
-        self.memory_external.add(state=features0_0.cpu(), value=gated_value.cpu(), action=gated_action.cpu(), prob=gated_probs.cpu(), reward=gated_reward.cpu(), mask=mask0_0.cpu(), heads=head_action.cpu())
+        # value_mask = head_action.unsqueeze(-1).repeat(1, 1, 2) * 2 - 1
+        # value_mask[:, :, 1] = 1
+        # gated_action = gated_action.unsqueeze(1).repeat(1, self.head_count, 1)
+
+        self.memory_external.add(state=features0_0.cpu(), value=gated_value.cpu(), action=gated_action.cpu(), prob=gated_probs.cpu(), reward=gated_reward.cpu(), mask=mask0_0.cpu(),
+                                 heads=head_action.cpu())
         indices = self.memory_external.indices()
         self.algorithm_external.train(self.memory_external, indices)
         if indices is not None:
