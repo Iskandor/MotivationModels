@@ -4,10 +4,17 @@ import torch
 
 from utils import *
 
+from enum import Enum
+
+
+class MODE(Enum):
+    basic = 0
+    gate = 1
+    multicritic = 2
 
 class PPO:
     def __init__(self, network, lr, actor_loss_weight, critic_loss_weight, batch_size, trajectory_size, p_beta, p_gamma,
-                 ppo_epochs=10, p_epsilon=0.1, p_lambda=0.95, ext_adv_scale=1, int_adv_scale=1, device='cpu', n_env=1, motivation=False, ncritic=False):
+                 ppo_epochs=10, p_epsilon=0.1, p_lambda=0.95, ext_adv_scale=1, int_adv_scale=1, device='cpu', n_env=1, motivation=False, mode=MODE.basic):
         self._network = network
         self._optimizer = torch.optim.Adam(self._network.parameters(), lr=lr)
         self._beta = p_beta
@@ -23,8 +30,8 @@ class PPO:
         self._trajectory = []
         self._ppo_epochs = ppo_epochs
         self._motivation = motivation
-        self._ncritic = ncritic
         self._n_env = n_env
+        self.mode = mode
 
         self.ext_adv_scale = ext_adv_scale
         self.int_adv_scale = int_adv_scale
@@ -43,9 +50,13 @@ class PPO:
             probs = sample.prob
             rewards = sample.reward
             dones = sample.mask
+            heads = None
+
+            if self.mode == MODE.gate:
+                heads = sample.heads
 
             if self._motivation:
-                if self._ncritic:
+                if self.mode == MODE.multicritic:
                     ext_reward = rewards[:, :, :, 0].unsqueeze(-1)
                     int_reward = rewards[:, :, :, 1].unsqueeze(-1)
 
@@ -63,7 +74,7 @@ class PPO:
                 adv_values = ext_adv_values * self.ext_adv_scale + int_adv_values * self.int_adv_scale
 
             else:
-                if self._ncritic:
+                if self.mode == MODE.multicritic:
                     ref_values, adv_values = self.calc_advantage_ncritic(values, rewards, dones, self._gamma[0], self._n_env)
                 else:
                     ref_values, adv_values = self.calc_advantage(values, rewards, dones, self._gamma[0], self._n_env)
@@ -76,35 +87,45 @@ class PPO:
             probs = probs.reshape(-1, *probs.shape[2:])[permutation]
             adv_values = adv_values.reshape(-1, *adv_values.shape[2:])[permutation]
             ref_values = ref_values.reshape(-1, *ref_values.shape[2:])[permutation]
+            if self.mode == MODE.gate:
+                heads = heads.reshape(-1, *heads.shape[2:])[permutation]
 
-            self._train(states, actions, probs, adv_values, ref_values)
+            self._train(states, actions, probs, adv_values, ref_values, heads)
 
             end = time.time()
             print("Trajectory {0:d} batch size {1:d} epochs {2:d} training time {3:.2f}s".format(self._trajectory_size, self._batch_size, self._ppo_epochs, end - start))
 
-    def _train(self, states, actions, probs, adv_values, ref_values):
+    def _train(self, states, actions, probs, adv_values, ref_values, heads=None):
         # adv_values = (adv_values - torch.mean(adv_values)) / (torch.std(adv_values) + 1e-8)
 
         for epoch in range(self._ppo_epochs):
             for batch_ofs in range(0, self._trajectory_size, self._batch_size):
                 batch_l = batch_ofs + self._batch_size
-                states_v = states[batch_ofs:batch_l]
-                actions_v = actions[batch_ofs:batch_l]
-                probs_v = probs[batch_ofs:batch_l]
-                batch_adv_v = adv_values[batch_ofs:batch_l]
-                batch_ref_v = ref_values[batch_ofs:batch_l]
+                states_v = states[batch_ofs:batch_l].to(self._device)
+                actions_v = actions[batch_ofs:batch_l].to(self._device)
+                probs_v = probs[batch_ofs:batch_l].to(self._device)
+                batch_adv_v = adv_values[batch_ofs:batch_l].to(self._device)
+                batch_ref_v = ref_values[batch_ofs:batch_l].to(self._device)
+                heads_v = None
+                if heads is not None:
+                    heads_v = heads[batch_ofs:batch_l].to(self._device)
 
                 self._optimizer.zero_grad()
-                loss = self.calc_loss(states_v.to(self._device), batch_ref_v.to(self._device), batch_adv_v.to(self._device), actions_v.to(self._device), probs_v.to(self._device))
+                loss = self.calc_loss(states_v, batch_ref_v, batch_adv_v, actions_v, probs_v, heads_v)
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(self._network.parameters(), max_norm=0.5)
                 self._optimizer.step()
 
-    def calc_loss(self, states, ref_value, adv_value, old_actions, old_probs):
+    def calc_loss(self, states, ref_value, adv_value, old_actions, old_probs, heads=None):
         values, _, probs = self._network(states)
 
-        if self._ncritic:
-            values = values.view(-1, values.shape[-1])
+        if heads is not None:
+            index = heads.argmax(dim=1, keepdim=True).unsqueeze(-1)
+            probs = torch.gather(probs, dim=1, index=index.repeat(1, 1, probs.shape[2])).squeeze(1)
+            values = torch.gather(values[:, :, 0], dim=1, index=index.squeeze(-1))
+
+        if self.mode == MODE.multicritic:
+            values = values.view(-1, values.shape[-1])[:, 1].unsqueeze(-1)
             adv_value = adv_value.view(-1, adv_value.shape[-1])
             ref_value = ref_value.view(-1, ref_value.shape[-1])
             probs = probs.view(-1, probs.shape[-1])

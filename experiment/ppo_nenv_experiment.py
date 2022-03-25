@@ -556,7 +556,7 @@ class ExperimentNEnvPPO:
 
             ext_reward.zero_()
             ext_reward = ext_reward.scatter(1, head_action.argmax(dim=1, keepdim=True).unsqueeze(-1), torch.tensor(reward0_0, dtype=torch.float32, device=config.device).unsqueeze(-1))
-            int_reward = agent.motivation.reward(error).cpu().clip(0.0, 1.0).view(-1, config.dop_heads, 1)
+            int_reward = agent.motivation.reward(error).clip(0.0, 1.0).view(-1, config.dop_heads, 1)
 
             if info is not None and 'raw_score' in info:
                 score = numpy.expand_dims(info['raw_score'], axis=1)
@@ -603,12 +603,12 @@ class ExperimentNEnvPPO:
 
             state1 = self.process_state(next_state)
 
-            reward0_0 = torch.cat([ext_reward.cpu(), int_reward], dim=2)
+            reward0_0 = torch.cat([ext_reward, int_reward], dim=2)
             reward0_1 = torch.tensor(reward0_1, dtype=torch.float32)
             done0_0 = torch.tensor(1 - done0_0, dtype=torch.float32)
             done0_1 = torch.tensor(1 - done0_1, dtype=torch.float32)
 
-            agent.train(features0_0, features0_1, state0, value, action0, selected_action, probs0, head_value, head_action, head_probs, state1, reward0_0, reward0_1, done0_0, done0_1)
+            agent.train(features0_0, features0_1, state0, value, action0, probs0, head_value, head_action, head_probs, state1, reward0_0, reward0_1, done0_0, done0_1)
 
             state0 = state1
             agent.controller.network.aggregator.reset(env_indices.tolist())

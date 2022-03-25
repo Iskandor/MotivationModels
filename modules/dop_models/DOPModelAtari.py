@@ -49,7 +49,7 @@ class Aggregator(nn.Module):
 
     def add_reward(self, reward):
         self.rewards += reward
-        return self.rewards / (self.index.unsqueeze(1).cpu().numpy() + 1)
+        return self.rewards
 
     def add_mask(self, mask):
         self.masks = np.maximum(self.masks, mask)

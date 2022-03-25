@@ -1,7 +1,7 @@
 import torch
 
 from agents.PPOAgent import PPOAgent
-from algorithms.PPO import PPO
+from algorithms.PPO import PPO, MODE
 from algorithms.ReplayBuffer import GenericTrajectoryBuffer, GenericAsyncTrajectoryBuffer
 from modules.dop_models.DOPModelAtari import DOPControllerAtari
 from modules.PPO_AtariModules import PPOAtariNetworkFM, PPOAtariNetwork, PPOAtariNetworkRND, PPOAtariNetworkQRND, PPOAtariNetworkDOP, PPOAtariMotivationNetwork, PPOAtariNetworkSRRND, \
@@ -152,14 +152,14 @@ class PPOAtariDOPControllerAgent(PPOAgent):
         self.memory = GenericAsyncTrajectoryBuffer(512, 512, config.n_env)
         self.algorithm = PPO(self.network, config.lr, config.actor_loss_weight, config.critic_loss_weight, 512, 512,
                              config.beta, config.gamma, ext_adv_scale=1, int_adv_scale=1, ppo_epochs=config.ppo_epochs, n_env=1,
-                             device=config.device, motivation=False, ncritic=False)
+                             device=config.device, motivation=False)
 
     def train(self, state0, value, action0, probs0, reward, mask):
-            self.memory.add(self.network.aggregator_indices(), state=state0.cpu(), value=value.cpu(), action=action0.cpu(), prob=probs0.cpu(), reward=reward.cpu(), mask=mask.cpu())
-            indices = self.memory.indices()
-            self.algorithm.train(self.memory, indices)
-            if indices is not None:
-                self.memory.clear()
+        self.memory.add(self.network.aggregator_indices(), state=state0.cpu(), value=value.cpu(), action=action0.cpu(), prob=probs0.cpu(), reward=reward.cpu(), mask=mask.cpu())
+        indices = self.memory.indices()
+        self.algorithm.train(self.memory, indices)
+        if indices is not None:
+            self.memory.clear()
 
 
 class PPOAtariDOPAgent(PPOAgent):
@@ -171,29 +171,55 @@ class PPOAtariDOPAgent(PPOAgent):
         self.h = input_shape[1]
         self.w = input_shape[2]
 
-        self.memory = GenericTrajectoryBuffer(config.trajectory_size, config.batch_size // config.dop_heads, config.n_env)
+        self.memory_external = GenericTrajectoryBuffer(config.trajectory_size, config.batch_size, config.n_env)
+        self.memory_internal = GenericTrajectoryBuffer(config.trajectory_size, config.batch_size // config.dop_heads, config.n_env)
         self.qrnd_memory = GenericTrajectoryBuffer(config.trajectory_size, config.batch_size, config.n_env)
         self.encoder_memory = GenericTrajectoryBuffer(config.trajectory_size // 8, config.batch_size, config.n_env)
 
         self.network = PPOAtariNetworkDOP(input_shape, action_dim, config, action_type).to(config.device)
         self.encoder = Encoder(self.network.encoder, 1e-5, config.device)
         self.motivation = QRNDMotivation(self.network.qrnd_model, config.motivation_lr, config.motivation_eta, config.device)
-        self.algorithm = PPO(self.network.dop_actor, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size,
-                             config.beta, config.gamma, ext_adv_scale=2, int_adv_scale=1, ppo_epochs=config.ppo_epochs, n_env=config.n_env,
-                             device=config.device, motivation=True, ncritic=True)
+        self.algorithm_external = PPO(self.network.dop_actor, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size,
+                                      config.beta, config.gamma, ext_adv_scale=1, int_adv_scale=1, ppo_epochs=config.ppo_epochs, n_env=config.n_env,
+                                      device=config.device, motivation=False, mode=MODE.gate)
+
+        self.algorithm_internal = PPO(self.network.dop_actor, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size // config.dop_heads, config.trajectory_size,
+                                      config.beta, config.gamma, ext_adv_scale=1, int_adv_scale=1, ppo_epochs=config.ppo_epochs, n_env=config.n_env,
+                                      device=config.device, motivation=False, mode=MODE.multicritic)
 
         self.controller = PPOAtariDOPControllerAgent(self.network.dop_controller, input_shape, action_dim, config, action_type)
 
-    def train(self, features0_0, features0_1, state0, value, action0, selected_action, probs0, head_value, head_action, head_probs, state1, reward0_0, reward0_1, mask0_0, mask0_1):
+    def train(self, features0_0, features0_1, state0, value, action0, probs0, head_value, head_action, head_probs, state1, reward0_0, reward0_1, mask0_0, mask0_1):
         self.controller.train(features0_1, head_value, head_action, head_probs, reward0_1, mask0_1)
 
-        self.memory.add(state=features0_0.cpu(), value=value.cpu(), action=action0.cpu(), prob=probs0.cpu(), reward=reward0_0.cpu(), mask=mask0_0.unsqueeze(1).repeat(1, self.head_count, 1).cpu())
-        indices = self.memory.indices()
-        self.algorithm.train(self.memory, indices)
-        if indices is not None:
-            self.memory.clear()
+        # value_mask = head_action.unsqueeze(-1).repeat(1, 1, 2) * 2 - 1
+        # value_mask[:, :, 1] = 1
+        #
+        # action0 = selected_action.unsqueeze(1).repeat(1, self.head_count, 1)
 
-        self.qrnd_memory.add(state=state0.cpu(), action=selected_action.cpu())
+        index = head_action.argmax(dim=1, keepdim=True).unsqueeze(-1)
+        gated_action = torch.gather(action0, dim=1, index=index.repeat(1, 1, action0.shape[2])).squeeze(1)
+        gated_probs = torch.gather(probs0, dim=1, index=index.repeat(1, 1, probs0.shape[2])).squeeze(1)
+        gated_value = torch.gather(value[:, :, 0], dim=1, index=index.squeeze(-1))
+        gated_reward = torch.gather(reward0_0[:, :, 0], dim=1, index=index.squeeze(-1))
+
+        self.memory_external.add(state=features0_0.cpu(), value=gated_value.cpu(), action=gated_action.cpu(), prob=gated_probs.cpu(), reward=gated_reward.cpu(), mask=mask0_0.cpu(), heads=head_action.cpu())
+        indices = self.memory_external.indices()
+        self.algorithm_external.train(self.memory_external, indices)
+        if indices is not None:
+            self.memory_external.clear()
+
+        value = value[:, :, 1].unsqueeze(-1)
+        reward0_0 = reward0_0[:, :, 1].unsqueeze(-1)
+
+        self.memory_internal.add(state=features0_0.cpu(), value=value.cpu(), action=action0.cpu(), prob=probs0.cpu(), reward=reward0_0.cpu(),
+                                 mask=mask0_0.unsqueeze(1).repeat(1, self.head_count, 1).cpu())
+        indices = self.memory_internal.indices()
+        self.algorithm_internal.train(self.memory_internal, indices)
+        if indices is not None:
+            self.memory_internal.clear()
+
+        self.qrnd_memory.add(state=state0.cpu(), action=gated_action.cpu())
         indices = self.qrnd_memory.indices()
         self.motivation.train(self.qrnd_memory, indices)
         if indices is not None:
@@ -228,7 +254,7 @@ class PPOAtariForwardModelAgent(PPOAgent):
         self.motivation = ForwardModelMotivation(self.network.forward_model, config.forward_model_lr, config.forward_model_eta, config.forward_model_variant, self.memory, config.device)
         self.algorithm = PPO(self.network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size,
                              config.beta, config.gamma, ext_adv_scale=2, int_adv_scale=1, ppo_epochs=config.ppo_epochs, n_env=config.n_env,
-                             device=config.device, motivation=True, ncritic=False)
+                             device=config.device, motivation=True)
 
     def train(self, state0, value, action0, probs0, state1, reward, mask):
         self.memory.add(state=state0.cpu(), value=value.cpu(), action=action0.cpu(), prob=probs0.cpu(), next_state=state1.cpu(), reward=reward.cpu(), mask=mask.cpu())
