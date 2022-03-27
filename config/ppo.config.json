@@ -916,6 +916,7 @@
       "motivation_eta": 10
     },
     "15": {
+      "descriptor": "ac regulator",
       "model": "dop",
       "n_env": 128,
       "trials": 2,
@@ -934,10 +935,11 @@
       "dop_frequency": 32
     },
     "16": {
+      "descriptor": "ac regulator",
       "model": "dop",
       "n_env": 128,
       "trials": 2,
-      "steps": 128,
+      "steps": 32,
       "gamma": "0.998,0.99",
       "beta": 0.001,
       "batch_size": 512,
@@ -952,6 +954,7 @@
       "dop_frequency": 64
     },
     "17": {
+      "descriptor": "ac regulator",
       "model": "dop",
       "n_env": 128,
       "trials": 2,
@@ -970,6 +973,7 @@
       "dop_frequency": 128
     },
     "18": {
+      "descriptor": "ac regulator",
       "model": "dop",
       "n_env": 128,
       "trials": 2,
@@ -988,6 +992,7 @@
       "dop_frequency": 256
     },
     "19": {
+      "descriptor": "ac regulator",
       "model": "dop",
       "n_env": 128,
       "trials": 2,
@@ -1003,7 +1008,7 @@
       "motivation_lr": 0.0001,
       "motivation_eta": 1,
       "dop_heads": 2,
-      "dop_frequency": 512
+      "dop_frequency": 64
     }
   },
   "private_eye": {

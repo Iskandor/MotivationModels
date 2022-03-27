@@ -546,7 +546,8 @@ class ExperimentNEnvPPO:
         while step_counter.running():
             with torch.no_grad():
                 features0_0, features0_1 = agent.get_features(state0)
-                value, action0, probs0, head_value, head_action, head_probs, selected_action = agent.get_action(features0_0, features0_1)
+                features0_0, value, action0, probs0, features0_1, head_value, head_action, head_probs, selected_action = agent.get_action(features0_0, features0_1)
+                # print(head_value[0], head_action[0], head_probs[0])
             agent.motivation.update_state_average(state0, selected_action)
             next_state, reward0_0, done0_0, info = self._env.step(agent.convert_action(selected_action.cpu()))
 

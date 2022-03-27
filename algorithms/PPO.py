@@ -10,7 +10,8 @@ from enum import Enum
 class MODE(Enum):
     basic = 0
     gate = 1
-    multicritic = 2
+    generator = 2
+
 
 class PPO:
     def __init__(self, network, lr, actor_loss_weight, critic_loss_weight, batch_size, trajectory_size, p_beta, p_gamma,
@@ -56,7 +57,7 @@ class PPO:
                 heads = sample.heads
 
             if self._motivation:
-                if self.mode == MODE.multicritic:
+                if self.mode == MODE.generator:
                     ext_reward = rewards[:, :, :, 0].unsqueeze(-1)
                     int_reward = rewards[:, :, :, 1].unsqueeze(-1)
 
@@ -74,7 +75,7 @@ class PPO:
                 adv_values = ext_adv_values * self.ext_adv_scale + int_adv_values * self.int_adv_scale
 
             else:
-                if self.mode == MODE.multicritic:
+                if self.mode == MODE.generator or self.mode == MODE.gate:
                     ref_values, adv_values = self.calc_advantage_ncritic(values, rewards, dones, self._gamma[0], self._n_env)
                 else:
                     ref_values, adv_values = self.calc_advantage(values, rewards, dones, self._gamma[0], self._n_env)
@@ -119,12 +120,22 @@ class PPO:
     def calc_loss(self, states, ref_value, adv_value, old_actions, old_probs, heads=None):
         values, _, probs = self._network(states)
 
-        if heads is not None:
+        if self.mode == MODE.gate:
             index = heads.argmax(dim=1, keepdim=True).unsqueeze(-1)
-            probs = torch.gather(probs, dim=1, index=index.repeat(1, 1, probs.shape[2])).squeeze(1)
-            values = torch.gather(values[:, :, 0], dim=1, index=index.squeeze(-1))
 
-        if self.mode == MODE.multicritic:
+            values = torch.gather(values[:, :, 0].unsqueeze(-1), dim=1, index=index)
+            values = values.view(-1, values.shape[-1])
+            ref_value = torch.gather(ref_value[:, :, 0].unsqueeze(-1), dim=1, index=index)
+            ref_value = ref_value.view(-1, ref_value.shape[-1])
+
+            adv_mask = heads.unsqueeze(-1) * 2 - 1
+            adv_value *= adv_mask
+            adv_value = adv_value.view(-1, adv_value.shape[-1])
+            probs = probs.view(-1, probs.shape[-1])
+            old_probs = old_probs.view(-1, old_probs.shape[-1])
+            old_actions = old_actions.view(-1, old_actions.shape[-1])
+
+        if self.mode == MODE.generator:
             values = values.view(-1, values.shape[-1])[:, 1].unsqueeze(-1)
             adv_value = adv_value.view(-1, adv_value.shape[-1])
             ref_value = ref_value.view(-1, ref_value.shape[-1])
