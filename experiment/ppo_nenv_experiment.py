@@ -4,6 +4,7 @@ import torch
 from etaprogress.progress import ProgressBar
 from gym.wrappers.monitoring.video_recorder import VideoRecorder
 
+from analytic.CNDAnalytic import CNDAnalytic
 from utils import one_hot_code
 from utils.RunningAverage import RunningAverageWindow, StepCounter, RunningStats
 from concurrent.futures import ThreadPoolExecutor
@@ -225,7 +226,6 @@ class ExperimentNEnvPPO:
         }
         numpy.save('ppo_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
 
-
     def run_qrnd_model(self, agent, trial):
         config = self._config
         n_env = config.n_env
@@ -426,6 +426,8 @@ class ExperimentNEnvPPO:
         trial = trial + config.shift
         step_counter = StepCounter(int(config.steps * 1e6))
 
+        analytic = CNDAnalytic(n_env)
+
         steps_per_episode = []
         train_ext_rewards = []
         train_ext_reward = numpy.zeros((n_env, 1), dtype=numpy.float32)
@@ -445,7 +447,7 @@ class ExperimentNEnvPPO:
         state0 = self.process_state(s)
 
         while step_counter.running():
-            # agent.motivation.update_state_average(state0)
+            agent.motivation.update_state_average(state0)
             with torch.no_grad():
                 features0 = agent.get_features(state0)
                 value, action0, probs0 = agent.get_action(features0)
@@ -453,6 +455,7 @@ class ExperimentNEnvPPO:
 
             ext_reward = torch.tensor(reward, dtype=torch.float32)
             int_reward = agent.motivation.reward(state0).cpu().clip(0.0, 1.0)
+            analytic.add_reward(int_reward)
 
             if info is not None and 'raw_score' in info:
                 score = numpy.expand_dims(info['raw_score'], axis=1)
@@ -471,6 +474,9 @@ class ExperimentNEnvPPO:
                     train_steps[i] = step_counter.limit - step_counter.steps
                 step_counter.update(train_steps[i].item())
 
+                ri_max, ri_mean, ri_std = analytic.evaluate(i)
+                analytic.reset(i)
+
                 steps_per_episode.append(train_steps[i].item())
                 train_ext_rewards.append(train_ext_reward[i].item())
                 train_int_rewards.append(train_int_reward[i].item())
@@ -479,9 +485,9 @@ class ExperimentNEnvPPO:
                 reward_avg.update(train_ext_reward[i].item())
 
                 if train_steps[i].item() > 0:
-                    print('Run {0:d} step {1:d} training [ext. reward {2:f} int. reward {3:f} steps {4:d} ({5:f})  mean reward {6:f} score {7:f}]'.format(
-                        trial, step_counter.steps, train_ext_reward[i].item(), train_int_reward[i].item(), train_steps[i].item(), train_int_reward[i].item() / train_steps[i].item(),
-                        reward_avg.value().item(), train_score[i].item()))
+                    print('Run {0:d} step {1:d} training [ext. reward {2:f} int. reward (max={3:f} mean={4:f} std={5:f}) steps {6:d}  mean reward {7:f} score {8:f}]'.format(
+                        trial, step_counter.steps, train_ext_reward[i].item(), ri_max, ri_mean, ri_std,
+                        train_steps[i].item(), reward_avg.value().item(), train_score[i].item()))
                 step_counter.print()
 
                 train_ext_reward[i] = 0
@@ -509,11 +515,10 @@ class ExperimentNEnvPPO:
             'steps': numpy.array(steps_per_episode),
             'score': numpy.array(train_scores),
             're': numpy.array(train_ext_rewards),
-            'ri': numpy.array(train_int_rewards),
+            'ri': numpy.stack([numpy.array(analytic.int_rewards_max), numpy.array(analytic.int_rewards_mean), numpy.array(analytic.int_rewards_std)]),
             'error': numpy.array(train_errors)
         }
         numpy.save('ppo_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
-
 
     def run_dop_model(self, agent, trial):
         config = self._config
