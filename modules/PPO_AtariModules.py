@@ -137,11 +137,10 @@ class PPOAtariNetworkSRRND(PPOAtariSRMotivationNetwork):
         self.rnd_model = RNDModelAtari(input_shape, action_dim, config)
 
 
-class PPOAtariNetworkCND(PPOAtariSRMotivationNetwork):
-    def __init__(self, input_shape, feature_dim, action_dim, config, head):
-        super(PPOAtariNetworkCND, self).__init__(feature_dim, action_dim, config, head)
-        self.encoder = ST_DIMEncoderAtari(input_shape, feature_dim, config)
-        self.cnd_model = CNDModelAtari(input_shape, action_dim, config, self.encoder)
+class PPOAtariNetworkCND(PPOAtariMotivationNetwork):
+    def __init__(self, input_shape, action_dim, config, head):
+        super(PPOAtariNetworkCND, self).__init__(input_shape, action_dim, config, head)
+        self.cnd_model = CNDModelAtari(input_shape, action_dim, config)
 
 
 class PPOAtariNetworkQRND(PPOAtariSRMotivationNetwork):

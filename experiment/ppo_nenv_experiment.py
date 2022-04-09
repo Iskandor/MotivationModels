@@ -449,8 +449,7 @@ class ExperimentNEnvPPO:
         while step_counter.running():
             agent.motivation.update_state_average(state0)
             with torch.no_grad():
-                features0 = agent.get_features(state0)
-                value, action0, probs0 = agent.get_action(features0)
+                value, action0, probs0 = agent.get_action(state0)
             next_state, reward, done, info = self._env.step(agent.convert_action(action0.cpu()))
 
             ext_reward = torch.tensor(reward, dtype=torch.float32)
@@ -499,12 +498,11 @@ class ExperimentNEnvPPO:
                 next_state[i] = self._env.reset(i)
 
             state1 = self.process_state(next_state)
-            features1 = agent.get_features(state1)
 
             reward = torch.cat([ext_reward, int_reward], dim=1)
             done = torch.tensor(1 - done, dtype=torch.float32)
 
-            agent.train(state0, features0, value, action0, probs0, state1, features1, reward, done)
+            agent.train(state0, value, action0, probs0, state1, reward, done)
 
             state0 = state1
 

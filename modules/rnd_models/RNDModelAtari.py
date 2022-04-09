@@ -3,6 +3,7 @@ import torch.nn as nn
 import numpy as np
 
 from modules import init_orthogonal
+from modules.encoders.EncoderAtari import ST_DIMEncoderAtari
 from utils.RunningAverage import RunningStats
 
 
@@ -93,20 +94,23 @@ class RNDModelAtari(nn.Module):
 
 
 class CNDModelAtari(nn.Module):
-    def __init__(self, input_shape, action_dim, config, target_model):
+    def __init__(self, input_shape, action_dim, config):
         super(CNDModelAtari, self).__init__()
 
-        self.input_shape = input_shape
+        self.config = config
         self.action_dim = action_dim
 
-        input_channels = 4
-        input_height = self.input_shape[1]
-        input_width = self.input_shape[2]
+        input_channels = 1
+        input_height = input_shape[1]
+        input_width = input_shape[2]
+        self.input_shape = (input_channels, input_height, input_width)
         self.feature_dim = 512
 
         fc_inputs_count = 128 * (input_width // 8) * (input_height // 8)
 
-        self.target_model = target_model
+        self.state_average = RunningStats(self.input_shape, config.device)
+
+        self.target_model = ST_DIMEncoderAtari(self.input_shape, self.feature_dim, config)
 
         self.model = nn.Sequential(
             nn.Conv2d(input_channels, 32, kernel_size=3, stride=2, padding=1),
@@ -133,23 +137,45 @@ class CNDModelAtari(nn.Module):
         init_orthogonal(self.model[11], np.sqrt(2))
         init_orthogonal(self.model[13], np.sqrt(2))
 
+    def preprocess(self, state):
+        state = state - self.state_average.mean
+        state = state / self.state_average.std
+        return state[:, 0, :, :].unsqueeze(1)
+
     def forward(self, state):
-        predicted_code = self.model(state)
-        target_code = self.target_model(state).detach()
+        s = self.preprocess(state)
+        predicted_code = self.model(s)
+        target_code = self.target_model(s).detach()
         return predicted_code, target_code
 
     def error(self, state):
         with torch.no_grad():
             prediction, target = self(state)
-            error = torch.sum(torch.pow(target - prediction, 2), dim=1).unsqueeze(-1) / 2
+            # error = torch.sum(torch.pow(target - prediction, 2), dim=1).unsqueeze(-1) / 2
+            # error = torch.mean(torch.abs(target - prediction), dim=1, keepdim=True) / 2
+            error = self.k_distance(self.config.cnd_error_k, prediction, target, reduction='mean')
 
         return error
 
-    def loss_function(self, state):
+    def loss_function(self, state, next_state):
         prediction, target = self(state)
-        loss = torch.pow(target - prediction, 2)
+        loss_prediction = self.k_distance(self.config.cnd_loss_k, prediction, target, reduction='sum')
+        loss_target = self.target_model.loss_function(self.preprocess(state), self.preprocess(next_state))
 
-        return loss.mean()
+        return loss_prediction.mean() + loss_target * 0.1
+
+    @staticmethod
+    def k_distance(k, prediction, target, reduction='sum'):
+        ret = torch.abs(target - prediction) + 1e-8
+        if reduction == 'sum':
+            ret = ret.pow(k).sum(dim=1, keepdim=True).pow(1 / k)
+        if reduction == 'mean':
+            ret = ret.pow(k).mean(dim=1, keepdim=True).pow(1 / k)
+
+        return ret
+
+    def update_state_average(self, state):
+        self.state_average.update(state)
 
 
 class QRNDModelAtari(nn.Module):
