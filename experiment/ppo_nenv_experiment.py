@@ -452,7 +452,6 @@ class ExperimentNEnvPPO:
             with torch.no_grad():
                 value, action0, probs0 = agent.get_action(state0)
             next_state, reward, done, info = self._env.step(agent.convert_action(action0.cpu()))
-            step_counter.update(n_env)
 
             ext_reward = torch.tensor(reward, dtype=torch.float32)
             int_reward = agent.motivation.reward(state0).cpu().clip(0.0, 1.0)
@@ -468,10 +467,11 @@ class ExperimentNEnvPPO:
             stats = analytic.reset(env_indices)
 
             for i, index in enumerate(env_indices):
-                # reward_avg.update(train_ext_reward[i].item())
+                step_counter.update(int(stats['ext_reward'].step[i].item()))
+                reward_avg.update(stats['ext_reward'].sum[i].item())
 
                 print('Run {0:d} step {1:d} training [ext. reward {2:f} int. reward (max={3:f} mean={4:f} std={5:f}) steps {6:d}  mean reward {7:f} score {8:f}]'.format(
-                        trial, step_counter.steps, stats['ext_reward'].mean[i].item(), stats['int_reward'].max[i].item(), stats['int_reward'].mean[i].item(), stats['int_reward'].std[i].item(),
+                        trial, step_counter.steps, stats['ext_reward'].sum[i].item(), stats['int_reward'].max[i].item(), stats['int_reward'].mean[i].item(), stats['int_reward'].std[i].item(),
                         int(stats['ext_reward'].step[i].item()), reward_avg.value().item(), stats['score'].sum[i].item()))
                 step_counter.print()
 

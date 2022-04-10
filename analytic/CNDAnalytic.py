@@ -25,7 +25,7 @@ class CNDAnalytic(GenericCollector):
         if len(indices) > 0:
             result = super().reset(indices)
 
-            self.ext_reward.append((result['ext_reward'].step, result['ext_reward'].mean))
+            self.ext_reward.append((result['ext_reward'].step, result['ext_reward'].sum))
             self.int_reward.append((result['int_reward'].step, result['int_reward'].max, result['int_reward'].mean, result['int_reward'].std))
             self.error.append((result['error'].step, result['error'].max, result['error'].mean, result['error'].std))
             self.score.append((result['score'].step, result['score'].sum))
@@ -33,7 +33,7 @@ class CNDAnalytic(GenericCollector):
         return result
 
     def finalize(self):
-        self.ext_reward = self._finalize_value(self.ext_reward, ['step', 'mean'])
+        self.ext_reward = self._finalize_value(self.ext_reward, ['step', 'sum'])
         self.int_reward = self._finalize_value(self.int_reward, ['step', 'max', 'mean', 'std'])
         self.error = self._finalize_value(self.error, ['step', 'max', 'mean', 'std'])
         self.score = self._finalize_value(self.score, ['step', 'sum'])
