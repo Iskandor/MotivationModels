@@ -108,7 +108,7 @@ class CNDModelAtari(nn.Module):
 
         fc_inputs_count = 128 * (input_width // 8) * (input_height // 8)
 
-        self.state_average = RunningStats(self.input_shape, config.device)
+        self.state_average = RunningStats((4, input_height, input_width), config.device)
 
         self.target_model = ST_DIMEncoderAtari(self.input_shape, self.feature_dim, config)
 

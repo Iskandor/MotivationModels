@@ -40,6 +40,8 @@ class StepCounter:
 
     def update(self, value):
         self.steps += value
+        if self.steps > self.limit:
+            self.steps = self.limit
         self.bar.numerator = self.steps
 
     def print(self):
@@ -59,6 +61,7 @@ class RunningStats:
             self.count = 1
         self.eps = 0.0000001
         self.max = torch.zeros(shape, device=device)
+        self.sum = torch.zeros(shape, device=device)
         self.mean = torch.zeros(shape, device=device)
         self.var = 0.01 * torch.ones(shape, device=device)
         self.std = (self.var ** 0.5) + self.eps
@@ -71,9 +74,11 @@ class RunningStats:
         max = torch.maximum(self.max, x)
 
         if reduction == 'mean':
+            self.sum += x.mean(axis=0)
             mean = self.mean + (x.mean(axis=0) - self.mean) / self.count
             var = self.var + ((x - self.mean) * (x - mean)).mean(axis=0)
         if reduction == 'none':
+            self.sum += x
             mean = self.mean + (x - self.mean) / self.count
             var = self.var + ((x - self.mean) * (x - mean))
 
@@ -86,11 +91,13 @@ class RunningStats:
     def reset(self, i):
         if self.n > 1:
             self.max[i].fill_(0)
+            self.sum[i].fill_(0)
             self.mean[i].fill_(0)
             self.var[i].fill_(0.01)
             self.count[i] = 1
         else:
             self.max.fill_(0)
+            self.sum.fill_(0)
             self.mean.fill_(0)
             self.var.fill_(0.01)
             self.count = 1
