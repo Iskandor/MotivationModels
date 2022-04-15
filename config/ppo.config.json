@@ -880,7 +880,7 @@
       "model": "cnd",
       "n_env": 128,
       "trials": 2,
-      "steps": 32,
+      "steps": 0.1,
       "gamma": "0.998,0.99",
       "beta": 0.001,
       "batch_size": 512,

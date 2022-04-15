@@ -426,8 +426,8 @@ class ExperimentNEnvPPO:
         trial = trial + config.shift
         step_counter = StepCounter(int(config.steps * 1e6))
 
-        analytic = CNDAnalytic(n_env)
-        analytic.init(ext_reward=(1,), score=(1,), int_reward=(1,), error=(1,))
+        analytic = CNDAnalytic()
+        analytic.init(n_env, ext_reward=(1,), score=(1,), int_reward=(1,), error=(1,))
 
         # steps_per_episode = []
         # train_ext_rewards = []
@@ -485,17 +485,22 @@ class ExperimentNEnvPPO:
             agent.train(state0, value, action0, probs0, state1, reward, done)
 
             state0 = state1
+            analytic.end_step()
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
 
         print('Saving data...')
+        analytic.finalize()
         save_data = {
             'score': analytic.score,
             're': analytic.ext_reward,
             'ri': analytic.int_reward,
-            'error': analytic.error
+            'error': analytic.error,
+            'loss_prediction': analytic.loss_prediction,
+            'loss_target': analytic.loss_target,
         }
         numpy.save('ppo_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
+        analytic.clear()
 
     def run_dop_model(self, agent, trial):
         config = self._config

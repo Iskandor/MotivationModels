@@ -6,21 +6,20 @@ from utils.RunningAverage import RunningStats
 
 
 class GenericCollector:
-    def __init__(self, nenv):
-        self._nenv = nenv
+    def __init__(self):
+        self._n_env = 0
         self._buffer = {}
 
         self._simple_stats = namedtuple('simple_stats', ['step', 'max', 'sum', 'mean', 'std'])
 
-    def init(self, **kwargs):
+    def init(self, n_env, **kwargs):
+        self._n_env = n_env
         for k in kwargs:
-            self._buffer[k] = RunningStats(kwargs[k], 'cpu', n=self._nenv)
+            self._buffer[k] = RunningStats(kwargs[k], 'cpu', n=self._n_env)
 
     def update(self, **kwargs):
         for k in kwargs:
-            if k not in self._buffer:
-                print('{0:s} update: Wrong buffer key "{1:s}"'.format(__file__, k))
-            else:
+            if k in self._buffer:
                 self._buffer[k].update(kwargs[k], reduction='none')
 
     def reset(self, indices):
@@ -37,3 +36,6 @@ class GenericCollector:
 
     def _evaluate(self, key, index):
         return self._buffer[key].count[index].item() - 1, self._buffer[key].max[index].item(), self._buffer[key].sum[index].item(), self._buffer[key].mean[index].item(), self._buffer[key].std[index].item()
+
+    def clear(self):
+        self._buffer = {}

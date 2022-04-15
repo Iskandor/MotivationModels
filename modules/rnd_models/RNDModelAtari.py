@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 
+from analytic.CNDAnalytic import CNDAnalytic
 from modules import init_orthogonal
 from modules.encoders.EncoderAtari import ST_DIMEncoderAtari
 from utils.RunningAverage import RunningStats
@@ -151,18 +152,23 @@ class CNDModelAtari(nn.Module):
     def error(self, state):
         with torch.no_grad():
             prediction, target = self(state)
-            # error = torch.sum(torch.pow(target - prediction, 2), dim=1).unsqueeze(-1) / 2
+            error = torch.mean(torch.pow(target - prediction, 2), dim=1).unsqueeze(-1)
             # error = torch.mean(torch.abs(target - prediction), dim=1, keepdim=True) / 2
-            error = self.k_distance(self.config.cnd_error_k, prediction, target, reduction='mean')
+            # error = self.k_distance(self.config.cnd_error_k, prediction, target, reduction='mean')
+            # error = nn.functional.mse_loss(prediction, target).unsqueeze(-1)
 
         return error
 
     def loss_function(self, state, next_state):
         prediction, target = self(state)
-        loss_prediction = self.k_distance(self.config.cnd_loss_k, prediction, target, reduction='sum')
-        loss_target = self.target_model.loss_function(self.preprocess(state), self.preprocess(next_state))
+        # loss_prediction = self.k_distance(self.config.cnd_loss_k, prediction, target, reduction='sum').mean()
+        loss_prediction = nn.functional.mse_loss(prediction, target)
+        loss_target = self.target_model.loss_function(self.preprocess(state), self.preprocess(next_state)) * 0.1
 
-        return loss_prediction.mean() + loss_target * 0.1
+        analytic = CNDAnalytic()
+        analytic.update(loss_prediction=loss_prediction.unsqueeze(-1).detach(), loss_target=loss_target.unsqueeze(-1).detach())
+
+        return loss_prediction + loss_target
 
     @staticmethod
     def k_distance(k, prediction, target, reduction='sum'):
