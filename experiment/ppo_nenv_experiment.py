@@ -465,9 +465,10 @@ class ExperimentNEnvPPO:
 
             env_indices = numpy.nonzero(numpy.squeeze(done, axis=1))[0]
             stats = analytic.reset(env_indices)
+            step_counter.update(n_env)
 
             for i, index in enumerate(env_indices):
-                step_counter.update(int(stats['ext_reward'].step[i].item()))
+                # step_counter.update(int(stats['ext_reward'].step[i].item()))
                 reward_avg.update(stats['ext_reward'].sum[i].item())
 
                 print('Run {0:d} step {1:d} training [ext. reward {2:f} int. reward (max={3:f} mean={4:f} std={5:f}) steps {6:d}  mean reward {7:f} score {8:f}]'.format(
@@ -481,15 +482,16 @@ class ExperimentNEnvPPO:
 
             reward = torch.cat([ext_reward, int_reward], dim=1)
             done = torch.tensor(1 - done, dtype=torch.float32)
+            analytic.end_step()
 
             agent.train(state0, value, action0, probs0, state1, reward, done)
 
             state0 = state1
-            analytic.end_step()
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
 
         print('Saving data...')
+        analytic.reset(numpy.array(range(n_env)))
         analytic.finalize()
         save_data = {
             'score': analytic.score,

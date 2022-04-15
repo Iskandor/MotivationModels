@@ -1,7 +1,7 @@
 import os
 
+from plots.analytic_chart import plot_multiple_models, plot_detail
 from plots.dataloader import prepare_data
-from plots.chart import plot_multiple_models, plot_baseline_details, plot_forward_model_details, plot_dop_model_details, plot_dop2_model_details, plot_dop3_model_details, plot_vdop_model_details
 from plots.paths import plot_root
 
 
@@ -37,23 +37,4 @@ def plot(name, config, plot_overview=True, average_per_step=False, has_score=Fal
                 if not os.path.exists(path):
                     os.mkdir(path)
                 path = os.path.join(path, '{0:s}_{1:s}'.format(env, model))
-                if model == 'baseline':
-                    plot_baseline_details(d, path, window=window)
-                if model == 'dop_ref':
-                    plot_baseline_details(d, path, window=window)
-                if model == 'rnd':
-                    plot_forward_model_details(d, path, window=window, average_per_step=average_per_step)
-                if model == 'sr_rnd':
-                    plot_forward_model_details(d, path, window=window, average_per_step=average_per_step)
-                if model == 'cnd':
-                    plot_forward_model_details(d, path, window=window, average_per_step=average_per_step)
-                if model == 'qrnd':
-                    plot_forward_model_details(d, path, window=window, average_per_step=average_per_step)
-                if model == 'dop':
-                    plot_dop_model_details(d, path, window=window, average_per_step=average_per_step)
-                if model == 'dop_2':
-                    plot_dop2_model_details(d, path, window=window)
-                if model == 'dop_3':
-                    plot_dop3_model_details(d, path, window=window)
-                if model == 'vdop':
-                    plot_vdop_model_details(d, path, window=window)
+                plot_detail(d, path, window)

@@ -17,7 +17,7 @@ def prepare_data(keys):
 
         path = os.path.join(data_root, algorithm, model, env, id)
         # data.append(load_data(path, ['re', 're_raw', 'ri', 'hid', 'aa', 'var', 'error', 'ext_grad', 'reg_grad', 'dop_grad'], ['loss', 'regterm'], ['re', 're_raw', 'ri']))
-        data.append(load_data2(path))
+        data.append(load_analytic_files(path))
 
     return data
 
@@ -48,6 +48,18 @@ def expand_data(data, steps=None):
         else:
             d.append(np.full((steps[i],) + r.shape, r))
     return np.concatenate(d)
+
+
+def load_analytic_files(folder):
+    print(folder)
+    print(glob.glob(str(folder) + '/*.npy'))
+
+    data = []
+
+    for file in glob.glob(str(folder) + '/*.npy'):
+        data.append(np.load(file, allow_pickle=True).item())
+
+    return data
 
 
 def load_data2(folder):
