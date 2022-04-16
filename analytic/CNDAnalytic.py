@@ -17,6 +17,9 @@ class CNDAnalytic:
             cls._instance.int_reward = []
             cls._instance.error = []
             cls._instance.score = []
+            cls._instance.feature_space = []
+            cls._instance.ext_value = []
+            cls._instance.int_value = []
             cls._instance.loss_prediction = {}
             cls._instance.loss_target = {}
         return cls._instance
@@ -46,6 +49,9 @@ class CNDAnalytic:
             self.int_reward.append((result['int_reward'].step, result['int_reward'].max, result['int_reward'].mean, result['int_reward'].std))
             self.error.append((result['error'].step, result['error'].max, result['error'].mean, result['error'].std))
             self.score.append((result['score'].step, result['score'].sum))
+            self.error.append((result['feature_space'].step, result['feature_space'].max, result['feature_space'].mean, result['feature_space'].std))
+            self.ext_value.append((result['ext_value'].step, result['ext_value'].max, result['ext_value'].mean, result['ext_value'].std))
+            self.int_value.append((result['int_value'].step, result['int_value'].max, result['int_value'].mean, result['int_value'].std))
 
         return result
 
@@ -57,6 +63,9 @@ class CNDAnalytic:
         self.int_reward = self._finalize_value(self.int_reward, ['step', 'max', 'mean', 'std'], mode='cumsum_step')
         self.error = self._finalize_value(self.error, ['step', 'max', 'mean', 'std'], mode='cumsum_step')
         self.score = self._finalize_value(self.score, ['step', 'sum'], mode='cumsum_step')
+        self.feature_space = self._finalize_value(self.feature_space, ['step', 'max', 'mean', 'std'], mode='cumsum_step')
+        self.ext_value = self._finalize_value(self.ext_value, ['step', 'max', 'mean', 'std'], mode='cumsum_step')
+        self.int_value = self._finalize_value(self.int_value, ['step', 'max', 'mean', 'std'], mode='cumsum_step')
         self.loss_prediction = self._finalize_value(self.loss_prediction, ['step', 'val'], mode='mean_step')
         self.loss_target = self._finalize_value(self.loss_target, ['step', 'val'], mode='mean_step')
 
@@ -68,6 +77,9 @@ class CNDAnalytic:
         self.int_reward = []
         self.error = []
         self.score = []
+        self.feature_space = []
+        self.ext_value = []
+        self.int_value = []
         self.loss_prediction = {}
         self.loss_target = {}
 

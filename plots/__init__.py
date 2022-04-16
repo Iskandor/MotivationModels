@@ -1,6 +1,6 @@
 import os
 
-from plots.analytic_chart import plot_multiple_models, plot_detail
+from plots.analytic_chart import plot_multiple_models, plot_detail_cnd
 from plots.dataloader import prepare_data
 from plots.paths import plot_root
 
@@ -37,4 +37,6 @@ def plot(name, config, plot_overview=True, average_per_step=False, has_score=Fal
                 if not os.path.exists(path):
                     os.mkdir(path)
                 path = os.path.join(path, '{0:s}_{1:s}'.format(env, model))
-                plot_detail(d, path, window)
+
+                if model == 'cnd':
+                    plot_detail_cnd(d, path, window)

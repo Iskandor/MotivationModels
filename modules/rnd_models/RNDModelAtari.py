@@ -139,9 +139,9 @@ class CNDModelAtari(nn.Module):
         init_orthogonal(self.model[13], np.sqrt(2))
 
     def preprocess(self, state):
-        state = state - self.state_average.mean
-        state = state / self.state_average.std
-        return state[:, 0, :, :].unsqueeze(1)
+        x = state - self.state_average.mean
+        # x /= self.state_average.std
+        return x[:, 0, :, :].unsqueeze(1)
 
     def forward(self, state):
         s = self.preprocess(state)
@@ -155,7 +155,6 @@ class CNDModelAtari(nn.Module):
             error = torch.mean(torch.pow(target - prediction, 2), dim=1).unsqueeze(-1)
             # error = torch.mean(torch.abs(target - prediction), dim=1, keepdim=True) / 2
             # error = self.k_distance(self.config.cnd_error_k, prediction, target, reduction='mean')
-            # error = nn.functional.mse_loss(prediction, target).unsqueeze(-1)
 
         return error
 
@@ -163,7 +162,7 @@ class CNDModelAtari(nn.Module):
         prediction, target = self(state)
         # loss_prediction = self.k_distance(self.config.cnd_loss_k, prediction, target, reduction='sum').mean()
         loss_prediction = nn.functional.mse_loss(prediction, target)
-        loss_target = self.target_model.loss_function(self.preprocess(state), self.preprocess(next_state)) * 0.1
+        loss_target = self.target_model.loss_function(self.preprocess(state), self.preprocess(next_state))
 
         analytic = CNDAnalytic()
         analytic.update(loss_prediction=loss_prediction.unsqueeze(-1).detach(), loss_target=loss_target.unsqueeze(-1).detach())

@@ -95,6 +95,11 @@ class PPOAtariCNDAgent(PPOAgent):
             self.motivation.train(self.motivation_memory, motivation_indices)
             self.motivation_memory.clear()
 
+    def get_action(self, state):
+        value, action, probs = self.network(state)
+        features = self.network.cnd_model.target_model(self.network.cnd_model.preprocess(state))
+
+        return features.detach(), value.detach(), action, probs.detach()
 
 class PPOAtariQRNDAgent(PPOAgent):
     def __init__(self, input_shape, action_dim, config, action_type):

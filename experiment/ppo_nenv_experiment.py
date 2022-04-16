@@ -427,18 +427,8 @@ class ExperimentNEnvPPO:
         step_counter = StepCounter(int(config.steps * 1e6))
 
         analytic = CNDAnalytic()
-        analytic.init(n_env, ext_reward=(1,), score=(1,), int_reward=(1,), error=(1,))
+        analytic.init(n_env, ext_reward=(1,), score=(1,), int_reward=(1,), error=(1,), feature_space=(1,), ext_value=(1,), int_value=(1,))
 
-        # steps_per_episode = []
-        # train_ext_rewards = []
-        # train_ext_reward = numpy.zeros((n_env, 1), dtype=numpy.float32)
-        # train_scores = []
-        # train_score = numpy.zeros((n_env, 1), dtype=numpy.float32)
-        # train_int_rewards = []
-        # train_int_reward = numpy.zeros((n_env, 1), dtype=numpy.float32)
-        # train_errors = []
-        # train_error = numpy.zeros((n_env, 1), dtype=numpy.float32)
-        # train_steps = numpy.zeros((n_env, 1), dtype=numpy.int32)
         reward_avg = RunningAverageWindow(100)
 
         s = numpy.zeros((n_env,) + self._env.observation_space.shape, dtype=numpy.float32)
@@ -450,7 +440,7 @@ class ExperimentNEnvPPO:
         while step_counter.running():
             agent.motivation.update_state_average(state0)
             with torch.no_grad():
-                value, action0, probs0 = agent.get_action(state0)
+                features, value, action0, probs0 = agent.get_action(state0)
             next_state, reward, done, info = self._env.step(agent.convert_action(action0.cpu()))
 
             ext_reward = torch.tensor(reward, dtype=torch.float32)
@@ -461,7 +451,12 @@ class ExperimentNEnvPPO:
                 analytic.update(score=score)
 
             error = agent.motivation.error(state0).cpu()
-            analytic.update(ext_reward=ext_reward, int_reward=int_reward, error=error)
+            analytic.update(ext_reward=ext_reward,
+                            int_reward=int_reward,
+                            ext_value=value[:, 0].unsqueeze(-1).cpu(),
+                            int_value=value[:, 1].unsqueeze(-1).cpu(),
+                            error=error,
+                            feature_space=features.mean().cpu())
 
             env_indices = numpy.nonzero(numpy.squeeze(done, axis=1))[0]
             stats = analytic.reset(env_indices)
@@ -472,8 +467,8 @@ class ExperimentNEnvPPO:
                 reward_avg.update(stats['ext_reward'].sum[i].item())
 
                 print('Run {0:d} step {1:d} training [ext. reward {2:f} int. reward (max={3:f} mean={4:f} std={5:f}) steps {6:d}  mean reward {7:f} score {8:f}]'.format(
-                        trial, step_counter.steps, stats['ext_reward'].sum[i].item(), stats['int_reward'].max[i].item(), stats['int_reward'].mean[i].item(), stats['int_reward'].std[i].item(),
-                        int(stats['ext_reward'].step[i].item()), reward_avg.value().item(), stats['score'].sum[i].item()))
+                    trial, step_counter.steps, stats['ext_reward'].sum[i].item(), stats['int_reward'].max[i].item(), stats['int_reward'].mean[i].item(), stats['int_reward'].std[i].item(),
+                    int(stats['ext_reward'].step[i].item()), reward_avg.value().item(), stats['score'].sum[i].item()))
                 step_counter.print()
 
                 next_state[i] = self._env.reset(index)

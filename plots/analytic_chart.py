@@ -58,20 +58,49 @@ def prepare_data(data, master_key, key, window):
     return iv, mu, sigma
 
 
-def plot_curve(axis, stats, independent_values, color, alpha=1.0):
+def plot_curve(axis, stats, independent_values, color='blue', alpha=1.0, start=0.0, stop=1.0):
+    start = int(len(independent_values) * start)
+    stop = int(len(independent_values) * stop)
     if 'val' in stats:
-        axis.plot(independent_values, stats['val'], lw=1, color=color, alpha=alpha)
+        axis.plot(independent_values[start:stop], stats['val'][start:stop], lw=1, color=color, alpha=alpha)
 
     if 'sum' in stats:
-        axis.plot(independent_values, stats['sum'], lw=1, color=color, alpha=alpha)
+        axis.plot(independent_values[start:stop], stats['sum'][start:stop], lw=1, color=color, alpha=alpha)
 
     if 'mean' in stats:
-        axis.plot(independent_values, stats['mean'], lw=1, color=color, alpha=alpha)
+        axis.plot(independent_values[start:stop], stats['mean'][start:stop], lw=1, color=color, alpha=alpha)
         if 'std' in stats:
-            axis.fill_between(independent_values, stats['mean'] + stats['std'], stats['mean'] - stats['std'], facecolor=color, alpha=0.1)
+            axis.fill_between(independent_values[start:stop], stats['mean'][start:stop] + stats['std'][start:stop], stats['mean'][start:stop] - stats['std'][start:stop], facecolor=color, alpha=0.3)
 
     if 'max' in stats:
-        axis.plot(independent_values, stats['max'], lw=2, color=color, alpha=alpha)
+        axis.plot(independent_values[start:stop], stats['max'][start:stop], lw=2, color=color, alpha=alpha)
+
+
+def get_rows_cols(data):
+    n = len(data)
+
+    rows = int(sqrt(n))
+    cols = n // rows
+
+    return rows, cols
+
+
+def plot_chart(num_rows, num_cols, index, key, data, window, color, legend, legend_loc=4):
+    ax = plt.subplot(num_rows, num_cols, index)
+    ax.set_xlabel('steps')
+    ax.set_ylabel(legend)
+    ax.grid()
+
+    stats = {}
+    iv = None
+
+    for k in data[key]:
+        if k != 'step':
+            iv, stats[k] = prepare_data_instance(data[key]['step'].squeeze(), data[key][k].squeeze(), window)
+
+    # plot_curve(ax, stats, iv, color=color, alpha=1.0, start=0.19, stop=0.22)
+    plot_curve(ax, stats, iv, color=color, alpha=1.0, start=0.0, stop=1.0)
+    plt.legend([legend], loc=legend_loc)
 
 
 def plot_multiple_models(data, legend, colors, path, window=1, has_score=False):
@@ -89,7 +118,7 @@ def plot_multiple_models(data, legend, colors, path, window=1, has_score=False):
 
     for index, d in enumerate(data):
         iv, mu, sigma = prepare_data(d, 're', 'sum', window)
-        plot_curve(ax, {'mean': mu, 'std': sigma}, iv, colors[index])
+        plot_curve(ax, {'mean': mu, 'std': sigma}, iv, color=colors[index])
 
     ax.legend(legend[:len(data)], loc=4)
 
@@ -101,7 +130,7 @@ def plot_multiple_models(data, legend, colors, path, window=1, has_score=False):
 
         for index, d in enumerate(data):
             iv, mu, sigma = prepare_data(d, 'score', 'sum', window)
-            plot_curve(ax, {'mean': mu, 'std': sigma}, iv, colors[index])
+            plot_curve(ax, {'mean': mu, 'std': sigma}, iv, color=colors[index])
 
         ax.legend(legend[:len(data)], loc=4)
 
@@ -109,107 +138,18 @@ def plot_multiple_models(data, legend, colors, path, window=1, has_score=False):
     plt.close()
 
 
-def get_rows_cols(data):
-    n = len(data)
-
-    rows = int(sqrt(n))
-    cols = n // rows
-
-    return rows, cols
-
-
-def plot_chart(num_rows, num_cols, index, key, data, window):
-    ax = plt.subplot(num_rows, num_cols, index)
-    ax.set_xlabel('steps')
-    ax.set_ylabel(key)
-    ax.grid()
-
-    stats = {}
-    iv = None
-
-    for k in data[key]:
-        if k != 'step':
-            iv, stats[k] = prepare_data_instance(data[key]['step'].squeeze(), data[key][k].squeeze(), window)
-
-    plot_curve(ax, stats, iv, 'blue')
-    plt.legend(['dummy'], loc=4)
-
-
-def plot_detail(data, path, window=1000):
+def plot_detail_cnd(data, path, window=1000):
     num_rows, num_cols = get_rows_cols(data[0])
 
     for i in tqdm(range(len(data))):
         fig = plt.figure(figsize=(num_cols * 7.00, num_rows * 7.00))
-        index = 1
 
-        for k in data[i]:
-            plot_chart(num_rows, num_cols, index, k, data[i], window)
-            index += 1
-
-        plt.savefig("{0:s}_{1:d}.png".format(path, i))
-        plt.close()
-
-
-def plot_dop2_model_details(data, path, window=1000):
-    num_rows = 2
-    num_cols = 3
-
-    hid_norm = np.expand_dims(np.sum(data['hid'], axis=2), 2)
-
-    for i in tqdm(range(data['re'].shape[0])):
-        fig = plt.figure(figsize=(num_cols * 7.00, num_rows * 7.00))
-        ax = plt.subplot(num_rows, num_cols, 1)
-        ax.set_xlabel('steps')
-        ax.set_ylabel('reward')
-        ax.grid()
-
-        t = range(data['re'].shape[1])
-
-        mu, sigma = prepare_data(data['re'][i], window)
-        plot_curve(ax, mu, sigma, t, 'blue')
-        plt.legend(['external reward'], loc=4)
-
-        ax = plt.subplot(num_rows, num_cols, 2)
-        color_cycle = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
-        t = range(data['hid'].shape[1])
-        data_hid = np.divide(data['hid'][i], hid_norm[i])
-        unstacked_data = []
-        for j in range(data['hid'].shape[2]):
-            mu, _ = prepare_data(data_hid[:, j], window)
-            unstacked_data.append(mu)
-
-        ax.stackplot(t, np.stack(unstacked_data), colors=color_cycle)
-        ax.grid()
-
-        ax = plt.subplot(num_rows, num_cols, 3)
-        ax.set_xlabel('steps')
-        ax.set_ylabel('error')
-        ax.set_yscale('log', nonpositive='clip')
-        ax.grid()
-
-        t = range(data['fme'].shape[1])
-
-        mu, sigma = prepare_data(data['fme'][i], window)
-        plot_curve(ax, mu, sigma, t, 'green')
-        plt.legend(['prediction error'], loc=1)
-
-        ax = plt.subplot(num_rows, num_cols, 4)
-        ax.set_xlabel('steps')
-        ax.grid()
-        t = range(data['aa'].shape[1])
-        mu, sigma = prepare_data(data['aa'][i], window)
-        plot_curve(ax, mu, sigma, t, 'darkcyan')
-        plt.legend(['arbiter accuracy'], loc=1)
-
-        colors = []
-        for head in data['th'][i]:
-            colors.append(color_cycle[int(head)])
-
-        ax = plt.subplot(num_rows, num_cols, 5)
-        plt.scatter(data['ts'][i][:, 0], data['ts'][i][:, 1], marker='o', c=colors, s=8)
-
-        ax = plt.subplot(num_rows, num_cols, 6)
-        plt.scatter(data['ta'][i][:, 0], data['ta'][i][:, 1], marker='o', c=colors, s=8)
+        plot_chart(num_rows, num_cols, 1, 're', data[i], window, color='blue', legend='extrinsic reward')
+        plot_chart(num_rows, num_cols, 2, 'score', data[i], window, color='blue', legend='score')
+        plot_chart(num_rows, num_cols, 3, 'ri', data[i], window, color='red', legend='intrinsic reward')
+        plot_chart(num_rows, num_cols, 4, 'error', data[i], window, color='green', legend='error')
+        plot_chart(num_rows, num_cols, 5, 'loss_prediction', data[i], window, color='magenta', legend='loss prediction', legend_loc=9)
+        plot_chart(num_rows, num_cols, 6, 'loss_target', data[i], window, color='magenta', legend='loss target', legend_loc=9)
 
         plt.savefig("{0:s}_{1:d}.png".format(path, i))
         plt.close()
