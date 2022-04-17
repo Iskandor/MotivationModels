@@ -28,4 +28,4 @@ class PPOTimeEstimator:
         remaining_time -= minutes * 60
         seconds = int(remaining_time)
 
-        return 'Progress: {0:.0f}% ETA: {1:d}:{2:02d}:{3:02d}'.format(self.remaining_steps / self.total_steps, hours, minutes, seconds)
+        return 'Progress: {0:.0f}% ETA: {1:d}:{2:02d}:{3:02d}'.format((1 - self.remaining_steps / self.total_steps) * 100, hours, minutes, seconds)
