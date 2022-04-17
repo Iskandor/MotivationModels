@@ -152,8 +152,8 @@ class CNDModelAtari(nn.Module):
     def error(self, state):
         with torch.no_grad():
             prediction, target = self(state)
-            error = torch.mean(torch.pow(target - prediction, 2), dim=1).unsqueeze(-1)
-            # error = torch.mean(torch.abs(target - prediction), dim=1, keepdim=True) / 2
+            # error = torch.mean(torch.pow(target - prediction, 2), dim=1, keepdim=True)
+            error = torch.mean(torch.abs(target - prediction), dim=1, keepdim=True)
             # error = self.k_distance(self.config.cnd_error_k, prediction, target, reduction='mean')
 
         return error
