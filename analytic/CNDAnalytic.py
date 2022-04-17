@@ -49,7 +49,7 @@ class CNDAnalytic:
             self.int_reward.append((result['int_reward'].step, result['int_reward'].max, result['int_reward'].mean, result['int_reward'].std))
             self.error.append((result['error'].step, result['error'].max, result['error'].mean, result['error'].std))
             self.score.append((result['score'].step, result['score'].sum))
-            self.error.append((result['feature_space'].step, result['feature_space'].max, result['feature_space'].mean, result['feature_space'].std))
+            self.feature_space.append((result['feature_space'].step, result['feature_space'].max, result['feature_space'].mean, result['feature_space'].std))
             self.ext_value.append((result['ext_value'].step, result['ext_value'].max, result['ext_value'].mean, result['ext_value'].std))
             self.int_value.append((result['int_value'].step, result['int_value'].max, result['int_value'].mean, result['int_value'].std))
 

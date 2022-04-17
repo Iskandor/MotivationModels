@@ -1,4 +1,3 @@
-import time
 import numpy
 import torch
 from etaprogress.progress import ProgressBar
@@ -8,6 +7,8 @@ from analytic.CNDAnalytic import CNDAnalytic
 from utils import one_hot_code
 from utils.RunningAverage import RunningAverageWindow, StepCounter, RunningStats
 from concurrent.futures import ThreadPoolExecutor
+
+from utils.TimeEstimator import PPOTimeEstimator
 
 
 class ExperimentNEnvPPO:
@@ -430,6 +431,7 @@ class ExperimentNEnvPPO:
         analytic.init(n_env, ext_reward=(1,), score=(1,), int_reward=(1,), error=(1,), feature_space=(1,), ext_value=(1,), int_value=(1,))
 
         reward_avg = RunningAverageWindow(100)
+        time_estimator = PPOTimeEstimator(step_counter.limit)
 
         s = numpy.zeros((n_env,) + self._env.observation_space.shape, dtype=numpy.float32)
         for i in range(n_env):
@@ -469,8 +471,7 @@ class ExperimentNEnvPPO:
                 print('Run {0:d} step {1:d} training [ext. reward {2:f} int. reward (max={3:f} mean={4:f} std={5:f}) steps {6:d}  mean reward {7:f} score {8:f}]'.format(
                     trial, step_counter.steps, stats['ext_reward'].sum[i].item(), stats['int_reward'].max[i].item(), stats['int_reward'].mean[i].item(), stats['int_reward'].std[i].item(),
                     int(stats['ext_reward'].step[i].item()), reward_avg.value().item(), stats['score'].sum[i].item()))
-                step_counter.print()
-
+                print(time_estimator)
                 next_state[i] = self._env.reset(index)
 
             state1 = self.process_state(next_state)
@@ -482,6 +483,8 @@ class ExperimentNEnvPPO:
             agent.train(state0, value, action0, probs0, state1, reward, done)
 
             state0 = state1
+            time_estimator.update(n_env)
+
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
 

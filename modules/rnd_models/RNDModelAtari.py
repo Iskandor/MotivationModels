@@ -140,7 +140,7 @@ class CNDModelAtari(nn.Module):
 
     def preprocess(self, state):
         x = state - self.state_average.mean
-        # x /= self.state_average.std
+        x /= self.state_average.std
         return x[:, 0, :, :].unsqueeze(1)
 
     def forward(self, state):
