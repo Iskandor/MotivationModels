@@ -69,6 +69,20 @@ class CNDAnalytic:
         self.loss_prediction = self._finalize_value(self.loss_prediction, ['step', 'val'], mode='mean_step')
         self.loss_target = self._finalize_value(self.loss_target, ['step', 'val'], mode='mean_step')
 
+        data = {
+            'score': self.score,
+            're': self.ext_reward,
+            'ri': self.int_reward,
+            'error': self.error,
+            'loss_prediction': self.loss_prediction,
+            'loss_target': self.loss_target,
+            'feature_space': self.feature_space,
+            'ext_value': self.ext_value,
+            'int_value': self.int_value
+        }
+
+        return data
+
     def clear(self):
         self.collector.clear()
         self.global_step = 0

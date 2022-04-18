@@ -139,8 +139,13 @@ class CNDModelAtari(nn.Module):
         init_orthogonal(self.model[13], np.sqrt(2))
 
     def preprocess(self, state):
-        x = state - self.state_average.mean
-        x /= self.state_average.std
+        if self.config.cnd_preprocess == 0:
+            x = state
+        if self.config.cnd_preprocess == 1:
+            x = state - self.state_average.mean
+        if self.config.cnd_preprocess == 2:
+            x = (state - self.state_average.mean) / self.state_average.std
+
         return x[:, 0, :, :].unsqueeze(1)
 
     def forward(self, state):
@@ -152,15 +157,19 @@ class CNDModelAtari(nn.Module):
     def error(self, state):
         with torch.no_grad():
             prediction, target = self(state)
-            # error = torch.mean(torch.pow(target - prediction, 2), dim=1, keepdim=True)
-            error = torch.mean(torch.abs(target - prediction), dim=1, keepdim=True)
-            # error = self.k_distance(self.config.cnd_error_k, prediction, target, reduction='mean')
+
+            if self.config.cnd_error_k == 2:
+                error = torch.mean(torch.pow(target - prediction, 2), dim=1, keepdim=True)
+            if self.config.cnd_error_k == 1:
+                error = torch.mean(torch.abs(target - prediction), dim=1, keepdim=True)
+
+            # error = self.k_distance(self.config.cnd_error_k, prediction, target, reduction='mean') / 2
 
         return error
 
     def loss_function(self, state, next_state):
         prediction, target = self(state)
-        # loss_prediction = self.k_distance(self.config.cnd_loss_k, prediction, target, reduction='sum').mean()
+        # loss_prediction = self.k_distance(self.config.cnd_loss_k, prediction, target, reduction='mean').mean()
         loss_prediction = nn.functional.mse_loss(prediction, target)
         loss_target = self.target_model.loss_function(self.preprocess(state), self.preprocess(next_state))
 

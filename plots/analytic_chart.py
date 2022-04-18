@@ -150,6 +150,9 @@ def plot_detail_cnd(data, path, window=1000):
         plot_chart(num_rows, num_cols, 4, 'error', data[i], window, color='green', legend='error')
         plot_chart(num_rows, num_cols, 5, 'loss_prediction', data[i], window, color='magenta', legend='loss prediction', legend_loc=9)
         plot_chart(num_rows, num_cols, 6, 'loss_target', data[i], window, color='magenta', legend='loss target', legend_loc=9)
+        plot_chart(num_rows, num_cols, 7, 'feature_space', data[i], window, color='maroon', legend='feature space')
+        plot_chart(num_rows, num_cols, 8, 'ext_value', data[i], window, color='blue', legend='extrinsic value')
+        plot_chart(num_rows, num_cols, 9, 'int_value', data[i], window, color='red', legend='intrinsic value')
 
         plt.savefig("{0:s}_{1:d}.png".format(path, i))
         plt.close()

@@ -490,15 +490,7 @@ class ExperimentNEnvPPO:
 
         print('Saving data...')
         analytic.reset(numpy.array(range(n_env)))
-        analytic.finalize()
-        save_data = {
-            'score': analytic.score,
-            're': analytic.ext_reward,
-            'ri': analytic.int_reward,
-            'error': analytic.error,
-            'loss_prediction': analytic.loss_prediction,
-            'loss_target': analytic.loss_target,
-        }
+        save_data = analytic.finalize()
         numpy.save('ppo_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
         analytic.clear()
 
