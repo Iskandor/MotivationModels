@@ -4,6 +4,9 @@ from agents.PPOAgent import PPOAgent
 from algorithms.PPO import PPO, MODE
 from algorithms.ReplayBuffer import GenericTrajectoryBuffer, GenericAsyncTrajectoryBuffer
 from modules.dop_models.DOPModelAtari import DOPControllerAtari
+from modules.PPO_AtariModules import PPOAtariNetworkFM, PPOAtariNetwork, PPOAtariNetworkRND, PPOAtariNetworkQRND, PPOAtariNetworkDOP, PPOAtariMotivationNetwork, PPOAtariNetworkSRRND, \
+    PPOAtariNetworkDOP, PPOAtariNetworkCND
+from motivation.CNDMotivation import CNDMotivation
 from modules.PPO_AtariModules import PPOAtariNetworkFM, PPOAtariNetwork, PPOAtariNetworkRND, PPOAtariNetworkQRND, PPOAtariMotivationNetwork, PPOAtariNetworkSRRND, \
     PPOAtariNetworkDOP, PPOAtariNetworkCND, PPOAtariNetworkDOPA
 from motivation.DOPMotivation import DOPMotivation
@@ -264,60 +267,3 @@ class PPOAtariForwardModelAgent(PPOAgent):
         self.motivation.train(indices)
         if indices is not None:
             self.memory.clear()
-
-class PPOAtariDOPAAgent(PPOAgent):
-    def __init__(self, input_shape, action_dim, config, action_type):
-        super().__init__(input_shape, action_dim, action_type, config)
-
-        gamma = config.gamma.split(',')
-        self.head_count = config.dop_heads
-        self.channels = input_shape[0]
-        self.h = input_shape[1]
-        self.w = input_shape[2]
-
-        self.memory_external = GenericTrajectoryBuffer(config.trajectory_size, config.batch_size, config.n_env)
-        self.encoder_memory = GenericTrajectoryBuffer(config.trajectory_size // 8, config.batch_size, config.n_env)
-
-        self.network = PPOAtariNetworkDOPA(input_shape, action_dim, config, action_type).to(config.device)
-        self.encoder = Encoder(self.network.encoder, 1e-5, config.device)
-        self.algorithm_external = PPO(self.network.dop_actor, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size,
-                                      config.beta, gamma[0], ext_adv_scale=1, int_adv_scale=1, ppo_epochs=config.ppo_epochs, n_env=config.n_env,
-                                      device=config.device, motivation=False, mode=MODE.gate)
-        self.controller = PPOAtariDOPControllerAgent(self.network.dop_controller, input_shape, action_dim, config, action_type)
-
-    def train(self, features0_0, features0_1, state0, value, action0, probs0, head_value, head_action, head_probs, state1, reward0_0, reward0_1, mask0_0, mask0_1):
-        self.controller.train(features0_1, head_value, head_action, head_probs, reward0_1, mask0_1)
-
-        index = head_action.argmax(dim=1, keepdim=True).unsqueeze(-1)
-        gated_action = torch.gather(action0, dim=1, index=index.repeat(1, 1, action0.shape[2])).squeeze(1)
-        gated_probs = torch.gather(probs0, dim=1, index=index.repeat(1, 1, probs0.shape[2])).squeeze(1)
-        gated_value = torch.gather(value[:, :, 0], dim=1, index=index.squeeze(-1))
-        gated_reward = torch.gather(reward0_0[:, :, 0], dim=1, index=index.squeeze(-1))
-
-        self.memory_external.add(state=features0_0.cpu(), value=gated_value.cpu(), action=gated_action.cpu(), prob=gated_probs.cpu(), reward=gated_reward.cpu(), mask=mask0_0.cpu(),
-                                 heads=head_action.cpu())
-        indices = self.memory_external.indices()
-        self.algorithm_external.train(self.memory_external, indices)
-        if indices is not None:
-            self.memory_external.clear()
-
-        self.encoder_memory.add(state=state0.cpu(), next_state=state1.cpu())
-        indices = self.encoder_memory.indices()
-        self.encoder.train(self.encoder_memory, indices)
-        if indices is not None:
-            self.encoder_memory.clear()
-
-    def get_action(self, features0_0, features0_1):
-        value, action, probs, head_value, head_action, head_probs = self.network(features0_0, features0_1)
-        selected_action, _ = self.network.dop_actor.select_action(head_action, action, probs)
-
-        return value.detach(), action, probs.detach(), head_value.detach(), head_action, head_probs.detach(), selected_action.detach()
-
-    def get_features(self, state):
-        features0_0 = self.network.encoder(state).detach()
-        features0_1 = self.network.dop_controller.state(features0_0)
-
-        return features0_0, features0_1
-
-    def extend_state(self, state):
-        return state.unsqueeze(1).repeat(1, self.head_count, 1, 1, 1).view(-1, self.channels, self.h, self.w)

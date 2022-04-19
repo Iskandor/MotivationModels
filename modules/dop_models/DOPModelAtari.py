@@ -20,7 +20,6 @@ class Aggregator(nn.Module):
         init_general_wb(nn.init.orthogonal_, self.memory.weight_hh, self.memory.bias_hh, 0.1)
         init_general_wb(nn.init.orthogonal_, self.memory.weight_ih, self.memory.bias_ih, 0.1)
 
-        self.output = torch.zeros((n_env, state_dim), device=device, dtype=torch.float32)
         self.context = torch.zeros((n_env, state_dim), device=device, dtype=torch.float32)
         self.rewards = np.zeros((n_env, 1))
         self.masks = np.zeros((n_env, 1))
@@ -29,10 +28,12 @@ class Aggregator(nn.Module):
         x = self.memory(state, self.context)
         self.context = x
 
-        mask = (self.index == 0).unsqueeze(1).repeat(1, self.state_dim)
-        self.output = self.output * ~mask + self.model(torch.relu(x)) * mask
+        # mask = (self.index == 0).unsqueeze(1).repeat(1, self.state_dim)
+        mask = (self.index == 0).unsqueeze(-1)
+        # output = self.output * ~mask + self.model(torch.relu(x)) * mask
+        output = self.model(torch.relu(x))
 
-        return self.output
+        return torch.cat([mask, output], dim=1)
 
     def reset(self, indices):
         self.index += 1
@@ -59,6 +60,7 @@ class DOPControllerAtari(nn.Module):
     def __init__(self, feature_dim, state_dim, action_dim, config):
         super(DOPControllerAtari, self).__init__()
 
+        self.action_dim = action_dim
         self.aggregator = Aggregator(config.n_env, feature_dim, state_dim, config.dop_frequency, config.device)
 
         self.critic = nn.Sequential(
@@ -81,15 +83,43 @@ class DOPControllerAtari(nn.Module):
 
         self.actor = Actor(self.actor, TYPE.discrete, action_dim)
 
+        self.value = torch.zeros((config.n_env, 1), device=config.device, dtype=torch.float32)
+        self.action = torch.zeros((config.n_env, action_dim), device=config.device, dtype=torch.float32)
+        self.probs = torch.zeros((config.n_env, action_dim), device=config.device, dtype=torch.float32)
+
+        self.training_mode = False
+
     def state(self, features):
         return self.aggregator(features)
 
-    def forward(self, features):
-        value = self.critic(features)
-        action, probs = self.actor(features)
-        action = self.actor.encode_action(action)
+    def train(self):
+        self.training_mode = True
 
-        return value, action, probs
+    def eval(self):
+        self.training_mode = False
+
+    def forward(self, features):
+        mask = features[:, :1].type(torch.bool)
+        features = features[:, 1:]
+
+        if self.training_mode:
+            value = self.critic(features)
+            action, probs = self.actor(features)
+            action = self.actor.encode_action(action)
+
+            result = value, action, probs
+        else:
+            value = self.critic(features)
+            self.value = self.value * ~mask + value * mask
+            action, probs = self.actor(features)
+            action = self.actor.encode_action(action)
+
+            mask = mask.repeat(1, self.action_dim)
+            self.probs = self.probs * ~mask + probs * mask
+            self.action = self.action * ~mask + action * mask
+            result = self.value, self.action, self.probs
+
+        return result
 
     def aggregator_indices(self):
         return self.aggregator.indices(trigger=0)
