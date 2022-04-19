@@ -5,6 +5,7 @@ from etaprogress.progress import ProgressBar
 from gym.wrappers.monitoring.video_recorder import VideoRecorder
 
 from utils import one_hot_code
+from utils.TensorboardLogger import LogBoard
 from utils.RunningAverage import RunningAverageWindow, StepCounter, RunningStats
 from concurrent.futures import ThreadPoolExecutor
 
@@ -135,6 +136,7 @@ class ExperimentNEnvPPO:
 
     def run_rnd_model(self, agent, trial):
         config = self._config
+        tensor_board = LogBoard(config)
         n_env = config.n_env
         trial = trial + config.shift
         step_counter = StepCounter(int(config.steps * 1e6))
@@ -194,6 +196,9 @@ class ExperimentNEnvPPO:
                     print('Run {0:d} step {1:d} training [ext. reward {2:f} int. reward {3:f} steps {4:d} ({5:f})  mean reward {6:f} score {7:f}]'.format(
                         trial, step_counter.steps, train_ext_reward[i].item(), train_int_reward[i].item(), train_steps[i].item(), train_int_reward[i].item() / train_steps[i].item(),
                         reward_avg.value().item(), train_score[i].item()))
+                    tensor_board.update_board_dop(step=step_counter.steps, ext_rew=train_ext_reward[i].item(),
+                                                  steps=train_steps[i].item(),
+                                                  mean_rew=reward_avg.value().item(), score=train_score[i].item())
                 step_counter.print()
 
                 train_ext_reward[i] = 0
@@ -621,6 +626,106 @@ class ExperimentNEnvPPO:
             'score': numpy.array(train_scores),
             're': numpy.array(train_ext_rewards),
             'ri': numpy.array(train_int_rewards),
+            'error': numpy.array(train_errors),
+            'hid': numpy.stack(train_head_index)
+        }
+        numpy.save('ppo_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
+
+    def run_dop_a_model(self, agent, trial):
+        config = self._config
+        tensor_board = LogBoard(config)
+        n_env = config.n_env
+        trial = trial + config.shift
+        step_counter = StepCounter(int(config.steps * 1e6))
+
+        steps_per_episode = []
+        train_ext_rewards = []
+        train_ext_reward = numpy.zeros((n_env, 1), dtype=numpy.float32)
+        train_scores = []
+        train_score = numpy.zeros((n_env, 1), dtype=numpy.float32)
+        train_errors = []
+        train_error = numpy.zeros((n_env, 1), dtype=numpy.float32)
+        train_steps = numpy.zeros((n_env, 1), dtype=numpy.int32)
+        head_index_density = numpy.zeros((n_env, config.dop_heads))
+        train_head_index = []
+        reward_avg = RunningAverageWindow(100)
+
+        s = numpy.zeros((n_env,) + self._env.observation_space.shape, dtype=numpy.float32)
+        for i in range(n_env):
+            s[i] = self._env.reset(i)
+
+        state0 = self.process_state(s)
+        ext_reward = torch.zeros((n_env, config.dop_heads, 1), dtype=torch.float32, device=config.device)
+
+        while step_counter.running():
+            with torch.no_grad():
+                features0_0, features0_1 = agent.get_features(state0)
+                value, action0, probs0, head_value, head_action, head_probs, selected_action = agent.get_action(features0_0, features0_1)
+            next_state, reward0_0, done0_0, info = self._env.step(agent.convert_action(selected_action.cpu()))
+
+            reward0_1, done0_1 = agent.controller.network.aggregate_values(reward0_0, done0_0)
+            head_index_density += head_action.cpu().numpy()
+
+            ext_reward.zero_()
+            ext_reward = ext_reward.scatter(1, head_action.argmax(dim=1, keepdim=True).unsqueeze(-1), torch.tensor(reward0_0, dtype=torch.float32, device=config.device).unsqueeze(-1))
+
+            if info is not None and 'raw_score' in info:
+                score = numpy.expand_dims(info['raw_score'], axis=1)
+                train_score += score
+
+
+            train_steps += 1
+            train_ext_reward += reward0_0
+
+            env_indices = numpy.nonzero(numpy.squeeze(done0_0, axis=1))[0]
+
+            for i in env_indices:
+                if step_counter.steps + train_steps[i] > step_counter.limit:
+                    train_steps[i] = step_counter.limit - step_counter.steps
+                step_counter.update(train_steps[i].item())
+
+                steps_per_episode.append(train_steps[i].item())
+                train_ext_rewards.append(train_ext_reward[i].item())
+                train_scores.append(train_score[i].item())
+                train_errors.append(train_error[i].item())
+                train_head_index.append(head_index_density[i] / train_steps[i].item())
+                reward_avg.update(train_ext_reward[i].item())
+
+                if train_steps[i].item() > 0:
+                    print("Run {} step {} training [ext. reward {} steps {} mean reward  {} heads prob {} score {} ]".format(
+                        trial, step_counter.steps, train_ext_reward[i].item(), train_steps[i].item(), reward_avg.value().item(),
+                        numpy.array2string(head_index_density[i] / train_steps[i].item(), precision=2), train_score[i].item()))
+                    tensor_board.update_board_dop(step=step_counter.steps, ext_rew=train_ext_reward[i].item(),steps=train_steps[i].item(),
+                                                  mean_rew=reward_avg.value().item(), score=train_score[i].item())
+
+                step_counter.print()
+
+                train_ext_reward[i] = 0
+                train_score[i] = 0
+                train_steps[i] = 0
+                train_error[i] = 0
+                head_index_density[i].fill(0)
+
+                next_state[i] = self._env.reset(i)
+
+            state1 = self.process_state(next_state)
+            reward0_0 = torch.cat([ext_reward], dim=1)#reward0_0 = torch.cat([ext_reward, int_reward], dim=2)
+            reward0_1 = torch.tensor(reward0_1, dtype=torch.float32)
+            done0_0 = torch.tensor(1 - done0_0, dtype=torch.float32)
+            done0_1 = torch.tensor(1 - done0_1, dtype=torch.float32)
+
+            agent.train(features0_0, features0_1, state0, value, action0, probs0, head_value, head_action, head_probs, state1, reward0_0, reward0_1, done0_0, done0_1)
+
+            state0 = state1
+            agent.controller.network.aggregator.reset(env_indices.tolist())
+
+        agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
+
+        print('Saving data...')
+        save_data = {
+            'steps': numpy.array(steps_per_episode),
+            'score': numpy.array(train_scores),
+            're': numpy.array(train_ext_rewards),
             'error': numpy.array(train_errors),
             'hid': numpy.stack(train_head_index)
         }

@@ -517,6 +517,7 @@
       "critic_loss_weight": 1
     },
     "2": {
+      "descriptor": "rnd",
       "model": "rnd",
       "n_env": 32,
       "trials": 8,
@@ -548,6 +549,101 @@
       "critic_loss_weight": 1,
       "motivation_lr": 0.0001,
       "motivation_eta": 1
+    },
+    "4": {
+      "descriptor": "dop_aa",
+      "model": "dop_a",
+      "n_env": 32,
+      "trials": 8,
+      "steps": 0.5,
+      "gamma": "0.998,0.99",
+      "beta": 0.001,
+      "batch_size": 128,
+      "trajectory_size": 4096,
+      "ppo_epochs": 4,
+      "lr": 0.0002,
+      "actor_loss_weight": 0.5,
+      "critic_loss_weight": 1,
+      "motivation_lr": 0.0001,
+      "motivation_eta": 1,
+      "dop_heads": 2,
+      "dop_frequency": 32
+    },
+    "5": {
+      "descriptor": "dop_a",
+      "model": "dop_a",
+      "n_env": 64,
+      "trials": 6,
+      "steps": 1,
+      "gamma": "0.998,0.99",
+      "beta": 0.001,
+      "batch_size": 512,
+      "trajectory_size": 4096,
+      "ppo_epochs": 4,
+      "lr": 0.0002,
+      "actor_loss_weight": 0.5,
+      "critic_loss_weight": 1,
+      "motivation_lr": 0.0001,
+      "motivation_eta": 1,
+      "dop_heads": 2,
+      "dop_frequency": 32
+    },
+    "6": {
+      "descriptor": "dop_a_step5m",
+      "model": "dop_a",
+      "n_env": 64,
+      "trials": 2,
+      "steps": 1,
+      "gamma": "0.998,0.99",
+      "beta": 0.001,
+      "batch_size": 512,
+      "trajectory_size": 4096,
+      "ppo_epochs": 4,
+      "lr": 0.0001,
+      "actor_loss_weight": 0.5,
+      "critic_loss_weight": 1,
+      "motivation_lr": 0.0001,
+      "motivation_eta": 1,
+      "dop_heads": 2,
+      "dop_frequency": 32
+    },
+    "7": {
+      "descriptor": "dop_a_ac_loss",
+      "model": "dop_a",
+      "n_env": 64,
+      "trials": 2,
+      "steps": 5,
+      "gamma": "0.998,0.99",
+      "beta": 0.001,
+      "batch_size": 512,
+      "trajectory_size": 8192,
+      "ppo_epochs": 4,
+      "lr": 0.0001,
+      "actor_loss_weight": 1,
+      "critic_loss_weight": 0.5,
+      "motivation_lr": 0.0001,
+      "motivation_eta": 1,
+      "dop_heads": 2,
+      "dop_frequency": 32
+    },
+    "8": {
+      "descriptor": "dop_a_ac_loss",
+      "model": "dop_a",
+      "n_env": 64,
+      "trials": 2,
+      "steps": 8,
+      "gamma": "0.998,0.99",
+      "beta": 0.001,
+      "batch_size": 512,
+      "trajectory_size": 8192,
+      "ppo_epochs": 4,
+      "lr": 0.0001,
+      "actor_loss_weight": 1,
+      "critic_loss_weight": 0.5,
+      "motivation_lr": 0.0001,
+      "motivation_eta": 1,
+      "dop_heads": 2,
+      "dop_frequency": 32
     }
   },
   "qbert": {
@@ -761,7 +857,8 @@
       "actor_loss_weight": 1,
       "critic_loss_weight": 0.5,
       "motivation_lr": 0.0001,
-      "motivation_eta": 1
+      "motivation_eta": 1,
+      "encoder_lr": 0.00001
     },
     "6": {
       "model": "dop",
@@ -778,7 +875,8 @@
       "critic_loss_weight": 0.5,
       "motivation_lr": 0.0001,
       "motivation_eta": 1,
-      "dop_heads": 4
+      "dop_heads": 4,
+      "encoder_lr": 0.00001
     },
     "7": {
       "model": "dop",
@@ -796,7 +894,8 @@
       "motivation_lr": 0.0001,
       "motivation_eta": 1,
       "dop_heads": 2,
-      "dop_frequency": 128
+      "dop_frequency": 128,
+      "encoder_lr": 0.00001
     },
     "8": {
       "descriptor": "ref",
@@ -814,7 +913,9 @@
       "critic_loss_weight": 0.5,
       "motivation_lr": 0.0001,
       "motivation_eta": 1,
-      "dop_heads": 1
+      "dop_heads": 1,
+      "dop_frequency": 64,
+      "encoder_lr": 0.00001
     },
     "9": {
       "descriptor": "st-dim",
@@ -831,7 +932,8 @@
       "actor_loss_weight": 1,
       "critic_loss_weight": 0.5,
       "motivation_lr": 0.0001,
-      "motivation_eta": 1
+      "motivation_eta": 1,
+      "encoder_lr": 0.00001
     },
     "10": {
       "descriptor": "st-dim + new qrnd",
@@ -848,7 +950,8 @@
       "actor_loss_weight": 1,
       "critic_loss_weight": 0.5,
       "motivation_lr": 0.0001,
-      "motivation_eta": 1
+      "motivation_eta": 1,
+      "encoder_lr": 0.00001
     },
     "11": {
       "descriptor": "10 + qrnd action // 2",
@@ -865,13 +968,14 @@
       "actor_loss_weight": 1,
       "critic_loss_weight": 0.5,
       "motivation_lr": 0.0001,
-      "motivation_eta": 1
+      "motivation_eta": 1,
+      "encoder_lr": 0.00001
     },
     "12": {
       "model": "cnd",
       "n_env": 128,
       "trials": 2,
-      "steps": 32,
+      "steps": 16,
       "gamma": "0.998,0.99",
       "beta": 0.001,
       "batch_size": 512,
@@ -881,13 +985,15 @@
       "actor_loss_weight": 1,
       "critic_loss_weight": 0.5,
       "motivation_lr": 0.00001,
-      "motivation_eta": 0.5
+      "motivation_eta": 1,
+      "cnd_error_k": 2,
+      "cnd_loss_k": 2
     },
     "13": {
       "model": "cnd",
       "n_env": 128,
       "trials": 2,
-      "steps": 64,
+      "steps": 16,
       "gamma": "0.998,0.99",
       "beta": 0.001,
       "batch_size": 512,
@@ -896,14 +1002,16 @@
       "lr": 0.0001,
       "actor_loss_weight": 1,
       "critic_loss_weight": 0.5,
-      "motivation_lr": 0.0001,
-      "motivation_eta": 5
+      "motivation_lr": 0.00001,
+      "motivation_eta": 1,
+      "cnd_error_k": 1,
+      "cnd_loss_k": 2
     },
     "14": {
       "model": "cnd",
       "n_env": 128,
       "trials": 2,
-      "steps": 64,
+      "steps": 32,
       "gamma": "0.998,0.99",
       "beta": 0.001,
       "batch_size": 512,
@@ -913,9 +1021,12 @@
       "actor_loss_weight": 1,
       "critic_loss_weight": 0.5,
       "motivation_lr": 0.0001,
-      "motivation_eta": 10
+      "motivation_eta": 1,
+      "cnd_error_k": 0.5,
+      "cnd_loss_k": 0.5
     },
     "15": {
+      "descriptor": "ac regulator",
       "model": "dop",
       "n_env": 128,
       "trials": 2,
@@ -931,13 +1042,15 @@
       "motivation_lr": 0.0001,
       "motivation_eta": 1,
       "dop_heads": 2,
-      "dop_frequency": 32
+      "dop_frequency": 32,
+      "encoder_lr": 0.00001
     },
     "16": {
+      "descriptor": "ac regulator",
       "model": "dop",
       "n_env": 128,
       "trials": 2,
-      "steps": 128,
+      "steps": 32,
       "gamma": "0.998,0.99",
       "beta": 0.001,
       "batch_size": 512,
@@ -949,9 +1062,11 @@
       "motivation_lr": 0.0001,
       "motivation_eta": 1,
       "dop_heads": 2,
-      "dop_frequency": 64
+      "dop_frequency": 64,
+      "encoder_lr": 0.00001
     },
     "17": {
+      "descriptor": "ac regulator",
       "model": "dop",
       "n_env": 128,
       "trials": 2,
@@ -967,9 +1082,11 @@
       "motivation_lr": 0.0001,
       "motivation_eta": 1,
       "dop_heads": 2,
-      "dop_frequency": 128
+      "dop_frequency": 128,
+      "encoder_lr": 0.00001
     },
     "18": {
+      "descriptor": "ac regulator",
       "model": "dop",
       "n_env": 128,
       "trials": 2,
@@ -985,9 +1102,11 @@
       "motivation_lr": 0.0001,
       "motivation_eta": 1,
       "dop_heads": 2,
-      "dop_frequency": 256
+      "dop_frequency": 256,
+      "encoder_lr": 0.00001
     },
     "19": {
+      "descriptor": "ac regulator",
       "model": "dop",
       "n_env": 128,
       "trials": 2,
@@ -1003,7 +1122,8 @@
       "motivation_lr": 0.0001,
       "motivation_eta": 1,
       "dop_heads": 2,
-      "dop_frequency": 512
+      "dop_frequency": 64,
+      "encoder_lr": 0.00001
     }
   },
   "private_eye": {

@@ -147,8 +147,8 @@ def run(id, algorithm, env, experiment):
         env_class.run_dop3_model(experiment, id)
     if experiment.model == 'dop_ref':
         env_class.run_dop_ref_model(experiment, id)
-    if experiment.model == 'run_dop_a':
-        env_class.run_dop_a(experiment, id)
+    if experiment.model == 'dop_a':
+        env_class.run_dop_a_model(experiment, id)
     if experiment.model == 's':
         env_class.run_metalearner_model(experiment, id)
     if experiment.model == 'su':

@@ -2,7 +2,7 @@ import gym
 import torch
 
 from agents import TYPE
-from agents.PPOAtariAgent import PPOAtariAgent, PPOAtariRNDAgent, PPOAtariForwardModelAgent
+from agents.PPOAtariAgent import PPOAtariAgent, PPOAtariRNDAgent, PPOAtariForwardModelAgent, PPOAtariDOPAAgent
 from experiment.ppo_experiment import ExperimentPPO
 from experiment.ppo_nenv_experiment import ExperimentNEnvPPO
 from utils.AtariWrapper import WrapperAtari
@@ -75,5 +75,21 @@ def run_forward_model(config, trial, env_name):
     experiment.add_preprocess(encode_state)
     agent = PPOAtariForwardModelAgent(input_shape, action_dim, config, TYPE.discrete)
     experiment.run_forward_model(agent, trial)
+
+    env.close()
+
+def run_dop_a_model(config, trial, env_name):
+    print('Creating {0:d} environments'.format(config.n_env))
+    env = MultiEnvParallel([WrapperAtari(gym.make(env_name)) for _ in range(config.n_env)], config.n_env, config.num_threads)
+
+    input_shape = env.observation_space.shape
+    action_dim = env.action_space.n
+
+    print('Start training')
+    experiment = ExperimentNEnvPPO(env_name, env, config)
+
+    experiment.add_preprocess(encode_state)
+    agent = PPOAtariDOPAAgent(input_shape, action_dim, config, TYPE.discrete)
+    experiment.run_dop_a_model(agent, trial)
 
     env.close()
