@@ -176,7 +176,7 @@ class CNDModelAtari(nn.Module):
         analytic = CNDAnalytic()
         analytic.update(loss_prediction=loss_prediction.unsqueeze(-1).detach(), loss_target=loss_target.unsqueeze(-1).detach())
 
-        return loss_prediction + loss_target
+        return loss_prediction + loss_target * 10
 
     @staticmethod
     def k_distance(k, prediction, target, reduction='sum'):

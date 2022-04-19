@@ -62,18 +62,20 @@ def plot_curve(axis, stats, independent_values, color='blue', alpha=1.0, start=0
     start = int(len(independent_values) * start)
     stop = int(len(independent_values) * stop)
     if 'val' in stats:
-        axis.plot(independent_values[start:stop], stats['val'][start:stop], lw=1, color=color, alpha=alpha)
+        line, = axis.plot(independent_values[start:stop], stats['val'][start:stop], lw=1, color=color, alpha=alpha)
 
     if 'sum' in stats:
-        axis.plot(independent_values[start:stop], stats['sum'][start:stop], lw=1, color=color, alpha=alpha)
+        line, = axis.plot(independent_values[start:stop], stats['sum'][start:stop], lw=1, color=color, alpha=alpha)
 
     if 'mean' in stats:
-        axis.plot(independent_values[start:stop], stats['mean'][start:stop], lw=1, color=color, alpha=alpha)
+        line, = axis.plot(independent_values[start:stop], stats['mean'][start:stop], lw=1, color=color, alpha=alpha)
         if 'std' in stats:
             axis.fill_between(independent_values[start:stop], stats['mean'][start:stop] + stats['std'][start:stop], stats['mean'][start:stop] - stats['std'][start:stop], facecolor=color, alpha=0.3)
 
     if 'max' in stats:
         axis.plot(independent_values[start:stop], stats['max'][start:stop], lw=2, color=color, alpha=alpha)
+
+    return line
 
 
 def get_rows_cols(data):
@@ -116,13 +118,17 @@ def plot_multiple_models(data, legend, colors, path, window=1, has_score=False):
     ax.set_ylabel('external reward')
     ax.grid()
 
+    lines = []
+
     for index, d in enumerate(data):
         iv, mu, sigma = prepare_data(d, 're', 'sum', window)
-        plot_curve(ax, {'mean': mu, 'std': sigma}, iv, color=colors[index])
+        lines.append(plot_curve(ax, {'mean': mu, 'std': sigma}, iv, color=colors[index]))
 
-    ax.legend(legend[:len(data)], loc=4)
+    ax.legend(lines, legend[:len(data)], loc=4)
 
     if has_score:
+        lines = []
+
         ax = plt.subplot(num_rows, num_cols, 2)
         ax.set_xlabel('steps')
         ax.set_ylabel('score')
@@ -130,9 +136,9 @@ def plot_multiple_models(data, legend, colors, path, window=1, has_score=False):
 
         for index, d in enumerate(data):
             iv, mu, sigma = prepare_data(d, 'score', 'sum', window)
-            plot_curve(ax, {'mean': mu, 'std': sigma}, iv, color=colors[index])
+            lines.append(plot_curve(ax, {'mean': mu, 'std': sigma}, iv, color=colors[index]))
 
-        ax.legend(legend[:len(data)], loc=4)
+        ax.legend(lines, legend[:len(data)], loc=4)
 
     plt.savefig(path + ".png")
     plt.close()
