@@ -1054,6 +1054,27 @@
       "cnd_preprocess": 2,
       "cnd_loss_pred": 1,
       "cnd_loss_target": 10
+    },
+    "16": {
+      "model": "cnd",
+      "n_env": 128,
+      "trials": 1,
+      "steps": 16,
+      "gamma": "0.998,0.99",
+      "beta": 0.001,
+      "batch_size": 512,
+      "trajectory_size": 16384,
+      "ppo_epochs": 4,
+      "lr": 0.0001,
+      "actor_loss_weight": 1,
+      "critic_loss_weight": 0.5,
+      "motivation_lr": 0.0001,
+      "motivation_eta": 1,
+      "cnd_error_k": 2,
+      "cnd_loss_k": 2,
+      "cnd_preprocess": 2,
+      "cnd_loss_pred": 1,
+      "cnd_loss_target": 1
     }
   },
   "private_eye": {
