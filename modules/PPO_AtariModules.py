@@ -189,6 +189,7 @@ class PPOAtariNetworkDOP(PPOAtariNetwork):
         head_value, head_action, head_probs = self.dop_controller(features0_1)
 
         return features0_0, value, action, probs, features0_1, head_value, head_action, head_probs
+
 class PPOAtariNetworkDOPA(PPOAtariNetwork):
     def __init__(self, input_shape, action_dim, config, head):
         super(PPOAtariNetworkDOPA, self).__init__(input_shape, action_dim, config, head)
