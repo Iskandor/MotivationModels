@@ -155,9 +155,11 @@ class PPOAtariDOPControllerAgent(PPOAgent):
     def train(self, state0, value, action0, probs0, reward, mask):
         self.memory.add(self.network.aggregator_indices(), state=state0.cpu(), value=value.cpu(), action=action0.cpu(), prob=probs0.cpu(), reward=reward.cpu(), mask=mask.cpu())
         indices = self.memory.indices()
-        self.algorithm.train(self.memory, indices)
         if indices is not None:
+            self.network.train()
+            self.algorithm.train(self.memory, indices)
             self.memory.clear()
+            self.network.eval()
 
 
 class PPOAtariDOPAgent(PPOAgent):
@@ -295,8 +297,8 @@ class PPOAtariDOPAAgent(PPOAgent):
         self.memory_external.add(state=features0_0.cpu(), value=gated_value.cpu(), action=gated_action.cpu(), prob=gated_probs.cpu(), reward=gated_reward.cpu(), mask=mask0_0.cpu(),
                                  heads=head_action.cpu())
         indices = self.memory_external.indices()
-        self.algorithm_external.train(self.memory_external, indices)
         if indices is not None:
+            self.algorithm_external.train(self.memory_external, indices)
             self.memory_external.clear()
 
         self.encoder_memory.add(state=state0.cpu(), next_state=state1.cpu())

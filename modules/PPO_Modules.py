@@ -218,6 +218,26 @@ class Critic2Heads(nn.Module):
         return self.ext.bias, self.int.bias
 
 
+class CriticNHeads(nn.Module):
+    def __init__(self, input_dim, n_heads):
+        super(CriticNHeads, self).__init__()
+        self.ext = nn.Linear(input_dim, n_heads)
+
+        init_orthogonal(self.ext, 0.01)
+
+    def forward(self, x):
+        ext_value = self.ext(x)
+        return torch.cat([ext_value], dim=1).squeeze(-1)
+
+    @property
+    def weight(self):
+        return self.ext.weight
+
+    @property
+    def bias(self):
+        return self.ext.bias
+
+
 class Critic2NHeads(nn.Module):
     def __init__(self, input_dim, n_heads):
         super(Critic2NHeads, self).__init__()
