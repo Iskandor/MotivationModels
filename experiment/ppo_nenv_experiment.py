@@ -458,7 +458,7 @@ class ExperimentNEnvPPO:
                             ext_value=value[:, 0].unsqueeze(-1).cpu(),
                             int_value=value[:, 1].unsqueeze(-1).cpu(),
                             error=error,
-                            feature_space=features.mean().cpu())
+                            feature_space=features.norm(p=2, dim=1, keepdim=True).cpu())
 
             env_indices = numpy.nonzero(numpy.squeeze(done, axis=1))[0]
             stats = analytic.reset(env_indices)

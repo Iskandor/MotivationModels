@@ -456,6 +456,8 @@ class ST_DIMEncoderAtari(nn.Module):
         sy = f_t_prev.size(1)
         sx = f_t_prev.size(2)
 
+        reg_loss = torch.norm(f_t_maps['out'], p=2, dim=1).mean() + torch.norm(f_t_prev_maps['out'], p=2, dim=1).mean()
+
         N = f_t.size(0)
         loss1 = 0.
         for y in range(sy):
@@ -463,7 +465,10 @@ class ST_DIMEncoderAtari(nn.Module):
                 predictions = self.classifier1(f_t)
                 positive = f_t_prev[:, y, x, :]
                 logits = torch.matmul(predictions, positive.t())
-                step_loss = nn.functional.cross_entropy(logits, torch.arange(N).to(self.config.device))
+                target = torch.arange(N).to(self.config.device)
+                step_loss = nn.functional.cross_entropy(logits, target)
+                # target = torch.eye(logits.shape[0], logits.shape[1]).to(self.config.device)
+                # step_loss = nn.functional.mse_loss(logits, target)
                 loss1 += step_loss
         loss1 = loss1 / (sx * sy)
 
@@ -475,9 +480,12 @@ class ST_DIMEncoderAtari(nn.Module):
                 predictions = self.classifier2(f_t[:, y, x, :])
                 positive = f_t_prev[:, y, x, :]
                 logits = torch.matmul(predictions, positive.t())
-                step_loss = nn.functional.cross_entropy(logits, torch.arange(N).to(self.config.device))
+                target = torch.arange(N).to(self.config.device)
+                step_loss = nn.functional.cross_entropy(logits, target)
+                # target = torch.eye(logits.shape[0], logits.shape[1]).to(self.config.device)
+                # step_loss = nn.functional.mse_loss(logits, target)
                 loss2 += step_loss
         loss2 = loss2 / (sx * sy)
         loss = loss1 + loss2
 
-        return loss
+        return loss + reg_loss * 1e-3

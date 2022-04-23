@@ -644,6 +644,40 @@
       "motivation_eta": 1,
       "dop_heads": 2,
       "dop_frequency": 32
+    },
+    "9": {
+      "descriptor": "1_head",
+      "model": "dop_a",
+      "n_env": 64,
+      "trials": 2,
+      "steps": 12,
+      "gamma": "0.998,0.99",
+      "beta": 0.001,
+      "batch_size": 512,
+      "trajectory_size": 8192,
+      "ppo_epochs": 4,
+      "lr": 0.0001,
+      "actor_loss_weight": 1,
+      "critic_loss_weight": 0.5,
+      "motivation_lr": 0.0001,
+      "motivation_eta": 1,
+      "dop_heads": 1,
+      "dop_frequency": 32
+    },
+    "10": {
+      "descriptor": "ppo_baseline",
+      "model": "baseline",
+      "n_env": 32,
+      "trials": 8,
+      "steps": 16,
+      "gamma": "0.99",
+      "beta": 0.001,
+      "batch_size": 128,
+      "trajectory_size": 4096,
+      "ppo_epochs": 4,
+      "lr": 0.0002,
+      "actor_loss_weight": 0.5,
+      "critic_loss_weight": 1
     }
   },
   "qbert": {
@@ -975,7 +1009,7 @@
       "model": "cnd",
       "n_env": 128,
       "trials": 1,
-      "steps": 16,
+      "steps": 128,
       "gamma": "0.998,0.99",
       "beta": 0.001,
       "batch_size": 512,
@@ -984,13 +1018,13 @@
       "lr": 0.0001,
       "actor_loss_weight": 1,
       "critic_loss_weight": 0.5,
-      "motivation_lr": 0.00001,
+      "motivation_lr": 0.0001,
       "motivation_eta": 1,
       "cnd_error_k": 2,
       "cnd_loss_k": 2,
       "cnd_preprocess": 2,
       "cnd_loss_pred": 1,
-      "cnd_loss_target": 1
+      "cnd_loss_target": 0.01
     },
     "13": {
       "model": "cnd",
@@ -1075,6 +1109,27 @@
       "cnd_preprocess": 2,
       "cnd_loss_pred": 1,
       "cnd_loss_target": 1
+    },
+    "17": {
+      "model": "cnd",
+      "n_env": 128,
+      "trials": 1,
+      "steps": 16,
+      "gamma": "0.998,0.99",
+      "beta": 0.001,
+      "batch_size": 512,
+      "trajectory_size": 16384,
+      "ppo_epochs": 4,
+      "lr": 0.0001,
+      "actor_loss_weight": 1,
+      "critic_loss_weight": 0.5,
+      "motivation_lr": 0.0001,
+      "motivation_eta": 1,
+      "cnd_error_k": 2,
+      "cnd_loss_k": 2,
+      "cnd_preprocess": 2,
+      "cnd_loss_pred": 1,
+      "cnd_loss_target": 0.01
     }
   },
   "private_eye": {

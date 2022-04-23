@@ -100,7 +100,7 @@ def plot_chart(num_rows, num_cols, index, key, data, window, color, legend, lege
         if k != 'step':
             iv, stats[k] = prepare_data_instance(data[key]['step'].squeeze(), data[key][k].squeeze(), window)
 
-    # plot_curve(ax, stats, iv, color=color, alpha=1.0, start=0.19, stop=0.22)
+    # plot_curve(ax, stats, iv, color=color, alpha=1.0, start=0.52, stop=0.57)
     plot_curve(ax, stats, iv, color=color, alpha=1.0, start=0.0, stop=1.0)
     plt.legend([legend], loc=legend_loc)
 
