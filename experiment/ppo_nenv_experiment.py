@@ -198,7 +198,7 @@ class ExperimentNEnvPPO:
                     print('Run {0:d} step {1:d} training [ext. reward {2:f} int. reward {3:f} steps {4:d} ({5:f})  mean reward {6:f} score {7:f}]'.format(
                         trial, step_counter.steps, train_ext_reward[i].item(), train_int_reward[i].item(), train_steps[i].item(), train_int_reward[i].item() / train_steps[i].item(),
                         reward_avg.value().item(), train_score[i].item()))
-                    tensor_board.update_board_dop(step=step_counter.steps, ext_rew=train_ext_reward[i].item(),
+                    tensor_board.update_board_dop(ext_rew=train_ext_reward[i].item(),
                                                   steps=train_steps[i].item(),
                                                   mean_rew=reward_avg.value().item(), score=train_score[i].item())
                 step_counter.print()
