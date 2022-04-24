@@ -56,6 +56,7 @@ class ExperimentNEnvPPO:
 
     def run_baseline(self, agent, trial):
         config = self._config
+        tensor_board = LogBoard(config)
         n_env = config.n_env
         trial = trial + config.shift
         step_counter = StepCounter(int(config.steps * 1e6))
@@ -109,6 +110,9 @@ class ExperimentNEnvPPO:
 
                 print('Run {0:d} step {1:d} training [ext. reward {2:f} steps {3:d} avg. reward {4:f} score {5:f}]'.format(trial, step_counter.steps, train_ext_reward[i].item(), train_steps[i].item(),
                                                                                                                            reward_avg.value().item(), train_score[i].item()))
+
+                tensor_board.update_board_dop(ext_rew=train_ext_reward[i].item(), steps=train_steps[i].item(),
+                                              mean_rew=reward_avg.value().item(), score=train_score[i].item())
                 step_counter.print()
 
                 train_ext_reward[i] = 0
@@ -675,7 +679,7 @@ class ExperimentNEnvPPO:
                     print("Run {} step {} training [ext. reward {} steps {} mean reward  {} heads prob {} score {} ]".format(
                         trial, step_counter.steps, train_ext_reward[i].item(), train_steps[i].item(), reward_avg.value().item(),
                         numpy.array2string(head_index_density[i] / train_steps[i].item(), precision=2), train_score[i].item()))
-                    tensor_board.update_board_dop(step=step_counter.steps, ext_rew=train_ext_reward[i].item(),steps=train_steps[i].item(),
+                    tensor_board.update_board_dop(ext_rew=train_ext_reward[i].item(),steps=train_steps[i].item(),
                                                   mean_rew=reward_avg.value().item(), score=train_score[i].item())
 
                 step_counter.print()
