@@ -287,7 +287,7 @@ class PPOAtariDOPAAgent(PPOAgent):
 
     def train(self, features0_0, features0_1, state0, value, action0, probs0, head_value, head_action, head_probs, state1, reward0_0, reward0_1, mask0_0, mask0_1):
         self.controller.train(features0_1, head_value, head_action, head_probs, reward0_1, mask0_1)
-
+        
         index = head_action.argmax(dim=1, keepdim=True).unsqueeze(-1)
         gated_action = torch.gather(action0, dim=1, index=index.repeat(1, 1, action0.shape[2])).squeeze(1)
         gated_probs = torch.gather(probs0, dim=1, index=index.repeat(1, 1, probs0.shape[2])).squeeze(1)

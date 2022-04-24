@@ -142,7 +142,7 @@ class DOPActorAtari(nn.Module):
         self.critic = critic
 
     def forward(self, features):
-        value = self.critic(features).view(-1, self.head_count, 2)
+        value = self.critic(features).view(-1, self.head_count, 1)#self.critic(features).view(-1, self.head_count, 2)
         action, probs = self.actor(features)
         action = self.actor.encode_action(action.view(-1, 1)).view(-1, self.head_count, self.action_dim)
 

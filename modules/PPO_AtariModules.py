@@ -4,7 +4,7 @@ import numpy as np
 
 from modules import init_orthogonal
 from modules.dop_models.DOPModelAtari import DOPModelAtari, DOPControllerAtari, DOPActorAtari, DOPGeneratorAtari
-from modules.PPO_Modules import DiscreteHead, Actor, Critic2Heads, ActorNHeads, CriticHead, Critic2NHeads
+from modules.PPO_Modules import DiscreteHead, Actor, Critic2Heads, ActorNHeads, CriticNHeads, Critic2NHeads
 from modules.encoders.EncoderAtari import EncoderAtari, AutoEncoderAtari, VAEAtari, DDMEncoderAtari, ST_DIMEncoderAtari
 from modules.forward_models.ForwardModelAtari import ForwardModelAtari
 from modules.rnd_models.RNDModelAtari import QRNDModelAtari, RNDModelAtari, CNDModelAtari
@@ -202,7 +202,7 @@ class PPOAtariNetworkDOPA(PPOAtariNetwork):
         self.critic = nn.Sequential(
             torch.nn.Linear(self.feature_dim, self.feature_dim),
             torch.nn.ReLU(),
-            Critic2NHeads(self.feature_dim, config.dop_heads)
+            CriticNHeads(self.feature_dim, config.dop_heads)
         )
 
         init_orthogonal(self.critic[0], 0.1)
