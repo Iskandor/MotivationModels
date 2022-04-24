@@ -63,7 +63,7 @@ class DOPControllerAtari(nn.Module):
         self.action_dim = action_dim
         self.aggregator = Aggregator(config.n_env, feature_dim, state_dim, config.dop_frequency, config.device)
 
-        self.critic = nn.Sequential(
+        self.critic = nn.Sequential( #V
             torch.nn.Linear(state_dim, state_dim),
             torch.nn.ReLU(),
             torch.nn.Linear(state_dim, 1)
@@ -72,7 +72,7 @@ class DOPControllerAtari(nn.Module):
         init_orthogonal(self.critic[0], 0.1)
         init_orthogonal(self.critic[2], 0.01)
 
-        self.actor = nn.Sequential(
+        self.actor = nn.Sequential( #mu
             torch.nn.Linear(state_dim, state_dim),
             torch.nn.ReLU(),
             DiscreteHead(state_dim, action_dim)
@@ -80,6 +80,8 @@ class DOPControllerAtari(nn.Module):
 
         init_orthogonal(self.actor[0], 0.01)
         init_orthogonal(self.actor[2], 0.01)
+
+        #Qlearning network
 
         self.actor = Actor(self.actor, TYPE.discrete, action_dim)
 
