@@ -45,7 +45,8 @@ class MultiEnvParallel:
     def _step(self, param):
         index, action = param
         obs, reward, done, info = self.envs_list[index].step(action)
-
+        if info['lives'] != 0:
+            done = False
         self.observations[index] = obs
         self.rewards[index] = reward
         self.dones[index] = done
