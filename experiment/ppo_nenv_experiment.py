@@ -643,7 +643,7 @@ class ExperimentNEnvPPO:
 
         while step_counter.running():
             with torch.no_grad():
-                features0_0, features0_1 = agent.get_features(state0)
+                features0_0, features0_1 = agent.get_features(state0) #features of f0_0 environment and f0_1 aggregator
                 value, action0, probs0, head_value, head_action, head_probs, selected_action = agent.get_action(features0_0, features0_1)
             next_state, reward0_0, done0_0, info = self._env.step(agent.convert_action(selected_action.cpu()))
 
