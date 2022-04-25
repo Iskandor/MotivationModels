@@ -125,13 +125,16 @@ class PPO:
 
             values = torch.gather(values[:, :, 0].unsqueeze(-1), dim=1, index=index)
             values = values.view(-1, values.shape[-1])
-            ref_value = torch.gather(ref_value[:, :, 0].unsqueeze(-1), dim=1, index=index)
-            ref_value = ref_value.view(-1, ref_value.shape[-1])
-
-            adv_mask = heads.unsqueeze(-1) * 2 - 1
-            adv_value *= adv_mask
-            adv_value = adv_value.view(-1, adv_value.shape[-1])
+            probs = torch.gather(probs, dim=1, index=index.repeat(1, 1, probs.shape[-1]))
             probs = probs.view(-1, probs.shape[-1])
+
+            # ref_value = torch.gather(ref_value[:, :, 0].unsqueeze(-1), dim=1, index=index)
+            ref_value = ref_value.view(-1, ref_value.shape[-1])
+            # adv_mask = heads.unsqueeze(-1) * 2 - 1
+            # adv_value *= adv_mask
+            # adv_value = torch.gather(adv_value[:, :, 0].unsqueeze(-1), dim=1, index=index)
+            adv_value = adv_value.view(-1, adv_value.shape[-1])
+
             old_probs = old_probs.view(-1, old_probs.shape[-1])
             old_actions = old_actions.view(-1, old_actions.shape[-1])
 

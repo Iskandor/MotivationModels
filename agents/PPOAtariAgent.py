@@ -192,11 +192,12 @@ class PPOAtariDOPAgent(PPOAgent):
 
         index = head_action.argmax(dim=1, keepdim=True).unsqueeze(-1)
         gated_action = torch.gather(action0, dim=1, index=index.repeat(1, 1, action0.shape[2])).squeeze(1)
-        action_replicated = gated_action.unsqueeze(1).repeat(1, self.head_count, 1)
-        gated_value = value[:, :, 0].unsqueeze(-1)
-        gated_reward = reward0_0[:, :, 0].unsqueeze(-1)
+        gated_probs = torch.gather(probs0, dim=1, index=index.repeat(1, 1, probs0.shape[2])).squeeze(1)
+        # action_replicated = gated_action.unsqueeze(1).repeat(1, self.head_count, 1)
+        gated_value = torch.gather(value[:, :, 0].unsqueeze(-1), dim=1, index=index).squeeze(1)
+        gated_reward = torch.gather(reward0_0[:, :, 0].unsqueeze(-1), dim=1, index=index).squeeze(1)
 
-        self.memory_external.add(state=features0_0.cpu(), value=gated_value.cpu(), action=action_replicated.cpu(), prob=probs0.cpu(), reward=gated_reward.cpu(), mask=mask0_0.unsqueeze(1).repeat(1, self.head_count, 1).cpu(), heads=head_action)
+        self.memory_external.add(state=features0_0.cpu(), value=gated_value.cpu(), action=gated_action.cpu(), prob=gated_probs.cpu(), reward=gated_reward.cpu(), mask=mask0_0.cpu(), heads=head_action)
         indices = self.memory_external.indices()
 
         if indices is not None:

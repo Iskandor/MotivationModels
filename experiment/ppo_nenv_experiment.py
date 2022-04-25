@@ -499,6 +499,7 @@ class ExperimentNEnvPPO:
         n_env = config.n_env
         trial = trial + config.shift
         step_counter = StepCounter(int(config.steps * 1e6))
+        time_estimator = PPOTimeEstimator(step_counter.limit)
 
         steps_per_episode = []
         train_ext_rewards = []
@@ -570,7 +571,7 @@ class ExperimentNEnvPPO:
                     print('Run {0:d} step {1:d} training [ext. reward {2:f} int. reward {3:f} steps {4:d} ({5:f})  mean reward {6:f} density {7:s}]'.format(
                         trial, step_counter.steps, train_ext_reward[i].item(), train_int_reward[i].item(), train_steps[i].item(), train_int_reward[i].item() / train_steps[i].item(),
                         reward_avg.value().item(), numpy.array2string(head_index_density[i] / train_steps[i].item(), precision=2), train_score[i].item()))
-                step_counter.print()
+                print(time_estimator)
 
                 train_ext_reward[i] = 0
                 train_int_reward[i] = 0
@@ -592,6 +593,7 @@ class ExperimentNEnvPPO:
 
             state0 = state1
             agent.controller.network.aggregator.reset(env_indices.tolist())
+            time_estimator.update(n_env)
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
 
