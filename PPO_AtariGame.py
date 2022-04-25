@@ -17,11 +17,16 @@ def test(config, path, env_name):
     env = WrapperAtari(gym.make(env_name))
     input_shape = env.observation_space.shape
     action_dim = env.action_space.n
-
-    experiment = ExperimentPPO(env_name, env, config)
+    if config.model == "baseline":
+        experiment = ExperimentPPO(env_name, env, config)
+        agent = PPOAtariAgent(input_shape, action_dim, config, TYPE.discrete)
+    elif config.model == "dop_a":
+        experiment = ExperimentNEnvPPO(env_name, env, config)
+        agent = PPOAtariDOPAAgent(input_shape, action_dim, config, TYPE.discrete)
+    else:
+        raise NotImplementedError(f"Test for the model '{config.model}' is not implemented")
     experiment.add_preprocess(encode_state)
 
-    agent = PPOAtariAgent(input_shape, action_dim, config, TYPE.discrete)
     agent.load(path)
     experiment.test(agent)
 

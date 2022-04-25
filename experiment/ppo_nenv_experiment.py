@@ -39,7 +39,7 @@ class ExperimentNEnvPPO:
 
         for i in range(1):
             video_path = 'ppo_{0}_{1}_{2:d}.mp4'.format(config.name, config.model, i)
-            video_recorder = VideoRecorder(self._env, video_path, enabled=video_path is not None, fps=15)
+            video_recorder = VideoRecorder(self._env, video_path, enabled=video_path is not None)
             state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0).to(config.device)
             done = False
 
