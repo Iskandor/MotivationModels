@@ -6,7 +6,7 @@ from utils.RunningAverage import RunningStats
 class CNDMotivation:
     def __init__(self, network, lr, eta=1, device='cpu'):
         self._network = network
-        self._optimizer = torch.optim.Adam(self._network.parameters(), lr=lr, weight_decay=lr * 0.1)
+        self._optimizer = torch.optim.Adam(self._network.parameters(), lr=lr)
         self._eta = eta
         self._device = device
         self.reward_stats = RunningStats(1, device)

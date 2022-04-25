@@ -456,8 +456,6 @@ class ST_DIMEncoderAtari(nn.Module):
         sy = f_t_prev.size(1)
         sx = f_t_prev.size(2)
 
-        reg_loss = torch.norm(f_t_maps['out'], p=2, dim=1).mean() + torch.norm(f_t_prev_maps['out'], p=2, dim=1).mean()
-
         N = f_t.size(0)
         loss1 = 0.
         for y in range(sy):
@@ -488,4 +486,4 @@ class ST_DIMEncoderAtari(nn.Module):
         loss2 = loss2 / (sx * sy)
         loss = loss1 + loss2
 
-        return loss + reg_loss * 1e-3
+        return loss
