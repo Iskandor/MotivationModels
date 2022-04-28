@@ -1,3 +1,5 @@
+from math import sqrt
+
 import torch
 import torch.nn as nn
 import numpy as np
@@ -173,10 +175,14 @@ class CNDModelAtari(nn.Module):
         loss_prediction = nn.functional.mse_loss(prediction, target)
         loss_target = self.target_model.loss_function(self.preprocess(state), self.preprocess(next_state))
 
-        analytic = CNDAnalytic()
-        analytic.update(loss_prediction=loss_prediction.unsqueeze(-1).detach(), loss_target=loss_target.unsqueeze(-1).detach())
+        p = prediction.pow(2).mean(dim=1)
+        t = torch.ones_like(p)
+        loss_reg = (t - p).pow(2).mean() * 1e-2
 
-        return loss_prediction * self.config.cnd_loss_pred + loss_target * self.config.cnd_loss_target
+        analytic = CNDAnalytic()
+        analytic.update(loss_prediction=loss_prediction.unsqueeze(-1).detach(), loss_target=loss_target.unsqueeze(-1).detach(), loss_reg=loss_reg.unsqueeze(-1).detach())
+
+        return loss_prediction * self.config.cnd_loss_pred + (loss_target + loss_reg) * self.config.cnd_loss_target
 
     @staticmethod
     def k_distance(k, prediction, target, reduction='sum'):

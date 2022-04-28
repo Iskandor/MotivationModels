@@ -22,6 +22,7 @@ class CNDAnalytic:
             cls._instance.int_value = []
             cls._instance.loss_prediction = {}
             cls._instance.loss_target = {}
+            cls._instance.loss_reg = {}
         return cls._instance
 
     def init(self, n_env, **kwargs):
@@ -39,6 +40,10 @@ class CNDAnalytic:
             if self.global_step not in self.loss_target:
                 self.loss_target[self.global_step] = []
             self.loss_target[self.global_step].append(kwargs['loss_target'].cpu())
+        if 'loss_reg' in kwargs:
+            if self.global_step not in self.loss_reg:
+                self.loss_reg[self.global_step] = []
+            self.loss_reg[self.global_step].append(kwargs['loss_reg'].cpu())
 
     def reset(self, indices):
         result = None
@@ -68,6 +73,7 @@ class CNDAnalytic:
         self.int_value = self._finalize_value(self.int_value, ['step', 'max', 'mean', 'std'], mode='cumsum_step')
         self.loss_prediction = self._finalize_value(self.loss_prediction, ['step', 'val'], mode='mean_step')
         self.loss_target = self._finalize_value(self.loss_target, ['step', 'val'], mode='mean_step')
+        self.loss_reg = self._finalize_value(self.loss_reg, ['step', 'val'], mode='mean_step')
 
         data = {
             'score': self.score,
@@ -76,6 +82,7 @@ class CNDAnalytic:
             'error': self.error,
             'loss_prediction': self.loss_prediction,
             'loss_target': self.loss_target,
+            'loss_reg': self.loss_reg,
             'feature_space': self.feature_space,
             'ext_value': self.ext_value,
             'int_value': self.int_value
@@ -96,6 +103,7 @@ class CNDAnalytic:
         self.int_value = []
         self.loss_prediction = {}
         self.loss_target = {}
+        self.loss_reg = {}
 
     @staticmethod
     def _finalize_value(value, keys, mode):
