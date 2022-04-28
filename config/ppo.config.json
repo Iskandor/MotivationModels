@@ -713,7 +713,7 @@
       "descriptor": "dop_a-baseline",
       "model": "dop_a",
       "n_env": 32,
-      "trials": 6,
+      "trials": 2,
       "steps": 8,
       "gamma": "0.998,0.99",
       "beta": 0.001,
@@ -727,6 +727,40 @@
       "motivation_eta": 1,
       "dop_heads": 2,
       "dop_frequency": 32
+    },
+    "14": {
+      "descriptor": "dop_a-baseline",
+      "model": "dop_a",
+      "n_env": 32,
+      "trials": 2,
+      "steps": 8,
+      "gamma": "0.998,0.99",
+      "beta": 0.001,
+      "batch_size": 512,
+      "trajectory_size": 4096,
+      "ppo_epochs": 4,
+      "lr": 0.0002,
+      "actor_loss_weight": 0.5,
+      "critic_loss_weight": 1,
+      "motivation_lr": 0.0001,
+      "motivation_eta": 1,
+      "dop_heads": 2,
+      "dop_frequency": 32
+    },
+    "15": {
+      "descriptor": "ppo_baseline8",
+      "model": "baseline",
+      "n_env": 32,
+      "trials": 2,
+      "steps": 12,
+      "gamma": "0.99",
+      "beta": 0.001,
+      "batch_size": 128,
+      "trajectory_size": 4096,
+      "ppo_epochs": 4,
+      "lr": 0.0002,
+      "actor_loss_weight": 0.5,
+      "critic_loss_weight": 1
     }
   },
   "qbert": {
@@ -1088,13 +1122,13 @@
       "lr": 0.0001,
       "actor_loss_weight": 1,
       "critic_loss_weight": 0.5,
-      "motivation_lr": 0.00001,
+      "motivation_lr": 0.0001,
       "motivation_eta": 1,
       "cnd_error_k": 2,
       "cnd_loss_k": 2,
       "cnd_preprocess": 1,
       "cnd_loss_pred": 1,
-      "cnd_loss_target": 1
+      "cnd_loss_target": 0.1
     },
     "14": {
       "model": "cnd",
@@ -1109,13 +1143,13 @@
       "lr": 0.0001,
       "actor_loss_weight": 1,
       "critic_loss_weight": 0.5,
-      "motivation_lr": 0.00001,
+      "motivation_lr": 0.0001,
       "motivation_eta": 1,
       "cnd_error_k": 2,
       "cnd_loss_k": 2,
       "cnd_preprocess": 0,
       "cnd_loss_pred": 1,
-      "cnd_loss_target": 1
+      "cnd_loss_target": 0.1
     },
     "15": {
       "model": "cnd",
@@ -1130,13 +1164,13 @@
       "lr": 0.0001,
       "actor_loss_weight": 1,
       "critic_loss_weight": 0.5,
-      "motivation_lr": 0.00001,
+      "motivation_lr": 0.0001,
       "motivation_eta": 1,
       "cnd_error_k": 2,
       "cnd_loss_k": 2,
       "cnd_preprocess": 2,
       "cnd_loss_pred": 1,
-      "cnd_loss_target": 10
+      "cnd_loss_target": 0.1
     },
     "16": {
       "model": "cnd",
@@ -1157,7 +1191,7 @@
       "cnd_loss_k": 2,
       "cnd_preprocess": 2,
       "cnd_loss_pred": 1,
-      "cnd_loss_target": 1
+      "cnd_loss_target": 0.1
     },
     "17": {
       "model": "cnd",
@@ -1176,9 +1210,9 @@
       "motivation_eta": 1,
       "cnd_error_k": 2,
       "cnd_loss_k": 2,
-      "cnd_preprocess": 2,
+      "cnd_preprocess": 0,
       "cnd_loss_pred": 1,
-      "cnd_loss_target": 0.01
+      "cnd_loss_target": 0.1
     }
   },
   "private_eye": {
