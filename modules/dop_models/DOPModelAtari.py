@@ -72,7 +72,7 @@ class DOPControllerAtari(nn.Module):
         init_orthogonal(self.critic[0], 0.1)
         init_orthogonal(self.critic[2], 0.01)
 
-        self.actor = nn.Sequential( #mu
+        self.actor = nn.Sequential(
             torch.nn.Linear(state_dim, state_dim),
             torch.nn.ReLU(),
             DiscreteHead(state_dim, action_dim)
@@ -83,7 +83,7 @@ class DOPControllerAtari(nn.Module):
 
         #Qlearning network
 
-        self.actor = Actor(self.actor, TYPE.discrete, action_dim)
+        self.actor = Actor(self.actor, TYPE.discrete, action_dim)  #mu
 
         self.value = torch.zeros((config.n_env, 1), device=config.device, dtype=torch.float32)
         self.action = torch.zeros((config.n_env, action_dim), device=config.device, dtype=torch.float32)
@@ -105,8 +105,8 @@ class DOPControllerAtari(nn.Module):
         features = features[:, 1:]
 
         if self.training_mode:
-            value = self.critic(features)
-            action, probs = self.actor(features)
+            value = self.critic(features) #V
+            action, probs = self.actor(features) #mu
             action = self.actor.encode_action(action)
 
             result = value, action, probs
