@@ -43,6 +43,25 @@ class ExperimentPPO:
                 state0 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0).to(config.device)
             video_recorder.close()
 
+    def test_dop_a(self, agent):
+        config = self._config
+
+        for i in range(3):
+            video_path = 'ppo_{0}_{1}_{2:d}.mp4'.format(config.name, config.model, i)
+            video_recorder = VideoRecorder(self._env, video_path, enabled=video_path is not None)
+            state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0).to(config.device)
+            done = False
+
+            while not done:
+                self._env.render()
+                video_recorder.capture_frame()
+                features0_0, features0_1 = agent.get_features(state0)
+                value, action0, probs0, head_value, head_action, head_probs, selected_action = agent.get_action(
+                    features0_0, features0_1)
+                next_state, reward0_0, done, info = self._env.step(agent.convert_action(selected_action.cpu()))
+                state0 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0).to(config.device)
+            video_recorder.close()
+
     def run_baseline(self, agent, trial):
 
         config = self._config

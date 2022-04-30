@@ -20,15 +20,20 @@ def test(config, path, env_name):
     if config.model == "baseline":
         experiment = ExperimentPPO(env_name, env, config)
         agent = PPOAtariAgent(input_shape, action_dim, config, TYPE.discrete)
+        experiment.add_preprocess(encode_state)
+
+        agent.load(path)
+        experiment.test(agent)
     elif config.model == "dop_a":
-        experiment = ExperimentNEnvPPO(env_name, env, config)
+        config.n_env = 1
+        experiment = ExperimentPPO(env_name, env, config)
         agent = PPOAtariDOPAAgent(input_shape, action_dim, config, TYPE.discrete)
+        experiment.add_preprocess(encode_state)
+
+        agent.load(path)
+        experiment.test_dop_a(agent)
     else:
         raise NotImplementedError(f"Test for the model '{config.model}' is not implemented")
-    experiment.add_preprocess(encode_state)
-
-    agent.load(path)
-    experiment.test(agent)
 
     env.close()
 
