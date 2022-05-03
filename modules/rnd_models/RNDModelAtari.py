@@ -146,7 +146,7 @@ class CNDModelAtari(nn.Module):
         if self.config.cnd_preprocess == 1:
             x = state - self.state_average.mean
         if self.config.cnd_preprocess == 2:
-            x = (state - self.state_average.mean) / self.state_average.std
+            x = ((state - self.state_average.mean) / self.state_average.std).clip(-1., 1.)
 
         return x[:, 0, :, :].unsqueeze(1)
 
@@ -174,7 +174,7 @@ class CNDModelAtari(nn.Module):
         # loss_prediction = self.k_distance(self.config.cnd_loss_k, prediction, target, reduction='mean').mean()
         loss_prediction = nn.functional.mse_loss(prediction, target)
         loss_target, loss_target_reg = self.target_model.loss_function(self.preprocess(state), self.preprocess(next_state))
-        beta = 0.1
+        beta = 1
 
         analytic = CNDAnalytic()
         analytic.update(loss_prediction=loss_prediction.unsqueeze(-1).detach(), loss_target=loss_target.unsqueeze(-1).detach(), loss_reg=loss_target_reg.unsqueeze(-1).detach() * beta)
