@@ -1107,7 +1107,8 @@
       "cnd_loss_k": 2,
       "cnd_preprocess": 2,
       "cnd_loss_pred": 1,
-      "cnd_loss_target": 0.1
+      "cnd_loss_target": 0.1,
+      "cnd_loss_target_reg": 1
     },
     "13": {
       "model": "cnd",
@@ -1128,7 +1129,8 @@
       "cnd_loss_k": 2,
       "cnd_preprocess": 2,
       "cnd_loss_pred": 1,
-      "cnd_loss_target": 0.1
+      "cnd_loss_target": 0.1,
+      "cnd_loss_target_reg": 0.1
     },
     "14": {
       "model": "cnd",
@@ -1147,9 +1149,10 @@
       "motivation_eta": 1,
       "cnd_error_k": 2,
       "cnd_loss_k": 2,
-      "cnd_preprocess": 1,
+      "cnd_preprocess": 2,
       "cnd_loss_pred": 1,
-      "cnd_loss_target": 0.1
+      "cnd_loss_target": 0.1,
+      "cnd_loss_target_reg": 0.01
     },
     "15": {
       "model": "cnd",

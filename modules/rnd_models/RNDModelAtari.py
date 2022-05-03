@@ -174,7 +174,7 @@ class CNDModelAtari(nn.Module):
         # loss_prediction = self.k_distance(self.config.cnd_loss_k, prediction, target, reduction='mean').mean()
         loss_prediction = nn.functional.mse_loss(prediction, target)
         loss_target, loss_target_reg = self.target_model.loss_function(self.preprocess(state), self.preprocess(next_state))
-        beta = 1
+        beta = self.config.cnd_loss_target_reg
 
         analytic = CNDAnalytic()
         analytic.update(loss_prediction=loss_prediction.unsqueeze(-1).detach(), loss_target=loss_target.unsqueeze(-1).detach(), loss_reg=loss_target_reg.unsqueeze(-1).detach() * beta)
