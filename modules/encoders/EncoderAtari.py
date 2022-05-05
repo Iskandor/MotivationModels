@@ -468,8 +468,7 @@ class ST_DIMEncoderAtari(nn.Module):
                 step_loss = nn.functional.cross_entropy(logits, target)
                 loss1 += step_loss
 
-                uniform = torch.ones_like(logits) / predictions.shape[0]
-                reg_loss1 += nn.functional.kl_div(logits, uniform)
+                reg_loss1 += -torch.sum(torch.softmax(logits, dim=1) * torch.log_softmax(logits, dim=1), dim=1).mean()
 
         loss1 = loss1 / (sx * sy)
         reg_loss1 = reg_loss1 / (sx * sy)
@@ -487,8 +486,7 @@ class ST_DIMEncoderAtari(nn.Module):
                 step_loss = nn.functional.cross_entropy(logits, target)
                 loss2 += step_loss
 
-                uniform = torch.ones_like(logits) / predictions.shape[0]
-                reg_loss2 += nn.functional.kl_div(logits, uniform)
+                reg_loss2 += -torch.sum(torch.softmax(logits, dim=1) * torch.log_softmax(logits, dim=1), dim=1).mean()
 
         loss2 = loss2 / (sx * sy)
         reg_loss2 = reg_loss2 / (sx * sy)
@@ -496,4 +494,4 @@ class ST_DIMEncoderAtari(nn.Module):
         loss = loss1 + loss2
         reg_loss = reg_loss1 + reg_loss2
 
-        return loss, reg_loss
+        return loss, -reg_loss
