@@ -10,7 +10,7 @@ class DQN:
 
         self.critic_optimizer = torch.optim.Adam(self.network.parameters(), lr=critic_lr, weight_decay=weight_decay)
 
-    def train_sample(self, memory, indices):
+    def train(self, memory, indices):
         if indices:
             sample = memory.sample(indices)
 
@@ -23,9 +23,9 @@ class DQN:
             if self.motivation:
                 rewards += self.motivation.reward_sample(memory, indices)
 
-            self.train(states, actions, next_states, rewards, masks)
+            self._train(states, actions, next_states, rewards, masks)
 
-    def train(self, state0, action0, state1, reward, done):
+    def _train(self, state0, action0, state1, reward, done):
             Qs0a = self.network.value(state0).gather(dim=1, index=action0.type(torch.int64)).squeeze()
             Qs1max = self.network.value_target(state1).max(1)[0]
             target = reward + done * self.gamma * Qs1max

@@ -7,7 +7,7 @@ import numpy as np
 from analytic.CNDAnalytic import CNDAnalytic
 from modules import init_orthogonal
 from modules.encoders.EncoderAtari import ST_DIMEncoderAtari
-from utils.RunningAverage import RunningStats
+from utils.RunningAverage import RunningStatsSimple
 
 
 class RNDModelAtari(nn.Module):
@@ -21,7 +21,7 @@ class RNDModelAtari(nn.Module):
         input_height = self.input_shape[1]
         input_width = self.input_shape[2]
         self.feature_dim = 512
-        self.state_average = RunningStats((4, input_height, input_width), config.device)
+        self.state_average = RunningStatsSimple((4, input_height, input_width), config.device)
 
         fc_inputs_count = 64 * (input_width // 8) * (input_height // 8)
 
@@ -111,7 +111,7 @@ class CNDModelAtari(nn.Module):
 
         fc_inputs_count = 128 * (input_width // 8) * (input_height // 8)
 
-        self.state_average = RunningStats((4, input_height, input_width), config.device)
+        self.state_average = RunningStatsSimple((4, input_height, input_width), config.device)
 
         self.target_model = ST_DIMEncoderAtari(self.input_shape, self.feature_dim, config)
 
@@ -169,17 +169,32 @@ class CNDModelAtari(nn.Module):
 
         return error
 
-    def loss_function(self, state, next_state):
+    def loss_function_crossentropy(self, state, next_state):
         prediction, target = self(state)
         # loss_prediction = self.k_distance(self.config.cnd_loss_k, prediction, target, reduction='mean').mean()
         loss_prediction = nn.functional.mse_loss(prediction, target)
         loss_target, loss_target_reg = self.target_model.loss_function(self.preprocess(state), self.preprocess(next_state))
+        loss_target_norm = torch.norm(self.target_model(self.preprocess(state)), p=2, dim=1).mean()
+
         beta = self.config.cnd_loss_target_reg
 
         analytic = CNDAnalytic()
-        analytic.update(loss_prediction=loss_prediction.unsqueeze(-1).detach(), loss_target=loss_target.unsqueeze(-1).detach(), loss_reg=loss_target_reg.unsqueeze(-1).detach() * beta)
+        analytic.update(loss_prediction=loss_prediction.unsqueeze(-1).detach(), loss_target=loss_target.unsqueeze(-1).detach(), loss_reg=loss_target_reg.unsqueeze(-1).detach() * beta, loss_target_norm=loss_target_norm.detach() * 0.01)
 
-        return loss_prediction * self.config.cnd_loss_pred + (loss_target + loss_target_reg * beta) * self.config.cnd_loss_target
+        return loss_prediction * self.config.cnd_loss_pred + (loss_target + loss_target_reg * beta + loss_target_norm * 0.01) * self.config.cnd_loss_target
+
+    def loss_function(self, state, next_state):
+        prediction, target = self(state)
+        loss_prediction = nn.functional.mse_loss(prediction, target)
+        loss_target = self.target_model.loss_function(self.preprocess(state), self.preprocess(next_state))
+
+        beta = self.config.cnd_loss_target_reg
+
+        analytic = CNDAnalytic()
+        analytic.update(loss_prediction=loss_prediction.unsqueeze(-1).detach(), loss_target=loss_target.unsqueeze(-1).detach(), loss_reg=torch.zeros(1) * beta, loss_target_norm=torch.zeros(1))
+
+        return loss_prediction * self.config.cnd_loss_pred + loss_target * self.config.cnd_loss_target
+
 
     @staticmethod
     def k_distance(k, prediction, target, reduction='sum'):
@@ -206,8 +221,8 @@ class QRNDModelAtari(nn.Module):
         input_height = self.input_shape[1]
         input_width = self.input_shape[2]
         self.feature_dim = 512
-        self.state_average = RunningStats((4, input_height, input_width), config.device)
-        self.action_average = RunningStats(action_dim, config.device)
+        self.state_average = RunningStatsSimple((4, input_height, input_width), config.device)
+        self.action_average = RunningStatsSimple(action_dim, config.device)
 
         fc_inputs_count = 64 * (input_width // 8) * (input_height // 8)
 

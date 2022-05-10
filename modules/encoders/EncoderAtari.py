@@ -448,7 +448,7 @@ class ST_DIMEncoderAtari(nn.Module):
     def forward(self, state):
         return self.encoder(state)
 
-    def loss_function(self, states, next_states):
+    def loss_function_crossentropy(self, states, next_states):
         f_t_maps, f_t_prev_maps = self.encoder(next_states, fmaps=True), self.encoder(states, fmaps=True)
 
         # Loss 1: Global at time t, f5 patches at time t-1
@@ -495,3 +495,42 @@ class ST_DIMEncoderAtari(nn.Module):
         reg_loss = reg_loss1 + reg_loss2
 
         return loss, -reg_loss
+
+    def loss_function(self, states, next_states):
+        f_t_maps, f_t_prev_maps = self.encoder(next_states, fmaps=True), self.encoder(states, fmaps=True)
+
+        # Loss 1: Global at time t, f5 patches at time t-1
+        f_t, f_t_prev = f_t_maps['out'], f_t_prev_maps['f5']
+        sy = f_t_prev.size(1)
+        sx = f_t_prev.size(2)
+
+        N = f_t.size(0)
+        target = torch.ones((N, N), device=self.config.device) - torch.eye(N, N, device=self.config.device)
+        loss1 = 0.
+        for y in range(sy):
+            for x in range(sx):
+                predictions = self.classifier1(f_t)
+                positive = f_t_prev[:, y, x, :]
+                logits = torch.cdist(predictions, positive, p=1)
+                step_loss = nn.functional.mse_loss(logits, target)
+                loss1 += step_loss
+
+        loss1 = loss1 / (sx * sy)
+
+        # Loss 2: f5 patches at time t, with f5 patches at time t-1
+        f_t = f_t_maps['f5']
+        loss2 = 0.
+        for y in range(sy):
+            for x in range(sx):
+                predictions = self.classifier2(f_t[:, y, x, :])
+                positive = f_t_prev[:, y, x, :]
+                logits = torch.cdist(predictions, positive, p=1)
+                step_loss = nn.functional.mse_loss(logits, target)
+                loss2 += step_loss
+
+        loss2 = loss2 / (sx * sy)
+
+        loss = loss1 + loss2
+
+        return loss
+

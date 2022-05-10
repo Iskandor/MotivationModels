@@ -428,7 +428,7 @@ class ExperimentNEnvPPO:
         step_counter = StepCounter(int(config.steps * 1e6))
 
         analytic = CNDAnalytic()
-        analytic.init(n_env, ext_reward=(1,), score=(1,), int_reward=(1,), error=(1,), feature_space=(1,), ext_value=(1,), int_value=(1,))
+        analytic.init(n_env, ext_reward=(1,), score=(1,), int_reward=(1,), error=(1,), feature_space=(1,), state_space=(1,), ext_value=(1,), int_value=(1,))
 
         reward_avg = RunningAverageWindow(100)
         time_estimator = PPOTimeEstimator(step_counter.limit)
@@ -453,11 +453,13 @@ class ExperimentNEnvPPO:
                 analytic.update(score=score)
 
             error = agent.motivation.error(state0).cpu()
+            cnd_state = agent.network.cnd_model.preprocess(state0)
             analytic.update(ext_reward=ext_reward,
                             int_reward=int_reward,
                             ext_value=value[:, 0].unsqueeze(-1).cpu(),
                             int_value=value[:, 1].unsqueeze(-1).cpu(),
                             error=error,
+                            state_space=cnd_state.norm(p=2, dim=[1, 2, 3]).unsqueeze(-1).cpu(),
                             feature_space=features.norm(p=2, dim=1, keepdim=True).cpu())
 
             env_indices = numpy.nonzero(numpy.squeeze(done, axis=1))[0]
@@ -484,7 +486,6 @@ class ExperimentNEnvPPO:
 
             state0 = state1
             time_estimator.update(n_env)
-
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
 
