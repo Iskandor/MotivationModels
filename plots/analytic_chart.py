@@ -102,7 +102,7 @@ def plot_chart(num_rows, num_cols, index, key, data, window, color, legend, lege
             iv, stats[k] = prepare_data_instance(data[key]['step'].squeeze(), data[key][k].squeeze(), window)
 
     # plot_curve(ax, stats, iv, color=color, alpha=1.0, start=0.0, stop=1.0)
-    plot_curve(ax, stats, iv, color=color, alpha=1.0, start=0.0, stop=0.249)
+    plot_curve(ax, stats, iv, color=color, alpha=1.0, start=0.1, stop=1.0)
     plt.legend([legend], loc=legend_loc)
 
 
@@ -159,9 +159,10 @@ def plot_detail_cnd(data, path, window=1000):
         plot_chart(num_rows, num_cols, 6, 'loss_target', data[i], window, color='magenta', legend='loss target', legend_loc=9)
         plot_chart(num_rows, num_cols, 7, 'loss_reg', data[i], window, color='magenta', legend='loss target reg', legend_loc=9)
         plot_chart(num_rows, num_cols, 8, 'loss_target_norm', data[i], window, color='magenta', legend='loss target norm', legend_loc=9)
-        plot_chart(num_rows, num_cols, 9, 'feature_space', data[i], window, color='maroon', legend='feature space')
-        plot_chart(num_rows, num_cols, 10, 'ext_value', data[i], window, color='blue', legend='extrinsic value')
-        plot_chart(num_rows, num_cols, 11, 'int_value', data[i], window, color='red', legend='intrinsic value')
+        plot_chart(num_rows, num_cols, 9, 'state_space', data[i], window, color='maroon', legend='state space', legend_loc=9)
+        plot_chart(num_rows, num_cols, 10, 'feature_space', data[i], window, color='maroon', legend='feature space', legend_loc=9)
+        plot_chart(num_rows, num_cols, 11, 'ext_value', data[i], window, color='blue', legend='extrinsic value')
+        plot_chart(num_rows, num_cols, 12, 'int_value', data[i], window, color='red', legend='intrinsic value')
 
         plt.savefig("{0:s}_{1:d}.png".format(path, i))
         plt.close()

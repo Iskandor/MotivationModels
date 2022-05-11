@@ -459,6 +459,7 @@ class ST_DIMEncoderAtari(nn.Module):
         N = f_t.size(0)
         loss1 = 0.
         reg_loss1 = 0.
+        norm_loss1 = 0.
         for y in range(sy):
             for x in range(sx):
                 predictions = self.classifier1(f_t)
@@ -469,14 +470,17 @@ class ST_DIMEncoderAtari(nn.Module):
                 loss1 += step_loss
 
                 reg_loss1 += -torch.sum(torch.softmax(logits, dim=1) * torch.log_softmax(logits, dim=1), dim=1).mean()
+                norm_loss1 += torch.norm(logits, p=2)
 
         loss1 = loss1 / (sx * sy)
         reg_loss1 = reg_loss1 / (sx * sy)
+        norm_loss1 = norm_loss1 / (sx * sy)
 
         # Loss 2: f5 patches at time t, with f5 patches at time t-1
         f_t = f_t_maps['f5']
         loss2 = 0.
         reg_loss2 = 0.
+        norm_loss2 = 0.
         for y in range(sy):
             for x in range(sx):
                 predictions = self.classifier2(f_t[:, y, x, :])
@@ -487,16 +491,19 @@ class ST_DIMEncoderAtari(nn.Module):
                 loss2 += step_loss
 
                 reg_loss2 += -torch.sum(torch.softmax(logits, dim=1) * torch.log_softmax(logits, dim=1), dim=1).mean()
+                norm_loss2 += torch.norm(logits, p=2)
 
         loss2 = loss2 / (sx * sy)
         reg_loss2 = reg_loss2 / (sx * sy)
+        norm_loss2 = norm_loss2 / (sx * sy)
 
         loss = loss1 + loss2
         reg_loss = reg_loss1 + reg_loss2
+        norm_loss = norm_loss1 + norm_loss2
 
-        return loss, -reg_loss
+        return loss, -reg_loss, norm_loss
 
-    def loss_function(self, states, next_states):
+    def loss_function_cdist(self, states, next_states):
         f_t_maps, f_t_prev_maps = self.encoder(next_states, fmaps=True), self.encoder(states, fmaps=True)
 
         # Loss 1: Global at time t, f5 patches at time t-1
@@ -509,9 +516,9 @@ class ST_DIMEncoderAtari(nn.Module):
         loss1 = 0.
         for y in range(sy):
             for x in range(sx):
-                predictions = self.classifier1(f_t)
-                positive = f_t_prev[:, y, x, :]
-                logits = torch.cdist(predictions, positive, p=1)
+                predictions = self.classifier1(f_t) + 1e-8
+                positive = f_t_prev[:, y, x, :] + 1e-8
+                logits = torch.cdist(predictions, positive, p=0.5)
                 step_loss = nn.functional.mse_loss(logits, target)
                 loss1 += step_loss
 
@@ -522,9 +529,9 @@ class ST_DIMEncoderAtari(nn.Module):
         loss2 = 0.
         for y in range(sy):
             for x in range(sx):
-                predictions = self.classifier2(f_t[:, y, x, :])
-                positive = f_t_prev[:, y, x, :]
-                logits = torch.cdist(predictions, positive, p=1)
+                predictions = self.classifier2(f_t[:, y, x, :]) + 1e-8
+                positive = f_t_prev[:, y, x, :] + 1e-8
+                logits = torch.cdist(predictions, positive, p=0.5)
                 step_loss = nn.functional.mse_loss(logits, target)
                 loss2 += step_loss
 

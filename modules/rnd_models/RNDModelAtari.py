@@ -165,7 +165,7 @@ class CNDModelAtari(nn.Module):
             if self.config.cnd_error_k == 1:
                 error = torch.mean(torch.abs(target - prediction), dim=1, keepdim=True)
 
-            # error = self.k_distance(self.config.cnd_error_k, prediction, target, reduction='mean') / 2
+            # error = self.k_distance(0.5, prediction, target, reduction='mean')
 
         return error
 
@@ -173,28 +173,29 @@ class CNDModelAtari(nn.Module):
         prediction, target = self(state)
         # loss_prediction = self.k_distance(self.config.cnd_loss_k, prediction, target, reduction='mean').mean()
         loss_prediction = nn.functional.mse_loss(prediction, target)
-        loss_target, loss_target_reg = self.target_model.loss_function(self.preprocess(state), self.preprocess(next_state))
-        loss_target_norm = torch.norm(self.target_model(self.preprocess(state)), p=2, dim=1).mean()
+        loss_target, loss_target_reg, loss_target_norm = self.target_model.loss_function_crossentropy(self.preprocess(state), self.preprocess(next_state))
 
-        beta = self.config.cnd_loss_target_reg
+        # beta1 = self.config.cnd_loss_target_reg
+        beta1 = 0
+        beta2 = 0.001
 
         analytic = CNDAnalytic()
-        analytic.update(loss_prediction=loss_prediction.unsqueeze(-1).detach(), loss_target=loss_target.unsqueeze(-1).detach(), loss_reg=loss_target_reg.unsqueeze(-1).detach() * beta, loss_target_norm=loss_target_norm.detach() * 0.01)
+        analytic.update(loss_prediction=loss_prediction.unsqueeze(-1).detach(), loss_target=loss_target.unsqueeze(-1).detach(), loss_reg=loss_target_reg.unsqueeze(-1).detach() * beta1, loss_target_norm=loss_target_norm.detach() * beta2)
 
-        return loss_prediction * self.config.cnd_loss_pred + (loss_target + loss_target_reg * beta + loss_target_norm * 0.01) * self.config.cnd_loss_target
+        return loss_prediction * self.config.cnd_loss_pred + (loss_target + loss_target_reg * beta1 + loss_target_norm * beta2) * self.config.cnd_loss_target
 
-    def loss_function(self, state, next_state):
+    def loss_function_cdist(self, state, next_state):
         prediction, target = self(state)
         loss_prediction = nn.functional.mse_loss(prediction, target)
-        loss_target = self.target_model.loss_function(self.preprocess(state), self.preprocess(next_state))
-
-        beta = self.config.cnd_loss_target_reg
+        loss_target = self.target_model.loss_function_cdist(self.preprocess(state), self.preprocess(next_state))
 
         analytic = CNDAnalytic()
-        analytic.update(loss_prediction=loss_prediction.unsqueeze(-1).detach(), loss_target=loss_target.unsqueeze(-1).detach(), loss_reg=torch.zeros(1) * beta, loss_target_norm=torch.zeros(1))
+        analytic.update(loss_prediction=loss_prediction.unsqueeze(-1).detach(), loss_target=loss_target.unsqueeze(-1).detach(), loss_reg=torch.zeros(1), loss_target_norm=torch.zeros(1))
 
         return loss_prediction * self.config.cnd_loss_pred + loss_target * self.config.cnd_loss_target
 
+    def loss_function(self, state, next_state):
+        return self.loss_function_crossentropy(state, next_state)
 
     @staticmethod
     def k_distance(k, prediction, target, reduction='sum'):
