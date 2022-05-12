@@ -470,8 +470,8 @@ class ExperimentNEnvPPO:
                 # step_counter.update(int(stats['ext_reward'].step[i].item()))
                 reward_avg.update(stats['ext_reward'].sum[i].item())
 
-                print('Run {0:d} step {1:d} training [ext. reward {2:f} int. reward (max={3:f} mean={4:f} std={5:f}) steps {6:d}  mean reward {7:f} score {8:f} feature space (max={9:f} mean={10:f} std={11:f})]'.format(
-                    trial, step_counter.steps, stats['ext_reward'].sum[i].item(), stats['int_reward'].max[i].item(), stats['int_reward'].mean[i].item(), stats['int_reward'].std[i].item(),
+                print('Run {0:d} step {1:d}/{2:d} training [ext. reward {3:f} int. reward (max={4:f} mean={5:f} std={6:f}) steps {7:d}  mean reward {8:f} score {9:f} feature space (max={10:f} mean={11:f} std={12:f})]'.format(
+                    trial, step_counter.steps, step_counter.limit, stats['ext_reward'].sum[i].item(), stats['int_reward'].max[i].item(), stats['int_reward'].mean[i].item(), stats['int_reward'].std[i].item(),
                     int(stats['ext_reward'].step[i].item()), reward_avg.value().item(), stats['score'].sum[i].item(), stats['feature_space'].max[i].item(), stats['feature_space'].mean[i].item(), stats['feature_space'].std[i].item()))
                 print(time_estimator)
                 next_state[i] = self._env.reset(index)
