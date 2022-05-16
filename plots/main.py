@@ -1,4 +1,5 @@
 from plots import plot
+from plots.analytic_table import compute_table_values
 
 if __name__ == '__main__':
     # config = [
@@ -25,8 +26,47 @@ if __name__ == '__main__':
     # ]
 
     # config = [
-    #     {'env': 'montezuma', 'algorithm': 'ppo', 'model': 'rnd', 'id': '2'}
+    #     {'env': 'montezuma', 'algorithm': 'ppo', 'model': 'dop', 'id': '8', 'legacy': True},
+    #     {'env': 'montezuma', 'algorithm': 'ppo', 'model': 'dop', 'id': '15', 'legacy': True},
+    #     {'env': 'montezuma', 'algorithm': 'ppo', 'model': 'dop', 'id': '17', 'legacy': True},
     # ]
+    #
+    # plot('montezuma_dop_probe1', config, plot_details=[8], window=10000, average_per_step=True, has_score=True)
+
+    # config = [
+    #     {'env': 'montezuma', 'algorithm': 'ppo', 'model': 'rnd', 'id': '2', 'legacy': True},
+    #     {'env': 'montezuma', 'algorithm': 'ppo', 'model': 'qrnd', 'id': '11', 'legacy': True},
+    #     {'env': 'montezuma', 'algorithm': 'ppo', 'model': 'sr_rnd', 'id': '5', 'legacy': True},
+    #     {'env': 'montezuma', 'algorithm': 'ppo', 'model': 'cnd', 'id': '11'}
+    # ]
+    #
+    # plot('montezuma', config, plot_details=[11], window=10000, average_per_step=True, has_score=True)
+
+    # config = [
+    #     {'env': 'montezuma', 'algorithm': 'ppo', 'model': 'cnd', 'id': '12'},
+    #     {'env': 'montezuma', 'algorithm': 'ppo', 'model': 'cnd', 'id': '13'},
+    #     {'env': 'montezuma', 'algorithm': 'ppo', 'model': 'cnd', 'id': '14'}
+    # ]
+    #
+    # compute_table_values(config, keys=['re', 'ri'])
+    # plot('montezuma_cnd_preprocess_a', config, keys=['re'], labels=['external reward per episode'], legend=['FEDs normalization', 'FEDs mean subtraction', 'FEDs no pre-processing'], plot_details=[], window=100000)
+    # plot('montezuma_cnd_preprocess_b', config, keys=['score'], labels=['score per episode'], legend=['FEDs normalization', 'FEDs mean subtraction', 'FEDs no pre-processing'], plot_details=[], window=100000)
+    # plot('montezuma_cnd_preprocess_c', config, keys=['ri'], labels=['internal reward per step'], legend=['FEDs normalization', 'FEDs mean subtraction', 'FEDs no pre-processing'], plot_details=[], window=100000)
+
+    config = [
+        {'env': 'montezuma', 'algorithm': 'ppo', 'model': 'rnd', 'id': '2', 'legacy': True},
+        {'env': 'montezuma', 'algorithm': 'ppo', 'model': 'qrnd', 'id': '11', 'legacy': True},
+        {'env': 'montezuma', 'algorithm': 'ppo', 'model': 'cnd', 'id': '12'},
+        {'env': 'montezuma', 'algorithm': 'ppo', 'model': 'cnd', 'id': '18'},
+    ]
+    compute_table_values(config, keys=['re', 'score', 'ri'])
+
+    plot('montezuma_a', config, keys=['re'], labels=['external reward per episode'], legend=['RND', 'RNDa', 'FEDs', 'FED'], plot_details=[], window=400000)
+    plot('montezuma_b', config, keys=['score'], labels=['score per episode'], legend=['RND', 'RNDa', 'FEDs', 'FED'], plot_details=[], window=400000)
+    plot('montezuma_c', config, keys=['ri'], labels=['internal reward per step'], legend=['RND', 'RNDa', 'FEDs', 'FED'], plot_details=[], window=400000)
+
+
+
 
     # config = [
     #     {'env': 'aeris_navigate', 'algorithm': 'ddpg', 'model': 'baseline', 'id': '1'},
@@ -167,13 +207,13 @@ if __name__ == '__main__':
     #
     # plot('aeris_navigate_dop_reg_term', config, plot_details=[49, 51], window=10000)
 
-    config = [
-        {'env': 'aeris_navigate', 'algorithm': 'ddpg', 'model': 'baseline', 'id': '1'},
-        {'env': 'aeris_navigate', 'algorithm': 'ddpg', 'model': 'baseline', 'id': '2'},
-        {'env': 'aeris_navigate', 'algorithm': 'ddpg', 'model': 'dop_ref', 'id': '19'},
-        {'env': 'aeris_navigate', 'algorithm': 'ddpg', 'model': 'dop', 'id': '55'},
-        {'env': 'aeris_navigate', 'algorithm': 'ddpg', 'model': 'dop', 'id': '56'},
-        {'env': 'aeris_navigate', 'algorithm': 'ddpg', 'model': 'dop', 'id': '57'},
-    ]
-
-    plot('aeris_navigate_eta', config, plot_details=[55, 56, 57], window=10000)
+    # config = [
+    #     {'env': 'aeris_navigate', 'algorithm': 'ddpg', 'model': 'baseline', 'id': '1'},
+    #     {'env': 'aeris_navigate', 'algorithm': 'ddpg', 'model': 'baseline', 'id': '2'},
+    #     {'env': 'aeris_navigate', 'algorithm': 'ddpg', 'model': 'dop_ref', 'id': '19'},
+    #     {'env': 'aeris_navigate', 'algorithm': 'ddpg', 'model': 'dop', 'id': '55'},
+    #     {'env': 'aeris_navigate', 'algorithm': 'ddpg', 'model': 'dop', 'id': '56'},
+    #     {'env': 'aeris_navigate', 'algorithm': 'ddpg', 'model': 'dop', 'id': '57'},
+    # ]
+    #
+    # plot('aeris_navigate_eta', config, plot_details=[55, 56, 57], window=10000)

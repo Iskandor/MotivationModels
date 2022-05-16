@@ -4,12 +4,15 @@ from plots.analytic_chart import plot_multiple_models, plot_detail_cnd
 from plots.dataloader import prepare_data
 from plots.paths import plot_root
 
-
-def plot(name, config, plot_overview=True, average_per_step=False, has_score=False, plot_details=[], window=1000):
+def plot(name, config, keys, labels, legend=None, plot_overview=True, plot_details=None, window=1000):
+    if plot_details is None:
+        plot_details = []
     data = prepare_data(config)
     algorithm = config[0]['algorithm']
     env = config[0]['env']
-    legend = ['{0:s} {1:s}'.format(key['model'], key['id']) for key in config]
+
+    if legend is None:
+        legend = ['{0:s} {1:s}'.format(key['model'], key['id']) for key in config]
 
     if plot_overview:
         path = os.path.join(plot_root, algorithm, env)
@@ -17,12 +20,13 @@ def plot(name, config, plot_overview=True, average_per_step=False, has_score=Fal
             os.mkdir(path)
         path = os.path.join(path, name)
         plot_multiple_models(
+            keys,
             data,
             legend,
-            ['blue', 'red', 'green', 'yellow', 'orange', 'cyan', 'purple', 'gray', 'magenta', 'navy', 'maroon', 'brown', 'apricot', 'olive', 'beige'],
+            labels,
+            ['blue', 'red', 'green', 'magenta', 'cyan', 'orange', 'purple', 'gray', 'navy', 'maroon', 'brown', 'apricot', 'olive', 'beige', 'yellow'],
             path,
-            window,
-            has_score)
+            window)
 
         for index, key in enumerate(config):
             if int(key['id']) in plot_details:

@@ -15,6 +15,8 @@ from etaprogress.progress import ProgressBar
 # matplotlib.rc('axes', titlesize=14)
 from tqdm import tqdm
 
+from plots.key_values import key_values
+
 
 def moving_average(a, n=3):
     ret = np.cumsum(a, dtype=float)
@@ -102,44 +104,29 @@ def plot_chart(num_rows, num_cols, index, key, data, window, color, legend, lege
             iv, stats[k] = prepare_data_instance(data[key]['step'].squeeze(), data[key][k].squeeze(), window)
 
     # plot_curve(ax, stats, iv, color=color, alpha=1.0, start=0.0, stop=1.0)
-    plot_curve(ax, stats, iv, color=color, alpha=1.0, start=0.1, stop=1.0)
+    plot_curve(ax, stats, iv, color=color, alpha=1.0, start=0.01, stop=1.0)
     plt.legend([legend], loc=legend_loc)
 
 
-def plot_multiple_models(data, legend, colors, path, window=1, has_score=False):
+def plot_multiple_models(keys, data, legend, labels, colors, path, window=1):
     num_rows = 1
-    num_cols = 1
-
-    if has_score:
-        num_cols = 2
+    num_cols = len(keys)
 
     plt.figure(figsize=(num_cols * 6.40, num_rows * 5.12))
-    ax = plt.subplot(num_rows, num_cols, 1)
-    ax.set_xlabel('steps')
-    ax.set_ylabel('external reward')
-    ax.grid()
 
-    lines = []
-
-    for index, d in enumerate(data):
-        iv, mu, sigma = prepare_data(d, 're', 'sum', window)
-        lines.append(plot_curve(ax, {'mean': mu, 'std': sigma}, iv, color=colors[index]))
-
-    ax.legend(lines, legend[:len(data)], loc=4)
-
-    if has_score:
-        lines = []
-
-        ax = plt.subplot(num_rows, num_cols, 2)
+    for i, key in enumerate(keys):
+        ax = plt.subplot(num_rows, num_cols, i + 1)
         ax.set_xlabel('steps')
-        ax.set_ylabel('score')
+        ax.set_ylabel(labels[i])
         ax.grid()
 
+        lines = []
         for index, d in enumerate(data):
-            iv, mu, sigma = prepare_data(d, 'score', 'sum', window)
-            lines.append(plot_curve(ax, {'mean': mu, 'std': sigma}, iv, color=colors[index]))
+            iv, mu, sigma = prepare_data(d, key, key_values[key], window)
+            # mu = np.clip(mu, 0, 0.1)
+            lines.append(plot_curve(ax, {'mean': mu, 'std': sigma}, iv, color=colors[index], start=0.0))
 
-        ax.legend(lines, legend[:len(data)], loc=4)
+        ax.legend(lines, legend[:len(data)])
 
     plt.savefig(path + ".png")
     plt.close()

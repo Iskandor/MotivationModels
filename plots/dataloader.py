@@ -78,7 +78,8 @@ def convert_data(data):
         steps = np.expand_dims(np.cumsum(data['steps'][i]), axis=1)
         v = {
             're': {'step': steps, 'sum': np.expand_dims(data['re'][i], axis=1)},
-            'score': {'step': steps, 'sum': np.expand_dims(data['score'][i], axis=1)}
+            'score': {'step': steps, 'sum': np.expand_dims(data['score'][i], axis=1)},
+            'ri': {'step': steps, 'mean': np.expand_dims(data['ri'][i] / data['steps'][i], axis=1)}
         }
         result.append(v)
 

@@ -109,7 +109,7 @@ def run_thread(thread_params):
 
 
 def run(id, algorithm, env, experiment):
-    print('Starting experiment {0} on env {1} learning algorithm {2} model {3}'.format(id + experiment.shift, env, algorithm, experiment.model))
+    print('Starting experiment {0}_{1} on env {2} learning algorithm {3} model {4}'.format(experiment.name, id + experiment.shift, env, algorithm, experiment.model))
 
     env_class = envs[algorithm][env]
 
