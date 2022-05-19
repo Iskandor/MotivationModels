@@ -1,83 +1,112 @@
-import numpy as np
-import psutil
 import torch
-import umap
-from scipy.cluster.vq import kmeans, whiten
-from tqdm import tqdm
 
-from modules.rnd_models.RNDModelBullet import *
-from plots.video import VideoRenderer
+from analytic.GenericCollector import GenericCollector
 
 
 class RNDAnalytic:
-    def __init__(self, config, motivation=None, grid=None):
-        self.trajectory = []
-        self.states = []
-        self.actions = []
-        self.errors = []
-        self.config = config
-        self.motivation = motivation
-        self.error_max = 0.
+    _instance = None
 
-        if grid is None:
-            self.grid = None
-        else:
-            self.grid = torch.tensor(np.load(grid), dtype=torch.float32)
-            self.grid_state = self.grid[:, :2]
-            self.grid_action = self.grid[:, 2:]
+    def __new__(cls):
+        if cls._instance is None:
+            print('Creating the object RNDAnalytic')
+            cls._instance = super(RNDAnalytic, cls).__new__(cls)
+            cls._instance.collector = GenericCollector()
+            cls._instance.global_step = 0
+            cls._instance.n_env = 0
+            cls._instance.ext_reward = []
+            cls._instance.int_reward = []
+            cls._instance.error = []
+            cls._instance.score = []
+            cls._instance.ext_value = []
+            cls._instance.int_value = []
+            cls._instance.loss_prediction = {}
+        return cls._instance
 
-    def initialization_test(self, config, n=1000):
-        reducer = umap.UMAP(n_jobs=psutil.cpu_count(logical=True))
-        grid_embedding = reducer.fit_transform(self.grid)
-        renderer = VideoRenderer()
+    def init(self, n_env, **kwargs):
+        self.collector.init(n_env, **kwargs)
+        self.n_env = n_env
 
-        models = [QRNDModelBullet1, QRNDModelBullet2]
+    def update(self, **kwargs):
+        self.collector.update(**kwargs)
 
-        for index, m in enumerate(models):
-            self.errors = []
-            for i in tqdm(range(n)):
-                self.motivation.network.motivator = m(2, 1, config)
-                self.errors.append(self.motivation.error(self.grid_state, self.grid_action))
-            self.errors = torch.stack(self.errors)
-            errors = torch.sum(self.errors, dim=0)
-            mean = torch.mean(errors, dim=0)
-            std = torch.std(errors, dim=0)
-            print('Mean: {0:f} Std: {1:f}'.format(mean, std))
+        if 'loss_prediction' in kwargs:
+            if self.global_step not in self.loss_prediction:
+                self.loss_prediction[self.global_step] = []
+            self.loss_prediction[self.global_step].append(kwargs['loss_prediction'].cpu())
 
-            renderer.render_error(index, grid_embedding, errors.numpy())
+    def reset(self, indices):
+        result = None
+        if len(indices) > 0:
+            result = self.collector.reset(indices)
 
-    def collect(self, state, action):
-        self.states.append(state.squeeze(0).numpy())
-        self.actions.append(action.squeeze(0).numpy())
-        if self.motivation is not None:
-            self.errors.append(self.motivation.error(self.grid_state, self.grid_action))
+            self.ext_reward.append((result['ext_reward'].step, result['ext_reward'].sum))
+            self.int_reward.append((result['int_reward'].step, result['int_reward'].max, result['int_reward'].mean, result['int_reward'].std))
+            self.error.append((result['error'].step, result['error'].max, result['error'].mean, result['error'].std))
+            self.score.append((result['score'].step, result['score'].sum))
+            self.ext_value.append((result['ext_value'].step, result['ext_value'].max, result['ext_value'].mean, result['ext_value'].std))
+            self.int_value.append((result['int_value'].step, result['int_value'].max, result['int_value'].mean, result['int_value'].std))
 
-    def end_trajectory(self, train_ext_reward):
-        states = np.stack(self.states)
-        actions = np.stack(self.actions)
-        errors = torch.mean(torch.stack(self.errors), dim=0).numpy()
+        return result
 
-        if self.error_max < errors.max():
-            self.error_max = errors.max()
+    def end_step(self):
+        self.global_step += self.n_env
 
-        del self.states[:]
-        del self.actions[:]
+    def finalize(self):
+        self.ext_reward = self._finalize_value(self.ext_reward, ['step', 'sum'], mode='cumsum_step')
+        self.int_reward = self._finalize_value(self.int_reward, ['step', 'max', 'mean', 'std'], mode='cumsum_step')
+        self.error = self._finalize_value(self.error, ['step', 'max', 'mean', 'std'], mode='cumsum_step')
+        self.score = self._finalize_value(self.score, ['step', 'sum'], mode='cumsum_step')
+        self.ext_value = self._finalize_value(self.ext_value, ['step', 'max', 'mean', 'std'], mode='cumsum_step')
+        self.int_value = self._finalize_value(self.int_value, ['step', 'max', 'mean', 'std'], mode='cumsum_step')
+        self.loss_prediction = self._finalize_value(self.loss_prediction, ['step', 'val'], mode='mean_step')
 
-        trajectory = (states, actions, errors, train_ext_reward)
-        self.trajectory.append(trajectory)
-
-    def save_data(self, filename):
         data = {
-            'grid_embedding': self.grid.numpy(),
-            'trajectories': self.trajectory,
-            'error_max': self.error_max
+            'score': self.score,
+            're': self.ext_reward,
+            'ri': self.int_reward,
+            'error': self.error,
+            'loss_prediction': self.loss_prediction,
+            'ext_value': self.ext_value,
+            'int_value': self.int_value
         }
-        np.save('analytic_{0}'.format(filename), data)
 
-    def generate_grid(self, trial, k=1000):
-        self.states = np.stack(self.states)
-        self.actions = np.stack(self.actions)
+        return data
 
-        grid, _ = kmeans(whiten(np.concatenate([self.states, self.actions], axis=1)), k)
+    def clear(self):
+        self.collector.clear()
+        self.global_step = 0
+        self.n_env = 0
+        self.ext_reward = []
+        self.int_reward = []
+        self.error = []
+        self.score = []
+        self.ext_value = []
+        self.int_value = []
+        self.loss_prediction = {}
 
-        np.save('grid_{0}_{1}_{2}'.format(self.config.name, self.config.model, trial), grid)
+    @staticmethod
+    def _finalize_value(value, keys, mode):
+        result = {}
+
+        if mode == 'cumsum_step':
+            l = list(zip(*value))
+            for i, k in enumerate(keys):
+                result[k] = torch.cat(l[i])
+
+            result['step'] = torch.cumsum(result['step'], dim=0)
+
+            for k in keys:
+                result[k] = result[k].numpy()
+
+        if mode == 'mean_step':
+            l = []
+            for vk in value:
+                steps = torch.tensor([[vk]])
+                val = torch.stack(value[vk]).mean().unsqueeze(0).unsqueeze(1)
+                l.append((steps, val))
+
+            l = list(zip(*l))
+            for i, k in enumerate(keys):
+                result[k] = torch.cat(l[i])
+
+        return result

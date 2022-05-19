@@ -5,6 +5,7 @@ import torch.nn as nn
 import numpy as np
 
 from analytic.CNDAnalytic import CNDAnalytic
+from analytic.RNDAnalytic import RNDAnalytic
 from modules import init_orthogonal
 from modules.encoders.EncoderAtari import ST_DIMEncoderAtari
 from utils.RunningAverage import RunningStatsSimple
@@ -89,8 +90,12 @@ class RNDModelAtari(nn.Module):
         loss = torch.pow(target - prediction, 2)
         mask = torch.rand_like(loss) < 0.25
         loss *= mask
+        loss = loss.sum() / mask.sum()
 
-        return loss.sum() / mask.sum()
+        analytic = RNDAnalytic()
+        analytic.update(loss_prediction=loss.unsqueeze(-1).detach())
+
+        return loss
 
     def update_state_average(self, state):
         self.state_average.update(state)
