@@ -4,12 +4,15 @@ from plots.analytic_chart import plot_multiple_models, plot_detail_cnd, plot_det
 from plots.dataloader import prepare_data
 from plots.paths import plot_root
 
-def plot(name, config, keys, labels, legend=None, plot_overview=True, plot_details=None, window=1000):
+def plot(name, config, keys, labels=None, legend=None, plot_overview=True, plot_details=None, window=1000):
     if plot_details is None:
         plot_details = []
     data = prepare_data(config)
     algorithm = config[0]['algorithm']
     env = config[0]['env']
+
+    if labels is None:
+        labels = keys
 
     if legend is None:
         legend = ['{0:s} {1:s}'.format(key['model'], key['id']) for key in config]
@@ -45,4 +48,6 @@ def plot(name, config, keys, labels, legend=None, plot_overview=True, plot_detai
                 if model == 'cnd':
                     plot_detail_cnd(d, path, window)
                 if model == 'rnd':
+                    plot_detail_rnd(d, path, window)
+                if model == 'qrnd':
                     plot_detail_rnd(d, path, window)

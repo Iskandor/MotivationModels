@@ -123,7 +123,7 @@ def plot_multiple_models(keys, data, legend, labels, colors, path, window=1):
         lines = []
         for index, d in enumerate(data):
             iv, mu, sigma = prepare_data(d, key, key_values[key], window)
-            mu = np.clip(mu, 0, 0.1)
+            # mu = np.clip(mu, 0, 0.1)
             lines.append(plot_curve(ax, {'mean': mu, 'std': sigma}, iv, color=colors[index], start=0.0))
 
         ax.legend(lines, legend[:len(data)])

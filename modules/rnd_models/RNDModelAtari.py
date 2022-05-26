@@ -109,6 +109,7 @@ class CNDModelAtari(nn.Module):
         self.action_dim = action_dim
 
         input_channels = 1
+        # input_channels = input_shape[0]
         input_height = input_shape[1]
         input_width = input_shape[2]
         self.input_shape = (input_channels, input_height, input_width)
@@ -154,6 +155,7 @@ class CNDModelAtari(nn.Module):
             x = ((state - self.state_average.mean) / self.state_average.std).clip(-1., 1.)
 
         return x[:, 0, :, :].unsqueeze(1)
+        # return x
 
     def forward(self, state):
         s = self.preprocess(state)
@@ -165,24 +167,24 @@ class CNDModelAtari(nn.Module):
         with torch.no_grad():
             prediction, target = self(state)
 
-            if self.config.cnd_error_k == 2:
-                error = torch.mean(torch.pow(target - prediction, 2), dim=1, keepdim=True)
-            if self.config.cnd_error_k == 1:
-                error = torch.mean(torch.abs(target - prediction), dim=1, keepdim=True)
+            # if self.config.cnd_error_k == 2:
+            #     error = torch.mean(torch.pow(target - prediction, 2), dim=1, keepdim=True)
+            # if self.config.cnd_error_k == 1:
+            #     error = torch.mean(torch.abs(target - prediction), dim=1, keepdim=True)
 
-            # error = self.k_distance(0.5, prediction, target, reduction='mean')
+            error = self.k_distance(self.config.cnd_error_k, prediction, target, reduction='mean')
 
         return error
 
     def loss_function_crossentropy(self, state, next_state):
         prediction, target = self(state)
         # loss_prediction = self.k_distance(self.config.cnd_loss_k, prediction, target, reduction='mean').mean()
-        loss_prediction = nn.functional.mse_loss(prediction, target)
+        loss_prediction = nn.functional.mse_loss(prediction, target, reduction='sum')
+
         loss_target, loss_target_reg, loss_target_norm = self.target_model.loss_function_crossentropy(self.preprocess(state), self.preprocess(next_state))
 
-        # beta1 = self.config.cnd_loss_target_reg
         beta1 = 0
-        beta2 = 0.001
+        beta2 = self.config.cnd_loss_target_reg
 
         analytic = CNDAnalytic()
         analytic.update(loss_prediction=loss_prediction.unsqueeze(-1).detach(), loss_target=loss_target.unsqueeze(-1).detach(), loss_reg=loss_target_reg.unsqueeze(-1).detach() * beta1, loss_target_norm=loss_target_norm.detach() * beta2)
@@ -206,9 +208,9 @@ class CNDModelAtari(nn.Module):
     def k_distance(k, prediction, target, reduction='sum'):
         ret = torch.abs(target - prediction) + 1e-8
         if reduction == 'sum':
-            ret = ret.pow(k).sum(dim=1, keepdim=True).pow(1 / k)
+            ret = ret.pow(k).sum(dim=1, keepdim=True)
         if reduction == 'mean':
-            ret = ret.pow(k).mean(dim=1, keepdim=True).pow(1 / k)
+            ret = ret.pow(k).mean(dim=1, keepdim=True)
 
         return ret
 
@@ -338,9 +340,12 @@ class QRNDModelAtari(nn.Module):
         loss = torch.pow(target - prediction, 2)
         mask = torch.rand_like(loss) < 0.5
         loss *= mask
+        loss = loss.sum() / mask.sum()
 
-        return loss.sum() / mask.sum()
-        # return loss.mean()
+        analytic = RNDAnalytic()
+        analytic.update(loss_prediction=loss.unsqueeze(-1).detach())
+
+        return loss
 
     def update_state_average(self, state, action):
         self.action_average.update(action)

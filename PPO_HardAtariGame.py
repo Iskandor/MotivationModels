@@ -20,7 +20,7 @@ def test(config, path, env_name):
     experiment = ExperimentNEnvPPO(env_name, env, config)
     experiment.add_preprocess(encode_state)
 
-    agent = PPOAtariQRNDAgent(input_shape, action_dim, config, TYPE.discrete)
+    agent = PPOAtariCNDAgent(input_shape, action_dim, config, TYPE.discrete)
     agent.load(path)
     experiment.test(agent)
 
