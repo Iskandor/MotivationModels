@@ -1,1 +1,1 @@
-python3 main.py -a ddpg --env aeris_navigate --config 93 -p -pb torch --device cuda --gpus 1 --num_processes 5
+python3 main.py -a ppo --env montezuma --config 13 --device cuda --gpus 1 --num_threads 4
