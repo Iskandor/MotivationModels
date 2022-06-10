@@ -47,10 +47,10 @@ class ExperimentNEnvPPO:
                 self._env.render()
                 video_recorder.capture_frame()
                 # features0 = agent.get_features(state0)
-                _, _, _, probs0 = agent.get_action(state0)
+                _, _, action0, probs0 = agent.get_action(state0)
                 # actor_state, value, action0, probs0, head_value, head_action, head_probs, all_values, all_action, all_probs = agent.get_action(state0)
-                action0 = probs0.argmax(dim=1)
-                next_state, reward, done, info = self._env.step(action0.item())
+                # action0 = probs0.argmax(dim=1)
+                next_state, reward, done, info = self._env.step(agent.convert_action(action0.cpu()))
                 state0 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0).to(config.device)
             video_recorder.close()
 
@@ -198,7 +198,7 @@ class ExperimentNEnvPPO:
             state0 = state1
             time_estimator.update(n_env)
 
-        agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
+        agent.save('./models/{0:s}_{1}_{2:d}'.format(config.name, config.model, trial))
 
         print('Saving data...')
         analytic.reset(numpy.array(range(n_env)))
@@ -270,7 +270,7 @@ class ExperimentNEnvPPO:
             state0 = state1
             time_estimator.update(n_env)
 
-        agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
+        agent.save('./models/{0:s}_{1}_{2:d}'.format(config.name, config.model, trial))
 
         print('Saving data...')
         analytic.reset(numpy.array(range(n_env)))
@@ -360,7 +360,7 @@ class ExperimentNEnvPPO:
 
             state0 = state1
 
-        agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
+        agent.save('./models/{0:s}_{1}_{2:d}'.format(config.name, config.model, trial))
 
         print('Saving data...')
         save_data = {
@@ -438,7 +438,7 @@ class ExperimentNEnvPPO:
             state0 = state1
             time_estimator.update(n_env)
 
-        agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
+        agent.save('./models/{0:s}_{1}_{2:d}'.format(config.name, config.model, trial))
 
         print('Saving data...')
         analytic.reset(numpy.array(range(n_env)))
@@ -547,7 +547,7 @@ class ExperimentNEnvPPO:
             agent.controller.network.aggregator.reset(env_indices.tolist())
             time_estimator.update(n_env)
 
-        agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
+        agent.save('./models/{0:s}_{1}_{2:d}'.format(config.name, config.model, trial))
 
         print('Saving data...')
         save_data = {

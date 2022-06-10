@@ -419,14 +419,12 @@ class ST_DIM_CNN(nn.Module):
         self.local_layer_depth = self.main[4].out_channels
 
     def forward(self, inputs, fmaps=False):
-        f5 = self.main[:6](inputs)
-        f7 = self.main[6:8](f5)
-        out = self.main[8:](f7)
+        f5 = self.main[:5](inputs)
+        out = self.main[5:](f5)
 
         if fmaps:
             return {
                 'f5': f5.permute(0, 2, 3, 1),
-                'f7': f7.permute(0, 2, 3, 1),
                 'out': out
             }
         return out
@@ -445,8 +443,8 @@ class ST_DIMEncoderAtari(nn.Module):
         self.classifier1 = nn.Linear(self.encoder.hidden_size, self.encoder.local_layer_depth)  # x1 = global, x2=patch, n_channels = 32
         self.classifier2 = nn.Linear(self.encoder.local_layer_depth, self.encoder.local_layer_depth)
 
-    def forward(self, state):
-        return self.encoder(state)
+    def forward(self, state, fmaps=False):
+        return self.encoder(state, fmaps)
 
     def loss_function_crossentropy(self, states, next_states):
         f_t_maps, f_t_prev_maps = self.encoder(next_states, fmaps=True), self.encoder(states, fmaps=True)

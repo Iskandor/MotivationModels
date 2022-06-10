@@ -157,10 +157,24 @@ class CNDModelAtari(nn.Module):
         return x[:, 0, :, :].unsqueeze(1)
         # return x
 
-    def forward(self, state):
+    def forward(self, state, fmaps=False):
         s = self.preprocess(state)
-        predicted_code = self.model(s)
-        target_code = self.target_model(s).detach()
+
+        f5 = self.model[:5](s)
+        predicted_code = self.model[5:](f5)
+
+        if fmaps:
+            target_code = self.target_model(s, fmaps)
+
+            return {
+                'predicted_f5': f5.permute(0, 2, 3, 1),
+                'predicted_code': predicted_code,
+                'target_f5': target_code['f5'],
+                'target_code': target_code['out']
+            }
+        else:
+            target_code = self.target_model(s).detach()
+
         return predicted_code, target_code
 
     def error(self, state):
@@ -177,9 +191,10 @@ class CNDModelAtari(nn.Module):
         return error
 
     def loss_function_crossentropy(self, state, next_state):
-        prediction, target = self(state)
-        # loss_prediction = self.k_distance(self.config.cnd_loss_k, prediction, target, reduction='mean').mean()
-        loss_prediction = nn.functional.mse_loss(prediction, target, reduction='sum')
+        out = self(state, fmaps=True)
+        prediction_f5, prediction, target_f5, target = out['predicted_f5'], out['predicted_code'], out['target_f5'], out['target_code']
+
+        loss_prediction = nn.functional.mse_loss(prediction, target.detach(), reduction='sum') + nn.functional.mse_loss(prediction_f5, target_f5.detach(), reduction='sum')
 
         loss_target, loss_target_reg, loss_target_norm = self.target_model.loss_function_crossentropy(self.preprocess(state), self.preprocess(next_state))
 
