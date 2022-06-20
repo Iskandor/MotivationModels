@@ -748,11 +748,11 @@
       "dop_frequency": 32
     },
     "15": {
-      "descriptor": "ppo_baseline8",
+      "descriptor": "ppo_baseline_32",
       "model": "baseline",
       "n_env": 32,
       "trials": 2,
-      "steps": 12,
+      "steps": 32,
       "gamma": "0.99",
       "beta": 0.001,
       "batch_size": 128,
@@ -1247,7 +1247,7 @@
       "cnd_loss_target_reg": 0.001
     },
     "19": {
-      "descriptor": "loss sum",
+      "descriptor": "ref",
       "model": "cnd",
       "n_env": 128,
       "trials": 1,
@@ -1266,15 +1266,15 @@
       "cnd_loss_k": 2,
       "cnd_preprocess": 0,
       "cnd_loss_pred": 1,
-      "cnd_loss_target": 0.1,
+      "cnd_loss_target": 1,
       "cnd_loss_target_reg": 0.0001
     },
     "20": {
-      "descriptor": "loss sum",
+      "descriptor": "gl, f5 - mean",
       "model": "cnd",
       "n_env": 128,
-      "trials": 2,
-      "steps": 128,
+      "trials": 1,
+      "steps": 32,
       "gamma": "0.998,0.99",
       "beta": 0.001,
       "batch_size": 512,
@@ -1293,7 +1293,7 @@
       "cnd_loss_target_reg": 0.0001
     },
     "21": {
-      "descriptor": "pred loss gl ll",
+      "descriptor": "pred loss gl f5",
       "model": "cnd",
       "n_env": 128,
       "trials": 2,

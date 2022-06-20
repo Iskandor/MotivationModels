@@ -17,3 +17,4 @@ scikit-learn
 torch
 tqdm
 umap-learn
+seaborn

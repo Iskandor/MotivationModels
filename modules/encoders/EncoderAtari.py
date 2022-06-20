@@ -419,8 +419,8 @@ class ST_DIM_CNN(nn.Module):
         self.local_layer_depth = self.main[4].out_channels
 
     def forward(self, inputs, fmaps=False):
-        f5 = self.main[:5](inputs)
-        out = self.main[5:](f5)
+        f5 = self.main[:6](inputs)
+        out = self.main[6:](f5)
 
         if fmaps:
             return {

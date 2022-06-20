@@ -50,6 +50,7 @@ class StepCounter:
     def running(self):
         return self.steps < self.limit
 
+
 class RunningStatsSimple:
     def __init__(self, shape, device):
         self.count = 1

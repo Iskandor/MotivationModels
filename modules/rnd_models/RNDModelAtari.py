@@ -160,8 +160,8 @@ class CNDModelAtari(nn.Module):
     def forward(self, state, fmaps=False):
         s = self.preprocess(state)
 
-        f5 = self.model[:5](s)
-        predicted_code = self.model[5:](f5)
+        f5 = self.model[:6](s)
+        predicted_code = self.model[6:](f5)
 
         if fmaps:
             target_code = self.target_model(s, fmaps)
