@@ -178,6 +178,9 @@ if __name__ == '__main__':
 
     config = [
         {'env': 'gravitar', 'algorithm': 'ppo', 'model': 'rnd', 'id': '1'}
+        # {'env': 'gravitar', 'algorithm': 'ppo', 'model': 'rnd', 'id': '6'},
+        # {'env': 'gravitar', 'algorithm': 'ppo', 'model': 'rnd', 'id': '12'}
+
     ]
 
     plot('gravitar_final', config, plot_details=[1], window=100000, average_per_step=True, has_score=True)

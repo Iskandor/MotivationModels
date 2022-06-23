@@ -83,6 +83,8 @@ class PPOAtariMotivationNetwork(PPOAtariNetwork):
         init_orthogonal(self.critic[2], 0.01)
 
 
+
+
 class PPOAtariNetworkFM(PPOAtariMotivationNetwork):
     def __init__(self, input_shape, action_dim, config, head):
         super(PPOAtariNetworkFM, self).__init__(input_shape, action_dim, config, head)
@@ -99,3 +101,45 @@ class PPOAtariNetworkQRND(PPOAtariMotivationNetwork):
     def __init__(self, input_shape, action_dim, config, head):
         super(PPOAtariNetworkQRND, self).__init__(input_shape, action_dim, config, head)
         self.qrnd_model = QRNDModelAtari(input_shape, self.action_dim, config)
+
+
+
+
+
+class PPOAtariSRMotivationNetwork(nn.Module):
+    def __init__(self, state_dim, action_dim, config, head):
+        super(PPOAtariSRMotivationNetwork, self).__init__()
+
+        self.critic = nn.Sequential(
+            torch.nn.Linear(state_dim, state_dim),
+            torch.nn.ReLU(),
+            Critic2Heads(state_dim)
+        )
+
+        init_orthogonal(self.critic[0], 0.1)
+        init_orthogonal(self.critic[2], 0.01)
+
+        self.actor = nn.Sequential(
+            torch.nn.Linear(state_dim, state_dim),
+            torch.nn.ReLU(),
+            DiscreteHead(state_dim, action_dim)
+        )
+
+        init_orthogonal(self.actor[0], 0.01)
+        init_orthogonal(self.actor[2], 0.01)
+
+        self.actor = Actor(self.actor, head, action_dim)
+
+    def forward(self, features):
+        value = self.critic(features)
+        action, probs = self.actor(features)
+        action = self.actor.encode_action(action)
+
+        return value, action, probs
+
+
+# class PPOAtariNetworkSRL(PPOAtariSRMotivationNetwork):
+#     def __init__(self, input_shape, feature_dim, action_dim, config, head):
+#         super(PPOAtariNetworkSRL, self).__init__(feature_dim, action_dim, config, head)
+#         self.encoder = ST_DIMEncoderAtari(input_shape, feature_dim, config)
+#         self.rnd_model = RNDModelAtari(input_shape, action_dim, config)

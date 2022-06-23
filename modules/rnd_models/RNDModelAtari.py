@@ -88,11 +88,18 @@ class RNDModelAtari(nn.Module):
     def loss_function(self, state):
         prediction, target = self(state)
         # loss = nn.functional.mse_loss(self(state), self.encode(state).detach(), reduction='none').sum(dim=1)
-        loss = torch.pow(target - prediction, 2)
-        # mozno vypocitat aj loss pomocou fractional
+        if (self.config.loss_norm == "l1"):
+            loss = torch.abs(target - prediction)
+        elif (self.config.loss_norm == "l2"):
+            loss = torch.pow(target - prediction, 2)
+        elif (self.config.loss_norm == "frac"):
+            f = self.config.frac_distance
+            loss = torch.abs(target - prediction) + 1e-8
+            loss = loss.pow(f).pow(1 / f)
         mask = torch.rand_like(loss) < 32 / self.config.n_env
         loss *= mask
-        return loss.sum() / mask.sum()
+        res = loss.sum() / mask.sum()
+        return res
 
     def update_state_average(self, state):
         self.state_average.update(state)

@@ -2,6 +2,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.distributions import Categorical, Normal
+from utils import one_hot_code
+
 
 from agents import TYPE
 from modules import init_orthogonal, init_uniform, init_xavier_uniform, init_custom
@@ -115,6 +117,14 @@ class Actor(nn.Module):
 
     def entropy(self, probs):
         return self.head.entropy(probs)
+
+    def encode_action(self, action):
+        if self.head_type == TYPE.discrete:
+            return one_hot_code(action, self.action_dim)
+        if self.head_type == TYPE.continuous:
+            return action
+        if self.head_type == TYPE.multibinary:
+            return None  # not implemented
 
 
 class ActorNHeads(nn.Module):

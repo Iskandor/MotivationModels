@@ -18,7 +18,7 @@ def moving_average(a, n=3):
     return ret[n - 1:] / n
 
 
-def prepare_data_instance(data_x, data_y, window, smooth=False):
+def prepare_data_instance(data_x, data_y, window, smooth=True):
     dx = data_x.copy()
     dy = data_y
 

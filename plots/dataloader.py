@@ -8,7 +8,6 @@ root = "Q:\\Desktop\\skola MGR\\diplomka\\MotivationModels\\results\\data"
 
 def prepare_data(keys):
     data = []
-
     for key in keys:
         model = key['model']
         algorithm = key['algorithm']
@@ -53,7 +52,6 @@ def expand_data(data, steps=None):
 def load_data2(folder):
     print(folder)
     print(glob.glob(str(folder) + '/*.npy'))
-
     data = None
 
     for file in glob.glob(str(folder) + '/*.npy'):

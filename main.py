@@ -108,6 +108,8 @@ def run_thread(thread_params):
     run(i, algorithm, env, experiment)
 
 
+#--algorithm ppo --env gravitar --config 13 --device cuda -p -pb torch --num_processes 1
+
 def run(id, algorithm, env, experiment):
     print('Starting experiment {0} on env {1} learning algorithm {2} model {3}'.format(id + experiment.shift, env, algorithm, experiment.model))
 
