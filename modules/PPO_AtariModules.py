@@ -6,6 +6,7 @@ from modules import init_orthogonal
 from modules.dop_models.DOPModelAtari import DOPModelAtari, DOPControllerAtari, DOPActorAtari, DOPGeneratorAtari
 from modules.PPO_Modules import DiscreteHead, Actor, Critic2Heads, ActorNHeads, CriticHead, Critic2NHeads
 from modules.encoders.EncoderAtari import EncoderAtari, AutoEncoderAtari, VAEAtari, DDMEncoderAtari, ST_DIMEncoderAtari
+from modules.forward_models.FWDModelAtari import FWDModelAtari
 from modules.forward_models.ForwardModelAtari import ForwardModelAtari
 from modules.rnd_models.RNDModelAtari import QRNDModelAtari, RNDModelAtari, CNDModelAtari
 
@@ -128,6 +129,13 @@ class PPOAtariNetworkRND(PPOAtariMotivationNetwork):
     def __init__(self, input_shape, action_dim, config, head):
         super(PPOAtariNetworkRND, self).__init__(input_shape, action_dim, config, head)
         self.rnd_model = RNDModelAtari(input_shape, self.action_dim, config)
+
+
+
+class PPOAtaraiNetworkFWD(PPOAtariMotivationNetwork):
+    def __init__(self, input_shape, action_dim, config, head):
+        super(PPOAtaraiNetworkFWD, self).__init__(input_shape, action_dim, config, head)
+        self.forward_model = FWDModelAtari(input_shape, 512, self.action_dim, config)
 
 
 class PPOAtariNetworkSRRND(PPOAtariSRMotivationNetwork):

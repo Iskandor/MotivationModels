@@ -891,6 +891,27 @@
       "norm": "frac",
       "frac_distance": 0.5
     },
+    "301": {
+      "descriptor": "forward model  prvy pokus",
+      "model": "fwd",
+      "n_env": 32,
+      "trials": 2,
+      "steps": 32,
+      "gamma": "0.998,0.99",
+      "beta": 0.001,
+      "batch_size": 512,
+      "trajectory_size": 4096,
+      "ppo_epochs": 4,
+      "lr": 0.0001,
+      "forward_model_lr": 0.0001,
+      "forward_model_eta": 1,
+      "forward_model_variant": "A",
+      "actor_loss_weight": 1,
+      "critic_loss_weight": 0.5,
+      "motivation_lr": 0.0001,
+      "motivation_eta": 1,
+      "norm": "l2"
+    },
     "": {
       "descriptor": "skusit 32"
     }

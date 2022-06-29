@@ -115,6 +115,8 @@ def run(id, algorithm, env, experiment):
 
     if experiment.model == 'baseline':
         env_class.run_baseline(experiment, id)
+    if experiment.model == 'fwd':
+        env_class.run_fwd_model(experiment, id)
     if experiment.model == 'fm':
         env_class.run_forward_model(experiment, id)
     if experiment.model == 'fme':
