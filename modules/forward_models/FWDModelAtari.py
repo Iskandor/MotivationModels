@@ -48,5 +48,6 @@ class FWDModelAtari(nn.Module):
         fwd_loss = nn.functional.mse_loss(predicted_state, target)
 
         #update analytic
-        RNDAnalytic().update(loss_prediction=fwd_loss)
-        return loss_target + loss_target_norm + fwd_loss
+        loss = loss_target + loss_target_norm + fwd_loss
+        RNDAnalytic().update(loss_prediction=loss)
+        return loss
