@@ -410,11 +410,13 @@ class ST_DIM_CNN(nn.Module):
             nn.Linear(self.final_conv_size, feature_dim)
         )
 
-        init_orthogonal(self.main[0], nn.init.calculate_gain('relu'))
-        init_orthogonal(self.main[2], nn.init.calculate_gain('relu'))
-        init_orthogonal(self.main[4], nn.init.calculate_gain('relu'))
-        init_orthogonal(self.main[6], nn.init.calculate_gain('relu'))
-        init_orthogonal(self.main[9], nn.init.calculate_gain('relu'))
+        # gain = nn.init.calculate_gain('relu')
+        gain = 1
+        init_orthogonal(self.main[0], gain)
+        init_orthogonal(self.main[2], gain)
+        init_orthogonal(self.main[4], gain)
+        init_orthogonal(self.main[6], gain)
+        init_orthogonal(self.main[9], gain)
 
         self.local_layer_depth = self.main[4].out_channels
 

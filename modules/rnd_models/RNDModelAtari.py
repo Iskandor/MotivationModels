@@ -138,13 +138,14 @@ class CNDModelAtari(nn.Module):
             nn.Linear(self.feature_dim, self.feature_dim)
         )
 
-        init_orthogonal(self.model[0], np.sqrt(2))
-        init_orthogonal(self.model[2], np.sqrt(2))
-        init_orthogonal(self.model[4], np.sqrt(2))
-        init_orthogonal(self.model[6], np.sqrt(2))
-        init_orthogonal(self.model[9], np.sqrt(2))
-        init_orthogonal(self.model[11], np.sqrt(2))
-        init_orthogonal(self.model[13], np.sqrt(2))
+        gain = 1
+        init_orthogonal(self.model[0], gain)
+        init_orthogonal(self.model[2], gain)
+        init_orthogonal(self.model[4], gain)
+        init_orthogonal(self.model[6], gain)
+        init_orthogonal(self.model[9], gain)
+        init_orthogonal(self.model[11], gain)
+        init_orthogonal(self.model[13], gain)
 
     def preprocess(self, state):
         if self.config.cnd_preprocess == 0:
