@@ -4,6 +4,7 @@ from etaprogress.progress import ProgressBar
 from gym.wrappers.monitoring.video_recorder import VideoRecorder
 
 from analytic.CNDAnalytic import CNDAnalytic
+from analytic.FWDAnalytic import FWDAnalytic
 from analytic.RNDAnalytic import RNDAnalytic
 from utils import one_hot_code
 from utils.RunningAverage import RunningAverageWindow, StepCounter, RunningStats
@@ -135,6 +136,7 @@ class ExperimentNEnvPPO:
             're': numpy.array(train_ext_rewards)
         }
         numpy.save('ppo_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
+
 
     def run_rnd_model(self, agent, trial):
         config = self._config
@@ -567,7 +569,7 @@ class ExperimentNEnvPPO:
         trial = trial + config.shift
         step_counter = StepCounter(int(config.steps * 1e6))
 
-        analytic = RNDAnalytic()
+        analytic = FWDAnalytic()
         analytic.init(n_env, ext_reward=(1,), score=(1,), int_reward=(1,), error=(1,), ext_value=(1,), int_value=(1,))
 
         reward_avg = RunningAverageWindow(100)

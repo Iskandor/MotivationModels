@@ -53,18 +53,18 @@ if __name__ == '__main__':
     # plot('montezuma_cnd_preprocess_b', config, keys=['score'], labels=['score per episode'], legend=['FEDs normalization', 'FEDs mean subtraction', 'FEDs no pre-processing'], plot_details=[], window=100000)
     # plot('montezuma_cnd_preprocess_c', config, keys=['ri'], labels=['internal reward per step'], legend=['FEDs normalization', 'FEDs mean subtraction', 'FEDs no pre-processing'], plot_details=[], window=100000)
 
-    config = [
-        {'env': 'montezuma', 'algorithm': 'ppo', 'model': 'rnd', 'id': '2', 'legacy': True},
-        {'env': 'montezuma', 'algorithm': 'ppo', 'model': 'qrnd', 'id': '11', 'legacy': True},
-        {'env': 'montezuma', 'algorithm': 'ppo', 'model': 'cnd', 'id': '12'},
-        {'env': 'montezuma', 'algorithm': 'ppo', 'model': 'cnd', 'id': '18'},
-    ]
-    compute_table_values(config, keys=['re', 'score', 'ri'])
-
-    plot('montezuma_a', config, keys=['re'], labels=['external reward per episode'], legend=['RND', 'RNDa', 'FEDs', 'FED'], plot_details=[], window=400000)
-    plot('montezuma_b', config, keys=['score'], labels=['score per episode'], legend=['RND', 'RNDa', 'FEDs', 'FED'], plot_details=[], window=400000)
-    plot('montezuma_c', config, keys=['ri'], labels=['internal reward per step'], legend=['RND', 'RNDa', 'FEDs', 'FED'], plot_details=[], window=400000)
-
+    # config = [
+    #     {'env': 'montezuma', 'algorithm': 'ppo', 'model': 'rnd', 'id': '2', 'legacy': True},
+    #     {'env': 'montezuma', 'algorithm': 'ppo', 'model': 'qrnd', 'id': '11', 'legacy': True},
+    #     {'env': 'montezuma', 'algorithm': 'ppo', 'model': 'cnd', 'id': '12'},
+    #     {'env': 'montezuma', 'algorithm': 'ppo', 'model': 'cnd', 'id': '18'},
+    # ]
+    # compute_table_values(config, keys=['re', 'score', 'ri'])
+    #
+    # plot('montezuma_a', config, keys=['re'], labels=['external reward per episode'], legend=['RND', 'RNDa', 'FEDs', 'FED'], plot_details=[], window=400000)
+    # plot('montezuma_b', config, keys=['score'], labels=['score per episode'], legend=['RND', 'RNDa', 'FEDs', 'FED'], plot_details=[], window=400000)
+    # plot('montezuma_c', config, keys=['ri'], labels=['internal reward per step'], legend=['RND', 'RNDa', 'FEDs', 'FED'], plot_details=[], window=400000)
+    #
 
 
 
@@ -217,3 +217,33 @@ if __name__ == '__main__':
     # ]
     #
     # plot('aeris_navigate_eta', config, plot_details=[55, 56, 57], window=10000)
+
+
+    # config = [
+    #     {'env': 'montezuma', 'algorithm': 'ppo', 'model': 'rnd', 'id': '2', 'legacy': True},
+    #     {'env': 'montezuma', 'algorithm': 'ppo', 'model': 'qrnd', 'id': '11', 'legacy': True},
+    #     {'env': 'montezuma', 'algorithm': 'ppo', 'model': 'cnd', 'id': '12'},
+    #     {'env': 'montezuma', 'algorithm': 'ppo', 'model': 'cnd', 'id': '18'},
+    # ]
+    # compute_table_values(config, keys=['re', 'score', 'ri'])
+    #
+    # plot('montezuma_a', config, keys=['re'], labels=['external reward per episode'], legend=['RND', 'RNDa', 'FEDs', 'FED'], plot_details=[], window=400000)
+    # plot('montezuma_b', config, keys=['score'], labels=['score per episode'], legend=['RND', 'RNDa', 'FEDs', 'FED'], plot_details=[], window=400000)
+    # plot('montezuma_c', config, keys=['ri'], labels=['internal reward per step'], legend=['RND', 'RNDa', 'FEDs', 'FED'], plot_details=[], window=400000)
+    #
+
+    config = [
+       # {'env': 'gravitar', 'algorithm': 'ppo', 'model': 'fwd', 'id': '300'},
+       # {'env': 'gravitar', 'algorithm': 'ppo', 'model': 'rnd', 'id': '1', 'legacy': True}
+
+        {'env': 'gravitar', 'algorithm': 'ppo', 'model': 'baseline', 'id': '1', 'legacy': True},
+
+    ]
+
+    plot('grav', config, keys=['re'], plot_details=[1], window=40)
+    # plot('gravitar_a', config, keys=['re'], labels=['external reward per episode'], plot_details=[], window=40)         #400000
+    plot('gravitar_badf', config, keys=['score'], labels=['score per episode'], plot_details=[], window=40)
+    # plot('gravitar_c', config, keys=['ri'], labels=['internal reward per step'], plot_details=[300], window=40)
+    # plot('gravitar_d', config, keys=['loss_prediction'], labels=['loss_prediction per step'], plot_details=[], window=40)
+
+# plot('gravitar_final', config, plot_details=[1], window=100000, average_per_step=True, has_score=True)

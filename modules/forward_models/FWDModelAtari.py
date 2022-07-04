@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-from analytic.RNDAnalytic import RNDAnalytic
+from analytic.FWDAnalytic import FWDAnalytic
 from modules import init_orthogonal
 from modules.encoders.EncoderAtari import ST_DIMEncoderAtari
 
@@ -47,7 +47,9 @@ class FWDModelAtari(nn.Module):
         target = self.encoder(next_state)
         fwd_loss = nn.functional.mse_loss(predicted_state, target)
 
-        #update analytic
         loss = loss_target + loss_target_norm + fwd_loss
-        RNDAnalytic().update(loss_prediction=loss)
+        FWDAnalytic().update(loss_prediction=loss.unsqueeze(-1).detach().cpu(),
+                             loss_target=loss_target.unsqueeze(-1).detach().cpu(),
+                             loss_target_norm=loss_target_norm.unsqueeze(-1).detach().cpu(),
+                             loss_fwd=fwd_loss.unsqueeze(-1).detach().cpu())
         return loss
