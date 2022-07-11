@@ -826,8 +826,8 @@
       "descriptor": "trajectory size : n_evn * 128",
       "model": "rnd",
       "n_env": 32,
-      "trials": 2,
-      "steps": 0.5,
+      "trials": 1,
+      "steps": 64,
       "gamma": "0.998,0.99",
       "beta": 0.001,
       "batch_size": 512,
@@ -838,8 +838,7 @@
       "critic_loss_weight": 0.5,
       "motivation_lr": 0.0001,
       "motivation_eta": 1,
-      "norm": "frac",
-      "frac_distance": 0.5
+      "norm": "l2"
     },
     "3": {
       "descriptor": "trajectory size : n_evn * 128",
