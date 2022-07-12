@@ -233,16 +233,15 @@ if __name__ == '__main__':
     #
 
     config = [
-       # {'env': 'gravitar', 'algorithm': 'ppo', 'model': 'fwd', 'id': '300'},
-       # {'env': 'gravitar', 'algorithm': 'ppo', 'model': 'rnd', 'id': '1', 'legacy': True}
-
+        {'env': 'gravitar', 'algorithm': 'ppo', 'model': 'fwd', 'id': '301'},
+        {'env': 'gravitar', 'algorithm': 'ppo', 'model': 'rnd', 'id': '2', 'legacy': True},
         {'env': 'gravitar', 'algorithm': 'ppo', 'model': 'baseline', 'id': '1', 'legacy': True},
 
     ]
 
-    plot('grav', config, keys=['re'], plot_details=[1], window=40)
-    # plot('gravitar_a', config, keys=['re'], labels=['external reward per episode'], plot_details=[], window=40)         #400000
-    plot('gravitar_badf', config, keys=['score'], labels=['score per episode'], plot_details=[], window=40)
+    #plot('grav', config, keys=['re'], plot_details=[1], window=40)
+    plot('gravitar_re', config, keys=['re'], labels=['external reward per episode'], plot_details=[301], window=400000)         #400000
+    plot('gravitar_score', config, keys=['score'], labels=['score per episode'], plot_details=[301], window=400000)
     # plot('gravitar_c', config, keys=['ri'], labels=['internal reward per step'], plot_details=[300], window=40)
     # plot('gravitar_d', config, keys=['loss_prediction'], labels=['loss_prediction per step'], plot_details=[], window=40)
 

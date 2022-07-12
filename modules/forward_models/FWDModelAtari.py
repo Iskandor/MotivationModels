@@ -44,7 +44,8 @@ class FWDModelAtari(nn.Module):
         loss_target_norm *= 1e-4
 
         predicted_state = self(state, action)
-        target = self.encoder(next_state)
+        #prvy run fwd nebol detachnuty 301
+        target = self.encoder(next_state).detach()
         fwd_loss = nn.functional.mse_loss(predicted_state, target)
 
         loss = loss_target + loss_target_norm + fwd_loss

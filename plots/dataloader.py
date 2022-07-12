@@ -80,7 +80,7 @@ def convert_data(data):
             're': {'step': steps, 'sum': np.expand_dims(data['re'][i], axis=1)},
             'score': {'step': steps, 'sum': np.expand_dims(data['score'][i], axis=1)},
             #TODO toto pada pre baseline kedze nema internal reward
-            'ri': {'step': steps, 'mean': np.expand_dims(data['ri'][i] / data['steps'][i], axis=1)}
+#            'ri': {'step': steps, 'mean': np.expand_dims(data['ri'][i] / data['steps'][i], axis=1)}
         }
         result.append(v)
 
