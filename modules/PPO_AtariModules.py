@@ -8,6 +8,7 @@ from modules.PPO_Modules import DiscreteHead, Actor, Critic2Heads, ActorNHeads, 
 from modules.encoders.EncoderAtari import EncoderAtari, AutoEncoderAtari, VAEAtari, DDMEncoderAtari, ST_DIMEncoderAtari
 from modules.forward_models.FWDModelAtari import FWDModelAtari
 from modules.forward_models.ForwardModelAtari import ForwardModelAtari
+from modules.forward_models.ICMModelAtari import ICMModelAtari
 from modules.rnd_models.RNDModelAtari import QRNDModelAtari, RNDModelAtari, CNDModelAtari
 
 
@@ -131,11 +132,16 @@ class PPOAtariNetworkRND(PPOAtariMotivationNetwork):
         self.rnd_model = RNDModelAtari(input_shape, self.action_dim, config)
 
 
-
-class PPOAtaraiNetworkFWD(PPOAtariMotivationNetwork):
+class PPOAtariNetworkFWD(PPOAtariMotivationNetwork):
     def __init__(self, input_shape, action_dim, config, head):
-        super(PPOAtaraiNetworkFWD, self).__init__(input_shape, action_dim, config, head)
+        super(PPOAtariNetworkFWD, self).__init__(input_shape, action_dim, config, head)
         self.forward_model = FWDModelAtari(input_shape, 512, self.action_dim, config)
+
+
+class PPOAtariNetworkICM(PPOAtariMotivationNetwork):
+    def __init__(self, input_shape, action_dim, config, head):
+        super(PPOAtariNetworkICM, self).__init__(input_shape, action_dim, config, head)
+        self.forward_model = ICMModelAtari(input_shape, 512, self.action_dim, config)
 
 
 class PPOAtariNetworkSRRND(PPOAtariSRMotivationNetwork):

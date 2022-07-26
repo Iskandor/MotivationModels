@@ -4,8 +4,9 @@ from agents.PPOAgent import PPOAgent
 from algorithms.PPO import PPO, MODE
 from algorithms.ReplayBuffer import GenericTrajectoryBuffer, GenericAsyncTrajectoryBuffer
 from modules.dop_models.DOPModelAtari import DOPControllerAtari
-from modules.PPO_AtariModules import PPOAtariNetworkFM, PPOAtariNetwork, PPOAtariNetworkRND, PPOAtariNetworkQRND, PPOAtariNetworkDOP, PPOAtariMotivationNetwork, PPOAtariNetworkSRRND, \
-    PPOAtariNetworkDOP, PPOAtariNetworkCND, PPOAtaraiNetworkFWD
+from modules.PPO_AtariModules import PPOAtariNetworkFM, PPOAtariNetwork, PPOAtariNetworkRND, PPOAtariNetworkQRND, \
+    PPOAtariNetworkDOP, PPOAtariMotivationNetwork, PPOAtariNetworkSRRND, \
+    PPOAtariNetworkDOP, PPOAtariNetworkCND, PPOAtariNetworkFWD, PPOAtariNetworkICM
 from motivation.CNDMotivation import CNDMotivation
 from motivation.DOPMotivation import DOPMotivation
 from motivation.Encoder import Encoder, DDMEncoder
@@ -39,14 +40,34 @@ class PPOAtariRNDAgent(PPOAgent):
         if indices is not None:
             self.memory.clear()
 
+
 class PPOAtariFWDAgent(PPOAgent):
     def __init__(self, input_shape, action_dim, config, action_type):
         super().__init__(input_shape, action_dim, action_type, config)
-        self.network = PPOAtaraiNetworkFWD(input_shape, action_dim, config, head=action_type).to(config.device)
+        self.network = PPOAtariNetworkFWD(input_shape, action_dim, config, head=action_type).to(config.device)
         self.motivation = ForwardModelMotivation(self.network.forward_model, config.motivation_lr, config.motivation_eta, config.forward_model_variant, config.device)
         self.algorithm = PPO(self.network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size,
                              config.beta, config.gamma, ext_adv_scale=2, int_adv_scale=1, ppo_epochs=config.ppo_epochs, n_env=config.n_env,
                              device=config.device, motivation=True)
+
+    def train(self, state0, value, action0, probs0, state1, reward, mask):
+        self.memory.add(state=state0.cpu(), value=value.cpu(), action=action0.cpu(), prob=probs0.cpu(), next_state=state1.cpu(), reward=reward.cpu(), mask=mask.cpu())
+        indices = self.memory.indices()
+        self.algorithm.train(self.memory, indices)
+        self.motivation.train(self.memory, indices)
+        if indices is not None:
+            self.memory.clear()
+
+
+class PPOAtariICMAgent(PPOAgent):
+    def __init__(self, input_shape, action_dim, config, action_type):
+        super().__init__(input_shape, action_dim, action_type, config)
+        self.network = PPOAtariNetworkICM(input_shape, action_dim, config, head=action_type).to(config.device)
+        self.motivation = ForwardModelMotivation(self.network.forward_model, config.motivation_lr, config.motivation_eta, config.forward_model_variant, config.device)
+        self.algorithm = PPO(self.network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size,
+                             config.beta, config.gamma, ext_adv_scale=2, int_adv_scale=1, ppo_epochs=config.ppo_epochs, n_env=config.n_env,
+                             device=config.device, motivation=True)
+
 
     def train(self, state0, value, action0, probs0, state1, reward, mask):
         self.memory.add(state=state0.cpu(), value=value.cpu(), action=action0.cpu(), prob=probs0.cpu(), next_state=state1.cpu(), reward=reward.cpu(), mask=mask.cpu())
@@ -56,6 +77,7 @@ class PPOAtariFWDAgent(PPOAgent):
         self.motivation.train(self.memory, indices)
         if indices is not None:
             self.memory.clear()
+
 
 
 

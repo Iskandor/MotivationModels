@@ -56,3 +56,6 @@ def plot(name, config, keys, labels=None, legend=None, plot_overview=True, plot_
                     plot_detail_fwd(d, path, window)
                 if model == "baseline":
                     plot_detail_baseline(d, path, window)
+                if model == "icm":
+                    plot_detail_fwd(d, path, window)
+

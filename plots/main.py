@@ -232,17 +232,24 @@ if __name__ == '__main__':
     # plot('montezuma_c', config, keys=['ri'], labels=['internal reward per step'], legend=['RND', 'RNDa', 'FEDs', 'FED'], plot_details=[], window=400000)
     #
 
-    config = [
-        {'env': 'gravitar', 'algorithm': 'ppo', 'model': 'fwd', 'id': '301'},
-        {'env': 'gravitar', 'algorithm': 'ppo', 'model': 'rnd', 'id': '2', 'legacy': True},
-        {'env': 'gravitar', 'algorithm': 'ppo', 'model': 'baseline', 'id': '1', 'legacy': True},
+    # config = [
+    #     # {'env': 'gravitar', 'algorithm': 'ppo', 'model': 'fwd', 'id': '301'},
+    #     # {'env': 'gravitar', 'algorithm': 'ppo', 'model': 'rnd', 'id': '2', 'legacy': True},
+    #     # {'env': 'gravitar', 'algorithm': 'ppo', 'model': 'baseline', 'id': '1', 'legacy': True},
+    #      {'env': 'montezuma', 'algorithm': 'ppo', 'model': 'fwd', 'id': '22'},
+    #      {'env': 'montezuma', 'algorithm': 'ppo', 'model': 'rnd', 'id': '2'}
+    # ]
 
+
+    config = [
+         {'env': 'gravitar', 'algorithm': 'ppo', 'model': 'icm', 'id': '400'}
     ]
 
-    #plot('grav', config, keys=['re'], plot_details=[1], window=40)
-    plot('gravitar_re', config, keys=['re'], labels=['external reward per episode'], plot_details=[301], window=400000)         #400000
-    plot('gravitar_score', config, keys=['score'], labels=['score per episode'], plot_details=[301], window=400000)
-    # plot('gravitar_c', config, keys=['ri'], labels=['internal reward per step'], plot_details=[300], window=40)
-    # plot('gravitar_d', config, keys=['loss_prediction'], labels=['loss_prediction per step'], plot_details=[], window=40)
+    #plot('grav', config, keys=['re'], plot_details=[1], window=400000)
+    plot('gravitar_re', config, keys=['re'], labels=['external reward per episode'], plot_details=[400], window=40)
+    plot('gravitar_score', config, keys=['score'], labels=['score per episode'], plot_details=[400], window=40)
+    plot('gravitar_ri', config, keys=['ri'], labels=['internal reward per step'], plot_details=[400], window=40)
+    plot('gravitar_loss', config, keys=['loss_prediction'], labels=['loss_prediction per step'], plot_details=[400], window=40)
 
+    #compute_table_values(config, keys=['re', 'ri'])
 # plot('gravitar_final', config, plot_details=[1], window=100000, average_per_step=True, has_score=True)
