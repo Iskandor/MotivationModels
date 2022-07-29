@@ -33,8 +33,7 @@ class PPOAtariNetwork(torch.nn.Module):
             nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(fc_inputs_count, self.feature_dim),
-            nn.ReLU()
+            nn.Linear(fc_inputs_count, self.feature_dim)
         )
 
         init_orthogonal(self.features[0], np.sqrt(2))
@@ -44,22 +43,24 @@ class PPOAtariNetwork(torch.nn.Module):
         init_orthogonal(self.features[9], np.sqrt(2))
 
         self.critic = nn.Sequential(
-            torch.nn.Linear(self.feature_dim, self.feature_dim),
-            torch.nn.ReLU(),
-            torch.nn.Linear(self.feature_dim, 1)
+            nn.ReLU(),
+            nn.Linear(self.feature_dim, self.feature_dim),
+            nn.ReLU(),
+            nn.Linear(self.feature_dim, 1)
         )
 
-        init_orthogonal(self.critic[0], 0.1)
-        init_orthogonal(self.critic[2], 0.01)
+        init_orthogonal(self.critic[1], 0.1)
+        init_orthogonal(self.critic[3], 0.01)
 
         self.actor = nn.Sequential(
-            torch.nn.Linear(self.feature_dim, self.feature_dim),
-            torch.nn.ReLU(),
+            nn.ReLU(),
+            nn.Linear(self.feature_dim, self.feature_dim),
+            nn.ReLU(),
             DiscreteHead(self.feature_dim, action_dim)
         )
 
-        init_orthogonal(self.actor[0], 0.01)
-        init_orthogonal(self.actor[2], 0.01)
+        init_orthogonal(self.actor[1], 0.01)
+        init_orthogonal(self.actor[3], 0.01)
 
         self.actor = Actor(self.actor, head, self.action_dim)
 
@@ -141,6 +142,12 @@ class PPOAtariNetworkCND(PPOAtariMotivationNetwork):
     def __init__(self, input_shape, action_dim, config, head):
         super(PPOAtariNetworkCND, self).__init__(input_shape, action_dim, config, head)
         self.cnd_model = CNDModelAtari(input_shape, action_dim, config)
+
+
+class PPOAtariNetworkFEDRef(PPOAtariMotivationNetwork):
+    def __init__(self, input_shape, action_dim, config, head):
+        super(PPOAtariNetworkFEDRef, self).__init__(input_shape, action_dim, config, head)
+        self.fed_ref_model = FEDRefModelAtari(input_shape, action_dim, self.features, config)
 
 
 class PPOAtariNetworkQRND(PPOAtariMotivationNetwork):

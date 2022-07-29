@@ -410,8 +410,8 @@ class ST_DIM_CNN(nn.Module):
             nn.Linear(self.final_conv_size, feature_dim)
         )
 
-        # gain = nn.init.calculate_gain('relu')
-        gain = 1
+        gain = nn.init.calculate_gain('relu')
+        # gain = 1
         init_orthogonal(self.main[0], gain)
         init_orthogonal(self.main[2], gain)
         init_orthogonal(self.main[4], gain)

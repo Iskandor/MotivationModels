@@ -50,7 +50,9 @@ class SampleCollector:
                 features1 = network(torch.tensor(next_state, device=self.device).unsqueeze(0))
             samples.append(features1.cpu() - features0.cpu())
 
-        return torch.stack(samples).squeeze(1).numpy()
+        dist = torch.norm(torch.stack(samples).squeeze(1), p=1, dim=1, keepdim=True)
+
+        return torch.stack(samples).squeeze(1).numpy(), dist.numpy()
 
     def collect_samples_rnd(self, agent, states, next_states):
         samples = []
@@ -63,7 +65,9 @@ class SampleCollector:
                 _, features1 = network(torch.tensor(next_state, device=self.device).unsqueeze(0))
             samples.append(features1.cpu() - features0.cpu())
 
-        return torch.stack(samples).squeeze(1).numpy()
+        dist = torch.norm(torch.stack(samples).squeeze(1), p=1, dim=1, keepdim=True)
+
+        return torch.stack(samples).squeeze(1).numpy(), dist.numpy()
 
     def collect_samples_cnd(self, agent, states, next_states):
         samples = []
@@ -76,7 +80,9 @@ class SampleCollector:
                 _, features1 = network(torch.tensor(next_state, device=self.device).unsqueeze(0))
             samples.append(features1.cpu() - features0.cpu())
 
-        return torch.stack(samples).squeeze(1).numpy()
+        dist = torch.norm(torch.stack(samples).squeeze(1), p=1, dim=1, keepdim=True)
+
+        return torch.stack(samples).squeeze(1).numpy(), dist.numpy()
 
     def collect_states(self, agent, env, count):
         states = []
@@ -106,9 +112,8 @@ class SampleCollector:
 
         states = torch.stack(states[3:]).squeeze(1)
         next_states = torch.stack(next_states[3:]).squeeze(1)
-        dist = torch.norm(next_states - states, p=1, dim=[1, 2, 3]).unsqueeze(-1)
 
-        return states.numpy(), next_states.numpy(), dist.numpy()
+        return states.numpy(), next_states.numpy()
 
 
 class MetricTensor:
@@ -139,7 +144,7 @@ class MetricTensor:
                 output = torch.bmm(torch.matmul(input, metric_tensor), input.permute(0, 2, 1)).squeeze(-1)
 
                 optimizer.zero_grad()
-                loss = nn.functional.mse_loss(output, target, reduction='sum')
+                loss = nn.functional.mse_loss(output, target, reduction='mean')
                 loss.backward()
                 optimizer.step()
                 scheduler.step()
@@ -234,8 +239,8 @@ def initialize_base():
 
 def collect_states(agent, env, count):
     collector = SampleCollector('cuda:0')
-    states, next_states, dist = collector.collect_states(agent, env, count)
-    np.save('./states', {'states': states, 'next_states': next_states, 'dist': dist})
+    states, next_states = collector.collect_states(agent, env, count)
+    np.save('./states', {'states': states, 'next_states': next_states})
 
 
 def collect_samples(agent, path, dest, mode='baseline'):
@@ -243,25 +248,40 @@ def collect_samples(agent, path, dest, mode='baseline'):
 
     states = data['states']
     next_states = data['next_states']
-    dist = data['dist']
 
     collector = SampleCollector('cuda:0')
 
     samples = None
+    dist = None
     if mode == 'baseline':
-        samples = collector.collect_samples_baseline(agent, states, next_states)
+        samples, dist = collector.collect_samples_baseline(agent, states, next_states)
     if mode == 'rnd':
-        samples = collector.collect_samples_rnd(agent, states, next_states)
+        samples, dist = collector.collect_samples_rnd(agent, states, next_states)
     if mode == 'cnd':
-        samples = collector.collect_samples_cnd(agent, states, next_states)
+        samples, dist = collector.collect_samples_cnd(agent, states, next_states)
     np.save(dest, {'samples': samples, 'dist': dist})
 
 
-def compute_metric_tensor(path, dest, lr, batch=1024, gpu=0):
+# def compute_metric_tensor(path, dest, lr, batch=1024, gpu=0):
+#     device = 'cuda:{0:d}'.format(gpu)
+#     metric_tensor = MetricTensor(device)
+#     data = np.load(path, allow_pickle=True).item()
+#     dataset = SampleDataset(torch.tensor(data['samples'], device=device, dtype=torch.float32), torch.tensor(data['dist'], device=device, dtype=torch.float32))
+#     dataloader = DataLoader(dataset, batch_size=batch, shuffle=True)
+#     result = metric_tensor.compute(dataloader, dim=512, lr=lr)
+#
+#     plt.figure(figsize=(20.48, 20.48))
+#     sns.heatmap(result.cpu().numpy(), cmap='coolwarm')
+#     # plt.show()
+#     plt.savefig(dest + '.png')
+#     np.save(dest, result.cpu().numpy())
+
+def compute_metric_tensor(src, dst, dest, lr, batch=1024, gpu=0):
     device = 'cuda:{0:d}'.format(gpu)
     metric_tensor = MetricTensor(device)
-    data = np.load(path, allow_pickle=True).item()
-    dataset = SampleDataset(torch.tensor(data['samples'], device=device, dtype=torch.float32), torch.tensor(data['dist'], device=device, dtype=torch.float32))
+    src_data = np.load(src, allow_pickle=True).item()
+    dst_data = np.load(dst, allow_pickle=True).item()
+    dataset = SampleDataset(torch.tensor(dst_data['samples'], device=device, dtype=torch.float32), torch.tensor(src_data['dist'], device=device, dtype=torch.float32))
     dataloader = DataLoader(dataset, batch_size=batch, shuffle=True)
     result = metric_tensor.compute(dataloader, dim=512, lr=lr)
 

@@ -1,3 +1,5 @@
+import time
+
 import torch
 
 from utils.RunningAverage import RunningStats
@@ -13,6 +15,7 @@ class CNDMotivation:
 
     def train(self, memory, indices):
         if indices:
+            start = time.time()
             sample, size = memory.sample_batches(indices)
 
             for i in range(size):
@@ -23,6 +26,9 @@ class CNDMotivation:
                 loss = self._network.loss_function(states, next_states)
                 loss.backward()
                 self._optimizer.step()
+
+            end = time.time()
+            print("CND motivation training time {0:.2f}s".format(end - start))
 
     def error(self, state0):
         return self._network.error(state0)
