@@ -2,7 +2,8 @@ import gym
 import torch
 
 from agents import TYPE
-from agents.PPOAtariAgent import PPOAtariAgent, PPOAtariRNDAgent, PPOAtariForwardModelAgent, PPOAtariQRNDAgent, PPOAtariDOPAgent, PPOAtariSRRNDAgent, PPOAtariDOPAgent, PPOAtariCNDAgent
+from agents.PPOAtariAgent import PPOAtariAgent, PPOAtariRNDAgent, PPOAtariForwardModelAgent, PPOAtariQRNDAgent, PPOAtariDOPAgent, PPOAtariSRRNDAgent, PPOAtariDOPAgent, PPOAtariCNDAgent, \
+    PPOAtariFEDRefAgent
 from experiment.ppo_nenv_experiment import ExperimentNEnvPPO
 from utils.AtariWrapper import WrapperHardAtari
 from utils.MultiEnvWrapper import MultiEnvParallel
