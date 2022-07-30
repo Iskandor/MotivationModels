@@ -162,6 +162,23 @@ def plot_detail_cnd(data, path, window=1000):
         plt.close()
 
 
+def plot_detail_rnd_legacy(data, path, window=1000):
+    num_rows, num_cols = 2,2
+
+    for i in tqdm(range(len(data))):
+        fig = plt.figure(figsize=(num_cols * 7.00, num_rows * 7.00))
+
+        plot_chart(num_rows, num_cols, 1, 're', data[i], window, color='blue', legend='extrinsic reward')
+        plot_chart(num_rows, num_cols, 2, 'score', data[i], window, color='blue', legend='score')
+        plot_chart(num_rows, num_cols, 3, 'ri', data[i], window, color='red', legend='intrinsic reward')
+        plot_chart(num_rows, num_cols, 4, 'error', data[i], window, color='green', legend='error')
+        # plot_chart(num_rows, num_cols, 5, 'loss_prediction', data[i], window, color='magenta', legend='loss prediction', legend_loc=9)
+        # plot_chart(num_rows, num_cols, 6, 'ext_value', data[i], window, color='blue', legend='extrinsic value')
+        # plot_chart(num_rows, num_cols, 7, 'int_value', data[i], window, color='red', legend='intrinsic value')
+
+        plt.savefig("{0:s}_{1:d}.png".format(path, i))
+        plt.close()
+
 def plot_detail_rnd(data, path, window=1000):
     num_rows, num_cols = get_rows_cols(data[0])
 
