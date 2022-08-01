@@ -240,18 +240,49 @@ if __name__ == '__main__':
     #      {'env': 'montezuma', 'algorithm': 'ppo', 'model': 'rnd', 'id': '2'}
     # ]
 
-
+#['blue', 'red', 'green', 'magenta', 'cyan', 'orange', 'purple', 'gray', 'navy', 'maroon', 'brown', 'apricot', 'olive', 'beige', 'yellow'],
     config = [
-         {'env': 'gravitar', 'algorithm': 'ppo', 'model': 'baseline', 'id': '1', 'legacy': True},
-         {'env': 'gravitar', 'algorithm': 'ppo', 'model': 'rnd', 'id': '2', 'legacy': True}
+        # {'env': 'gravitar', 'algorithm': 'ppo', 'model': 'baseline', 'id': '1', 'legacy': True, 'color': 'blue', 'name': 'baseline'},
+       #   {'env': 'gravitar', 'algorithm': 'ppo', 'model': 'rnd', 'id': '1', 'legacy': True, 'color': 'red', 'name': 'rnd'},
+       #   {'env': 'gravitar', 'algorithm': 'ppo', 'model': 'rnd', 'id': '2', 'legacy': True, 'color': 'blue', 'name': 'rnd 0.5_x'},
+       #   {'env': 'gravitar', 'algorithm': 'ppo', 'model': 'rnd', 'id': '3', 'legacy': True, 'color': 'green', 'name': 'rnd L1_x'},
+       #   {'env': 'gravitar', 'algorithm': 'ppo', 'model': 'rnd', 'id': '4', 'legacy': True, 'color': 'blue', 'name': 'rnd 0.5'},
+       #   {'env': 'gravitar', 'algorithm': 'ppo', 'model': 'rnd', 'id': '5', 'legacy': True, 'color': 'green', 'name': 'rnd L1'},
+       #   {'env': 'gravitar', 'algorithm': 'ppo', 'model': 'rnd', 'id': '6', 'legacy': True, 'color': 'magenta', 'name': 'rnd 0.25'},
+       #   {'env': 'gravitar', 'algorithm': 'ppo', 'model': 'rnd', 'id': '7', 'legacy': True, 'color': 'orange', 'name': 'rnd 0.1'},
+       #
+       # {'env': 'gravitar', 'algorithm': 'ppo', 'model': 'rnd', 'id': '8', 'legacy': True, 'color': 'blue', 'name': 'rnd 0.5|0.5'},
+       #  {'env': 'gravitar', 'algorithm': 'ppo', 'model': 'rnd', 'id': '9', 'legacy': True, 'color': 'orange', 'name': 'rnd L1|L1'},
+       #
+       #  #fwd
+       #  {'env': 'gravitar', 'algorithm': 'ppo', 'model': 'fwd', 'id': '301', 'color': 'red', 'name': 'fwd'},
+       #   {'env': 'gravitar', 'algorithm': 'ppo', 'model': 'fwd', 'id': '302', 'color': 'blue', 'name': 'fwd detached'},
+       #
+       #
+       #  #icm
+       #   {'env': 'gravitar', 'algorithm': 'ppo', 'model': 'icm', 'id': '400', 'color': 'blue', 'name': 'icm'},
+
+
+
+       # #montezuma......................................
+       #   {'env': 'montezuma', 'algorithm': 'ppo', 'model': 'rnd', 'id': '2', 'color': 'orange', 'name': 'rnd'},
+       #   {'env': 'montezuma', 'algorithm': 'ppo', 'model': 'fwd', 'id': '22', 'color': 'red', 'name': 'fwd'},
+       #   {'env': 'montezuma', 'algorithm': 'ppo', 'model': 'icm', 'id': '23', 'color': 'blue', 'name': 'icm'},
+
+
+      #venture
+         {'env': 'venture', 'algorithm': 'ppo', 'model': 'rnd', 'id': '2', 'color': 'orange', 'name': 'rnd'},
+         {'env': 'venture', 'algorithm': 'ppo', 'model': 'fwd', 'id': '4', 'color': 'red', 'name': 'fwd'},
+         {'env': 'venture', 'algorithm': 'ppo', 'model': 'icm', 'id': '5', 'color': 'blue', 'name': 'icm'},
 
     ]
 
     #plot('grav', config, keys=['re'], plot_details=[1], window=400000)
-    plot('gravitar_re', config, keys=['re'], labels=['external reward per episode'], plot_details=[1, 2], window=400000)
-    plot('gravitar_score', config, keys=['score'], labels=['score per episode'], plot_details=[1, 2], window=400000)
-    # plot('gravitar_ri', config, keys=['ri'], labels=['internal reward per step'], plot_details=[400], window=40)
+    #plot('gravitar_re', config, keys=['re'], labels=['external reward per episode'], plot_details=[i for i in range(500)], window=400000)
+    #plot('gravitar_score', config, keys=['score'], labels=['score per episode'], plot_details=[i for i in range(500)], window=400000)
+    #plot('gravitar_ri', config, keys=['ri'], labels=['internal reward per step'], plot_details=[i for i in range(500)], window=400000)
     # plot('gravitar_loss', config, keys=['loss_prediction'], labels=['loss_prediction per step'], plot_details=[400], window=40)
 
-    #compute_table_values(config, keys=['re', 'ri'])
+    compute_table_values(config, keys=['re', 'ri'])
+    #compute_table_values(config, keys=['re'])
 # plot('gravitar_final', config, plot_details=[1], window=100000, average_per_step=True, has_score=True)

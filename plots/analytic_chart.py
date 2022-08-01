@@ -115,7 +115,7 @@ def plot_chart(num_rows, num_cols, index, key, data, window, color, legend, lege
     plt.legend([legend], loc=legend_loc)
 
 
-def plot_multiple_models(keys, data, legend, labels, colors, path, window=1):
+def plot_multiple_models(keys, data, legend, labels, colors, config, path, window=1):
     num_rows = 1
     num_cols = len(keys)
 
@@ -131,7 +131,11 @@ def plot_multiple_models(keys, data, legend, labels, colors, path, window=1):
         for index, d in enumerate(data):
             iv, mu, sigma = prepare_data(d, key, key_values[key], window)
             # mu = np.clip(mu, 0, 0.1)
-            lines.append(plot_curve(ax, {'mean': mu, 'std': sigma}, iv, color=colors[index], start=0.0))
+            #lines.append(plot_curve(ax, {'mean': mu, 'std': sigma}, iv, color=colors[index], start=0.0))
+            #lines.append(plot_curve(ax, {'mean': mu}, iv, color=colors[index], start=0.0))
+
+            lines.append(plot_curve(ax, {'mean': mu, 'std': sigma}, iv, color=config[index]['color'], start=0.0))
+            #lines.append(plot_curve(ax, {'mean': mu}, iv, color=config[index]['color'], start=0.0))
 
         ax.legend(lines, legend[:len(data)])
 

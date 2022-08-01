@@ -22,7 +22,10 @@ def prepare_data(keys):
         path = os.path.join(data_root, algorithm, model, env, id)
         # data.append(load_data(path, ['re', 're_raw', 'ri', 'hid', 'aa', 'var', 'error', 'ext_grad', 'reg_grad', 'dop_grad'], ['loss', 'regterm'], ['re', 're_raw', 'ri']))
         if legacy:
-            data.append(convert_data(load_data2(path)))
+            if model == 'baseline':
+                data.append(convert_baseline_data(load_data2(path)))
+            else:
+                data.append(convert_data(load_data2(path)))
         else:
             data.append(load_analytic_files(path))
 
@@ -80,11 +83,30 @@ def convert_data(data):
             're': {'step': steps, 'sum': np.expand_dims(data['re'][i], axis=1)},
             'score': {'step': steps, 'sum': np.expand_dims(data['score'][i], axis=1)},
             #TODO toto pada pre baseline kedze nema internal reward
-#            'ri': {'step': steps, 'mean': np.expand_dims(data['ri'][i] / data['steps'][i], axis=1)}
+            'ri': {'step': steps, 'mean': np.expand_dims(data['ri'][i] / data['steps'][i], axis=1)},
+            'error': {'step': steps, 'mean': np.expand_dims(data['error'][i] / data['steps'][i], axis=1)}
+
         }
         result.append(v)
 
     return result
+
+def convert_baseline_data(data):
+    experiments_size = len(data['re'])
+
+    result = []
+
+    for i in range(experiments_size):
+        steps = np.expand_dims(np.cumsum(data['steps'][i]), axis=1)
+        v = {
+            're': {'step': steps, 'sum': np.expand_dims(data['re'][i], axis=1)},
+            'score': {'step': steps, 'sum': np.expand_dims(data['score'][i], axis=1)},
+            #TODO toto pada pre baseline kedze nema internal reward
+        }
+        result.append(v)
+
+    return result
+
 
 
 def load_data2(folder):

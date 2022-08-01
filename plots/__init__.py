@@ -16,7 +16,8 @@ def plot(name, config, keys, labels=None, legend=None, plot_overview=True, plot_
         labels = keys
 
     if legend is None:
-        legend = ['{0:s} {1:s}'.format(key['model'], key['id']) for key in config]
+        #legend = ['{0:s} {1:s}'.format(key['model'], key['id']) for key in config]
+        legend = [key['name'] for key in config]
 
     if plot_overview:
         path = os.path.join(plot_root, algorithm, env)
@@ -29,6 +30,7 @@ def plot(name, config, keys, labels=None, legend=None, plot_overview=True, plot_
             legend,
             labels,
             ['blue', 'red', 'green', 'magenta', 'cyan', 'orange', 'purple', 'gray', 'navy', 'maroon', 'brown', 'apricot', 'olive', 'beige', 'yellow'],
+            config,
             path,
             window)
 
