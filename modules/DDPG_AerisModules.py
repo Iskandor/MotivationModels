@@ -130,14 +130,6 @@ class DDPGAerisNetworkIM(DDPGAerisNetwork):
         self.inverse_model = InverseModelAeris(self.encoder, action_dim, config)
 
 
-class DDPGAerisNetworkFIM(DDPGAerisNetwork):
-    def __init__(self, input_shape, action_dim, config):
-        super(DDPGAerisNetworkFIM, self).__init__(input_shape, action_dim, config)
-        self.encoder = EncoderAeris(input_shape, action_dim, config)
-        self.forward_model = ForwardModelEncoderAeris(self.encoder, action_dim, config, encoder_loss=False)
-        self.inverse_model = InverseModelAeris(self.encoder, action_dim, config)
-
-
 class DDPGAerisNetworkSU(DDPGAerisNetwork):
     def __init__(self, input_shape, action_dim, config):
         super(DDPGAerisNetworkSU, self).__init__(input_shape, action_dim, config)

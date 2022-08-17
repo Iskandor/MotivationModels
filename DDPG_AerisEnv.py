@@ -1,7 +1,7 @@
 import gym
 import gym_aeris.envs
 
-from agents.DDPGAerisAgent import DDPGAerisAgent, DDPGAerisForwardModelAgent, DDPGAerisForwardModelEncoderAgent, DDPGAerisInverseModelAgent, DDPGAerisRNDModelAgent, DDPGAerisForwardInverseModelAgent, \
+from agents.DDPGAerisAgent import DDPGAerisAgent, DDPGAerisForwardModelAgent, DDPGAerisForwardModelEncoderAgent, DDPGAerisInverseModelAgent, DDPGAerisRNDModelAgent, \
     DDPGAerisGatedMetacriticModelAgent, DDPGAerisMetaCriticRNDModelAgent, DDPGAerisQRNDModelAgent, DDPGAerisDOPAgent, DDPGAerisDOPRefAgent, \
     DDPGAerisDOPV2QAgent, DDPGAerisDOPV2Agent, DDPGAerisDOPV3Agent, DDPGAerisVanillaDOPAgent
 from experiment.ddpg_experiment import ExperimentDDPG
@@ -72,19 +72,6 @@ def run_inverse_model(env_name, config, trial):
 
     agent = DDPGAerisInverseModelAgent(state_dim, action_dim, config)
     experiment.run_inverse_model(agent, trial)
-
-    env.close()
-
-
-def run_forward_inverse_model(env_name, config, trial):
-    env = create_env(env_name)
-    state_dim = env.observation_space.shape
-    action_dim = env.action_space.shape[0]
-
-    experiment = ExperimentDDPG(env_name, env, config)
-
-    agent = DDPGAerisForwardInverseModelAgent(state_dim, action_dim, config)
-    experiment.run_forward_inverse_model(agent, trial)
 
     env.close()
 

@@ -19,10 +19,6 @@ def run_inverse_model(config, i):
     DDPG_AerisEnv.run_inverse_model(env_name, config, i)
 
 
-def run_forward_inverse_model(config, i):
-    DDPG_AerisEnv.run_forward_inverse_model(env_name, config, i)
-
-
 def run_rnd_model(config, i):
     DDPG_AerisEnv.run_rnd_model(env_name, config, i)
 
