@@ -6,8 +6,10 @@ from modules import init_orthogonal
 from modules.dop_models.DOPModelAtari import DOPModelAtari, DOPControllerAtari, DOPActorAtari, DOPGeneratorAtari
 from modules.PPO_Modules import DiscreteHead, Actor, Critic2Heads, ActorNHeads, CriticHead, Critic2NHeads
 from modules.encoders.EncoderAtari import EncoderAtari, AutoEncoderAtari, VAEAtari, DDMEncoderAtari, ST_DIMEncoderAtari
+from modules.forward_models.FWDModelAtari import FWDModelAtari
 from modules.forward_models.ForwardModelAtari import ForwardModelAtari
-from modules.rnd_models.RNDModelAtari import QRNDModelAtari, RNDModelAtari, CNDModelAtari, FEDRefModelAtari, BarlowTwinsModelAtari
+from modules.forward_models.ICMModelAtari import ICMModelAtari
+from modules.rnd_models.RNDModelAtari import QRNDModelAtari, RNDModelAtari, CNDModelAtari
 
 
 class PPOAtariNetwork(torch.nn.Module):
@@ -33,7 +35,8 @@ class PPOAtariNetwork(torch.nn.Module):
             nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(fc_inputs_count, self.feature_dim)
+            nn.Linear(fc_inputs_count, self.feature_dim),
+            nn.ReLU()
         )
 
         init_orthogonal(self.features[0], np.sqrt(2))
@@ -43,24 +46,22 @@ class PPOAtariNetwork(torch.nn.Module):
         init_orthogonal(self.features[9], np.sqrt(2))
 
         self.critic = nn.Sequential(
-            nn.ReLU(),
-            nn.Linear(self.feature_dim, self.feature_dim),
-            nn.ReLU(),
-            nn.Linear(self.feature_dim, 1)
+            torch.nn.Linear(self.feature_dim, self.feature_dim),
+            torch.nn.ReLU(),
+            torch.nn.Linear(self.feature_dim, 1)
         )
 
-        init_orthogonal(self.critic[1], 0.1)
-        init_orthogonal(self.critic[3], 0.01)
+        init_orthogonal(self.critic[0], 0.1)
+        init_orthogonal(self.critic[2], 0.01)
 
         self.actor = nn.Sequential(
-            nn.ReLU(),
-            nn.Linear(self.feature_dim, self.feature_dim),
-            nn.ReLU(),
+            torch.nn.Linear(self.feature_dim, self.feature_dim),
+            torch.nn.ReLU(),
             DiscreteHead(self.feature_dim, action_dim)
         )
 
-        init_orthogonal(self.actor[1], 0.01)
-        init_orthogonal(self.actor[3], 0.01)
+        init_orthogonal(self.actor[0], 0.01)
+        init_orthogonal(self.actor[2], 0.01)
 
         self.actor = Actor(self.actor, head, self.action_dim)
 
@@ -131,6 +132,18 @@ class PPOAtariNetworkRND(PPOAtariMotivationNetwork):
         self.rnd_model = RNDModelAtari(input_shape, self.action_dim, config)
 
 
+class PPOAtariNetworkFWD(PPOAtariMotivationNetwork):
+    def __init__(self, input_shape, action_dim, config, head):
+        super(PPOAtariNetworkFWD, self).__init__(input_shape, action_dim, config, head)
+        self.forward_model = FWDModelAtari(input_shape, 512, self.action_dim, config)
+
+
+class PPOAtariNetworkICM(PPOAtariMotivationNetwork):
+    def __init__(self, input_shape, action_dim, config, head):
+        super(PPOAtariNetworkICM, self).__init__(input_shape, action_dim, config, head)
+        self.forward_model = ICMModelAtari(input_shape, 512, self.action_dim, config)
+
+
 class PPOAtariNetworkSRRND(PPOAtariSRMotivationNetwork):
     def __init__(self, input_shape, feature_dim, action_dim, config, head):
         super(PPOAtariNetworkSRRND, self).__init__(feature_dim, action_dim, config, head)
@@ -141,13 +154,7 @@ class PPOAtariNetworkSRRND(PPOAtariSRMotivationNetwork):
 class PPOAtariNetworkCND(PPOAtariMotivationNetwork):
     def __init__(self, input_shape, action_dim, config, head):
         super(PPOAtariNetworkCND, self).__init__(input_shape, action_dim, config, head)
-        self.cnd_model = BarlowTwinsModelAtari(input_shape, action_dim, config)
-
-
-class PPOAtariNetworkFEDRef(PPOAtariMotivationNetwork):
-    def __init__(self, input_shape, action_dim, config, head):
-        super(PPOAtariNetworkFEDRef, self).__init__(input_shape, action_dim, config, head)
-        self.fed_ref_model = FEDRefModelAtari(input_shape, action_dim, self.features, config)
+        self.cnd_model = CNDModelAtari(input_shape, action_dim, config)
 
 
 class PPOAtariNetworkQRND(PPOAtariMotivationNetwork):
