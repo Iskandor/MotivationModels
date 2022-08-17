@@ -20,7 +20,6 @@ def prepare_data(keys):
             legacy = key['legacy']
 
         path = os.path.join(data_root, algorithm, model, env, id)
-        # data.append(load_data(path, ['re', 're_raw', 'ri', 'hid', 'aa', 'var', 'error', 'ext_grad', 'reg_grad', 'dop_grad'], ['loss', 'regterm'], ['re', 're_raw', 'ri']))
         if legacy:
             data.append(convert_data(load_data2(path)))
         else:

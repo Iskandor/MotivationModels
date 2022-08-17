@@ -143,7 +143,7 @@ class ExperimentNEnvPPO:
         trial = trial + config.shift
         step_counter = StepCounter(int(config.steps * 1e6))
 
-        analytic = RNDAnalytic()
+        analytic = ResultCollector()
         analytic.init(n_env, ext_reward=(1,), score=(1,), int_reward=(1,), error=(1,), ext_value=(1,), int_value=(1,))
 
         reward_avg = RunningAverageWindow(100)
@@ -213,7 +213,7 @@ class ExperimentNEnvPPO:
         trial = trial + config.shift
         step_counter = StepCounter(int(config.steps * 1e6))
 
-        analytic = RNDAnalytic()
+        analytic = ResultCollector()
         analytic.init(n_env, ext_reward=(1,), score=(1,), int_reward=(1,), error=(1,), ext_value=(1,), int_value=(1,))
 
         reward_avg = RunningAverageWindow(100)
@@ -453,7 +453,7 @@ class ExperimentNEnvPPO:
         trial = trial + config.shift
         step_counter = StepCounter(int(config.steps * 1e6))
 
-        analytic = RNDAnalytic()
+        analytic = ResultCollector()
         analytic.init(n_env, ext_reward=(1,), score=(1,), int_reward=(1,), error=(1,), feature_space=(1,), state_space=(1,), ext_value=(1,), int_value=(1,))
 
         reward_avg = RunningAverageWindow(100)

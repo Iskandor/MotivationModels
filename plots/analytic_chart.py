@@ -1,12 +1,8 @@
 import math
 from math import sqrt
 
-import matplotlib
-import numpy as np
 import matplotlib.pyplot as plt
-import umap
-from etaprogress.progress import ProgressBar
-
+import numpy as np
 # font = {'family': 'normal',
 #         'weight': 'bold',
 #         'size': 12}

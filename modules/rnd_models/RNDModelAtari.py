@@ -93,7 +93,7 @@ class RNDModelAtari(nn.Module):
         loss *= mask
         loss = loss.sum() / mask.sum()
 
-        analytic = RNDAnalytic()
+        analytic = ResultCollector()
         analytic.update(loss_prediction=loss.unsqueeze(-1).detach())
 
         return loss
@@ -204,7 +204,7 @@ class CNDModelAtari(nn.Module):
         beta1 = 0
         beta2 = self.config.cnd_loss_target_reg
 
-        analytic = CNDAnalytic()
+        analytic = ResultCollector()
         analytic.update(loss_prediction=loss_prediction.unsqueeze(-1).detach(), loss_target=loss_target.unsqueeze(-1).detach(), loss_reg=loss_target_reg.unsqueeze(-1).detach() * beta1, loss_target_norm=loss_target_norm.detach() * beta2)
 
         return loss_prediction * self.config.cnd_loss_pred + (loss_target + loss_target_reg * beta1 + loss_target_norm * beta2) * self.config.cnd_loss_target
@@ -214,7 +214,7 @@ class CNDModelAtari(nn.Module):
         loss_prediction = nn.functional.mse_loss(prediction, target)
         loss_target = self.target_model.loss_function_cdist(self.preprocess(state), self.preprocess(next_state))
 
-        analytic = CNDAnalytic()
+        analytic = ResultCollector()
         analytic.update(loss_prediction=loss_prediction.unsqueeze(-1).detach(), loss_target=loss_target.unsqueeze(-1).detach(), loss_reg=torch.zeros(1), loss_target_norm=torch.zeros(1))
 
         return loss_prediction * self.config.cnd_loss_pred + loss_target * self.config.cnd_loss_target
@@ -387,7 +387,7 @@ class FEDRefModelAtari(nn.Module):
 
         loss_prediction = nn.functional.mse_loss(prediction, target.detach(), reduction='sum')
 
-        analytic = RNDAnalytic()
+        analytic = ResultCollector()
         analytic.update(loss_prediction=loss_prediction.unsqueeze(-1).detach())
 
         return loss_prediction
@@ -530,7 +530,7 @@ class QRNDModelAtari(nn.Module):
         loss *= mask
         loss = loss.sum() / mask.sum()
 
-        analytic = RNDAnalytic()
+        analytic = ResultCollector()
         analytic.update(loss_prediction=loss.unsqueeze(-1).detach())
 
         return loss

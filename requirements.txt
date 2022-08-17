@@ -18,3 +18,7 @@ torch
 tqdm
 umap-learn
 seaborn
+setuptools
+pillow
+torchvision
+scipy

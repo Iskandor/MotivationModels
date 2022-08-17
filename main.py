@@ -28,7 +28,6 @@ import PPO_AerisAvoidHazards
 import PPO_AerisGridSearchA
 import PPO_AerisGridSearchB
 import PPO_AerisNavigate
-import PPO_BitFlip
 import PPO_CartPole
 import PPO_Gravitar
 import PPO_LunarLander
@@ -75,7 +74,6 @@ envs = {
         'mountain_car': PPO_MountainCar,
         'pendulum': PPO_Pendulum,
         'lunar_lander': PPO_LunarLander,
-        'bit_flip': PPO_BitFlip,
     },
     'dqn': {
         'cart_pole': DQN_CartPole
@@ -115,18 +113,6 @@ def run(id, algorithm, env, experiment):
 
     if experiment.model == 'baseline':
         env_class.run_baseline(experiment, id)
-    if experiment.model == 'fm':
-        env_class.run_forward_model(experiment, id)
-    if experiment.model == 'fme':
-        env_class.run_forward_model_encoder(experiment, id)
-    if experiment.model == 'im':
-        env_class.run_inverse_model(experiment, id)
-    if experiment.model == 'fim':
-        env_class.run_forward_inverse_model(experiment, id)
-    if experiment.model == 'rfm':
-        env_class.run_residual_forward_model(experiment, id)
-    if experiment.model == 'vfm':
-        env_class.run_vae_forward_model(experiment, id)
     if experiment.model == 'rnd':
         env_class.run_rnd_model(experiment, id)
     if experiment.model == 'qrnd':
@@ -153,14 +139,6 @@ def run(id, algorithm, env, experiment):
         env_class.run_metalearner_model(experiment, id)
     if experiment.model == 'su':
         env_class.run_metalearner_model(experiment, id)
-    if experiment.model == 'srnd':
-        env_class.run_metalearner_rnd_model(experiment, id)
-    if experiment.model == 'm2':
-        env_class.run_m2_model(experiment, id)
-    if experiment.model == 'm2s':
-        env_class.run_m2s_model(experiment, id)
-    if experiment.model == 'm3':
-        env_class.run_m3_model(experiment, id)
 
 
 def write_command_file(args, experiment):
