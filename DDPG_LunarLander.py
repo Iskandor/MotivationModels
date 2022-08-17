@@ -1,17 +1,7 @@
 import gym
 
 from agents.DDPGAgent import DDPGAgent
-from algorithms.DDPG import DDPG
-from algorithms.ReplayBuffer import ExperienceReplayBuffer
 from experiment.ddpg_experiment import ExperimentDDPG
-from modules import forward_models, metacritic_models, ARCH
-from modules.DDPG_Modules import *
-from modules.M2_Modules import M2Gate
-from modules.forward_models.ForwardModel import ForwardModel
-from modules.metacritic_models import MetaCritic
-from motivation.ForwardModelMotivation import ForwardModelMotivation
-from motivation.M2Motivation import M2Motivation
-from motivation.MetaCriticMotivation import MetaCriticMotivation
 
 
 def run_baseline(config, i):
@@ -32,7 +22,4 @@ def run_forward_model(config, i):
 
 
 def run_metalearner_model(config, i):
-    pass
-
-def run_m2_model(config, i):
     pass

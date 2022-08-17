@@ -5,9 +5,11 @@ import numpy as np
 from modules import init_orthogonal
 from modules.dop_models.DOPModelAtari import DOPModelAtari, DOPControllerAtari, DOPActorAtari, DOPGeneratorAtari
 from modules.PPO_Modules import DiscreteHead, Actor, Critic2Heads, ActorNHeads, CriticHead, Critic2NHeads
-from modules.encoders.EncoderAtari import EncoderAtari, AutoEncoderAtari, VAEAtari, DDMEncoderAtari, ST_DIMEncoderAtari
+from modules.encoders.EncoderAtari import ST_DIMEncoderAtari
+from modules.forward_models.FWDModelAtari import FWDModelAtari
 from modules.forward_models.ForwardModelAtari import ForwardModelAtari
-from modules.rnd_models.RNDModelAtari import QRNDModelAtari, RNDModelAtari, CNDModelAtari, FEDRefModelAtari, BarlowTwinsModelAtari
+from modules.forward_models.ICMModelAtari import ICMModelAtari
+from modules.rnd_models.RNDModelAtari import QRNDModelAtari, RNDModelAtari, CNDModelAtari, BarlowTwinsModelAtari, FEDRefModelAtari
 
 
 class PPOAtariNetwork(torch.nn.Module):
@@ -131,6 +133,18 @@ class PPOAtariNetworkRND(PPOAtariMotivationNetwork):
         self.rnd_model = RNDModelAtari(input_shape, self.action_dim, config)
 
 
+class PPOAtariNetworkFWD(PPOAtariMotivationNetwork):
+    def __init__(self, input_shape, action_dim, config, head):
+        super(PPOAtariNetworkFWD, self).__init__(input_shape, action_dim, config, head)
+        self.forward_model = FWDModelAtari(input_shape, 512, self.action_dim, config)
+
+
+class PPOAtariNetworkICM(PPOAtariMotivationNetwork):
+    def __init__(self, input_shape, action_dim, config, head):
+        super(PPOAtariNetworkICM, self).__init__(input_shape, action_dim, config, head)
+        self.forward_model = ICMModelAtari(input_shape, 512, self.action_dim, config)
+
+
 class PPOAtariNetworkSRRND(PPOAtariSRMotivationNetwork):
     def __init__(self, input_shape, feature_dim, action_dim, config, head):
         super(PPOAtariNetworkSRRND, self).__init__(feature_dim, action_dim, config, head)
@@ -138,17 +152,17 @@ class PPOAtariNetworkSRRND(PPOAtariSRMotivationNetwork):
         self.rnd_model = RNDModelAtari(input_shape, action_dim, config)
 
 
-class PPOAtariNetworkCND(PPOAtariMotivationNetwork):
-    def __init__(self, input_shape, action_dim, config, head):
-        super(PPOAtariNetworkCND, self).__init__(input_shape, action_dim, config, head)
-        # self.cnd_model = BarlowTwinsModelAtari(input_shape, action_dim, config)
-        self.cnd_model = CNDModelAtari(input_shape, action_dim, config)
-
-
 class PPOAtariNetworkFEDRef(PPOAtariMotivationNetwork):
     def __init__(self, input_shape, action_dim, config, head):
         super(PPOAtariNetworkFEDRef, self).__init__(input_shape, action_dim, config, head)
         self.fed_ref_model = FEDRefModelAtari(input_shape, action_dim, self.features, config)
+
+
+class PPOAtariNetworkCND(PPOAtariMotivationNetwork):
+    def __init__(self, input_shape, action_dim, config, head):
+        super(PPOAtariNetworkCND, self).__init__(input_shape, action_dim, config, head)
+        self.cnd_model = BarlowTwinsModelAtari(input_shape, action_dim, config)
+        # self.cnd_model = CNDModelAtari(input_shape, action_dim, config)
 
 
 class PPOAtariNetworkQRND(PPOAtariMotivationNetwork):

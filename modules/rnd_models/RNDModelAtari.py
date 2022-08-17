@@ -4,8 +4,6 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-from analytic.CNDAnalytic import CNDAnalytic
-from analytic.RNDAnalytic import RNDAnalytic
 from analytic.ResultCollector import ResultCollector
 from modules import init_orthogonal
 from modules.encoders.EncoderAtari import ST_DIMEncoderAtari, BarlowTwinsEncoderAtari

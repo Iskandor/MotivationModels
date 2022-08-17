@@ -1,21 +1,11 @@
-import time
-
-import gym
-import numpy as np
-import psutil
-import pybulletgym
 import numpy
+import numpy as np
 import torch
-# import umap
-import umap
 from etaprogress.progress import ProgressBar
 from gym.wrappers.monitoring.video_recorder import VideoRecorder
-from pyclustering.cluster.center_initializer import kmeans_plusplus_initializer
 from scipy.spatial.distance import cdist
-from pyclustering.cluster.kmeans import kmeans, kmeans_visualizer
 
 from analytic.DOPAnalytic import DOPAnalytic
-from analytic.RNDAnalytic import RNDAnalytic
 from exploration.ContinuousExploration import GaussianExploration
 from utils import stratify_sampling
 from utils.RunningAverage import RunningAverageWindow
@@ -714,88 +704,6 @@ class ExperimentDDPG:
             'fmr': numpy.array(train_fm_rewards[:step_limit]),
             'mce': numpy.array(train_mc_errors[:step_limit]),
             'mcr': numpy.array(train_mc_rewards[:step_limit])
-        }
-        numpy.save('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
-
-    def run_m2_model(self, agent, trial):
-        config = self._config
-        trial = trial + config.shift
-
-        step_limit = int(config.steps * 1e6)
-        steps = 0
-
-        states = []
-
-        steps_per_episode = []
-        train_fm_errors = []
-        train_ext_rewards = []
-        train_int_rewards = []
-        train_m2_weight = []
-        reward_avg = RunningAverageWindow(100)
-        step_avg = RunningAverageWindow(100)
-
-        bar = ProgressBar(config.steps * 1e6, max_width=40)
-        exploration = GaussianExploration(config.sigma, 0.01, config.steps * config.exploration_time * 1e6)
-
-        while steps < step_limit:
-            state0 = torch.tensor(self._env.reset(), dtype=torch.float32).unsqueeze(0).to(config.device)
-            im0 = torch.zeros((1, 1), dtype=torch.float32)
-            error0 = torch.zeros((1, 1), dtype=torch.float32)
-            done = False
-            train_ext_reward = 0
-            train_int_reward = 0
-            train_steps = 0
-
-            while not done:
-                train_steps += 1
-                states.append(state0.squeeze(0))
-                action0 = exploration.explore(agent.get_action(state0))
-                next_state, reward, done, _ = self._env.step(agent.convert_action(action0))
-                reward = self.transform_reward(reward)
-                state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0).to(config.device)
-
-                weight = agent.motivation.weight(agent.compose_gate_state(im0, error0))
-                im1 = agent.motivation.reward(state0, action0, weight, state1)
-
-                train_ext_reward += reward
-                train_int_reward += im1.item()
-                error1 = agent.network.forward_model.error(state0, action0, state1)
-                train_fm_errors.append(error1.item())
-                train_m2_weight.append(weight.squeeze(0).numpy())
-
-                agent.train(state0, action0, state1, im0, error0, weight, im1, error1, reward, done)
-
-                state0 = state1
-                im0 = im1
-                error0 = error1
-
-            steps += train_steps
-            if steps > step_limit:
-                train_steps -= steps - step_limit
-            bar.numerator = steps
-            exploration.update(steps)
-
-            reward_avg.update(train_ext_reward)
-            step_avg.update(train_steps)
-            steps_per_episode.append(train_steps)
-            train_ext_rewards.append(train_ext_reward)
-            train_int_rewards.append(train_int_reward)
-
-            print('Run {0:d} step {1:d} sigma {2:f} training [ext. reward {3:f} int. reward {4:f} steps {5:d}] avg. ext. reward {6:f} avg. steps {7:f}'.format(trial, steps, exploration.sigma,
-                                                                                                                                                               train_ext_reward, train_int_reward,
-                                                                                                                                                               train_steps, reward_avg.value(),
-                                                                                                                                                               step_avg.value()))
-            print(bar)
-
-        agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
-
-        print('Saving data...')
-        save_data = {
-            'steps': numpy.array(steps_per_episode),
-            're': numpy.array(train_ext_rewards),
-            'ri': numpy.array(train_int_rewards),
-            'fme': numpy.array(train_fm_errors[:step_limit]),
-            'm2w': numpy.array(train_m2_weight[:step_limit])
         }
         numpy.save('ddpg_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
 
