@@ -6,8 +6,9 @@ import numpy as np
 
 from analytic.CNDAnalytic import CNDAnalytic
 from analytic.RNDAnalytic import RNDAnalytic
+from analytic.ResultCollector import ResultCollector
 from modules import init_orthogonal
-from modules.encoders.EncoderAtari import ST_DIMEncoderAtari
+from modules.encoders.EncoderAtari import ST_DIMEncoderAtari, BarlowTwinsEncoderAtari
 from utils.RunningAverage import RunningStatsSimple
 
 
@@ -138,13 +139,14 @@ class CNDModelAtari(nn.Module):
             nn.Linear(self.feature_dim, self.feature_dim)
         )
 
-        init_orthogonal(self.model[0], np.sqrt(2))
-        init_orthogonal(self.model[2], np.sqrt(2))
-        init_orthogonal(self.model[4], np.sqrt(2))
-        init_orthogonal(self.model[6], np.sqrt(2))
-        init_orthogonal(self.model[9], np.sqrt(2))
-        init_orthogonal(self.model[11], np.sqrt(2))
-        init_orthogonal(self.model[13], np.sqrt(2))
+        gain = sqrt(2)
+        init_orthogonal(self.model[0], gain)
+        init_orthogonal(self.model[2], gain)
+        init_orthogonal(self.model[4], gain)
+        init_orthogonal(self.model[6], gain)
+        init_orthogonal(self.model[9], gain)
+        init_orthogonal(self.model[11], gain)
+        init_orthogonal(self.model[13], gain)
 
     def preprocess(self, state):
         if self.config.cnd_preprocess == 0:
@@ -195,6 +197,7 @@ class CNDModelAtari(nn.Module):
         prediction_f5, prediction, target_f5, target = out['predicted_f5'], out['predicted_code'], out['target_f5'], out['target_code']
 
         loss_prediction = nn.functional.mse_loss(prediction, target.detach(), reduction='sum') + nn.functional.mse_loss(prediction_f5, target_f5.detach(), reduction='sum')
+        # + nn.functional.mse_loss(prediction.detach(), target, reduction='mean')
 
         loss_target, loss_target_reg, loss_target_norm = self.target_model.loss_function_crossentropy(self.preprocess(state), self.preprocess(next_state))
 
@@ -218,6 +221,176 @@ class CNDModelAtari(nn.Module):
 
     def loss_function(self, state, next_state):
         return self.loss_function_crossentropy(state, next_state)
+
+    @staticmethod
+    def k_distance(k, prediction, target, reduction='sum'):
+        ret = torch.abs(target - prediction) + 1e-8
+        if reduction == 'sum':
+            ret = ret.pow(k).sum(dim=1, keepdim=True)
+        if reduction == 'mean':
+            ret = ret.pow(k).mean(dim=1, keepdim=True)
+
+        return ret
+
+    def update_state_average(self, state):
+        self.state_average.update(state)
+
+
+class BarlowTwinsModelAtari(nn.Module):
+    def __init__(self, input_shape, action_dim, config):
+        super(BarlowTwinsModelAtari, self).__init__()
+
+        self.config = config
+        self.action_dim = action_dim
+
+        input_channels = 1
+        # input_channels = input_shape[0]
+        input_height = input_shape[1]
+        input_width = input_shape[2]
+        self.input_shape = (input_channels, input_height, input_width)
+        self.feature_dim = 512
+
+        fc_inputs_count = 128 * (input_width // 8) * (input_height // 8)
+
+        self.state_average = RunningStatsSimple((4, input_height, input_width), config.device)
+
+        self.target_model = BarlowTwinsEncoderAtari(self.input_shape, self.feature_dim, config)
+
+        self.model = nn.Sequential(
+            nn.Conv2d(input_channels, 32, kernel_size=3, stride=2, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=2, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(fc_inputs_count, self.feature_dim),
+            nn.ELU(),
+            nn.Linear(self.feature_dim, self.feature_dim),
+            nn.ELU(),
+            nn.Linear(self.feature_dim, self.feature_dim)
+        )
+
+        gain = sqrt(2)
+        init_orthogonal(self.model[0], gain)
+        init_orthogonal(self.model[2], gain)
+        init_orthogonal(self.model[4], gain)
+        init_orthogonal(self.model[6], gain)
+        init_orthogonal(self.model[9], gain)
+        init_orthogonal(self.model[11], gain)
+        init_orthogonal(self.model[13], gain)
+
+    def preprocess(self, state):
+        return state[:, 0, :, :].unsqueeze(1)
+
+    def forward(self, state):
+        predicted_code = self.model(self.preprocess(state))
+        target_code = self.target_model(self.preprocess(state))
+
+        return predicted_code, target_code
+
+    def error(self, state):
+        with torch.no_grad():
+            prediction, target = self(state)
+            error = self.k_distance(self.config.cnd_error_k, prediction, target, reduction='mean')
+
+        return error
+
+    def loss_function(self, state, next_state):
+        prediction, target = self(state)
+
+        loss_prediction = nn.functional.mse_loss(prediction, target.detach(), reduction='mean')
+        loss_target = self.target_model.loss_function(self.preprocess(state), self.preprocess(next_state))
+
+        analytic = ResultCollector()
+        analytic.update(loss_prediction=loss_prediction.unsqueeze(-1).detach(), loss_target=loss_target.unsqueeze(-1).detach())
+
+        return loss_prediction + loss_target
+
+    @staticmethod
+    def k_distance(k, prediction, target, reduction='sum'):
+        ret = torch.abs(target - prediction) + 1e-8
+        if reduction == 'sum':
+            ret = ret.pow(k).sum(dim=1, keepdim=True)
+        if reduction == 'mean':
+            ret = ret.pow(k).mean(dim=1, keepdim=True)
+
+        return ret
+
+    def update_state_average(self, state):
+        self.state_average.update(state)
+
+
+class FEDRefModelAtari(nn.Module):
+    def __init__(self, input_shape, action_dim, target_model, config):
+        super(FEDRefModelAtari, self).__init__()
+
+        self.config = config
+        self.action_dim = action_dim
+
+        input_channels = input_shape[0]
+        input_height = input_shape[1]
+        input_width = input_shape[2]
+        self.input_shape = (input_channels, input_height, input_width)
+        self.feature_dim = 512
+
+        fc_inputs_count = 128 * (input_width // 8) * (input_height // 8)
+
+        self.state_average = RunningStatsSimple((4, input_height, input_width), config.device)
+
+        self.target_model = target_model
+
+        self.model = nn.Sequential(
+            nn.Conv2d(input_channels, 32, kernel_size=3, stride=2, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=2, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(fc_inputs_count, self.feature_dim),
+            nn.ELU(),
+            nn.Linear(self.feature_dim, self.feature_dim),
+            nn.ELU(),
+            nn.Linear(self.feature_dim, self.feature_dim)
+        )
+
+        gain = 1
+        init_orthogonal(self.model[0], gain)
+        init_orthogonal(self.model[2], gain)
+        init_orthogonal(self.model[4], gain)
+        init_orthogonal(self.model[6], gain)
+        init_orthogonal(self.model[9], gain)
+        init_orthogonal(self.model[11], gain)
+        init_orthogonal(self.model[13], gain)
+
+    def forward(self, state):
+        predicted_code = self.model(state)
+        target_code = self.target_model(state).detach()
+
+        return predicted_code, target_code
+
+    def error(self, state):
+        with torch.no_grad():
+            prediction, target = self(state)
+
+            error = self.k_distance(2, prediction, target, reduction='mean')
+
+        return error
+
+    def loss_function(self, state):
+        prediction, target = self(state)
+
+        loss_prediction = nn.functional.mse_loss(prediction, target.detach(), reduction='sum')
+
+        analytic = RNDAnalytic()
+        analytic.update(loss_prediction=loss_prediction.unsqueeze(-1).detach())
+
+        return loss_prediction
 
     @staticmethod
     def k_distance(k, prediction, target, reduction='sum'):

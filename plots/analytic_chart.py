@@ -97,7 +97,7 @@ def get_rows_cols(data):
     return rows, cols
 
 
-def plot_chart(num_rows, num_cols, index, key, data, window, color, legend, legend_loc=4):
+def plot_chart(num_rows, num_cols, index, key, data, value_key, window, color, legend, legend_loc=4):
     ax = plt.subplot(num_rows, num_cols, index)
     ax.set_xlabel('steps')
     ax.set_ylabel(legend)
@@ -106,9 +106,8 @@ def plot_chart(num_rows, num_cols, index, key, data, window, color, legend, lege
     stats = {}
     iv = None
 
-    for k in data[key]:
-        if k != 'step':
-            iv, stats[k] = prepare_data_instance(data[key]['step'].squeeze(), data[key][k].squeeze(), window)
+    for k in value_key:
+        iv, stats[k] = prepare_data_instance(data[key]['step'].squeeze(), data[key][k].squeeze(), window)
 
     # plot_curve(ax, stats, iv, color=color, alpha=1.0, start=0.0, stop=1.0)
     plot_curve(ax, stats, iv, color=color, alpha=1.0, start=0.01, stop=1.0)
@@ -149,18 +148,22 @@ def plot_detail_cnd(data, path, window=1000):
     for i in tqdm(range(len(data))):
         fig = plt.figure(figsize=(num_cols * 7.00, num_rows * 7.00))
 
-        plot_chart(num_rows, num_cols, 1, 're', data[i], window, color='blue', legend='extrinsic reward')
-        plot_chart(num_rows, num_cols, 2, 'score', data[i], window, color='blue', legend='score')
-        plot_chart(num_rows, num_cols, 3, 'ri', data[i], window, color='red', legend='intrinsic reward')
-        plot_chart(num_rows, num_cols, 4, 'error', data[i], window, color='green', legend='error')
-        plot_chart(num_rows, num_cols, 5, 'loss_prediction', data[i], window, color='magenta', legend='loss prediction', legend_loc=9)
-        plot_chart(num_rows, num_cols, 6, 'loss_target', data[i], window, color='magenta', legend='loss target', legend_loc=9)
-        plot_chart(num_rows, num_cols, 7, 'loss_reg', data[i], window, color='magenta', legend='loss target reg', legend_loc=9)
-        plot_chart(num_rows, num_cols, 8, 'loss_target_norm', data[i], window, color='magenta', legend='loss target norm', legend_loc=9)
-        plot_chart(num_rows, num_cols, 9, 'state_space', data[i], window, color='maroon', legend='state space', legend_loc=9)
-        plot_chart(num_rows, num_cols, 10, 'feature_space', data[i], window, color='maroon', legend='feature space', legend_loc=9)
-        plot_chart(num_rows, num_cols, 11, 'ext_value', data[i], window, color='blue', legend='extrinsic value')
-        plot_chart(num_rows, num_cols, 12, 'int_value', data[i], window, color='red', legend='intrinsic value')
+        plot_chart(num_rows, num_cols, 1, 're', data[i], ['sum'], window, color='blue', legend='extrinsic reward')
+        plot_chart(num_rows, num_cols, 2, 'score', data[i], ['sum'], window, color='blue', legend='score')
+        plot_chart(num_rows, num_cols, 3, 'ri', data[i], ['mean', 'max', 'std'], window, color='red', legend='intrinsic reward')
+        plot_chart(num_rows, num_cols, 4, 'error', data[i], ['mean', 'max', 'std'], window, color='green', legend='error')
+        plot_chart(num_rows, num_cols, 5, 'loss_prediction', data[i], ['val'], window, color='magenta', legend='loss prediction', legend_loc=9)
+        plot_chart(num_rows, num_cols, 6, 'loss_target', data[i], ['val'], window, color='magenta', legend='loss target', legend_loc=9)
+        if 'loss_reg' in data[i]:
+            plot_chart(num_rows, num_cols, 7, 'loss_reg', data[i], ['val'], window, color='magenta', legend='loss target reg', legend_loc=9)
+        if 'loss_target_norm' in data[i]:
+            plot_chart(num_rows, num_cols, 8, 'loss_target_norm', data[i], ['val'], window, color='magenta', legend='loss target norm', legend_loc=9)
+        if 'state_space' in data[i]:
+            plot_chart(num_rows, num_cols, 9, 'state_space', data[i], ['mean', 'max', 'std'], window, color='maroon', legend='state space', legend_loc=9)
+        if 'feature_space' in data[i]:
+            plot_chart(num_rows, num_cols, 10, 'feature_space', data[i], ['mean', 'max', 'std'], window, color='maroon', legend='feature space', legend_loc=9)
+        plot_chart(num_rows, num_cols, 11, 'ext_value', data[i], ['mean', 'max', 'std'], window, color='blue', legend='extrinsic value')
+        plot_chart(num_rows, num_cols, 12, 'int_value', data[i], ['mean', 'max', 'std'], window, color='red', legend='intrinsic value')
 
         plt.savefig("{0:s}_{1:d}.png".format(path, i))
         plt.close()
@@ -189,13 +192,13 @@ def plot_detail_rnd(data, path, window=1000):
     for i in tqdm(range(len(data))):
         fig = plt.figure(figsize=(num_cols * 7.00, num_rows * 7.00))
 
-        plot_chart(num_rows, num_cols, 1, 're', data[i], window, color='blue', legend='extrinsic reward')
-        plot_chart(num_rows, num_cols, 2, 'score', data[i], window, color='blue', legend='score')
-        plot_chart(num_rows, num_cols, 3, 'ri', data[i], window, color='red', legend='intrinsic reward')
-        plot_chart(num_rows, num_cols, 4, 'error', data[i], window, color='green', legend='error')
-        plot_chart(num_rows, num_cols, 5, 'loss_prediction', data[i], window, color='magenta', legend='loss prediction', legend_loc=9)
-        plot_chart(num_rows, num_cols, 6, 'ext_value', data[i], window, color='blue', legend='extrinsic value')
-        plot_chart(num_rows, num_cols, 7, 'int_value', data[i], window, color='red', legend='intrinsic value')
+        plot_chart(num_rows, num_cols, 1, 're', data[i], ['sum'], window, color='blue', legend='extrinsic reward')
+        plot_chart(num_rows, num_cols, 2, 'score', data[i], ['sum'], window, color='blue', legend='score')
+        plot_chart(num_rows, num_cols, 3, 'ri', data[i], ['mean', 'max', 'std'], window, color='red', legend='intrinsic reward')
+        plot_chart(num_rows, num_cols, 4, 'error', data[i], ['mean', 'max', 'std'], window, color='green', legend='error')
+        plot_chart(num_rows, num_cols, 5, 'loss_prediction', data[i], ['val'], window, color='magenta', legend='loss prediction', legend_loc=9)
+        plot_chart(num_rows, num_cols, 6, 'ext_value', data[i], ['mean', 'max', 'std'], window, color='blue', legend='extrinsic value')
+        plot_chart(num_rows, num_cols, 7, 'int_value', data[i], ['mean', 'max', 'std'], window, color='red', legend='intrinsic value')
 
         plt.savefig("{0:s}_{1:d}.png".format(path, i))
         plt.close()

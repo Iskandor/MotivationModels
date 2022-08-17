@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 import numpy as np
+import torchvision
+from torchvision import transforms
 
 from modules import init_orthogonal
 
@@ -410,11 +412,13 @@ class ST_DIM_CNN(nn.Module):
             nn.Linear(self.final_conv_size, feature_dim)
         )
 
-        init_orthogonal(self.main[0], nn.init.calculate_gain('relu'))
-        init_orthogonal(self.main[2], nn.init.calculate_gain('relu'))
-        init_orthogonal(self.main[4], nn.init.calculate_gain('relu'))
-        init_orthogonal(self.main[6], nn.init.calculate_gain('relu'))
-        init_orthogonal(self.main[9], nn.init.calculate_gain('relu'))
+        gain = nn.init.calculate_gain('relu')
+        # gain = 1
+        init_orthogonal(self.main[0], gain)
+        init_orthogonal(self.main[2], gain)
+        init_orthogonal(self.main[4], gain)
+        init_orthogonal(self.main[6], gain)
+        init_orthogonal(self.main[9], gain)
 
         self.local_layer_depth = self.main[4].out_channels
 
@@ -539,3 +543,46 @@ class ST_DIMEncoderAtari(nn.Module):
 
         return loss
 
+
+class BarlowTwinsEncoderAtari(nn.Module):
+    def __init__(self, input_shape, feature_dim, config):
+        super(BarlowTwinsEncoderAtari, self).__init__()
+
+        self.config = config
+        self.input_channels = input_shape[0]
+        self.input_height = input_shape[1]
+        self.input_width = input_shape[2]
+        self.feature_dim = feature_dim
+
+        self.encoder = ST_DIM_CNN(input_shape, feature_dim)
+        self.lam = 5e-3
+
+        self.lam_mask = torch.maximum(torch.ones(self.feature_dim, self.feature_dim, device=self.config.device) * self.lam, torch.eye(self.feature_dim, self.feature_dim, device=self.config.device))
+
+    def forward(self, state):
+        return self.encoder(state)
+
+    def loss_function(self, states, next_states):
+        n = states.shape[0]
+        d = self.feature_dim
+        y_a = self.augment(states)
+        y_b = self.augment(states)
+        z_a = self.encoder(y_a)
+        z_b = self.encoder(y_b)
+
+        z_a = (z_a - z_a.mean(dim=0)) / z_a.std(dim=0)
+        z_b = (z_b - z_b.mean(dim=0)) / z_b.std(dim=0)
+
+        c = torch.matmul(z_a.t(), z_b) / n
+        c_diff = (c - torch.eye(d, d, device=self.config.device)).pow(2) * self.lam_mask
+        loss = c_diff.sum()
+
+        return loss
+
+    def augment(self, x):
+        transforms_train = torchvision.transforms.Compose([
+            transforms.RandomResizedCrop(96, scale=(0.66, 1.0)),
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomErasing()])
+        ax = transforms_train(x)
+        return ax

@@ -139,6 +139,8 @@ def run(id, algorithm, env, experiment):
         env_class.run_sr_rnd_model(experiment, id)
     if experiment.model == 'cnd':
         env_class.run_cnd_model(experiment, id)
+    if experiment.model == 'fed_ref':
+        env_class.run_fed_ref_model(experiment, id)
     if experiment.model == 'vdop':
         env_class.run_vdop_model(experiment, id)
     if experiment.model == 'dop':
