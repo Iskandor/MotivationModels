@@ -1,3 +1,6 @@
+import random
+from math import sqrt
+
 import torch
 import torch.nn as nn
 import numpy as np
@@ -570,8 +573,8 @@ class BarlowTwinsEncoderAtari(nn.Module):
         z_a = self.encoder(y_a)
         z_b = self.encoder(y_b)
 
-        z_a = (z_a - z_a.mean(dim=0)) / z_a.std(dim=0)
-        z_b = (z_b - z_b.mean(dim=0)) / z_b.std(dim=0)
+        # z_a = (z_a - z_a.mean(dim=0)) / z_a.std(dim=0)
+        # z_b = (z_b - z_b.mean(dim=0)) / z_b.std(dim=0)
 
         c = torch.matmul(z_a.t(), z_b) / n
         c_diff = (c - torch.eye(d, d, device=self.config.device)).pow(2) * self.lam_mask
@@ -580,9 +583,17 @@ class BarlowTwinsEncoderAtari(nn.Module):
         return loss
 
     def augment(self, x):
-        transforms_train = torchvision.transforms.Compose([
-            transforms.RandomResizedCrop(96, scale=(0.66, 1.0)),
-            transforms.RandomHorizontalFlip(),
-            transforms.RandomErasing()])
-        ax = transforms_train(x)
+        # ref = transforms.ToPILImage()(x[0])
+        # ref.show()
+        # transforms_train = torchvision.transforms.Compose([
+        #     transforms.RandomResizedCrop(96, scale=(0.66, 1.0))])
+        # transforms_train = transforms.RandomErasing(p=1)
+        # print(x.max())
+        ax = x + torch.randn_like(x) * 0.1
+        ax = nn.functional.upsample(nn.functional.avg_pool2d(ax, kernel_size=2), scale_factor=2, mode='bilinear')
+        # print(ax.max())
+
+        # aug = transforms.ToPILImage()(ax[0])
+        # aug.show()
+
         return ax
