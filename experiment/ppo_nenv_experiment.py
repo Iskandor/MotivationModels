@@ -55,16 +55,11 @@ class ExperimentNEnvPPO:
         n_env = config.n_env
         trial = trial + config.shift
         step_counter = StepCounter(int(config.steps * 1e6))
-
-        steps_per_episode = []
-        train_ext_rewards = []
-        train_ext_reward = numpy.zeros((n_env, 1), dtype=numpy.float32)
-        train_scores = []
-        train_score = numpy.zeros((n_env, 1), dtype=numpy.float32)
-        train_steps = numpy.zeros((n_env, 1), dtype=numpy.int32)
-        # train_var = numpy.zeros((n_env, self._env.action_space.shape[0]), dtype=numpy.float32)
         reward_avg = RunningAverageWindow(100)
-        # time_avg = RunningAverageWindow(100)
+        time_estimator = PPOTimeEstimator(step_counter.limit)
+
+        analytic = ResultCollector()
+        analytic.init(n_env, re=(1,), score=(1,), ext_value=(1,))
 
         s = numpy.zeros((n_env,) + self._env.observation_space.shape, dtype=numpy.float32)
         for i in range(n_env):
@@ -76,61 +71,45 @@ class ExperimentNEnvPPO:
             with torch.no_grad():
                 value, action0, probs0 = agent.get_action(state0)
 
-            # start = time.time()
             next_state, reward, done, info = self._env.step(agent.convert_action(action0.cpu()))
-            # end = time.time()
-            # time_avg.update(end - start)
-            # print('Duration {0:.3f}s'.format(time_avg.value()))
 
-            train_steps += 1
-            train_ext_reward += reward
+            reward = torch.tensor(reward, dtype=torch.float32)
             if info is not None and 'raw_score' in info:
-                score = numpy.expand_dims(info['raw_score'], axis=1)
-                train_score += score
-            # var = probs0[:, self._env.action_space.shape[0]:]
-            # train_var += var.cpu().numpy()
+                score = torch.tensor(info['raw_score']).unsqueeze(-1)
+                analytic.update(score=score)
+
+            analytic.update(re=reward,
+                            ext_value=value[:, 0].unsqueeze(-1).cpu())
 
             env_indices = numpy.nonzero(numpy.squeeze(done, axis=1))[0]
+            stats = analytic.reset(env_indices)
+            step_counter.update(n_env)
 
-            for i in env_indices:
-                if step_counter.steps + train_steps[i] > step_counter.limit:
-                    train_steps[i] = step_counter.limit - step_counter.steps
-                step_counter.update(train_steps[i].item())
+            for i, index in enumerate(env_indices):
+                reward_avg.update(stats['re'].sum[i].item())
 
-                steps_per_episode.append(train_steps[i].item())
-                train_ext_rewards.append(train_ext_reward[i].item())
-                train_scores.append(train_score[i].item())
-                # train_vars.append(train_var[i] / train_steps[i].item())
-                reward_avg.update(train_ext_reward[i].item())
+                print('Run {0:d} step {1:d}/{2:d} training [ext. reward {3:f} steps {4:d}  mean reward {5:f} score {6:f})]'.format(
+                    trial, step_counter.steps, step_counter.limit, stats['re'].sum[i].item(), int(stats['re'].step[i].item()), reward_avg.value().item(), stats['score'].sum[i].item()))
+                print(time_estimator)
 
-                print('Run {0:d} step {1:d} training [ext. reward {2:f} steps {3:d} avg. reward {4:f} score {5:f}]'.format(trial, step_counter.steps, train_ext_reward[i].item(), train_steps[i].item(),
-                                                                                                                           reward_avg.value().item(), train_score[i].item()))
-                step_counter.print()
+                next_state[i] = self._env.reset(index)
 
-                train_ext_reward[i] = 0
-                train_score[i] = 0
-                train_steps[i] = 0
-                # train_var[i].fill(0)
-
-                next_state[i] = self._env.reset(i)
-
+            analytic.end_step()
             state1 = self.process_state(next_state)
-            reward = torch.tensor(reward, dtype=torch.float32)
             done = torch.tensor(done, dtype=torch.float32)
 
             agent.train(state0, value, action0, probs0, state1, reward, done)
 
             state0 = state1
+            time_estimator.update(n_env)
 
         agent.save('./models/{0:s}_{1}_{2:d}'.format(self._env_name, config.model, trial))
 
         print('Saving data...')
-        save_data = {
-            'steps': numpy.array(steps_per_episode),
-            'score': numpy.array(train_scores),
-            're': numpy.array(train_ext_rewards)
-        }
+        analytic.reset(numpy.array(range(n_env)))
+        save_data = analytic.finalize()
         numpy.save('ppo_{0}_{1}_{2:d}'.format(config.name, config.model, trial), save_data)
+        analytic.clear()
 
     def run_rnd_model(self, agent, trial):
         config = self._config

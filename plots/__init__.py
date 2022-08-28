@@ -1,6 +1,6 @@
 import os
 
-from plots.analytic_chart import plot_multiple_models, plot_detail_cnd, plot_detail_rnd
+from plots.analytic_chart import plot_multiple_models, plot_detail_cnd, plot_detail_rnd, plot_detail_baseline
 from plots.dataloader import prepare_data
 from plots.paths import plot_root
 
@@ -45,6 +45,8 @@ def plot(name, config, keys, labels=None, legend=None, plot_overview=True, plot_
                     os.mkdir(path)
                 path = os.path.join(path, '{0:s}_{1:s}'.format(env, model))
 
+                if model == 'baseline':
+                    plot_detail_baseline(d, path, window)
                 if model == 'cnd':
                     plot_detail_cnd(d, path, window)
                 if model == 'rnd':
