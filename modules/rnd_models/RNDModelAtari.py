@@ -137,7 +137,7 @@ class CNDModelAtari(nn.Module):
             nn.Linear(self.feature_dim, self.feature_dim)
         )
 
-        gain = sqrt(2)
+        gain = 0.5
         init_orthogonal(self.model[0], gain)
         init_orthogonal(self.model[2], gain)
         init_orthogonal(self.model[4], gain)
@@ -155,7 +155,6 @@ class CNDModelAtari(nn.Module):
             x = ((state - self.state_average.mean) / self.state_average.std).clip(-1., 1.)
 
         return x[:, 0, :, :].unsqueeze(1)
-        # return x
 
     def forward(self, state, fmaps=False):
         s = self.preprocess(state)
@@ -194,8 +193,7 @@ class CNDModelAtari(nn.Module):
         out = self(state, fmaps=True)
         prediction_f5, prediction, target_f5, target = out['predicted_f5'], out['predicted_code'], out['target_f5'], out['target_code']
 
-        loss_prediction = nn.functional.mse_loss(prediction, target.detach(), reduction='sum') + nn.functional.mse_loss(prediction_f5, target_f5.detach(), reduction='sum')
-        # + nn.functional.mse_loss(prediction.detach(), target, reduction='mean')
+        loss_prediction = nn.functional.mse_loss(prediction, target.detach(), reduction='sum') # + nn.functional.mse_loss(prediction_f5, target_f5.detach(), reduction='sum')
 
         loss_target, loss_target_reg, loss_target_norm = self.target_model.loss_function_crossentropy(self.preprocess(state), self.preprocess(next_state))
 

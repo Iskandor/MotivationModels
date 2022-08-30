@@ -40,4 +40,6 @@ class GenericCollector:
         return self._buffer[key].count[index].item() - 1, self._buffer[key].max[index].item(), self._buffer[key].sum[index].item(), self._buffer[key].mean[index].item(), self._buffer[key].std[index].item()
 
     def clear(self):
+        self.keys.clear()
+        self._n_env = 0
         self._buffer = {}

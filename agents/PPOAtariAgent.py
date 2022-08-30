@@ -9,6 +9,7 @@ from modules.PPO_AtariModules import PPOAtariNetworkFM, PPOAtariNetwork, PPOAtar
     PPOAtariNetworkDOP, PPOAtariNetworkCND, PPOAtariNetworkFWD, PPOAtariNetworkICM, PPOAtariNetworkFEDRef
 from motivation.CNDMotivation import CNDMotivation
 from motivation.DOPMotivation import DOPMotivation
+from motivation.Encoder import Encoder
 from motivation.FEDRefMotivation import FEDRefMotivation
 from motivation.ForwardModelMotivation import ForwardModelMotivation
 from motivation.RNDMotivation import RNDMotivation, QRNDMotivation

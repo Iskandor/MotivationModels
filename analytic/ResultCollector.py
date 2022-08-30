@@ -66,9 +66,11 @@ class ResultCollector:
 
         for k in self.collector_values.keys():
             self.collector_values[k].clear()
+        self.collector_values.clear()
 
         for k in self.global_values.keys():
             self.global_values[k].clear()
+        self.global_values.clear()
 
     @staticmethod
     def _finalize_value(value, keys, mode):
