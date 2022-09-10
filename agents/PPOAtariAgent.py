@@ -110,6 +110,12 @@ class PPOAtariICMAgent(PPOAgent):
         if indices is not None:
             self.memory.clear()
 
+    def get_action(self, state):
+        value, action, probs = self.network(state)
+        features = self.network.forward_model.encoder(state)
+
+        return features.detach(), value.detach(), action, probs.detach()
+
 
 class PPOAtariSRRNDAgent(PPOAgent):
     def __init__(self, input_shape, action_dim, config, action_type):

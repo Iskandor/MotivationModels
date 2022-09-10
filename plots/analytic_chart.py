@@ -183,3 +183,24 @@ def plot_detail_rnd(data, path, window=1000):
 
         plt.savefig("{0:s}_{1:d}.png".format(path, i))
         plt.close()
+
+
+def plot_detail_icm(data, path, window=1000):
+    num_rows, num_cols = get_rows_cols(data[0])
+
+    for i in tqdm(range(len(data))):
+        plt.figure(figsize=(num_cols * 7.00, num_rows * 7.00))
+
+        plot_chart(num_rows, num_cols, 1, 're', data[i], ['sum'], window, color='blue', legend='extrinsic reward')
+        plot_chart(num_rows, num_cols, 2, 'score', data[i], ['sum'], window, color='blue', legend='score')
+        plot_chart(num_rows, num_cols, 3, 'ri', data[i], ['mean', 'max', 'std'], window, color='red', legend='intrinsic reward')
+        plot_chart(num_rows, num_cols, 4, 'error', data[i], ['mean', 'max', 'std'], window, color='green', legend='error')
+        plot_chart(num_rows, num_cols, 5, 'loss', data[i], ['val'], window, color='magenta', legend='loss', legend_loc=9)
+        plot_chart(num_rows, num_cols, 6, 'inverse_loss', data[i], ['val'], window, color='magenta', legend='inverse model loss', legend_loc=9)
+        plot_chart(num_rows, num_cols, 7, 'forward_loss', data[i], ['val'], window, color='magenta', legend='forward model loss', legend_loc=9)
+        plot_chart(num_rows, num_cols, 8, 'ext_value', data[i], ['mean', 'max', 'std'], window, color='blue', legend='extrinsic value')
+        plot_chart(num_rows, num_cols, 9, 'int_value', data[i], ['mean', 'max', 'std'], window, color='red', legend='intrinsic value')
+        plot_chart(num_rows, num_cols, 10, 'feature_space', data[i], ['mean', 'max', 'std'], window, color='maroon', legend='feature space', legend_loc=9)
+
+        plt.savefig("{0:s}_{1:d}.png".format(path, i))
+        plt.close()

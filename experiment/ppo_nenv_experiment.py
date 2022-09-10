@@ -690,7 +690,7 @@ class ExperimentNEnvPPO:
         step_counter = StepCounter(int(config.steps * 1e6))
 
         analytic = ResultCollector()
-        analytic.init(n_env, ext_reward=(1,), score=(1,), int_reward=(1,), error=(1,), ext_value=(1,), int_value=(1,))
+        analytic.init(n_env, re=(1,), score=(1,), ri=(1,), error=(1,), ext_value=(1,), int_value=(1,), feature_space=(1,))
 
         reward_avg = RunningAverageWindow(100)
         time_estimator = PPOTimeEstimator(step_counter.limit)
@@ -703,7 +703,7 @@ class ExperimentNEnvPPO:
 
         while step_counter.running():
             with torch.no_grad():
-                value, action0, probs0 = agent.get_action(state0)
+                features, value, action0, probs0 = agent.get_action(state0)
             next_state, reward, done, info = self._env.step(agent.convert_action(action0.cpu()))
 
             ext_reward = torch.tensor(reward, dtype=torch.float32)
@@ -718,23 +718,25 @@ class ExperimentNEnvPPO:
             step_counter.update(n_env)
 
             for i, index in enumerate(env_indices):
-                reward_avg.update(stats['ext_reward'].sum[i].item())
+                reward_avg.update(stats['re'].sum[i].item())
 
-                print('Run {0:d} step {1:d}/{2:d} training [ext. reward {3:f} int. reward (max={4:f} mean={5:f} std={6:f}) steps {7:d}  mean reward {8:f} score {9:f})]'.format(
-                    trial, step_counter.steps, step_counter.limit, stats['ext_reward'].sum[i].item(), stats['int_reward'].max[i].item(), stats['int_reward'].mean[i].item(),
-                    stats['int_reward'].std[i].item(),
-                    int(stats['ext_reward'].step[i].item()), reward_avg.value().item(), stats['score'].sum[i].item()))
+                print(
+                    'Run {0:d} step {1:d}/{2:d} training [ext. reward {3:f} int. reward (max={4:f} mean={5:f} std={6:f}) steps {7:d}  mean reward {8:f} score {9:f} feature space (max={10:f} mean={11:f} std={12:f}))]'.format(
+                        trial, step_counter.steps, step_counter.limit, stats['re'].sum[i].item(), stats['ri'].max[i].item(), stats['ri'].mean[i].item(),
+                        stats['ri'].std[i].item(), int(stats['re'].step[i].item()), reward_avg.value().item(), stats['score'].sum[i].item(),
+                        stats['feature_space'].max[i].item(), stats['feature_space'].mean[i].item(), stats['feature_space'].std[i].item()))
                 print(time_estimator)
                 next_state[i] = self._env.reset(index)
 
             state1 = self.process_state(next_state)
 
             error = agent.motivation.error(state0, action0, state1).cpu()
-            analytic.update(ext_reward=ext_reward,
-                            int_reward=int_reward,
+            analytic.update(re=ext_reward,
+                            ri=int_reward,
                             ext_value=value[:, 0].unsqueeze(-1).cpu(),
                             int_value=value[:, 1].unsqueeze(-1).cpu(),
-                            error=error)
+                            error=error,
+                            feature_space=features.norm(p=2, dim=1, keepdim=True).cpu())
 
             reward = torch.cat([ext_reward, int_reward], dim=1)
             done = torch.tensor(1 - done, dtype=torch.float32)

@@ -1,6 +1,6 @@
 import os
 
-from plots.analytic_chart import plot_multiple_models, plot_detail_cnd, plot_detail_rnd, plot_detail_baseline
+from plots.analytic_chart import plot_multiple_models, plot_detail_cnd, plot_detail_rnd, plot_detail_baseline, plot_detail_icm
 from plots.dataloader import prepare_data
 from plots.paths import plot_root
 
@@ -53,3 +53,5 @@ def plot(name, config, keys, labels=None, legend=None, plot_overview=True, plot_
                     plot_detail_rnd(d, path, window)
                 if model == 'qrnd':
                     plot_detail_rnd(d, path, window)
+                if model == 'icm':
+                    plot_detail_icm(d, path, window)

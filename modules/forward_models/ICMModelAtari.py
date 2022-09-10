@@ -94,9 +94,8 @@ class ICMModelAtari(nn.Module):
 
         loss = (1 - self.scaling_factor) * inverse_loss + self.scaling_factor * forward_loss
 
-        ResultCollector().update(loss_prediction=loss.unsqueeze(-1).detach().cpu(),
-                                 loss_target=inverse_loss.unsqueeze(-1).detach().cpu(),
-                                 loss_target_norm=torch.tensor(0, dtype=torch.float32),
-                                 loss_fwd=forward_loss.unsqueeze(-1).detach().cpu())
+        ResultCollector().update(loss=loss.unsqueeze(-1).detach().cpu(),
+                                 inverse_loss=inverse_loss.unsqueeze(-1).detach().cpu(),
+                                 forward_loss=forward_loss.unsqueeze(-1).detach().cpu())
 
         return loss
