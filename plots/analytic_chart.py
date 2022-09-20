@@ -22,7 +22,7 @@ def moving_average(a, n=3):
 
 def prepare_data_instance(data_x, data_y, window, smooth=True):
     dx = data_x
-    dy = data_y
+    dy = np.concatenate((data_y[:-128], data_y[-256:-128]))  # at the end of data is garbage from unfinished 128 environments
 
     if smooth:
         for i in range(len(dy))[1:]:
@@ -139,6 +139,7 @@ def plot_detail_baseline(data, path, window=1000):
 
         plt.savefig("{0:s}_{1:d}.png".format(path, i))
         plt.close()
+
 
 def plot_detail_cnd(data, path, window=1000):
     num_rows, num_cols = get_rows_cols(data[0])

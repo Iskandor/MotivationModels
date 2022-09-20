@@ -40,7 +40,7 @@ class FWDModelAtari(nn.Module):
         return error
 
     def loss_function(self, state, action, next_state):
-        loss_target, _, loss_target_norm = self.encoder.loss_function_crossentropy(state, next_state)
+        loss_target, loss_target_norm = self.encoder.loss_function_crossentropy(state, next_state)
         loss_target_norm *= 1e-4
 
         predicted_state = self(state, action)

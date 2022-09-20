@@ -1,4 +1,5 @@
 import random
+import time
 from math import sqrt
 
 import torch
@@ -460,53 +461,40 @@ class ST_DIMEncoderAtari(nn.Module):
         f_t, f_t_prev = f_t_maps['out'], f_t_prev_maps['f5']
         sy = f_t_prev.size(1)
         sx = f_t_prev.size(2)
-
         N = f_t.size(0)
-        loss1 = 0.
-        reg_loss1 = 0.
-        norm_loss1 = 0.
+
+        positive = []
         for y in range(sy):
             for x in range(sx):
-                predictions = self.classifier1(f_t)
-                positive = f_t_prev[:, y, x, :]
-                logits = torch.matmul(predictions, positive.t())
-                target = torch.arange(N).to(self.config.device)
-                step_loss = nn.functional.cross_entropy(logits, target)
-                loss1 += step_loss
+                positive.append(f_t_prev[:, y, x, :].T)
 
-                reg_loss1 += -torch.sum(torch.softmax(logits, dim=1) * torch.log_softmax(logits, dim=1), dim=1).mean()
-                norm_loss1 += torch.norm(logits, p=2)
-
-        loss1 = loss1 / (sx * sy)
-        reg_loss1 = reg_loss1 / (sx * sy)
-        norm_loss1 = norm_loss1 / (sx * sy)
+        predictions = self.classifier1(f_t)
+        positive = torch.stack(positive)
+        logits = torch.matmul(predictions, positive)
+        target = torch.arange(N).to(self.config.device).unsqueeze(0).repeat(logits.shape[0], 1)
+        loss1 = nn.functional.cross_entropy(logits, target, reduction='mean')
+        norm_loss1 = torch.norm(logits, p=2, dim=[1, 2]).mean()
 
         # Loss 2: f5 patches at time t, with f5 patches at time t-1
         f_t = f_t_maps['f5']
-        loss2 = 0.
-        reg_loss2 = 0.
-        norm_loss2 = 0.
+        predictions = []
+        positive = []
         for y in range(sy):
             for x in range(sx):
-                predictions = self.classifier2(f_t[:, y, x, :])
-                positive = f_t_prev[:, y, x, :]
-                logits = torch.matmul(predictions, positive.t())
-                target = torch.arange(N).to(self.config.device)
-                step_loss = nn.functional.cross_entropy(logits, target)
-                loss2 += step_loss
+                predictions.append(self.classifier2(f_t[:, y, x, :]))
+                positive.append(f_t_prev[:, y, x, :].T)
 
-                reg_loss2 += -torch.sum(torch.softmax(logits, dim=1) * torch.log_softmax(logits, dim=1), dim=1).mean()
-                norm_loss2 += torch.norm(logits, p=2)
-
-        loss2 = loss2 / (sx * sy)
-        reg_loss2 = reg_loss2 / (sx * sy)
-        norm_loss2 = norm_loss2 / (sx * sy)
+        predictions = torch.stack(predictions)
+        positive = torch.stack(positive)
+        logits = torch.matmul(predictions, positive)
+        target = torch.arange(N).to(self.config.device).unsqueeze(0).repeat(logits.shape[0], 1)
+        loss2 = nn.functional.cross_entropy(logits, target, reduction='mean')
+        norm_loss2 = torch.norm(logits, p=2, dim=[1, 2]).mean()
 
         loss = loss1 + loss2
-        reg_loss = reg_loss1 + reg_loss2
         norm_loss = norm_loss1 + norm_loss2
 
-        return loss, -reg_loss, norm_loss
+        return loss, norm_loss
 
     def loss_function_cdist(self, states, next_states):
         f_t_maps, f_t_prev_maps = self.encoder(next_states, fmaps=True), self.encoder(states, fmaps=True)

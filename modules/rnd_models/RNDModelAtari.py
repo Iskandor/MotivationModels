@@ -195,15 +195,17 @@ class CNDModelAtari(nn.Module):
 
         loss_prediction = nn.functional.mse_loss(prediction, target.detach(), reduction='sum') # + nn.functional.mse_loss(prediction_f5, target_f5.detach(), reduction='sum')
 
-        loss_target, loss_target_reg, loss_target_norm = self.target_model.loss_function_crossentropy(self.preprocess(state), self.preprocess(next_state))
+        loss_target, loss_target_norm = self.target_model.loss_function_crossentropy(self.preprocess(state), self.preprocess(next_state))
+        # loss_target_uniform = nn.functional.mse_loss(torch.matmul(target.T, target), torch.eye(self.feature_dim, self.feature_dim, device=self.config.device), reduction='sum')
+        loss_target_uniform = -torch.std(target, dim=1).mean()
 
-        beta1 = 0
+        beta1 = 1e-6
         beta2 = self.config.cnd_loss_target_reg
 
         analytic = ResultCollector()
-        analytic.update(loss_prediction=loss_prediction.unsqueeze(-1).detach(), loss_target=loss_target.unsqueeze(-1).detach(), loss_reg=loss_target_reg.unsqueeze(-1).detach() * beta1, loss_target_norm=loss_target_norm.detach() * beta2)
+        analytic.update(loss_prediction=loss_prediction.unsqueeze(-1).detach(), loss_target=loss_target.unsqueeze(-1).detach(), loss_target_norm=loss_target_norm.detach() * beta2, loss_reg=loss_target_uniform.detach() * beta1)
 
-        return loss_prediction * self.config.cnd_loss_pred + (loss_target + loss_target_reg * beta1 + loss_target_norm * beta2) * self.config.cnd_loss_target
+        return loss_prediction * self.config.cnd_loss_pred + (loss_target + loss_target_uniform * beta1 + loss_target_norm * beta2) * self.config.cnd_loss_target
 
     def loss_function_cdist(self, state, next_state):
         prediction, target = self(state)
