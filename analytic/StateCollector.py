@@ -1,13 +1,30 @@
+import os
+
 import numpy as np
 import torch
 from torch.utils.data import Dataset
 from tqdm import tqdm
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 
 def collect_states(agent, env, count):
     collector = SampleCollector('cuda:0')
     states, next_states = collector.collect_states(agent, env, count)
-    np.save('./states', {'states': states, 'next_states': next_states})
+    return states, next_states
+
+
+def save_states(path, states, next_states):
+    states = np.concatenate(states)
+    next_states = np.concatenate(next_states)
+
+    # batch = states.shape[0]
+    # dist = torch.cdist(torch.tensor(states).view(batch, -1), torch.tensor(states).view(batch, -1), p=2)
+    # plt.figure(figsize=(20.48, 20.48))
+    # sns.heatmap(dist.numpy(), cmap='coolwarm')
+    # plt.savefig('./states.png')
+
+    np.save(os.path.join(path, 'states'), {'states': states, 'next_states': next_states})
 
 
 def collect_samples(agent, path, dest, mode):
@@ -27,6 +44,12 @@ def collect_samples(agent, path, dest, mode):
         feature, diff, dist = collector.collect_samples(agent.network.cnd_model, states, next_states, False)
     if mode == 'fed_ref':
         feature, diff, dist = collector.collect_samples(agent.network.features, states, next_states, True)
+
+    # d = torch.cdist(torch.tensor(feature), torch.tensor(feature), p=2)
+    # plt.figure(figsize=(20.48, 20.48))
+    # sns.heatmap(d.numpy(), cmap='coolwarm')
+    # plt.savefig('./features.png')
+
     np.save(dest, {'feature': feature, 'diff': diff, 'dist': dist})
 
 
@@ -64,7 +87,7 @@ class SampleCollector:
             features.append(features0.cpu())
             diff.append(features1.cpu() - features0.cpu())
 
-        dist = torch.norm(torch.stack(diff).squeeze(1), p=1, dim=1, keepdim=True)
+        dist = torch.norm(torch.stack(diff).squeeze(1), p=2, dim=1, keepdim=True)
 
         return torch.stack(features).squeeze(1).numpy(), torch.stack(diff).squeeze(1).numpy(), dist.numpy()
 
