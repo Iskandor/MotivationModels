@@ -197,9 +197,14 @@ class CNDModelAtari(nn.Module):
 
         loss_target, loss_target_norm = self.target_model.loss_function_crossentropy(self.preprocess(state), self.preprocess(next_state))
         # loss_target_uniform = nn.functional.mse_loss(torch.matmul(target.T, target), torch.eye(self.feature_dim, self.feature_dim, device=self.config.device), reduction='sum')
-        loss_target_uniform = -torch.std(target, dim=1).mean()
+        # target_logits = torch.pow(target, 2) # 42
+        target_logits = torch.abs(target)  # 43
+        target_logits = (target_logits / target_logits.sum(dim=0)) + 1e-8
+        loss_target_uniform = torch.sum(target_logits * target_logits.log(), dim=1).mean()
+        # loss_target_uniform = -torch.std(target, dim=1).mean() # 40
+        # beta1 = 1e-6
 
-        beta1 = 1e-6
+        beta1 = 1e-4
         beta2 = self.config.cnd_loss_target_reg
 
         analytic = ResultCollector()
