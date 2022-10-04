@@ -20,18 +20,19 @@ class FeatureAnalysis:
 
     def table(self, axes=None, filename=''):
         row_labels = self.labels
-        col_labels = ['max reward', 'mean reward', 'spd', 'ev 25%', 'ev 50%', 'ev 75%', 'ev 95%']
+        col_labels = ['max reward', 'mean reward', 'spd mean', 'spd std', 'ev 25%', 'ev 50%', 'ev 75%', 'ev 95%']
 
         cell_text = []
 
-        data = {'re_max': [], 're_mean': [], 'spd': [], 'ev p25': [], 'ev p50': [], 'ev p75': [], 'ev p95': []}
+        data = {'re_max': [], 're_mean': [], 'spd_mean': [], 'spd_std': [], 'ev p25': [], 'ev p50': [], 'ev p75': [], 'ev p95': []}
 
         for r in self.results:
             data['re_max'].append(r['re']['sum'].max())
             data['re_mean'].append(r['re']['sum'].mean())
 
         for d in self.data:
-            data['spd'].append(d['diff'].std())
+            data['spd_mean'].append(d['dist'].mean())
+            data['spd_std'].append(d['dist'].std())
             pca = PCA()
             pca.fit(d['feature'])
             eigenvalues = pca.singular_values_ ** 2
@@ -49,7 +50,7 @@ class FeatureAnalysis:
         for i in range(len(row_labels)):
             cell_text.append([])
             for j, k in enumerate(data.keys()):
-                cell_text[i].append('{0:.4f}'.format(data[k][i]))
+                cell_text[i].append('{0:.2f}'.format(data[k][i]))
 
         # plt.show()
         if filename != '':
@@ -68,8 +69,8 @@ class FeatureAnalysis:
             data['max'].append(r['re']['sum'].max())
 
         for d in self.data:
-            data['diff_mean'].append(d['diff'].mean())
-            data['diff_std'].append(d['diff'].std())
+            data['diff_mean'].append(d['dist'].mean())
+            data['diff_std'].append(d['dist'].std())
             data['feature'].append(d['feature'])
 
         fig = plt.figure(figsize=(3 * 7.68, 2 * 7.68))
@@ -107,7 +108,7 @@ class FeatureAnalysis:
         plt.savefig('./{0:s}.png'.format(filename))
 
     def mean_std(self, diff_mean, diff_std):
-        plt.gca().set_title('Std. deviation of feature difference')
+        plt.gca().set_title('Feature difference')
         # plt.yscale('log')
         plt.ylabel('feature difference sigma')
         plt.tick_params(
@@ -116,14 +117,13 @@ class FeatureAnalysis:
             bottom=False,
             top=False,
             labelbottom=False)
-        max_value = max(diff_std)
-        plt.ylim(0, max_value * 2)
+        # max_value = max(diff_std)
+        # plt.ylim(max_value * -2, max_value * 2)
         for i, d in enumerate(self.data):
-            # plt.errorbar(i, diff_mean[i], yerr=diff_std[i], linestyle='None', marker='o', label=self.labels[i], color=self.colors[i])
-            plt.bar(i * 0.5, height=diff_std[i], width=0.3, label=self.labels[i], color=self.colors[i])
-            plt.grid()
-        plt.legend(ncol=int(sqrt(len(diff_std))))
-
+            plt.errorbar(i, diff_mean[i], yerr=diff_std[i], elinewidth=2, capsize=5, marker='o', label=self.labels[i], color=self.colors[i])
+            # plt.bar(i * 0.5, height=diff_std[i], width=0.3, label=self.labels[i], color=self.colors[i])
+        plt.grid()
+        # plt.legend(ncol=int(sqrt(len(diff_std))))
 
     def pca(self, features):
         plt.gca().set_title('Eigenvalues')
@@ -138,7 +138,7 @@ class FeatureAnalysis:
 
             plt.plot(x_axis, (S ** 2).numpy(), color=self.colors[i], label=self.labels[i], markersize=2)
 
-        # plt.legend()
+        plt.legend(ncol=int(sqrt(len(features))))
 
     def ev_boxplot(self, features):
         # plt.gca().set_title('Eigenvalues boxplot')

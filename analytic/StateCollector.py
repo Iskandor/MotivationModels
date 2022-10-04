@@ -50,7 +50,7 @@ def collect_samples(agent, path, dest, mode):
     # sns.heatmap(d.numpy(), cmap='coolwarm')
     # plt.savefig('./features.png')
 
-    np.save(dest, {'feature': feature, 'diff': diff, 'dist': dist})
+    np.save(dest, {'feature': feature, 'dist': dist})
 
 
 class SampleDataset(Dataset):
