@@ -23,6 +23,10 @@ def run_forward_model(config, trial):
     PPO_HardAtariGame.run_forward_model(config, trial, env_name)
 
 
+def run_fwd_model(config, trial):
+    PPO_HardAtariGame.run_fwd_model(config, trial, env_name)
+
+
 def run_cnd_model(config, trial):
     PPO_HardAtariGame.run_cnd_model(config, trial, env_name)
 
