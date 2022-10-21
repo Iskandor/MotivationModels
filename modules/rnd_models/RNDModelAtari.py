@@ -6,7 +6,7 @@ import numpy as np
 
 from analytic.ResultCollector import ResultCollector
 from modules import init_orthogonal
-from modules.encoders.EncoderAtari import ST_DIMEncoderAtari, BarlowTwinsEncoderAtari
+from modules.encoders.EncoderAtari import ST_DIMEncoderAtari, BarlowTwinsEncoderAtari, VICRegEncoderAtari
 from utils.RunningAverage import RunningStatsSimple
 
 
@@ -112,7 +112,7 @@ class CNDModelAtari(nn.Module):
         input_height = input_shape[1]
         input_width = input_shape[2]
         self.input_shape = (input_channels, input_height, input_width)
-        self.feature_dim = 512
+        self.feature_dim = 256
 
         fc_inputs_count = 128 * (input_width // 8) * (input_height // 8)
 
@@ -198,19 +198,28 @@ class CNDModelAtari(nn.Module):
         loss_target, loss_target_norm = self.target_model.loss_function_crossentropy(self.preprocess(state), self.preprocess(next_state))
         # loss_target_uniform = nn.functional.mse_loss(torch.matmul(target.T, target), torch.eye(self.feature_dim, self.feature_dim, device=self.config.device), reduction='sum')
         # target_logits = torch.pow(target, 2) # 42
-        target_logits = torch.abs(target)  # 43
-        target_logits = (target_logits / target_logits.sum(dim=0)) + 1e-8
-        loss_target_uniform = torch.sum(target_logits * target_logits.log(), dim=1).mean()
+        # target_logits = torch.abs(target)  # 43
+        # target_logits = (target_logits / target_logits.sum(dim=0)) + 1e-8
+        # loss_target_uniform = torch.sum(target_logits * target_logits.log(), dim=1).mean()
         # loss_target_uniform = -torch.std(target, dim=1).mean() # 40
         # beta1 = 1e-6
 
+        n = target.shape[0]
+        gamma = 1
+        hinge_loss = torch.relu(gamma - torch.std(target, dim=0)).mean()
+
+        target_z = target - target.mean(dim=0)
+        cov_target = torch.matmul(target_z.t(), target_z) / n
+        cov_loss = cov_target.masked_select(~torch.eye(self.feature_dim, dtype=torch.bool, device=self.config.device)).pow_(2).sum()
+
         beta1 = 1e-4
         beta2 = self.config.cnd_loss_target_reg
+        beta3 = beta1 / 25
 
         analytic = ResultCollector()
-        analytic.update(loss_prediction=loss_prediction.unsqueeze(-1).detach(), loss_target=loss_target.unsqueeze(-1).detach(), loss_target_norm=loss_target_norm.detach() * beta2, loss_reg=loss_target_uniform.detach() * beta1)
+        analytic.update(loss_prediction=loss_prediction.unsqueeze(-1).detach(), loss_target=loss_target.unsqueeze(-1).detach(), loss_target_norm=loss_target_norm.detach() * beta2, loss_reg=hinge_loss.detach() * beta1)
 
-        return loss_prediction * self.config.cnd_loss_pred + (loss_target + loss_target_uniform * beta1 + loss_target_norm * beta2) * self.config.cnd_loss_target
+        return loss_prediction * self.config.cnd_loss_pred + (loss_target + hinge_loss * beta1 + loss_target_norm * beta2 + cov_loss * beta3) * self.config.cnd_loss_target
 
     def loss_function_cdist(self, state, next_state):
         prediction, target = self(state)
@@ -258,6 +267,93 @@ class BarlowTwinsModelAtari(nn.Module):
         self.state_average = RunningStatsSimple((4, input_height, input_width), config.device)
 
         self.target_model = BarlowTwinsEncoderAtari(self.input_shape, self.feature_dim, config)
+
+        self.model = nn.Sequential(
+            nn.Conv2d(input_channels, 32, kernel_size=3, stride=2, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=2, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(fc_inputs_count, self.feature_dim),
+            nn.ELU(),
+            nn.Linear(self.feature_dim, self.feature_dim),
+            nn.ELU(),
+            nn.Linear(self.feature_dim, self.feature_dim)
+        )
+
+        gain = sqrt(2)
+        init_orthogonal(self.model[0], gain)
+        init_orthogonal(self.model[2], gain)
+        init_orthogonal(self.model[4], gain)
+        init_orthogonal(self.model[6], gain)
+        init_orthogonal(self.model[9], gain)
+        init_orthogonal(self.model[11], gain)
+        init_orthogonal(self.model[13], gain)
+
+    def preprocess(self, state):
+        return state[:, 0, :, :].unsqueeze(1)
+
+    def forward(self, state):
+        predicted_code = self.model(self.preprocess(state))
+        target_code = self.target_model(self.preprocess(state))
+
+        return predicted_code, target_code
+
+    def error(self, state):
+        with torch.no_grad():
+            prediction, target = self(state)
+            error = self.k_distance(self.config.cnd_error_k, prediction, target, reduction='mean')
+
+        return error
+
+    def loss_function(self, state, next_state):
+        prediction, target = self(state)
+
+        loss_prediction = nn.functional.mse_loss(prediction, target.detach(), reduction='mean')
+        loss_target = self.target_model.loss_function(self.preprocess(state), self.preprocess(next_state))
+
+        analytic = ResultCollector()
+        analytic.update(loss_prediction=loss_prediction.unsqueeze(-1).detach(), loss_target=loss_target.unsqueeze(-1).detach())
+
+        return loss_prediction + loss_target
+
+    @staticmethod
+    def k_distance(k, prediction, target, reduction='sum'):
+        ret = torch.abs(target - prediction) + 1e-8
+        if reduction == 'sum':
+            ret = ret.pow(k).sum(dim=1, keepdim=True)
+        if reduction == 'mean':
+            ret = ret.pow(k).mean(dim=1, keepdim=True)
+
+        return ret
+
+    def update_state_average(self, state):
+        self.state_average.update(state)
+
+
+class VICRegModelAtari(nn.Module):
+    def __init__(self, input_shape, action_dim, config):
+        super(VICRegModelAtari, self).__init__()
+
+        self.config = config
+        self.action_dim = action_dim
+
+        input_channels = 1
+        # input_channels = input_shape[0]
+        input_height = input_shape[1]
+        input_width = input_shape[2]
+        self.input_shape = (input_channels, input_height, input_width)
+        self.feature_dim = 512
+
+        fc_inputs_count = 128 * (input_width // 8) * (input_height // 8)
+
+        self.state_average = RunningStatsSimple((4, input_height, input_width), config.device)
+
+        self.target_model = VICRegEncoderAtari(self.input_shape, self.feature_dim, config)
 
         self.model = nn.Sequential(
             nn.Conv2d(input_channels, 32, kernel_size=3, stride=2, padding=1),

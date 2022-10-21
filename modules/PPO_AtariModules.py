@@ -9,7 +9,7 @@ from modules.encoders.EncoderAtari import ST_DIMEncoderAtari
 from modules.forward_models.FWDModelAtari import FWDModelAtari
 from modules.forward_models.ForwardModelAtari import ForwardModelAtari
 from modules.forward_models.ICMModelAtari import ICMModelAtari
-from modules.rnd_models.RNDModelAtari import QRNDModelAtari, RNDModelAtari, CNDModelAtari, BarlowTwinsModelAtari, FEDRefModelAtari
+from modules.rnd_models.RNDModelAtari import QRNDModelAtari, RNDModelAtari, CNDModelAtari, BarlowTwinsModelAtari, FEDRefModelAtari, VICRegModelAtari
 
 
 class PPOAtariNetwork(torch.nn.Module):
@@ -162,7 +162,8 @@ class PPOAtariNetworkCND(PPOAtariMotivationNetwork):
     def __init__(self, input_shape, action_dim, config, head):
         super(PPOAtariNetworkCND, self).__init__(input_shape, action_dim, config, head)
         # self.cnd_model = BarlowTwinsModelAtari(input_shape, action_dim, config)
-        self.cnd_model = CNDModelAtari(input_shape, action_dim, config)
+        self.cnd_model = VICRegModelAtari(input_shape, action_dim, config)
+        # self.cnd_model = CNDModelAtari(input_shape, action_dim, config)
 
 
 class PPOAtariNetworkQRND(PPOAtariMotivationNetwork):

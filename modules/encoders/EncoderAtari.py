@@ -585,3 +585,64 @@ class BarlowTwinsEncoderAtari(nn.Module):
         # aug.show()
 
         return ax
+
+
+class VICRegEncoderAtari(nn.Module):
+    def __init__(self, input_shape, feature_dim, config):
+        super(VICRegEncoderAtari, self).__init__()
+
+        self.config = config
+        self.input_channels = input_shape[0]
+        self.input_height = input_shape[1]
+        self.input_width = input_shape[2]
+        self.feature_dim = feature_dim
+
+        self.encoder = ST_DIM_CNN(input_shape, feature_dim)
+
+    def forward(self, state):
+        return self.encoder(state)
+
+    def loss_function(self, states, next_states):
+        n = states.shape[0]
+        d = self.feature_dim
+        # y_a = self.augment(states)
+        # y_b = self.augment(states)
+        z_a = self.encoder(states)
+        z_b = self.encoder(next_states)
+
+        inv_loss = nn.functional.mse_loss(z_a, z_b)
+
+        std_z_a = torch.sqrt(z_a.var(dim=0) + 1e-04)
+        std_z_b = torch.sqrt(z_b.var(dim=0) + 1e-04)
+        var_loss = torch.mean(nn.functional.relu(1 - std_z_a)) + torch.mean(nn.functional.relu(1 - std_z_b))
+
+        z_a = (z_a - z_a.mean(dim=0))
+        z_b = (z_b - z_b.mean(dim=0))
+
+        cov_z_a = torch.matmul(z_a.t(), z_a) / (n - 1)
+        cov_z_b = torch.matmul(z_b.t(), z_b) / (n - 1)
+
+        cov_loss = cov_z_a.masked_select(~torch.eye(self.feature_dim, dtype=torch.bool, device=self.config.device)).pow_(2).sum() / self.feature_dim + \
+                   cov_z_b.masked_select(~torch.eye(self.feature_dim, dtype=torch.bool, device=self.config.device)).pow_(2).sum() / self.feature_dim
+
+        la = 1.
+        mu = 1.
+        nu = 1./25
+
+        return la * inv_loss + mu * var_loss + nu * cov_loss
+
+    def augment(self, x):
+        # ref = transforms.ToPILImage()(x[0])
+        # ref.show()
+        # transforms_train = torchvision.transforms.Compose([
+        #     transforms.RandomResizedCrop(96, scale=(0.66, 1.0))])
+        # transforms_train = transforms.RandomErasing(p=1)
+        # print(x.max())
+        ax = x + torch.randn_like(x) * 0.1
+        ax = nn.functional.upsample(nn.functional.avg_pool2d(ax, kernel_size=2), scale_factor=2, mode='bilinear')
+        # print(ax.max())
+
+        # aug = transforms.ToPILImage()(ax[0])
+        # aug.show()
+
+        return ax
