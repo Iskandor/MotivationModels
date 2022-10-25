@@ -6,9 +6,7 @@ from modules import init_orthogonal
 from modules.dop_models.DOPModelAtari import DOPModelAtari, DOPControllerAtari, DOPActorAtari, DOPGeneratorAtari
 from modules.PPO_Modules import DiscreteHead, Actor, Critic2Heads, ActorNHeads, CriticHead, Critic2NHeads
 from modules.encoders.EncoderAtari import ST_DIMEncoderAtari
-from modules.forward_models.FWDModelAtari import FWDModelAtari
-from modules.forward_models.ForwardModelAtari import ForwardModelAtari
-from modules.forward_models.ICMModelAtari import ICMModelAtari
+from modules.forward_models.ForwardModelAtari import ForwardModelAtari, FWDModelAtari, ICMModelAtari
 from modules.rnd_models.RNDModelAtari import QRNDModelAtari, RNDModelAtari, CNDModelAtari, BarlowTwinsModelAtari, FEDRefModelAtari, VICRegModelAtari
 
 

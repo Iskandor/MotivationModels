@@ -29,7 +29,11 @@ import PPO_AerisGridSearchA
 import PPO_AerisGridSearchB
 import PPO_AerisNavigate
 import PPO_CartPole
+import PPO_Caveflyer
+import PPO_Climber
+import PPO_Coinrun
 import PPO_Gravitar
+import PPO_Jumper
 import PPO_LunarLander
 import PPO_Montezuma
 import PPO_MountainCar
@@ -74,6 +78,10 @@ envs = {
         'mountain_car': PPO_MountainCar,
         'pendulum': PPO_Pendulum,
         'lunar_lander': PPO_LunarLander,
+        'caveflyer': PPO_Caveflyer,
+        'coinrun': PPO_Coinrun,
+        'climber': PPO_Climber,
+        'jumper': PPO_Jumper,
     },
     'dqn': {
         'cart_pole': DQN_CartPole

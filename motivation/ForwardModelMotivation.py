@@ -1,3 +1,5 @@
+import time
+
 import torch
 
 
@@ -11,6 +13,7 @@ class ForwardModelMotivation:
 
     def train(self, memory, indices):
         if indices:
+            start = time.time()
             sample, size = memory.sample_batches(indices)
 
             for i in range(size):
@@ -23,6 +26,8 @@ class ForwardModelMotivation:
                 loss.backward()
                 self._optimizer.step()
 
+            end = time.time()
+            print("Forward model motivation training time {0:.2f}s".format(end - start))
 
     def error(self, state0, action, state1):
         return self._network.error(state0, action, state1)

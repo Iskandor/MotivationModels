@@ -4,12 +4,12 @@ import numpy as np
 
 from analytic.ResultCollector import ResultCollector
 from modules import init_orthogonal
-from modules.encoders.EncoderAtari import ST_DIMEncoderAtari
+from modules.encoders.EncoderProcgen import ST_DIMEncoderProcgen
 
 
-class ForwardModelAtari(nn.Module):
+class ForwardModelProcgen(nn.Module):
     def __init__(self, encoder, feature_dim, action_dim):
-        super(ForwardModelAtari, self).__init__()
+        super(ForwardModelProcgen, self).__init__()
 
         self.encoder = encoder
         self.feature_dim = feature_dim
@@ -49,12 +49,12 @@ class ForwardModelAtari(nn.Module):
         return loss
 
 
-class FWDModelAtari(nn.Module):
+class FWDModelProcgen(nn.Module):
     def __init__(self, input_shape, feature_dim, action_dim, config):
-        super(FWDModelAtari, self).__init__()
+        super(FWDModelProcgen, self).__init__()
 
         self.input_shape = input_shape
-        self.encoder = ST_DIMEncoderAtari(input_shape, feature_dim, config)
+        self.encoder = ST_DIMEncoderProcgen(input_shape, feature_dim, config)
 
         self.forward_model = nn.Sequential(
             nn.Linear(feature_dim + action_dim, feature_dim),
@@ -101,9 +101,9 @@ class FWDModelAtari(nn.Module):
         return loss
 
 
-class ICMModelAtari(nn.Module):
+class ICMModelProcgen(nn.Module):
     def __init__(self, input_shape, feature_dim, action_dim, config):
-        super(ICMModelAtari, self).__init__()
+        super(ICMModelProcgen, self).__init__()
 
         # calar that weighs the inverse model loss against the forward model loss
         self.scaling_factor = 0.2
@@ -113,7 +113,7 @@ class ICMModelAtari(nn.Module):
         self.input_height = input_shape[1]
         self.input_width = input_shape[2]
 
-        self.final_conv_size = 128 * (self.input_width // 8) * (self.input_height // 8)
+        self.final_conv_size = 64 * (self.input_width // 8) * (self.input_height // 8)
         self.encoder = nn.Sequential(
             nn.Conv2d(self.input_channels, 32, kernel_size=3, stride=2, padding=1),
             nn.ReLU(),
@@ -121,7 +121,7 @@ class ICMModelAtari(nn.Module):
             nn.ReLU(),
             nn.Conv2d(64, 64, kernel_size=3, stride=2, padding=1),
             nn.ReLU(),
-            nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
             nn.Flatten(),
             nn.Linear(self.final_conv_size, feature_dim)

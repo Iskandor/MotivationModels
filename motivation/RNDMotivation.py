@@ -1,3 +1,5 @@
+import time
+
 import torch
 
 from utils.RunningAverage import RunningStats
@@ -13,6 +15,7 @@ class RNDMotivation:
 
     def train(self, memory, indices):
         if indices:
+            start = time.time()
             sample, size = memory.sample_batches(indices)
 
             for i in range(size):
@@ -22,6 +25,10 @@ class RNDMotivation:
                 loss = self._network.loss_function(states)
                 loss.backward()
                 self._optimizer.step()
+
+            end = time.time()
+            print("RND motivation training time {0:.2f}s".format(end - start))
+
 
     def error(self, state0):
         return self._network.error(state0)
@@ -53,6 +60,7 @@ class QRNDMotivation:
 
     def train(self, memory, indices):
         if indices:
+            start = time.time()
             sample, size = memory.sample_batches(indices)
 
             for i in range(size):
@@ -63,6 +71,9 @@ class QRNDMotivation:
                 loss = self._network.loss_function(states, actions)
                 loss.backward()
                 self._optimizer.step()
+
+            end = time.time()
+            print("QRND motivation training time {0:.2f}s".format(end - start))
 
     def error(self, state0, action0):
         return self._network.error(state0, action0)

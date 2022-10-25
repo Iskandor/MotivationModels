@@ -6,13 +6,13 @@ import numpy as np
 
 from analytic.ResultCollector import ResultCollector
 from modules import init_orthogonal
-from modules.encoders.EncoderAtari import ST_DIMEncoderAtari, BarlowTwinsEncoderAtari, VICRegEncoderAtari
+from modules.encoders.EncoderProcgen import ST_DIMEncoderProcgen, BarlowTwinsEncoderProcgen, VICRegEncoderProcgen
 from utils.RunningAverage import RunningStatsSimple
 
 
-class RNDModelAtari(nn.Module):
+class RNDModelProcgen(nn.Module):
     def __init__(self, input_shape, action_dim, config):
-        super(RNDModelAtari, self).__init__()
+        super(RNDModelProcgen, self).__init__()
 
         self.input_shape = input_shape
         self.action_dim = action_dim
@@ -21,7 +21,7 @@ class RNDModelAtari(nn.Module):
         input_height = self.input_shape[1]
         input_width = self.input_shape[2]
         self.feature_dim = 512
-        self.state_average = RunningStatsSimple((4, input_height, input_width), config.device)
+        self.state_average = RunningStatsSimple((6, input_height, input_width), config.device)
 
         fc_inputs_count = 64 * (input_width // 8) * (input_height // 8)
 
@@ -100,9 +100,9 @@ class RNDModelAtari(nn.Module):
         self.state_average.update(state)
 
 
-class CNDModelAtari(nn.Module):
+class CNDModelProcgen(nn.Module):
     def __init__(self, input_shape, action_dim, config):
-        super(CNDModelAtari, self).__init__()
+        super(CNDModelProcgen, self).__init__()
 
         self.config = config
         self.action_dim = action_dim
@@ -114,11 +114,11 @@ class CNDModelAtari(nn.Module):
         self.input_shape = (input_channels, input_height, input_width)
         self.feature_dim = 512
 
-        fc_inputs_count = 128 * (input_width // 8) * (input_height // 8)
+        fc_inputs_count = 64 * (input_width // 8) * (input_height // 8)
 
-        self.state_average = RunningStatsSimple((4, input_height, input_width), config.device)
+        self.state_average = RunningStatsSimple((6, input_height, input_width), config.device)
 
-        self.target_model = ST_DIMEncoderAtari(self.input_shape, self.feature_dim, config)
+        self.target_model = ST_DIMEncoderProcgen(self.input_shape, self.feature_dim, config)
 
         self.model = nn.Sequential(
             nn.Conv2d(input_channels, 32, kernel_size=3, stride=2, padding=1),
@@ -127,7 +127,7 @@ class CNDModelAtari(nn.Module):
             nn.ReLU(),
             nn.Conv2d(64, 64, kernel_size=3, stride=2, padding=1),
             nn.ReLU(),
-            nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
             nn.Flatten(),
             nn.Linear(fc_inputs_count, self.feature_dim),
@@ -248,9 +248,9 @@ class CNDModelAtari(nn.Module):
         self.state_average.update(state)
 
 
-class BarlowTwinsModelAtari(nn.Module):
+class BarlowTwinsModelProcgen(nn.Module):
     def __init__(self, input_shape, action_dim, config):
-        super(BarlowTwinsModelAtari, self).__init__()
+        super(BarlowTwinsModelProcgen, self).__init__()
 
         self.config = config
         self.action_dim = action_dim
@@ -264,9 +264,9 @@ class BarlowTwinsModelAtari(nn.Module):
 
         fc_inputs_count = 128 * (input_width // 8) * (input_height // 8)
 
-        self.state_average = RunningStatsSimple((4, input_height, input_width), config.device)
+        self.state_average = RunningStatsSimple((6, input_height, input_width), config.device)
 
-        self.target_model = BarlowTwinsEncoderAtari(self.input_shape, self.feature_dim, config)
+        self.target_model = BarlowTwinsEncoderProcgen(self.input_shape, self.feature_dim, config)
 
         self.model = nn.Sequential(
             nn.Conv2d(input_channels, 32, kernel_size=3, stride=2, padding=1),
@@ -335,9 +335,9 @@ class BarlowTwinsModelAtari(nn.Module):
         self.state_average.update(state)
 
 
-class VICRegModelAtari(nn.Module):
+class VICRegModelProcgen(nn.Module):
     def __init__(self, input_shape, action_dim, config):
-        super(VICRegModelAtari, self).__init__()
+        super(VICRegModelProcgen, self).__init__()
 
         self.config = config
         self.action_dim = action_dim
@@ -351,9 +351,9 @@ class VICRegModelAtari(nn.Module):
 
         fc_inputs_count = 128 * (input_width // 8) * (input_height // 8)
 
-        self.state_average = RunningStatsSimple((4, input_height, input_width), config.device)
+        self.state_average = RunningStatsSimple((6, input_height, input_width), config.device)
 
-        self.target_model = VICRegEncoderAtari(self.input_shape, self.feature_dim, config)
+        self.target_model = VICRegEncoderProcgen(self.input_shape, self.feature_dim, config)
 
         self.model = nn.Sequential(
             nn.Conv2d(input_channels, 32, kernel_size=3, stride=2, padding=1),
@@ -422,9 +422,9 @@ class VICRegModelAtari(nn.Module):
         self.state_average.update(state)
 
 
-class FEDRefModelAtari(nn.Module):
+class FEDRefModelProcgen(nn.Module):
     def __init__(self, input_shape, action_dim, target_model, config):
-        super(FEDRefModelAtari, self).__init__()
+        super(FEDRefModelProcgen, self).__init__()
 
         self.config = config
         self.action_dim = action_dim
@@ -437,7 +437,7 @@ class FEDRefModelAtari(nn.Module):
 
         fc_inputs_count = 128 * (input_width // 8) * (input_height // 8)
 
-        self.state_average = RunningStatsSimple((4, input_height, input_width), config.device)
+        self.state_average = RunningStatsSimple((6, input_height, input_width), config.device)
 
         self.target_model = target_model
 
@@ -505,9 +505,9 @@ class FEDRefModelAtari(nn.Module):
         self.state_average.update(state)
 
 
-class QRNDModelAtari(nn.Module):
+class QRNDModelProcgen(nn.Module):
     def __init__(self, input_shape, action_dim, config):
-        super(QRNDModelAtari, self).__init__()
+        super(QRNDModelProcgen, self).__init__()
 
         self.input_shape = input_shape
         self.action_dim = action_dim
@@ -516,7 +516,7 @@ class QRNDModelAtari(nn.Module):
         input_height = self.input_shape[1]
         input_width = self.input_shape[2]
         self.feature_dim = 512
-        self.state_average = RunningStatsSimple((4, input_height, input_width), config.device)
+        self.state_average = RunningStatsSimple((6, input_height, input_width), config.device)
         self.action_average = RunningStatsSimple(action_dim, config.device)
 
         fc_inputs_count = 64 * (input_width // 8) * (input_height // 8)
