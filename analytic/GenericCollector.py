@@ -16,8 +16,11 @@ class GenericCollector:
     def init(self, n_env, **kwargs):
         self._n_env = n_env
         for k in kwargs:
-            self.keys.append(k)
-            self._buffer[k] = RunningStats(kwargs[k], 'cpu', n=self._n_env)
+            self.add(k, kwargs[k])
+
+    def add(self, key, shape):
+        self.keys.append(key)
+        self._buffer[key] = RunningStats(shape, 'cpu', n=self._n_env)
 
     def update(self, **kwargs):
         for k in kwargs:

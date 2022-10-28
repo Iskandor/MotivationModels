@@ -58,7 +58,7 @@ class ExperimentNEnvPPO:
         time_estimator = PPOTimeEstimator(step_counter.limit)
 
         analytic = ResultCollector()
-        analytic.init(n_env, re=(1,), score=(1,), ext_value=(1,))
+        analytic.init(n_env, re=(1,), ext_value=(1,))
 
         s = numpy.zeros((n_env,) + self._env.observation_space.shape, dtype=numpy.float32)
         for i in range(n_env):
@@ -73,9 +73,15 @@ class ExperimentNEnvPPO:
             next_state, reward, done, info = self._env.step(agent.convert_action(action0.cpu()))
 
             reward = torch.tensor(reward, dtype=torch.float32)
-            if info is not None and 'raw_score' in info:
-                score = torch.tensor(info['raw_score']).unsqueeze(-1)
-                analytic.update(score=score)
+            if info is not None:
+                if 'normalised_score' in info:
+                    analytic.add(normalised_score=(1,))
+                    score = torch.tensor(info['normalised_score']).unsqueeze(-1)
+                    analytic.update(normalised_score=score)
+                if 'raw_score' in info:
+                    analytic.add(score=(1,))
+                    score = torch.tensor(info['raw_score']).unsqueeze(-1)
+                    analytic.update(score=score)
 
             analytic.update(re=reward,
                             ext_value=value[:, 0].unsqueeze(-1).cpu())
@@ -137,9 +143,15 @@ class ExperimentNEnvPPO:
             ext_reward = torch.tensor(reward, dtype=torch.float32)
             int_reward = agent.motivation.reward(state0).cpu().clip(0.0, 1.0)
 
-            if info is not None and 'raw_score' in info:
-                score = torch.tensor(info['raw_score']).unsqueeze(-1)
-                analytic.update(score=score)
+            if info is not None:
+                if 'normalised_score' in info:
+                    analytic.add(normalised_score=(1,))
+                    score = torch.tensor(info['normalised_score']).unsqueeze(-1)
+                    analytic.update(normalised_score=score)
+                if 'raw_score' in info:
+                    analytic.add(score=(1,))
+                    score = torch.tensor(info['raw_score']).unsqueeze(-1)
+                    analytic.update(score=score)
 
             error = agent.motivation.error(state0).cpu()
             analytic.update(re=ext_reward,
@@ -210,9 +222,15 @@ class ExperimentNEnvPPO:
             ext_reward = torch.tensor(reward, dtype=torch.float32)
             int_reward = agent.motivation.reward(error).cpu().clip(0.0, 1.0)
 
-            if info is not None and 'raw_score' in info:
-                score = torch.tensor(info['raw_score']).unsqueeze(-1)
-                analytic.update(score=score)
+            if info is not None:
+                if 'normalised_score' in info:
+                    analytic.add(normalised_score=(1,))
+                    score = torch.tensor(info['normalised_score']).unsqueeze(-1)
+                    analytic.update(normalised_score=score)
+                if 'raw_score' in info:
+                    analytic.add(score=(1,))
+                    score = torch.tensor(info['raw_score']).unsqueeze(-1)
+                    analytic.update(score=score)
 
             analytic.update(re=ext_reward,
                             ri=int_reward,
@@ -375,9 +393,15 @@ class ExperimentNEnvPPO:
             ext_reward = torch.tensor(reward, dtype=torch.float32)
             int_reward = agent.motivation.reward(state0).cpu().clip(0.0, 1.0)
 
-            if info is not None and 'raw_score' in info:
-                score = torch.tensor(info['raw_score']).unsqueeze(-1)
-                analytic.update(score=score)
+            if info is not None:
+                if 'normalised_score' in info:
+                    analytic.add(normalised_score=(1,))
+                    score = torch.tensor(info['normalised_score']).unsqueeze(-1)
+                    analytic.update(normalised_score=score)
+                if 'raw_score' in info:
+                    analytic.add(score=(1,))
+                    score = torch.tensor(info['raw_score']).unsqueeze(-1)
+                    analytic.update(score=score)
 
             error = agent.motivation.error(state0).cpu()
             cnd_state = agent.network.cnd_model.preprocess(state0)
@@ -450,9 +474,15 @@ class ExperimentNEnvPPO:
             ext_reward = torch.tensor(reward, dtype=torch.float32)
             int_reward = agent.motivation.reward(state0).cpu().clip(0.0, 1.0)
 
-            if info is not None and 'raw_score' in info:
-                score = torch.tensor(info['raw_score']).unsqueeze(-1)
-                analytic.update(score=score)
+            if info is not None:
+                if 'normalised_score' in info:
+                    analytic.add(normalised_score=(1,))
+                    score = torch.tensor(info['normalised_score']).unsqueeze(-1)
+                    analytic.update(normalised_score=score)
+                if 'raw_score' in info:
+                    analytic.add(score=(1,))
+                    score = torch.tensor(info['raw_score']).unsqueeze(-1)
+                    analytic.update(score=score)
 
             error = agent.motivation.error(state0).cpu()
             analytic.update(re=ext_reward,
@@ -639,9 +669,15 @@ class ExperimentNEnvPPO:
             ext_reward = torch.tensor(reward, dtype=torch.float32)
             int_reward = agent.motivation.reward(state0, action0, self.process_state(next_state)).cpu().clip(0.0, 1.0)
 
-            if info is not None and 'raw_score' in info:
-                score = torch.tensor(info['raw_score']).unsqueeze(-1)
-                analytic.update(score=score)
+            if info is not None:
+                if 'normalised_score' in info:
+                    analytic.add(normalised_score=(1,))
+                    score = torch.tensor(info['normalised_score']).unsqueeze(-1)
+                    analytic.update(normalised_score=score)
+                if 'raw_score' in info:
+                    analytic.add(score=(1,))
+                    score = torch.tensor(info['raw_score']).unsqueeze(-1)
+                    analytic.update(score=score)
 
             env_indices = numpy.nonzero(numpy.squeeze(done, axis=1))[0]
             stats = analytic.reset(env_indices)
@@ -709,9 +745,15 @@ class ExperimentNEnvPPO:
             ext_reward = torch.tensor(reward, dtype=torch.float32)
             int_reward = agent.motivation.reward(state0, action0, self.process_state(next_state)).cpu().clip(0.0, 1.0)
 
-            if info is not None and 'raw_score' in info:
-                score = torch.tensor(info['raw_score']).unsqueeze(-1)
-                analytic.update(score=score)
+            if info is not None:
+                if 'normalised_score' in info:
+                    analytic.add(normalised_score=(1,))
+                    score = torch.tensor(info['normalised_score']).unsqueeze(-1)
+                    analytic.update(normalised_score=score)
+                if 'raw_score' in info:
+                    analytic.add(score=(1,))
+                    score = torch.tensor(info['raw_score']).unsqueeze(-1)
+                    analytic.update(score=score)
 
             env_indices = numpy.nonzero(numpy.squeeze(done, axis=1))[0]
             stats = analytic.reset(env_indices)
