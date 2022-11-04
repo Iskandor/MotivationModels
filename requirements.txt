@@ -1,7 +1,8 @@
+--find-links https://download.pytorch.org/whl/torch_stable.html
 box2d-py
-etaprogress~=1.1.1
-gym[atari]~=0.23.1
-gym[accept-rom-license]
+etaprogress
+gym[atari]~=0.21.0
+gym[accept-rom-license]~=0.21.0
 -e git+https://github.com/michalnand/gym-aeris.git@ec5e8c61242683b36c66c2cfc5dfc599a08f8905#egg=gym_aeris&subdirectory=gym-aeris
 imageio~=2.16.1
 matplotlib~=3.5.1
@@ -12,15 +13,14 @@ psutil~=5.9.0
 pybullet~=3.2.2
 -e git+https://github.com/benelot/pybullet-gym.git@79396fccc1d0e170a092b50137148da48ee2edab#egg=pybulletgym
 pyclustering
-ray~=1.12.0
-scikit-learn~=1.0.2
-torch~=1.11.0
-torchvision~=0.12.0
-tqdm~=4.64.0
+ray
+scikit-learn
+torch==1.9.0+cu111
+torchvision==0.10.0
+tqdm
 umap-learn
 seaborn~=0.11.2
 setuptools~=61.2.0
 pillow~=9.1.0
-torchvision~=0.13.1
 scipy~=1.8.0
 procgen~=0.10.7

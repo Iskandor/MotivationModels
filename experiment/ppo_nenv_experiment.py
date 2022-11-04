@@ -39,13 +39,13 @@ class ExperimentNEnvPPO:
             done = False
 
             while not done:
-                self._env.render()
+                # self._env.render()
                 video_recorder.capture_frame()
                 # features0 = agent.get_features(state0)
                 _, _, action0, probs0 = agent.get_action(state0)
                 # actor_state, value, action0, probs0, head_value, head_action, head_probs, all_values, all_action, all_probs = agent.get_action(state0)
                 # action0 = probs0.argmax(dim=1)
-                next_state, reward, done, info = self._env.step(agent.convert_action(action0.cpu()))
+                next_state, reward, done, info = self._env.step(agent.convert_action(action0.cpu())[0])
                 state0 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0).to(config.device)
             video_recorder.close()
 
@@ -620,7 +620,7 @@ class ExperimentNEnvPPO:
         step_counter = StepCounter(int(config.steps * 1e6))
 
         analytic = ResultCollector()
-        analytic.init(n_env, ext_reward=(1,), score=(1,), int_reward=(1,), error=(1,), ext_value=(1,), int_value=(1,))
+        analytic.init(n_env, re=(1,), score=(1,), ri=(1,), error=(1,), ext_value=(1,), int_value=(1,))
 
         reward_avg = RunningAverageWindow(100)
         time_estimator = PPOTimeEstimator(step_counter.limit)
@@ -660,8 +660,8 @@ class ExperimentNEnvPPO:
             state1 = self.process_state(next_state)
 
             error = agent.motivation.error(state0, action0, state1).cpu()
-            analytic.update(ext_reward=ext_reward,
-                            int_reward=int_reward,
+            analytic.update(re=ext_reward,
+                            ri=int_reward,
                             ext_value=value[:, 0].unsqueeze(-1).cpu(),
                             int_value=value[:, 1].unsqueeze(-1).cpu(),
                             error=error)
