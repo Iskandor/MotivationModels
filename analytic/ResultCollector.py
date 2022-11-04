@@ -25,6 +25,12 @@ class ResultCollector:
         for k in self.collector.keys:
             self.collector_values[k] = []
 
+    def add(self, **kwargs):
+        for k in kwargs:
+            if k not in self.collector_values:
+                self.collector.add(k, kwargs[k])
+                self.collector_values[k] = []
+
     def update(self, **kwargs):
         self.collector.update(**kwargs)
 
