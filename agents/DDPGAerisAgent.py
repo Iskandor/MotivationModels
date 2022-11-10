@@ -29,13 +29,13 @@ class DDPGAerisForwardModelAgent(DDPGAgent):
         super().__init__(state_dim, action_dim, config)
         self.network = DDPGAerisNetworkFM(state_dim, action_dim, config).to(config.device)
         self.memory = ExperienceReplayBuffer(config.memory_size)
-        self.motivation = ForwardModelMotivation(self.network.forward_model, config.forward_model_lr, config.forward_model_eta, config.forward_model_variant, self.memory, config.device)
+        self.motivation = ForwardModelMotivation(self.network.forward_model, config.forward_model_lr, config.forward_model_eta, config.forward_model_variant, config.device)
         self.algorithm = DDPG(self.network, config.actor_lr, config.critic_lr, config.gamma, config.tau, self.motivation, device=config.device)
 
     def train(self, state0, action0, state1, reward, mask):
         self.memory.add(state0, action0, state1, reward, mask)
         self.algorithm.train_sample(self.memory, self.memory.indices(self.config.batch_size))
-        self.motivation.train(self.memory.indices(self.config.forward_model_batch_size))
+        self.motivation.train(self.memory, self.memory.indices(self.config.forward_model_batch_size))
 
 
 class DDPGAerisForwardModelEncoderAgent(DDPGAgent):
@@ -43,13 +43,13 @@ class DDPGAerisForwardModelEncoderAgent(DDPGAgent):
         super().__init__(state_dim, action_dim, config)
         self.network = DDPGAerisNetworkFME(state_dim, action_dim, config).to(config.device)
         self.memory = ExperienceReplayBuffer(config.memory_size)
-        self.motivation = ForwardModelMotivation(self.network.forward_model, config.forward_model_lr, config.forward_model_eta, config.forward_model_variant, self.memory, config.device)
+        self.motivation = ForwardModelMotivation(self.network.forward_model, config.forward_model_lr, config.forward_model_eta, config.forward_model_variant, config.device)
         self.algorithm = DDPG(self.network, config.actor_lr, config.critic_lr, config.gamma, config.tau, self.motivation, device=config.device)
 
     def train(self, state0, action0, state1, reward, mask):
         self.memory.add(state0, action0, state1, reward, mask)
         self.algorithm.train_sample(self.memory, self.memory.indices(self.config.batch_size))
-        self.motivation.train(self.memory.indices(self.config.forward_model_batch_size))
+        self.motivation.train(self.memory, self.memory.indices(self.config.forward_model_batch_size))
 
 
 class DDPGAerisInverseModelAgent(DDPGAgent):
@@ -57,13 +57,13 @@ class DDPGAerisInverseModelAgent(DDPGAgent):
         super().__init__(state_dim, action_dim, config)
         self.network = DDPGAerisNetworkIM(state_dim, action_dim, config).to(config.device)
         self.memory = ExperienceReplayBuffer(config.memory_size)
-        self.motivation = ForwardModelMotivation(self.network.inverse_model, config.forward_model_lr, config.forward_model_eta, config.forward_model_variant, self.memory, config.device)
+        self.motivation = ForwardModelMotivation(self.network.inverse_model, config.forward_model_lr, config.forward_model_eta, config.forward_model_variant, config.device)
         self.algorithm = DDPG(self.network, config.actor_lr, config.critic_lr, config.gamma, config.tau, self.motivation, device=config.device)
 
     def train(self, state0, action0, state1, reward, mask):
         self.memory.add(state0, action0, state1, reward, mask)
         self.algorithm.train_sample(self.memory, self.memory.indices(self.config.batch_size))
-        self.motivation.train(self.memory.indices(self.config.forward_model_batch_size))
+        self.motivation.train(self.memory, self.memory.indices(self.config.forward_model_batch_size))
 
 
 class DDPGAerisGatedMetacriticModelAgent(DDPGAgent):
@@ -71,13 +71,13 @@ class DDPGAerisGatedMetacriticModelAgent(DDPGAgent):
         super().__init__(state_dim, action_dim, config)
         self.network = DDPGAerisNetworkSU(state_dim, action_dim, config).to(config.device)
         self.memory = ExperienceReplayBuffer(config.memory_size)
-        self.motivation = MetaCriticMotivation(self.network, config.metacritic_lr, config.metacritic_variant, config.metacritic_eta, self.memory, config.metacritic_batch_size, config.device)
+        self.motivation = MetaCriticMotivation(self.network, config.metacritic_lr, config.metacritic_variant, config.metacritic_eta, config.metacritic_batch_size, config.device)
         self.algorithm = DDPG(self.network, config.actor_lr, config.critic_lr, config.gamma, config.tau, self.motivation, device=config.device)
 
     def train(self, state0, action0, state1, reward, mask):
         self.memory.add(state0, action0, state1, reward, mask)
         self.algorithm.train_sample(self.memory, self.memory.indices(self.config.batch_size))
-        self.motivation.train(self.memory.indices(self.config.forward_model_batch_size))
+        self.motivation.train(self.memory, self.memory.indices(self.config.forward_model_batch_size))
 
 
 class DDPGAerisRNDModelAgent(DDPGAgent):

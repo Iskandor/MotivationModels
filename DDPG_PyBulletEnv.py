@@ -1,7 +1,9 @@
 import gym
+import pybulletgym
 
 from agents.DDPGAgent import DDPGBulletAgent, DDPGBulletForwardModelAgent, DDPGBulletRNDModelAgent, DDPGBulletQRNDModelAgent, DDPGBulletGatedMetacriticModelAgent, DDPGBulletMetaCriticRNDModelAgent
 from experiment.ddpg_experiment import ExperimentDDPG
+
 
 
 def run_baseline(env_name, config, trial):

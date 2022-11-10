@@ -147,6 +147,8 @@ def run(id, algorithm, env, experiment):
         env_class.run_metalearner_model(experiment, id)
     if experiment.model == 'su':
         env_class.run_metalearner_model(experiment, id)
+    if experiment.model == 'fm':
+        env_class.run_forward_model(experiment, id)
     if experiment.model == 'icm':
         env_class.run_icm_model(experiment, id)
     if experiment.model == 'fwd':
