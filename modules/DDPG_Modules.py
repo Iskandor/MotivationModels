@@ -163,27 +163,23 @@ class DDPGBulletNetwork(DDPGNetwork):
     def __init__(self, state_dim, action_dim, config):
         super(DDPGBulletNetwork, self).__init__()
 
-        critic_h = [int(x) for x in config.critic_h.split(',')]
-
         self.critic = nn.Sequential(
-            nn.Linear(state_dim + action_dim, critic_h[0]),
+            nn.Linear(state_dim + action_dim, config.critic_h1),
             nn.ReLU(),
-            nn.Linear(critic_h[0], critic_h[1]),
+            nn.Linear(config.critic_h1, config.critic_h2),
             nn.ReLU(),
-            nn.Linear(critic_h[1], 1))
+            nn.Linear(config.critic_h2, 1))
 
         nn.init.xavier_uniform_(self.critic[0].weight)
         nn.init.xavier_uniform_(self.critic[2].weight)
         nn.init.uniform_(self.critic[4].weight, -0.003, 0.003)
 
-        actor_h = [int(x) for x in config.actor_h.split(',')]
-
         self.actor = nn.Sequential(
-            nn.Linear(state_dim, actor_h[0]),
+            nn.Linear(state_dim, config.actor_h1),
             nn.ReLU(),
-            nn.Linear(actor_h[0], actor_h[1]),
+            nn.Linear(config.actor_h1, config.actor_h2),
             nn.ReLU(),
-            nn.Linear(actor_h[1], action_dim),
+            nn.Linear(config.actor_h2, action_dim),
             nn.Tanh())
 
         nn.init.xavier_uniform_(self.actor[0].weight)

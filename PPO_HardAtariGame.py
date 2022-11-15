@@ -1,3 +1,5 @@
+import os
+
 import gym
 import torch
 
@@ -5,6 +7,7 @@ from agents import TYPE
 from agents.PPOAtariAgent import PPOAtariAgent, PPOAtariRNDAgent, PPOAtariForwardModelAgent, PPOAtariQRNDAgent, \
     PPOAtariDOPAgent, PPOAtariSRRNDAgent, PPOAtariDOPAgent, PPOAtariCNDAgent, PPOAtariFWDAgent, PPOAtariICMAgent, PPOAtariFEDRefAgent
 from experiment.ppo_nenv_experiment import ExperimentNEnvPPO
+from plots.paths import models_root
 from utils.AtariWrapper import WrapperHardAtari
 from utils.MultiEnvWrapper import MultiEnvParallel
 
@@ -14,7 +17,7 @@ def encode_state(state):
 
 
 def test(config, path, env_name):
-    env = WrapperHardAtari(gym.make(env_name))
+    env = WrapperHardAtari(gym.make(env_name, render_mode='human'))
     input_shape = env.observation_space.shape
     action_dim = env.action_space.n
 
@@ -22,7 +25,7 @@ def test(config, path, env_name):
     experiment.add_preprocess(encode_state)
 
     agent = PPOAtariCNDAgent(input_shape, action_dim, config, TYPE.discrete)
-    agent.load(path)
+    agent.load(os.path.join(models_root, path))
     experiment.test(agent)
 
     env.close()

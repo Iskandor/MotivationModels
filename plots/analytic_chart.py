@@ -13,6 +13,10 @@ from tqdm import tqdm
 
 from plots.key_values import key_values
 
+synonyms = {
+    're': 'ext_reward',
+    'ri': 'int_reward',
+}
 
 def moving_average(a, n=3):
     ret = np.cumsum(a, dtype=float)
@@ -36,14 +40,19 @@ def prepare_data_instance(data_x, data_y, window, smooth=True):
     return iv, data
 
 
+# fwd model bug fix - added synonyms
 def prepare_data(data, master_key, key, window):
     steps = []
     values = []
     iv = None
 
     for d in data:
-        steps.append(d[master_key]['step'])
-        values.append(d[master_key][key])
+        if master_key not in d.keys():
+            steps.append(d[synonyms[master_key]]['step'])
+            values.append(d[synonyms[master_key]][key])
+        else:
+            steps.append(d[master_key]['step'])
+            values.append(d[master_key][key])
 
     result = []
     for x, y in zip(steps, values):
@@ -94,6 +103,9 @@ def plot_chart(num_rows, num_cols, index, key, data, value_key, window, color, l
 
     stats = {}
     iv = None
+
+    if key not in data:
+        key = synonyms[key]
 
     for k in value_key:
         iv, stats[k] = prepare_data_instance(data[key]['step'].squeeze(), data[key][k].squeeze(), window)
@@ -202,6 +214,27 @@ def plot_detail_icm(data, path, window=1000):
         plot_chart(num_rows, num_cols, 8, 'ext_value', data[i], ['mean', 'max', 'std'], window, color='blue', legend='extrinsic value')
         plot_chart(num_rows, num_cols, 9, 'int_value', data[i], ['mean', 'max', 'std'], window, color='red', legend='intrinsic value')
         plot_chart(num_rows, num_cols, 10, 'feature_space', data[i], ['mean', 'max', 'std'], window, color='maroon', legend='feature space', legend_loc=9)
+
+        plt.savefig("{0:s}_{1:d}.png".format(path, i))
+        plt.close()
+
+
+def plot_detail_fwd(data, path, window=1000):
+    num_rows, num_cols = get_rows_cols(data[0])
+
+    for i in tqdm(range(len(data))):
+        plt.figure(figsize=(num_cols * 7.00, num_rows * 7.00))
+
+        plot_chart(num_rows, num_cols, 1, 're', data[i], ['sum'], window, color='blue', legend='extrinsic reward')
+        plot_chart(num_rows, num_cols, 2, 'score', data[i], ['sum'], window, color='blue', legend='score')
+        plot_chart(num_rows, num_cols, 3, 'ri', data[i], ['mean', 'max', 'std'], window, color='red', legend='intrinsic reward')
+        plot_chart(num_rows, num_cols, 4, 'error', data[i], ['mean', 'max', 'std'], window, color='green', legend='error')
+        plot_chart(num_rows, num_cols, 5, 'loss_target', data[i], ['val'], window, color='magenta', legend='loss_target', legend_loc=9)
+        plot_chart(num_rows, num_cols, 6, 'loss_target_norm', data[i], ['val'], window, color='magenta', legend='loss_target_norm', legend_loc=9)
+        plot_chart(num_rows, num_cols, 7, 'loss_prediction', data[i], ['val'], window, color='magenta', legend='loss_prediction', legend_loc=9)
+        plot_chart(num_rows, num_cols, 8, 'ext_value', data[i], ['mean', 'max', 'std'], window, color='blue', legend='extrinsic value')
+        plot_chart(num_rows, num_cols, 9, 'int_value', data[i], ['mean', 'max', 'std'], window, color='red', legend='intrinsic value')
+        # plot_chart(num_rows, num_cols, 10, 'feature_space', data[i], ['mean', 'max', 'std'], window, color='maroon', legend='feature space', legend_loc=9)
 
         plt.savefig("{0:s}_{1:d}.png".format(path, i))
         plt.close()

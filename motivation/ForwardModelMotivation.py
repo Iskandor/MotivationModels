@@ -27,17 +27,17 @@ class ForwardModelMotivation:
                 self._optimizer.step()
 
             end = time.time()
-            print("Forward model motivation training time {0:.2f}s".format(end - start))
+            # print("Forward model motivation training time {0:.2f}s".format(end - start))
 
     def error(self, state0, action, state1):
         return self._network.error(state0, action, state1)
 
-    def reward_sample(self, indices):
-        sample = self._memory.sample(indices)
+    def reward_sample(self, memory, indices):
+        sample = memory.sample(indices)
 
-        states = torch.stack(sample.state).squeeze(1)
-        next_states = torch.stack(sample.next_state).squeeze(1)
-        actions = torch.stack(sample.action).squeeze(1)
+        states = sample.state
+        next_states = sample.next_state
+        actions = sample.action
 
         return self.reward(states, actions, next_states)
 

@@ -2,23 +2,22 @@ import torch
 
 
 class MetaCriticMotivation:
-    def __init__(self, network, lr, variant='A', eta=1.0, memory_buffer=None, sample_size=0, device='cpu'):
+    def __init__(self, network, lr, variant='A', eta=1.0, sample_size=0, device='cpu'):
         self.network = network
         self._optimizer = torch.optim.Adam(self.network.parameters(), lr=lr)
-        self._memory = memory_buffer
         self._sample_size = sample_size
         self._variant = variant
         self._eta = eta
         self._sigma = 1e-2
         self._device = device
 
-    def train(self, indices):
+    def train(self, memory, indices):
         if indices:
-            sample = self._memory.sample(indices)
+            sample = memory.sample(indices)
 
-            states = torch.stack(sample.state).squeeze(1)
-            next_states = torch.stack(sample.next_state).squeeze(1)
-            actions = torch.stack(sample.action).squeeze(1)
+            states = sample.state
+            next_states = sample.next_state
+            actions = sample.action
 
             self._optimizer.zero_grad()
             loss = self.network.metacritic_model.loss_function(states, actions, next_states)
@@ -29,12 +28,12 @@ class MetaCriticMotivation:
         error, error_estimate = self.network.metacritic_model.error(state0, action, state1)
         return error, error_estimate
 
-    def reward_sample(self, indices):
-        sample = self._memory.sample(indices)
+    def reward_sample(self, memory, indices):
+        sample = memory.sample(indices)
 
-        states = torch.stack(sample.state).squeeze(1)
-        next_states = torch.stack(sample.next_state).squeeze(1)
-        actions = torch.stack(sample.action).squeeze(1)
+        states = sample.state
+        next_states = sample.next_state
+        actions = sample.action
 
         return self.reward(states, actions, next_states)
 

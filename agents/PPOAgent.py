@@ -48,7 +48,7 @@ class PPOAgent:
         torch.save(self.network.state_dict(), path + '.pth')
 
     def load(self, path):
-        self.network.load_state_dict(torch.load(path + '.pth', map_location='cpu'))
+        self.network.load_state_dict(torch.load(path, map_location='cpu'))
 
 
 class PPOSimpleAgent(PPOAgent):
