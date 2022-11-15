@@ -15,15 +15,17 @@ def prepare_data(keys):
         env = key['env']
         id = key['id']
 
-        legacy = False
-        if 'legacy' in key:
-            legacy = key['legacy']
+        mode = 'mp'
+        if 'mode' in key:
+            mode = key['mode']
 
         path = os.path.join(data_root, algorithm, model, env, id)
-        if legacy:
+        if mode == 'legacy':
             data.append(convert_data(load_data2(path)))
-        else:
+        elif mode == 'mp':
             data.append(load_analytic_files(path))
+        elif mode == 'mch':
+            data.append(load_text_files(path))
 
     return data
 
@@ -66,6 +68,42 @@ def load_analytic_files(folder):
         data.append(np.load(file, allow_pickle=True).item())
 
     return data
+
+
+def load_text_files(folder):
+    print(folder)
+    print(glob.glob(str(folder) + '/*.log'))
+
+    data = []
+
+    for file in glob.glob(str(folder) + '/*.log'):
+        with open(file) as f:
+            lines = f.readlines()
+
+        if lines:
+            steps, sums = tuple(map(list, zip(*[parse_text_line(line) for line in lines])))
+
+            element = {
+                're': {
+                    'step': np.array(steps) * 128,
+                    'sum': np.array(sums),
+                }
+            }
+
+            data.append(element)
+
+    return data
+
+
+# steps, raw epizoda, epizoda (tu je to fuk), raw skore, skore, ETA [h], a potom dake loss, interne motivacie, z hlavy uz neviem actor loss, critic loss, rnd target loss, rnd loss, im, im std
+
+def parse_text_line(line):
+    line = str.split(line, ' ')
+
+    steps = int(line[0])
+    reward = float(line[3])
+
+    return steps, reward
 
 
 def convert_data(data):
