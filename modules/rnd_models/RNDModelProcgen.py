@@ -193,7 +193,7 @@ class CNDModelProcgen(nn.Module):
         out = self(state, fmaps=True)
         prediction_f5, prediction, target_f5, target = out['predicted_f5'], out['predicted_code'], out['target_f5'], out['target_code']
 
-        loss_prediction = nn.functional.mse_loss(prediction, target.detach(), reduction='sum') # + nn.functional.mse_loss(prediction_f5, target_f5.detach(), reduction='sum')
+        loss_prediction = nn.functional.mse_loss(prediction, target.detach(), reduction='sum')  # + nn.functional.mse_loss(prediction_f5, target_f5.detach(), reduction='sum')
 
         loss_target, loss_target_norm = self.target_model.loss_function_crossentropy(self.preprocess(state), self.preprocess(next_state))
         # loss_target_uniform = nn.functional.mse_loss(torch.matmul(target.T, target), torch.eye(self.feature_dim, self.feature_dim, device=self.config.device), reduction='sum')
@@ -201,25 +201,17 @@ class CNDModelProcgen(nn.Module):
         # target_logits = torch.abs(target)  # 43
         # target_logits = (target_logits / target_logits.sum(dim=0)) + 1e-8
         # loss_target_uniform = torch.sum(target_logits * target_logits.log(), dim=1).mean()
-        # loss_target_uniform = -torch.std(target, dim=1).mean() # 40
+        loss_target_uniform = -torch.std(target, dim=1).mean()  # 40
         # beta1 = 1e-6
-
-        n = target.shape[0]
-        gamma = 1
-        hinge_loss = torch.relu(gamma - torch.std(target, dim=0)).mean()
-
-        target_z = target - target.mean(dim=0)
-        cov_target = torch.matmul(target_z.t(), target_z) / n
-        cov_loss = cov_target.masked_select(~torch.eye(self.feature_dim, dtype=torch.bool, device=self.config.device)).pow_(2).sum()
 
         beta1 = 1e-4
         beta2 = self.config.cnd_loss_target_reg
-        beta3 = beta1 / 25
 
         analytic = ResultCollector()
-        analytic.update(loss_prediction=loss_prediction.unsqueeze(-1).detach(), loss_target=loss_target.unsqueeze(-1).detach(), loss_target_norm=loss_target_norm.detach() * beta2, loss_reg=hinge_loss.detach() * beta1)
+        analytic.update(loss_prediction=loss_prediction.unsqueeze(-1).detach(), loss_target=loss_target.unsqueeze(-1).detach(), loss_target_norm=loss_target_norm.detach() * beta2,
+                        loss_reg=loss_target_uniform.detach() * beta1)
 
-        return loss_prediction * self.config.cnd_loss_pred + (loss_target + hinge_loss * beta1 + loss_target_norm * beta2 + cov_loss * beta3) * self.config.cnd_loss_target
+        return loss_prediction * self.config.cnd_loss_pred + (loss_target + loss_target_uniform * beta1 + loss_target_norm * beta2) * self.config.cnd_loss_target
 
     def loss_function_cdist(self, state, next_state):
         prediction, target = self(state)

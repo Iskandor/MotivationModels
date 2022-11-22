@@ -160,8 +160,8 @@ class PPOAtariNetworkCND(PPOAtariMotivationNetwork):
     def __init__(self, input_shape, action_dim, config, head):
         super(PPOAtariNetworkCND, self).__init__(input_shape, action_dim, config, head)
         # self.cnd_model = BarlowTwinsModelAtari(input_shape, action_dim, config)
-        self.cnd_model = VICRegModelAtari(input_shape, action_dim, config)
-        # self.cnd_model = CNDModelAtari(input_shape, action_dim, config)
+        # self.cnd_model = VICRegModelAtari(input_shape, action_dim, config)
+        self.cnd_model = CNDModelAtari(input_shape, action_dim, config)
 
 
 class PPOAtariNetworkQRND(PPOAtariMotivationNetwork):
