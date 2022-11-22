@@ -2,16 +2,14 @@ import os
 
 from pathlib import Path
 
-from agents.PPOAtariAgent import PPOAtariCNDAgent, PPOAtariRNDAgent, PPOAtariFEDRefAgent
+from agents.PPOAtariAgent import PPOAtariCNDAgent, PPOAtariRNDAgent, PPOAtariFEDRefAgent, PPOAtariICMAgent
 from analytic.FeatureAnalysis import FeatureAnalysis
 from analytic.MetricTensor import initialize
 from analytic.StateCollector import collect_states, collect_samples, save_states
-from plots.paths import models_root, states_root
-
-from fpdf import FPDF
+from plots.paths import models_root, states_root, data_root
 
 if __name__ == '__main__':
-    results_path = 'C:/Work/PHD/Experiments/data/ppo'
+    results_path = Path(data_root) / 'ppo'
 
     # states = []
     # next_states = []
@@ -26,7 +24,19 @@ if __name__ == '__main__':
 
     config = []
 
-    config_id = 42
+    # agent, _, _ = initialize(os.path.join(models_root, 'montezuma_23_fed_ref_0'), '23', PPOAtariFEDRefAgent)
+    # collect_samples(agent, Path(states_root) / 'states.npy', Path(states_root) / 'fed_ref23_0', 'fed_ref')
+
+    # agent, _, _ = initialize(os.path.join(models_root, 'montezuma_2_rnd_0'), '2', PPOAtariRNDAgent)
+    # collect_samples(agent, Path(states_root) / 'states.npy', Path(states_root) / 'rnd2_0', 'rnd')
+
+    # agent, _, _ = initialize(os.path.join(models_root, 'montezuma_42_cnd_0'), '42', PPOAtariCNDAgent)
+    # collect_samples(agent, Path(states_root) / 'states.npy', Path(states_root) / 'cnd42_0', 'cnd')
+
+    # agent, _, _ = initialize(os.path.join(models_root, 'montezuma_30_icm_0'), '30', PPOAtariICMAgent)
+    # collect_samples(agent, Path(states_root) / 'states.npy', Path(states_root) / 'icm30_0', 'icm')
+
+    config_id = 40
     for i in range(8):
         # agent, _, _ = initialize(os.path.join(models_root, 'montezuma_{0:d}_cnd_{1:d}'.format(config_id, i)), '{0:d}'.format(config_id), PPOAtariCNDAgent)
         # collect_samples(agent, Path(states_root) / 'states.npy', Path(states_root) / 'cnd{0:d}_{1:d}'.format(config_id, i), 'cnd')
@@ -34,16 +44,14 @@ if __name__ == '__main__':
                        'label': 'cnd{0:d}_{1:d}'.format(config_id, i)})
 
     # config = [
-    #     {'samples': './fed_ref.npy', 'results': os.path.join(results_path, 'fed_ref/montezuma/23/ppo_montezuma_23_fed_ref_0.npy'), 'label': 'fed_ref'},
-    #     {'samples': './rnd.npy', 'results': os.path.join(results_path, 'rnd/montezuma/2/ppo_montezuma_2_rnd_0.npy'), 'label': 'rnd'},
-    #     {'samples': './cnd20.npy', 'results': os.path.join(results_path, 'cnd/montezuma/20/ppo_montezuma_20_cnd_0.npy'), 'label': 'cnd20'},
-    #     {'samples': './cnd21.npy', 'results': os.path.join(results_path, 'cnd/montezuma/21/ppo_montezuma_21_cnd_0.npy'), 'label': 'cnd21'},
-    #     {'samples': './cnd22.npy', 'results': os.path.join(results_path, 'cnd/montezuma/22/ppo_montezuma_22_cnd_0.npy'), 'label': 'cnd22'},
-    #     {'samples': './cnd26.npy', 'results': os.path.join(results_path, 'cnd/montezuma/26/ppo_montezuma_26_cnd_0.npy'), 'label': 'cnd26'},
+    #     {'samples': Path(states_root) / 'fed_ref23_0.npy', 'results': os.path.join(results_path, 'fed_ref/montezuma/23/ppo_montezuma_23_fed_ref_0.npy'), 'label': 'fed_ref'},
+    #     {'samples': Path(states_root) / 'rnd2_0.npy', 'results': os.path.join(results_path, 'rnd/montezuma/2/ppo_montezuma_2_rnd_0.npy'), 'label': 'rnd'},
+    #     {'samples': Path(states_root) / 'cnd42_0.npy', 'results': os.path.join(results_path, 'cnd/montezuma/42/ppo_montezuma_42_cnd_0.npy'), 'label': 'cnd'},
+    #     {'samples': Path(states_root) / 'icm30_0.npy', 'results': os.path.join(results_path, 'icm/montezuma/30/ppo_montezuma_30_icm_0.npy'), 'label': 'icm'},
     # ]
 
     analysis = FeatureAnalysis(config)
-    analysis.plot('features_cnd{0:d}'.format(config_id))
+    analysis.plot('features_cnd40')
     # analysis.table(filename='features_cnd{0:d}_table'.format(config_id))
     # analysis.plot_feature_boxplot('features_cnd{0:d}_boxplot'.format(config_id))
 
