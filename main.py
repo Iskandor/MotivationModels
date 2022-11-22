@@ -1,5 +1,6 @@
 import argparse
 import json
+import math
 import os
 import platform
 import subprocess
@@ -93,24 +94,22 @@ envs = {
 
 
 def run_ray_parallel(args, experiment):
-    thread_params = []
-    for i in range(experiment.trials):
-        thread_params.append((args.algorithm, args.env, experiment, i))
+    @ray.remote(num_gpus=1/args.num_processes, max_calls=1)
+    def run_thread_ray(p_thread_params):
+        run_thread(p_thread_params)
 
-    ray.get([run_thread_ray.remote(tp) for tp in thread_params])
+    for i in range(math.ceil(experiment.trials / args.num_processes)):
+        thread_params = []
+        for j in range(args.num_processes):
+            index = i * args.num_processes + j
+            if index < experiment.trials:
+                thread_params.append((args.algorithm, args.env, experiment, index))
 
-
-@ray.remote
-def run_thread_ray(thread_params):
-    run_thread(thread_params)
+        ray.get([run_thread_ray.remote(tp) for tp in thread_params])
 
 
 def run_thread(thread_params):
     algorithm, env, experiment, i = thread_params
-
-    if experiment.gpus:
-        torch.cuda.set_device(experiment.gpus[0])
-
     run(i, algorithm, env, experiment)
 
 
@@ -185,7 +184,11 @@ def run_command_file():
 
 
 def run_torch_parallel(args, experiment):
+    if experiment.gpus:
+        torch.cuda.set_device(experiment.gpus[0])
+
     multiprocessing.set_start_method('spawn')
+
     thread_params = []
     for i in range(experiment.trials):
         thread_params.append((args.algorithm, args.env, experiment, i))
@@ -261,8 +264,10 @@ if __name__ == '__main__':
             print('Using {0} parallel backend'.format(args.parallel_backend))
 
             if args.parallel_backend == 'ray':
-
-                ray.init(num_cpus=num_cpus)
+                if args.gpus:
+                    os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpus[0])
+                ray.shutdown()
+                ray.init(num_cpus=num_cpus, num_gpus=1)
                 torch.set_num_threads(max(1, num_cpus // experiment.trials))
 
                 run_ray_parallel(args, experiment)
