@@ -4,6 +4,7 @@ import math
 import os
 import platform
 import subprocess
+from multiprocessing.pool import ThreadPool
 
 from torch import multiprocessing
 from torch.multiprocessing import Pool
@@ -193,7 +194,7 @@ def run_torch_parallel(args, experiment):
     for i in range(experiment.trials):
         thread_params.append((args.algorithm, args.env, experiment, i))
 
-    with Pool(args.num_processes) as p:
+    with ThreadPool(args.num_processes) as p:
         p.map(run_thread, thread_params)
 
 
@@ -234,7 +235,7 @@ if __name__ == '__main__':
     parser.add_argument('--load', type=str, help='path to saved agent', default='')
     parser.add_argument('-s', '--shift', type=int, help='shift result id', default=0)
     parser.add_argument('-p', '--parallel', action="store_true", help='run envs in parallel mode')
-    parser.add_argument('-pb', '--parallel_backend', type=str, default='ray', choices=['ray', 'torch'], help='parallel backend')
+    parser.add_argument('-pb', '--parallel_backend', type=str, default='torch', choices=['ray', 'torch'], help='parallel backend')
     parser.add_argument('--num_processes', type=int, help='number of parallel processes started in parallel mode (0=automatic number of cpus)', default=0)
     parser.add_argument('--num_threads', type=int, help='number of parallel threads running in PPO (0=automatic number of cpus)', default=0)
     parser.add_argument('-t', '--thread', action="store_true", help='do not use: technical parameter for parallel run')
