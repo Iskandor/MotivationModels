@@ -27,8 +27,13 @@ class FeatureAnalysis:
         data = {'re_max': [], 're_mean': [], 'spd_mean': [], 'spd_std': [], 'ev p25': [], 'ev p50': [], 'ev p75': [], 'ev p95': []}
 
         for r in self.results:
-            data['re_max'].append(r['re']['sum'].max())
-            data['re_mean'].append(r['re']['sum'].mean())
+            if 're' in r:
+                key = 're'
+            else:
+                key = 'ext_reward'
+
+            data['re_max'].append(r[key]['sum'].max())
+            data['re_mean'].append(r[key]['sum'].mean())
 
         for d in self.data:
             data['spd_mean'].append(d['dist'].mean())
@@ -66,7 +71,12 @@ class FeatureAnalysis:
     def plot(self, filename):
         data = {'max': [], 'diff_mean': [], 'diff_std': [], 'feature': []}
         for r in self.results:
-            data['max'].append(r['re']['sum'].max())
+            if 're' in r:
+                key = 're'
+            else:
+                key = 'ext_reward'
+
+            data['max'].append(r[key]['sum'].max())
 
         for d in self.data:
             data['diff_mean'].append(d['dist'].mean())
@@ -86,7 +96,7 @@ class FeatureAnalysis:
         self.max_reward(data['max'])
         fig.add_subplot(326)
         self.ev_boxplot(data['feature'])
-        plt.savefig('./{0:s}.png'.format(filename))
+        plt.savefig('{0:s}.png'.format(filename))
 
     def plot_feature_boxplot(self, filename):
         fig = plt.figure(figsize=(40.96, len(self.data) * 2.56))

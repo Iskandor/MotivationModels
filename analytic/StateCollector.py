@@ -24,7 +24,7 @@ def save_states(path, states, next_states):
     # sns.heatmap(dist.numpy(), cmap='coolwarm')
     # plt.savefig('./states.png')
 
-    np.save(os.path.join(path, 'states'), {'states': states, 'next_states': next_states})
+    np.save(path, {'states': states, 'next_states': next_states})
 
 
 def collect_samples(agent, path, dest, mode):
@@ -43,6 +43,8 @@ def collect_samples(agent, path, dest, mode):
     if mode == 'cnd':
         feature, diff, dist = collector.collect_samples(agent.network.cnd_model, states, next_states, False)
     if mode == 'icm':
+        feature, diff, dist = collector.collect_samples(agent.network.features, states, next_states, True)
+    if mode == 'fwd':
         feature, diff, dist = collector.collect_samples(agent.network.features, states, next_states, True)
     if mode == 'fed_ref':
         feature, diff, dist = collector.collect_samples(agent.network.features, states, next_states, True)
@@ -100,7 +102,9 @@ class SampleCollector:
 
         bar = tqdm(total=count + 3)
 
-        _, _, action0, _ = agent.get_action(state0)
+        result = agent.get_action(state0)
+        action0 = result[len(result) - 2]
+
         while len(states) < count + 3:
             action0 = agent.convert_action(action0.cpu()).item()
             next_state, _, done, _ = env.step(action0)
@@ -109,7 +113,8 @@ class SampleCollector:
                 next_state = env.reset()
 
             state1 = torch.tensor(next_state, dtype=torch.float32).unsqueeze(0).to(self.device)
-            _, _, action0, _ = agent.get_action(state1)
+            result = agent.get_action(state1)
+            action0 = result[len(result) - 2]
 
             if not done:
                 bar.update()

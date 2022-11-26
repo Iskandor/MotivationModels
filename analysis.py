@@ -1,63 +1,173 @@
+import glob
 import os
+from dataclasses import dataclass
 
 from pathlib import Path
 
-from agents.PPOAtariAgent import PPOAtariCNDAgent, PPOAtariRNDAgent, PPOAtariFEDRefAgent, PPOAtariICMAgent
+import numpy as np
+
+from agents.PPOAtariAgent import PPOAtariCNDAgent, PPOAtariRNDAgent, PPOAtariFEDRefAgent, PPOAtariICMAgent, PPOAtariFWDAgent
 from analytic.FeatureAnalysis import FeatureAnalysis
 from analytic.MetricTensor import initialize
 from analytic.StateCollector import collect_states, collect_samples, save_states
-from plots.paths import models_root, states_root, data_root
+from plots.paths import models_root, states_root, results_path, plot_root
 
-if __name__ == '__main__':
-    results_path = Path(data_root) / 'ppo'
 
-    # states = []
-    # next_states = []
-    #
-    # for i in range(8):
-    #     agent, env, _ = initialize(os.path.join(models_root, 'montezuma_42_cnd_{0:d}'.format(i)), '42', PPOAtariCNDAgent)
-    #     s0, s1 = collect_states(agent, env, 1000)
-    #     states.append(s0)
-    #     next_states.append(s1)
-    #
-    # save_states(states_root, states, next_states)
+def generate_analytic_data(descriptor):
+    print('Generating data for {0:s}'.format(descriptor.env))
+    ref_reward = -1
+    for i in range(len(descriptor.models)):
+        instance_id, max_reward = find_best_agent(descriptor.env, descriptor.models[i], descriptor.config_ids[i])
+        descriptor.instance_ids.append(instance_id)
+
+        if ref_reward < max_reward:
+            descriptor.ref_model = descriptor.models[i]
+            descriptor.ref_agent = descriptor.agents[i]
+            descriptor.ref_config_id = descriptor.config_ids[i]
+            descriptor.ref_instance_id = instance_id
+            ref_reward = max_reward
+
+    generate_ref_states(descriptor.env, descriptor.env_id, descriptor.ref_model, descriptor.ref_agent, descriptor.ref_config_id, [descriptor.ref_instance_id])
 
     config = []
 
-    # agent, _, _ = initialize(os.path.join(models_root, 'montezuma_23_fed_ref_0'), '23', PPOAtariFEDRefAgent)
-    # collect_samples(agent, Path(states_root) / 'states.npy', Path(states_root) / 'fed_ref23_0', 'fed_ref')
+    for i in range(len(descriptor.models)):
+        generate_features(descriptor.env, descriptor.env_id, descriptor.models[i], descriptor.agents[i], descriptor.config_ids[i], descriptor.instance_ids[i])
+        config.append(generate_config(descriptor.env, descriptor.models[i], descriptor.config_ids[i], descriptor.instance_ids[i]))
 
-    # agent, _, _ = initialize(os.path.join(models_root, 'montezuma_2_rnd_0'), '2', PPOAtariRNDAgent)
-    # collect_samples(agent, Path(states_root) / 'states.npy', Path(states_root) / 'rnd2_0', 'rnd')
+    return config
 
-    # agent, _, _ = initialize(os.path.join(models_root, 'montezuma_42_cnd_0'), '42', PPOAtariCNDAgent)
-    # collect_samples(agent, Path(states_root) / 'states.npy', Path(states_root) / 'cnd42_0', 'cnd')
 
-    # agent, _, _ = initialize(os.path.join(models_root, 'montezuma_30_icm_0'), '30', PPOAtariICMAgent)
-    # collect_samples(agent, Path(states_root) / 'states.npy', Path(states_root) / 'icm30_0', 'icm')
+def generate_ref_states(env_name, env_id, model, agent, config_id, instance_id):
+    print('Generating reference states')
+    states = []
+    next_states = []
 
-    config_id = 40
-    for i in range(8):
-        # agent, _, _ = initialize(os.path.join(models_root, 'montezuma_{0:d}_cnd_{1:d}'.format(config_id, i)), '{0:d}'.format(config_id), PPOAtariCNDAgent)
-        # collect_samples(agent, Path(states_root) / 'states.npy', Path(states_root) / 'cnd{0:d}_{1:d}'.format(config_id, i), 'cnd')
-        config.append({'samples': Path(states_root) / 'cnd{0:d}_{1:d}.npy'.format(config_id, i), 'results': os.path.join(results_path, 'cnd/montezuma/{0:d}/ppo_montezuma_{1:d}_cnd_{2:d}.npy'.format(config_id, config_id, i)),
-                       'label': 'cnd{0:d}_{1:d}'.format(config_id, i)})
+    for i in instance_id:
+        agent, env, _ = initialize(env_name, env_id, os.path.join(models_root, '{0:s}_{1:d}_{2:s}_{3:d}'.format(env_name, config_id, model, i)), str(config_id), agent)
+        s0, s1 = collect_states(agent, env, 10000)
+        states.append(s0)
+        next_states.append(s1)
 
-    # config = [
-    #     {'samples': Path(states_root) / 'fed_ref23_0.npy', 'results': os.path.join(results_path, 'fed_ref/montezuma/23/ppo_montezuma_23_fed_ref_0.npy'), 'label': 'fed_ref'},
-    #     {'samples': Path(states_root) / 'rnd2_0.npy', 'results': os.path.join(results_path, 'rnd/montezuma/2/ppo_montezuma_2_rnd_0.npy'), 'label': 'rnd'},
-    #     {'samples': Path(states_root) / 'cnd42_0.npy', 'results': os.path.join(results_path, 'cnd/montezuma/42/ppo_montezuma_42_cnd_0.npy'), 'label': 'cnd'},
-    #     {'samples': Path(states_root) / 'icm30_0.npy', 'results': os.path.join(results_path, 'icm/montezuma/30/ppo_montezuma_30_icm_0.npy'), 'label': 'icm'},
-    # ]
+    save_states(Path(states_root) / '{0:s}.npy'.format(env_name), states, next_states)
 
-    analysis = FeatureAnalysis(config)
-    analysis.plot('features_cnd40')
+
+def generate_features(env_name, env_id, model, agent, config_id, instance_id):
+    print('Generating features for {0:s}'.format(model))
+    agent, _, _ = initialize(env_name, env_id, os.path.join(models_root, '{0:s}_{1:d}_{2:s}_{3:d}'.format(env_name, config_id, model, instance_id)), str(config_id), agent)
+    collect_samples(agent, Path(states_root) / '{0:s}.npy'.format(env_name), Path(states_root) / '{0:s}_{1:d}_{2:s}_{3:d}'.format(env_name, config_id, model, instance_id), model)
+
+
+def generate_config(env, model, config_id, instance_id):
+    config = {'samples': Path(states_root) / '{0:s}_{1:d}_{2:s}_{3:d}.npy'.format(env, config_id, model, instance_id),
+              'results': os.path.join(results_path, '{0:s}/{1:s}/{2:d}/ppo_{3:s}_{4:d}_{5:s}_{6:d}.npy'.format(model, env, config_id, env, config_id, model, instance_id)),
+              'label': '{0:s}{1:d}_{2:d}'.format(model, config_id, instance_id)}
+
+    return config
+
+
+def find_best_agent(env, model, config_id):
+    folder = os.path.join(results_path, '{0:s}/{1:s}/{2:d}/'.format(model, env, config_id))
+    results = []
+    for file in glob.glob(str(folder) + '/*.npy'):
+        path = Path(file)
+        instance_id = int(path.stem.split('_')[-1])
+        data = np.load(file, allow_pickle=True).item()
+
+        if 're' in data:
+            key = 're'
+        else:
+            key = 'ext_reward'
+
+        max_reward = np.max(data[key]['sum']).item()
+        results.append((instance_id, max_reward))
+
+    results.sort(key=lambda a: a[1])
+    return results[-1][0], results[-1][1]
+
+
+class Descriptor:
+    def __init__(self):
+        self.env = None
+        self.models = []
+        self.agents = []
+        self.config_ids = []
+        self.instance_ids = []
+        self.ref_model = None
+        self.ref_agent = None
+        self.ref_config_id = None
+        self.ref_instance_id = None
+
+
+class MontezumaDescriptor(Descriptor):
+    def __init__(self):
+        super().__init__()
+        self.env = 'montezuma'
+        self.env_id = 'MontezumaRevengeNoFrameskip-v4'
+        self.models = ['rnd', 'icm', 'cnd', 'fwd']
+        self.agents = [PPOAtariRNDAgent, PPOAtariICMAgent, PPOAtariCNDAgent, PPOAtariFWDAgent]
+        self.config_ids = [2, 30, 42, 45]
+
+
+class GravitarDescriptor(Descriptor):
+    def __init__(self):
+        super().__init__()
+        self.env = 'gravitar'
+        self.env_id = 'GravitarNoFrameskip-v4'
+        self.models = ['rnd', 'icm', 'cnd', 'fwd']
+        self.agents = [PPOAtariRNDAgent, PPOAtariICMAgent, PPOAtariCNDAgent, PPOAtariFWDAgent]
+        self.config_ids = [2, 10, 11, 12]
+
+
+class PrivateEyeDescriptor(Descriptor):
+    def __init__(self):
+        super().__init__()
+        self.env = 'private_eye'
+        self.env_id = 'PrivateEyeNoFrameskip-v4'
+        self.models = ['rnd', 'icm', 'cnd', 'fwd']
+        self.agents = [PPOAtariRNDAgent, PPOAtariICMAgent, PPOAtariCNDAgent, PPOAtariFWDAgent]
+        self.config_ids = [2, 5, 4, 6]
+
+
+class PitfallDescriptor(Descriptor):
+    def __init__(self):
+        super().__init__()
+        self.env = 'pitfall'
+        self.env_id = 'PitfallNoFrameskip-v4'
+        self.models = ['rnd', 'icm', 'cnd', 'fwd']
+        self.agents = [PPOAtariRNDAgent, PPOAtariICMAgent, PPOAtariCNDAgent, PPOAtariFWDAgent]
+        self.config_ids = [2, 5, 4, 6]
+
+
+class SolarisDescriptor(Descriptor):
+    def __init__(self):
+        super().__init__()
+        self.env = 'solaris'
+        self.env_id = 'SolarisNoFrameskip-v4'
+        self.models = ['rnd', 'icm', 'cnd', 'fwd']
+        self.agents = [PPOAtariRNDAgent, PPOAtariICMAgent, PPOAtariCNDAgent, PPOAtariFWDAgent]
+        self.config_ids = [2, 5, 4, 6]
+
+
+class VentureDescriptor(Descriptor):
+    def __init__(self):
+        super().__init__()
+        self.env = 'venture'
+        self.env_id = 'VentureNoFrameskip-v4'
+        self.models = ['rnd', 'icm', 'cnd', 'fwd']
+        self.agents = [PPOAtariRNDAgent, PPOAtariICMAgent, PPOAtariCNDAgent, PPOAtariFWDAgent]
+        self.config_ids = [2, 6, 4, 7]
+
+
+if __name__ == '__main__':
+
+    descriptors = [MontezumaDescriptor, GravitarDescriptor, PrivateEyeDescriptor, PitfallDescriptor, SolarisDescriptor, VentureDescriptor]
+
+    for desc in descriptors:
+        desc_instance = desc()
+        config = generate_analytic_data(desc_instance)
+        analysis = FeatureAnalysis(config)
+        analysis.plot(str(Path(plot_root) / desc_instance.env))
+
     # analysis.table(filename='features_cnd{0:d}_table'.format(config_id))
     # analysis.plot_feature_boxplot('features_cnd{0:d}_boxplot'.format(config_id))
-
-    # pdf = FPDF()
-    # # imagelist is the list with all image filenames
-    # for image in ['features_cnd{0:d}_chart.png'.format(config_id), 'features_cnd{0:d}_table.png'.format(config_id), 'features_cnd{0:d}_boxplot.png'.format(config_id)]:
-    #     pdf.add_page()
-    #     pdf.image(image)
-    # pdf.output('features_cnd{0:d}.pdf'.format(config_id), "F")

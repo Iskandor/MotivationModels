@@ -81,15 +81,13 @@ class MetricTensor:
         return volume
 
 
-def initialize(path, config_id, agent_class):
-    env_id = 'montezuma'
-    env_name = 'MontezumaRevengeNoFrameskip-v4'
+def initialize(env_name, env_id, path, config_id, agent_class):
     config = load_config_file('ppo')
 
-    config = Config(config[env_id][config_id], "{0}_{1}".format(env_id, config_id))
+    config = Config(config[env_name][config_id], "{0}_{1}".format(env_name, config_id))
     config.device = 'cuda:0'
 
-    env = WrapperHardAtari(gym.make(env_name))
+    env = WrapperHardAtari(gym.make(env_id))
     input_shape = env.observation_space.shape
     action_dim = env.action_space.n
 
