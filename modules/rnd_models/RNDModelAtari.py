@@ -112,7 +112,7 @@ class CNDModelAtari(nn.Module):
         input_height = input_shape[1]
         input_width = input_shape[2]
         self.input_shape = (input_channels, input_height, input_width)
-        self.feature_dim = 256
+        self.feature_dim = 512
 
         fc_inputs_count = 128 * (input_width // 8) * (input_height // 8)
 
@@ -195,7 +195,7 @@ class CNDModelAtari(nn.Module):
 
         loss_prediction = nn.functional.mse_loss(prediction, target.detach(), reduction='sum')  # + nn.functional.mse_loss(prediction_f5, target_f5.detach(), reduction='sum')
 
-        loss_target, loss_target_norm, loss_target_uniform = self.target_model.loss_function_crossentropy(self.preprocess(state), self.preprocess(next_state))
+        loss_target, loss_target_norm = self.target_model.loss_function_crossentropy(self.preprocess(state), self.preprocess(next_state))
         # loss_target_uniform = nn.functional.mse_loss(torch.matmul(target.T, target), torch.eye(self.feature_dim, self.feature_dim, device=self.config.device), reduction='sum')
         # target_logits = torch.pow(target, 2)  # 42
         # target_logits = torch.abs(target)  # 43
