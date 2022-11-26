@@ -684,12 +684,12 @@ class ExperimentNEnvPPO:
             step_counter.update(n_env)
 
             for i, index in enumerate(env_indices):
-                reward_avg.update(stats['ext_reward'].sum[i].item())
+                reward_avg.update(stats['re'].sum[i].item())
 
                 print('Run {0:d} step {1:d}/{2:d} training [ext. reward {3:f} int. reward (max={4:f} mean={5:f} std={6:f}) steps {7:d}  mean reward {8:f} score {9:f})]'.format(
-                    trial, step_counter.steps, step_counter.limit, stats['ext_reward'].sum[i].item(), stats['int_reward'].max[i].item(), stats['int_reward'].mean[i].item(),
-                    stats['int_reward'].std[i].item(),
-                    int(stats['ext_reward'].step[i].item()), reward_avg.value().item(), stats['score'].sum[i].item()))
+                    trial, step_counter.steps, step_counter.limit, stats['re'].sum[i].item(), stats['ri'].max[i].item(), stats['ri'].mean[i].item(),
+                    stats['ri'].std[i].item(),
+                    int(stats['re'].step[i].item()), reward_avg.value().item(), stats['score'].sum[i].item()))
                 print(time_estimator)
                 next_state[i] = self._env.reset(index)
 
