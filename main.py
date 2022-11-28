@@ -111,6 +111,10 @@ def run_ray_parallel(args, experiment):
 
 def run_thread(thread_params):
     algorithm, env, experiment, i = thread_params
+
+    if experiment.gpus:
+        torch.cuda.set_device(experiment.gpus[0])
+
     run(i, algorithm, env, experiment)
 
 
@@ -185,9 +189,6 @@ def run_command_file():
 
 
 def run_torch_parallel(args, experiment):
-    if experiment.gpus:
-        torch.cuda.set_device(experiment.gpus[0])
-
     multiprocessing.set_start_method('spawn')
 
     thread_params = []
@@ -266,6 +267,7 @@ if __name__ == '__main__':
 
             if args.parallel_backend == 'ray':
                 if args.gpus:
+                    experiment.gpus = None
                     os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpus[0])
                 ray.shutdown()
                 ray.init(num_cpus=num_cpus, num_gpus=1)
