@@ -35,12 +35,12 @@ class GenericCollector:
             for i in indices:
                 result[k].append(self._evaluate(k, i))
                 self._buffer[k].reset(i)
-            result[k] = self._simple_stats(*[torch.tensor(l).unsqueeze(-1) for l in zip(*result[k])])
+            result[k] = self._simple_stats(*tuple(map(list, zip(*result[k]))))
 
         return result
 
     def _evaluate(self, key, index):
-        return self._buffer[key].count[index].item() - 1, self._buffer[key].max[index].item(), self._buffer[key].sum[index].item(), self._buffer[key].mean[index].item(), self._buffer[key].std[index].item()
+        return [self._buffer[key].count[index].item() - 1, self._buffer[key].max[index].item(), self._buffer[key].sum[index].item(), self._buffer[key].mean[index].item(), self._buffer[key].std[index].item()]
 
     def clear(self):
         self.keys.clear()

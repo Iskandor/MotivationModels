@@ -26,7 +26,11 @@ def moving_average(a, n=3):
 
 def prepare_data_instance(data_x, data_y, window, smooth=True):
     dx = data_x
-    dy = np.concatenate((data_y[:-128], data_y[-256:-128]))  # at the end of data is garbage from unfinished 128 environments
+
+    if len(data_y) > 256:
+        dy = np.concatenate((data_y[:-128], data_y[-256:-128]))  # at the end of data is garbage from unfinished 128 environments
+    else:
+        dy = data_y
 
     if smooth:
         for i in range(len(dy))[1:]:

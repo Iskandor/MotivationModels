@@ -2,6 +2,7 @@ import glob
 import os
 
 import numpy as np
+import torch
 
 from plots.paths import data_root
 
@@ -65,7 +66,14 @@ def load_analytic_files(folder):
     data = []
 
     for file in glob.glob(str(folder) + '/*.npy'):
-        data.append(np.load(file, allow_pickle=True).item())
+        elem = np.load(file, allow_pickle=True).item()
+
+        for value_key in elem:
+            for key in elem[value_key]:
+                if isinstance(elem[value_key][key], torch.Tensor):
+                    elem[value_key][key] = elem[value_key][key].numpy()
+
+        data.append(elem)
 
     return data
 

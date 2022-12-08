@@ -1,3 +1,6 @@
+import itertools
+
+import numpy as np
 import torch
 
 from analytic.GenericCollector import GenericCollector
@@ -39,7 +42,7 @@ class ResultCollector:
                 self.global_values[k] = {}
             if self.global_step not in self.global_values[k]:
                 self.global_values[k][self.global_step] = []
-            self.global_values[k][self.global_step].append(kwargs[k].cpu())
+            self.global_values[k][self.global_step].append(kwargs[k].cpu().item())
 
     def reset(self, indices):
         result = None
@@ -83,25 +86,21 @@ class ResultCollector:
         result = {}
 
         if mode == 'cumsum_step':
-            l = list(zip(*value))
+            l = tuple(map(list, zip(*value)))
             for i, k in enumerate(keys):
-                result[k] = torch.cat(l[i])
+                result[k] = np.array(list(itertools.chain(*l[i])))
 
-            result['step'] = torch.cumsum(result['step'], dim=0)
-
-            for k in keys:
-                result[k] = result[k].numpy()
+            result['step'] = np.cumsum(result['step'])
 
         if mode == 'mean_step':
             l = []
-            for vk in value:
-                steps = torch.tensor([[vk]])
-                val = torch.stack(value[vk]).mean().unsqueeze(0).unsqueeze(1)
+            for steps in value:
+                val = sum(value[steps]) / len(value[steps])
                 l.append((steps, val))
 
-            l = list(zip(*l))
+            l = tuple(map(list, zip(*l)))
             for i, k in enumerate(keys):
-                result[k] = torch.cat(l[i])
+                result[k] = np.array(l[i])
 
         return result
 
