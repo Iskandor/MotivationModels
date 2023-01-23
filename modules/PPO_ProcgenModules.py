@@ -6,7 +6,7 @@ from modules import init_orthogonal
 from modules.PPO_Modules import DiscreteHead, Actor, Critic2Heads, ActorNHeads, CriticHead, Critic2NHeads
 from modules.encoders.EncoderProcgen import ST_DIMEncoderProcgen
 from modules.forward_models.ForwardModelProcgen import ForwardModelProcgen, FWDModelProcgen, ICMModelProcgen
-from modules.rnd_models.RNDModelProcgen import VICRegModelProcgen, QRNDModelProcgen, RNDModelProcgen, FEDRefModelProcgen, CNDModelProcgen
+from modules.rnd_models.RNDModelProcgen import VICRegModelProcgen, QRNDModelProcgen, RNDModelProcgen, FEDRefModelProcgen, CNDModelProcgen, BarlowTwinsModelProcgen, CNDVModelProcgen
 
 
 class PPOProcgenNetwork(torch.nn.Module):
@@ -158,9 +158,15 @@ class PPOProcgenNetworkFEDRef(PPOProcgenMotivationNetwork):
 class PPOProcgenNetworkCND(PPOProcgenMotivationNetwork):
     def __init__(self, input_shape, action_dim, config, head):
         super(PPOProcgenNetworkCND, self).__init__(input_shape, action_dim, config, head)
-        # self.cnd_model = BarlowTwinsModelProcgen(input_shape, action_dim, config)
-        # self.cnd_model = VICRegModelProcgen(input_shape, action_dim, config)
-        self.cnd_model = CNDModelProcgen(input_shape, action_dim, config)
+
+        if config.type == 'bt':
+            self.cnd_model = BarlowTwinsModelProcgen(input_shape, action_dim, config)
+        if config.type == 'vicreg':
+            self.cnd_model = VICRegModelProcgen(input_shape, action_dim, config)
+        if config.type == 'st-dim':
+            self.cnd_model = CNDModelProcgen(input_shape, action_dim, config)
+        if config.type == 'vanilla':
+            self.cnd_model = CNDVModelProcgen(input_shape, action_dim, config)
 
 
 class PPOProcgenNetworkQRND(PPOProcgenMotivationNetwork):

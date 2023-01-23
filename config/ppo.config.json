@@ -957,8 +957,8 @@
       "forward_model_variant": "A"
     },
     "11": {
-      "descriptor": "st-dim",
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 4,
       "steps": 128,
@@ -999,8 +999,31 @@
       "forward_model_variant": "A"
     },
     "13": {
-      "descriptor": "vicreg",
       "model": "cnd",
+      "type": "vicreg",
+      "n_env": 128,
+      "trials": 8,
+      "steps": 128,
+      "gamma": "0.998,0.99",
+      "beta": 0.001,
+      "batch_size": 512,
+      "trajectory_size": 16384,
+      "ppo_epochs": 4,
+      "lr": 0.0001,
+      "actor_loss_weight": 1,
+      "critic_loss_weight": 0.5,
+      "motivation_lr": 0.0001,
+      "motivation_eta": 0.25,
+      "cnd_error_k": 2,
+      "cnd_loss_k": 2,
+      "cnd_preprocess": 0,
+      "cnd_loss_pred": 1,
+      "cnd_loss_target": 1,
+      "cnd_loss_target_reg": 0.0001
+    },
+    "14": {
+      "model": "cnd",
+      "type": "vanilla",
       "n_env": 128,
       "trials": 8,
       "steps": 128,
@@ -1218,6 +1241,7 @@
     "12": {
       "descriptor": "crossentropy",
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 1,
       "steps": 32,
@@ -1241,6 +1265,7 @@
     "13": {
       "descriptor": "crossentropy",
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 1,
       "steps": 32,
@@ -1264,6 +1289,7 @@
     "14": {
       "descriptor": "crossentropy",
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 1,
       "steps": 32,
@@ -1286,6 +1312,7 @@
     },
     "15": {
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 1,
       "steps": 32,
@@ -1308,6 +1335,7 @@
     },
     "16": {
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 1,
       "steps": 64,
@@ -1330,6 +1358,7 @@
     },
     "17": {
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 1,
       "steps": 64,
@@ -1353,6 +1382,7 @@
     "18": {
       "descriptor": "14 + full state",
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 1,
       "steps": 32,
@@ -1376,6 +1406,7 @@
     "19": {
       "descriptor": "ref",
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 1,
       "steps": 32,
@@ -1399,6 +1430,7 @@
     "20": {
       "descriptor": "train target",
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 1,
       "steps": 128,
@@ -1422,6 +1454,7 @@
     "21": {
       "descriptor": "pred loss gl f5",
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 3,
       "steps": 128,
@@ -1445,6 +1478,7 @@
     "22": {
       "descriptor": "20 replay buffer",
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 1,
       "steps": 128,
@@ -1484,6 +1518,7 @@
     "24": {
       "descriptor": "gain=1",
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 1,
       "steps": 128,
@@ -1507,6 +1542,7 @@
     "25": {
       "descriptor": "hybrid prediction loss",
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 1,
       "steps": 128,
@@ -1528,8 +1564,8 @@
       "cnd_loss_target_reg": 0.0001
     },
     "26": {
-      "descriptor": "barlow twins",
       "model": "cnd",
+      "type": "bt",
       "n_env": 128,
       "trials": 1,
       "steps": 32,
@@ -1551,8 +1587,8 @@
       "cnd_loss_target_reg": 0.0001
     },
     "27": {
-      "descriptor": "barlow twins",
       "model": "cnd",
+      "type": "bt",
       "n_env": 128,
       "trials": 1,
       "steps": 32,
@@ -1574,8 +1610,8 @@
       "cnd_loss_target_reg": 0.0001
     },
     "28": {
-      "descriptor": "barlow twins",
       "model": "cnd",
+      "type": "bt",
       "n_env": 128,
       "trials": 1,
       "steps": 32,
@@ -1637,8 +1673,8 @@
       "forward_model_variant": "A"
     },
     "31": {
-      "descriptor": "barlow twins",
       "model": "cnd",
+      "type": "bt",
       "n_env": 128,
       "trials": 2,
       "steps": 32,
@@ -1660,8 +1696,8 @@
       "cnd_loss_target_reg": 0.0001
     },
     "32": {
-      "descriptor": "barlow twins",
       "model": "cnd",
+      "type": "bt",
       "n_env": 128,
       "trials": 1,
       "steps": 32,
@@ -1683,8 +1719,8 @@
       "cnd_loss_target_reg": 0.0001
     },
     "33": {
-      "descriptor": "barlow twins",
       "model": "cnd",
+      "type": "bt",
       "n_env": 128,
       "trials": 1,
       "steps": 32,
@@ -1706,8 +1742,8 @@
       "cnd_loss_target_reg": 0.0001
     },
     "34": {
-      "descriptor": "barlow twins",
       "model": "cnd",
+      "type": "bt",
       "n_env": 128,
       "trials": 1,
       "steps": 32,
@@ -1729,8 +1765,8 @@
       "cnd_loss_target_reg": 0.0001
     },
     "35": {
-      "descriptor": "barlow twins",
       "model": "cnd",
+      "type": "bt",
       "n_env": 128,
       "trials": 2,
       "steps": 32,
@@ -1752,8 +1788,8 @@
       "cnd_loss_target_reg": 0.0001
     },
     "36": {
-      "descriptor": "barlow twins",
       "model": "cnd",
+      "type": "bt",
       "n_env": 128,
       "trials": 2,
       "steps": 32,
@@ -1775,8 +1811,8 @@
       "cnd_loss_target_reg": 0.0001
     },
     "37": {
-      "descriptor": "barlow twins",
       "model": "cnd",
+      "type": "bt",
       "n_env": 128,
       "trials": 2,
       "steps": 32,
@@ -1798,8 +1834,8 @@
       "cnd_loss_target_reg": 0.0001
     },
     "38": {
-      "descriptor": "st-dim",
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 5,
       "steps": 32,
@@ -1821,8 +1857,8 @@
       "cnd_loss_target_reg": 0.0001
     },
     "39": {
-      "descriptor": "st-dim",
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 4,
       "steps": 32,
@@ -1844,8 +1880,8 @@
       "cnd_loss_target_reg": 0.0001
     },
     "40": {
-      "descriptor": "st-dim",
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 4,
       "steps": 128,
@@ -1867,8 +1903,8 @@
       "cnd_loss_target_reg": 0.0001
     },
     "41": {
-      "descriptor": "st-dim",
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 4,
       "steps": 32,
@@ -1890,8 +1926,8 @@
       "cnd_loss_target_reg": 0.0001
     },
     "42": {
-      "descriptor": "st-dim",
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 4,
       "steps": 128,
@@ -1913,8 +1949,8 @@
       "cnd_loss_target_reg": 0.0001
     },
     "43": {
-      "descriptor": "st-dim",
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 2,
       "steps": 64,
@@ -1936,8 +1972,8 @@
       "cnd_loss_target_reg": 0.0001
     },
     "44": {
-      "descriptor": "vicreg",
       "model": "cnd",
+      "type": "vicreg",
       "n_env": 128,
       "trials": 8,
       "steps": 128,
@@ -1980,6 +2016,7 @@
     "46": {
       "descriptor": "st-dim + vicreg",
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 2,
       "steps": 32,
@@ -2001,8 +2038,8 @@
       "cnd_loss_target_reg": 0.0001
     },
     "47": {
-      "descriptor": "vicreg",
       "model": "cnd",
+      "type": "vicreg",
       "n_env": 128,
       "trials": 8,
       "steps": 128,
@@ -2026,6 +2063,7 @@
     "48": {
       "descriptor": "st-dim variance",
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 2,
       "steps": 32,
@@ -2096,6 +2134,7 @@
     },
     "4": {
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 4,
       "steps": 128,
@@ -2155,8 +2194,8 @@
       "forward_model_variant": "A"
     },
     "7": {
-      "descriptor": "vicreg",
       "model": "cnd",
+      "type": "vicreg",
       "n_env": 128,
       "trials": 8,
       "steps": 128,
@@ -2227,6 +2266,7 @@
     },
     "4": {
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 1,
       "steps": 128,
@@ -2286,8 +2326,8 @@
       "forward_model_variant": "A"
     },
     "7": {
-      "descriptor": "vicreg",
       "model": "cnd",
+      "type": "vicreg",
       "n_env": 128,
       "trials": 8,
       "steps": 128,
@@ -2358,6 +2398,7 @@
     },
     "4": {
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 2,
       "steps": 32,
@@ -2417,8 +2458,8 @@
       "forward_model_variant": "A"
     },
     "7": {
-      "descriptor": "vicreg",
       "model": "cnd",
+      "type": "vicreg",
       "n_env": 128,
       "trials": 8,
       "steps": 128,
@@ -2488,8 +2529,8 @@
       "motivation_eta": 1
     },
     "4": {
-      "descriptor": "st-dim",
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 4,
       "steps": 128,
@@ -2570,8 +2611,8 @@
       "forward_model_variant": "A"
     },
     "8": {
-      "descriptor": "vicreg",
       "model": "cnd",
+      "type": "vicreg",
       "n_env": 128,
       "trials": 8,
       "steps": 128,
@@ -2593,8 +2634,8 @@
       "cnd_loss_target_reg": 0.0001
     },
     "9": {
-      "descriptor": "st-dim",
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 4,
       "steps": 8,
@@ -2634,7 +2675,7 @@
     "2": {
       "model": "rnd",
       "n_env": 128,
-      "trials": 9,
+      "trials": 6,
       "steps": 64,
       "gamma": "0.998,0.99",
       "beta": 0.001,
@@ -2664,8 +2705,8 @@
       "motivation_eta": 1
     },
     "4": {
-      "descriptor": "st-dim",
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 9,
       "steps": 64,
@@ -2725,34 +2766,11 @@
       "forward_model_variant": "A"
     },
     "7": {
-      "descriptor": "st-dim",
       "model": "cnd",
+      "type": "vicreg",
       "n_env": 128,
-      "trials": 3,
-      "steps": 32,
-      "gamma": "0.998,0.99",
-      "beta": 0.001,
-      "batch_size": 512,
-      "trajectory_size": 16384,
-      "ppo_epochs": 4,
-      "lr": 0.0001,
-      "actor_loss_weight": 1,
-      "critic_loss_weight": 0.5,
-      "motivation_lr": 0.0001,
-      "motivation_eta": 1,
-      "cnd_error_k": 2,
-      "cnd_loss_k": 2,
-      "cnd_preprocess": 0,
-      "cnd_loss_pred": 1,
-      "cnd_loss_target": 1,
-      "cnd_loss_target_reg": 0.0001
-    },
-    "8": {
-      "descriptor": "st-dim",
-      "model": "cnd",
-      "n_env": 128,
-      "trials": 3,
-      "steps": 32,
+      "trials": 9,
+      "steps": 64,
       "gamma": "0.998,0.99",
       "beta": 0.001,
       "batch_size": 512,
@@ -2770,12 +2788,12 @@
       "cnd_loss_target": 1,
       "cnd_loss_target_reg": 0.0001
     },
-    "9": {
-      "descriptor": "st-dim",
+    "8": {
       "model": "cnd",
+      "type": "vanilla",
       "n_env": 128,
-      "trials": 3,
-      "steps": 32,
+      "trials": 9,
+      "steps": 64,
       "gamma": "0.998,0.99",
       "beta": 0.001,
       "batch_size": 512,
@@ -2785,30 +2803,7 @@
       "actor_loss_weight": 1,
       "critic_loss_weight": 0.5,
       "motivation_lr": 0.0001,
-      "motivation_eta": 0.25,
-      "cnd_error_k": 2,
-      "cnd_loss_k": 2,
-      "cnd_preprocess": 0,
-      "cnd_loss_pred": 1,
-      "cnd_loss_target": 1,
-      "cnd_loss_target_reg": 0.0001
-    },
-    "10": {
-      "descriptor": "st-dim",
-      "model": "cnd",
-      "n_env": 128,
-      "trials": 3,
-      "steps": 32,
-      "gamma": "0.998,0.99",
-      "beta": 0.001,
-      "batch_size": 512,
-      "trajectory_size": 16384,
-      "ppo_epochs": 4,
-      "lr": 0.0001,
-      "actor_loss_weight": 1,
-      "critic_loss_weight": 0.5,
-      "motivation_lr": 0.0001,
-      "motivation_eta": 0.1,
+      "motivation_eta": 0.5,
       "cnd_error_k": 2,
       "cnd_loss_k": 2,
       "cnd_preprocess": 0,
@@ -2835,7 +2830,7 @@
     "2": {
       "model": "rnd",
       "n_env": 128,
-      "trials": 9,
+      "trials": 6,
       "steps": 64,
       "gamma": "0.998,0.99",
       "beta": 0.001,
@@ -2865,8 +2860,8 @@
       "motivation_eta": 1
     },
     "4": {
-      "descriptor": "st-dim",
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 9,
       "steps": 64,
@@ -2926,8 +2921,8 @@
       "forward_model_variant": "A"
     },
     "7": {
-      "descriptor": "st-dim",
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 3,
       "steps": 32,
@@ -2949,8 +2944,8 @@
       "cnd_loss_target_reg": 0.0001
     },
     "8": {
-      "descriptor": "st-dim",
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 3,
       "steps": 32,
@@ -2972,8 +2967,8 @@
       "cnd_loss_target_reg": 0.0001
     },
     "9": {
-      "descriptor": "st-dim",
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 3,
       "steps": 32,
@@ -2995,8 +2990,8 @@
       "cnd_loss_target_reg": 0.0001
     },
     "10": {
-      "descriptor": "st-dim",
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 3,
       "steps": 32,
@@ -3036,7 +3031,7 @@
     "2": {
       "model": "rnd",
       "n_env": 128,
-      "trials": 9,
+      "trials": 6,
       "steps": 64,
       "gamma": "0.998,0.99",
       "beta": 0.001,
@@ -3066,8 +3061,8 @@
       "motivation_eta": 1
     },
     "4": {
-      "descriptor": "st-dim",
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 9,
       "steps": 64,
@@ -3080,7 +3075,7 @@
       "actor_loss_weight": 1,
       "critic_loss_weight": 0.5,
       "motivation_lr": 0.0001,
-      "motivation_eta": 1,
+      "motivation_eta": 0.25,
       "cnd_error_k": 2,
       "cnd_loss_k": 2,
       "cnd_preprocess": 0,
@@ -3127,34 +3122,11 @@
       "forward_model_variant": "A"
     },
     "7": {
-      "descriptor": "st-dim",
       "model": "cnd",
+      "type": "vicreg",
       "n_env": 128,
-      "trials": 3,
-      "steps": 32,
-      "gamma": "0.998,0.99",
-      "beta": 0.001,
-      "batch_size": 512,
-      "trajectory_size": 16384,
-      "ppo_epochs": 4,
-      "lr": 0.0001,
-      "actor_loss_weight": 1,
-      "critic_loss_weight": 0.5,
-      "motivation_lr": 0.0001,
-      "motivation_eta": 1,
-      "cnd_error_k": 2,
-      "cnd_loss_k": 2,
-      "cnd_preprocess": 0,
-      "cnd_loss_pred": 1,
-      "cnd_loss_target": 1,
-      "cnd_loss_target_reg": 0.0001
-    },
-    "8": {
-      "descriptor": "st-dim",
-      "model": "cnd",
-      "n_env": 128,
-      "trials": 3,
-      "steps": 32,
+      "trials": 9,
+      "steps": 64,
       "gamma": "0.998,0.99",
       "beta": 0.001,
       "batch_size": 512,
@@ -3165,52 +3137,6 @@
       "critic_loss_weight": 0.5,
       "motivation_lr": 0.0001,
       "motivation_eta": 0.5,
-      "cnd_error_k": 2,
-      "cnd_loss_k": 2,
-      "cnd_preprocess": 0,
-      "cnd_loss_pred": 1,
-      "cnd_loss_target": 1,
-      "cnd_loss_target_reg": 0.0001
-    },
-    "9": {
-      "descriptor": "st-dim",
-      "model": "cnd",
-      "n_env": 128,
-      "trials": 3,
-      "steps": 32,
-      "gamma": "0.998,0.99",
-      "beta": 0.001,
-      "batch_size": 512,
-      "trajectory_size": 16384,
-      "ppo_epochs": 4,
-      "lr": 0.0001,
-      "actor_loss_weight": 1,
-      "critic_loss_weight": 0.5,
-      "motivation_lr": 0.0001,
-      "motivation_eta": 0.25,
-      "cnd_error_k": 2,
-      "cnd_loss_k": 2,
-      "cnd_preprocess": 0,
-      "cnd_loss_pred": 1,
-      "cnd_loss_target": 1,
-      "cnd_loss_target_reg": 0.0001
-    },
-    "10": {
-      "descriptor": "st-dim",
-      "model": "cnd",
-      "n_env": 128,
-      "trials": 3,
-      "steps": 32,
-      "gamma": "0.998,0.99",
-      "beta": 0.001,
-      "batch_size": 512,
-      "trajectory_size": 16384,
-      "ppo_epochs": 4,
-      "lr": 0.0001,
-      "actor_loss_weight": 1,
-      "critic_loss_weight": 0.5,
-      "motivation_lr": 0.0001,
-      "motivation_eta": 0.1,
       "cnd_error_k": 2,
       "cnd_loss_k": 2,
       "cnd_preprocess": 0,
@@ -3237,7 +3163,7 @@
     "2": {
       "model": "rnd",
       "n_env": 128,
-      "trials": 9,
+      "trials": 6,
       "steps": 64,
       "gamma": "0.998,0.99",
       "beta": 0.001,
@@ -3267,8 +3193,8 @@
       "motivation_eta": 1
     },
     "4": {
-      "descriptor": "st-dim",
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 9,
       "steps": 64,
@@ -3328,8 +3254,8 @@
       "forward_model_variant": "A"
     },
     "7": {
-      "descriptor": "st-dim",
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 3,
       "steps": 32,
@@ -3351,8 +3277,8 @@
       "cnd_loss_target_reg": 0.0001
     },
     "8": {
-      "descriptor": "st-dim",
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 3,
       "steps": 32,
@@ -3374,8 +3300,8 @@
       "cnd_loss_target_reg": 0.0001
     },
     "9": {
-      "descriptor": "st-dim",
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 3,
       "steps": 32,
@@ -3397,8 +3323,8 @@
       "cnd_loss_target_reg": 0.0001
     },
     "10": {
-      "descriptor": "st-dim",
       "model": "cnd",
+      "type": "st-dim",
       "n_env": 128,
       "trials": 3,
       "steps": 32,

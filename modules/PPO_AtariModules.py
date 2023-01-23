@@ -7,7 +7,7 @@ from modules.dop_models.DOPModelAtari import DOPModelAtari, DOPControllerAtari, 
 from modules.PPO_Modules import DiscreteHead, Actor, Critic2Heads, ActorNHeads, CriticHead, Critic2NHeads
 from modules.encoders.EncoderAtari import ST_DIMEncoderAtari
 from modules.forward_models.ForwardModelAtari import ForwardModelAtari, FWDModelAtari, ICMModelAtari
-from modules.rnd_models.RNDModelAtari import QRNDModelAtari, RNDModelAtari, CNDModelAtari, BarlowTwinsModelAtari, FEDRefModelAtari, VICRegModelAtari
+from modules.rnd_models.RNDModelAtari import QRNDModelAtari, RNDModelAtari, CNDModelAtari, BarlowTwinsModelAtari, FEDRefModelAtari, VICRegModelAtari, CNDVModelAtari
 
 
 class PPOAtariNetwork(torch.nn.Module):
@@ -159,9 +159,14 @@ class PPOAtariNetworkFEDRef(PPOAtariMotivationNetwork):
 class PPOAtariNetworkCND(PPOAtariMotivationNetwork):
     def __init__(self, input_shape, action_dim, config, head):
         super(PPOAtariNetworkCND, self).__init__(input_shape, action_dim, config, head)
-        # self.cnd_model = BarlowTwinsModelAtari(input_shape, action_dim, config)
-        # self.cnd_model = VICRegModelAtari(input_shape, action_dim, config)
-        self.cnd_model = CNDModelAtari(input_shape, action_dim, config)
+        if config.type == 'bt':
+            self.cnd_model = BarlowTwinsModelAtari(input_shape, action_dim, config)
+        if config.type == 'vicreg':
+            self.cnd_model = VICRegModelAtari(input_shape, action_dim, config)
+        if config.type == 'st-dim':
+            self.cnd_model = CNDModelAtari(input_shape, action_dim, config)
+        if config.type == 'vanilla':
+            self.cnd_model = CNDVModelAtari(input_shape, action_dim, config)
 
 
 class PPOAtariNetworkQRND(PPOAtariMotivationNetwork):

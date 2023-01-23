@@ -535,6 +535,115 @@ class ST_DIMEncoderProcgen(nn.Module):
         return loss
 
 
+class CNDVEncoderProcgen(nn.Module):
+    def __init__(self, input_shape, feature_dim, config):
+        super(CNDVEncoderProcgen, self).__init__()
+
+        self.config = config
+        fc_size = (input_shape[1] // 8) * (input_shape[2] // 8)
+
+        self.layers = [
+            nn.Conv2d(input_shape[0], 16, kernel_size=3, stride=2, padding=1),
+            nn.ELU(),
+
+            nn.Conv2d(16, 32, kernel_size=3, stride=2, padding=1),
+            nn.ELU(),
+
+            nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1),
+            nn.ELU(),
+
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
+            nn.ELU(),
+
+            nn.Flatten(),
+
+            nn.Linear(64 * fc_size, feature_dim)
+        ]
+
+        for i in range(len(self.layers)):
+            if hasattr(self.layers[i], "weight"):
+                torch.nn.init.orthogonal_(self.layers[i].weight, 2.0 ** 0.5)
+                torch.nn.init.zeros_(self.layers[i].bias)
+
+        self.encoder = nn.Sequential(*self.layers)
+
+    def forward(self, state):
+        return self.encoder(state)
+
+    def loss_function(self, states_a, states_b, target):
+        xa = states_a.clone()
+        xb = states_b.clone()
+
+        # normalise states
+        # if normalise is not None:
+        #     xa = normalise(xa)
+        #     xb = normalise(xb)
+
+        # states augmentation
+        xa = self.augment(xa)
+        xb = self.augment(xb)
+
+        # obtain features from model
+        za = self(xa)
+        zb = self(xb)
+
+        # predict close distance for similar, far distance for different states
+        predicted = ((za - zb) ** 2).mean(dim=1)
+
+        # similarity MSE loss
+        loss_sim = ((target - predicted) ** 2).mean()
+
+        # L2 magnitude regularisation
+        magnitude = (za ** 2).mean() + (zb ** 2).mean()
+
+        # care only when magnitude above 200
+        loss_magnitude = torch.relu(magnitude - 200.0)
+
+        loss = loss_sim + loss_magnitude
+
+        return loss
+
+    def augment(self, x):
+        x = self.aug_random_apply(x, 0.5, self.aug_mask_tiles)
+        x = self.aug_random_apply(x, 0.5, self.aug_noise)
+
+        return x.detach()
+
+    @staticmethod
+    def aug_random_apply(x, p, aug_func):
+        mask = (torch.rand(x.shape[0]) < p)
+        mask = mask.unsqueeze(1).unsqueeze(1).unsqueeze(1)
+        mask = mask.float().to(x.device)
+        y = (1.0 - mask) * x + mask * aug_func(x)
+
+        return y
+
+    @staticmethod
+    def aug_mask_tiles(x, p=0.1):
+
+        if x.shape[2] == 96:
+            tile_sizes = [1, 2, 4, 8, 12, 16]
+        else:
+            tile_sizes = [1, 2, 4, 8, 16]
+
+        tile_size = tile_sizes[np.random.randint(len(tile_sizes))]
+
+        size_h = x.shape[2] // tile_size
+        size_w = x.shape[3] // tile_size
+
+        mask = (torch.rand((x.shape[0], 1, size_h, size_w)) < (1.0 - p))
+
+        mask = torch.kron(mask, torch.ones(tile_size, tile_size))
+
+        return x * mask.float().to(x.device)
+
+    # uniform aditional noise
+    @staticmethod
+    def aug_noise(x, k=0.2):
+        pointwise_noise = k * (2.0 * torch.rand(x.shape, device=x.device) - 1.0)
+        return x + pointwise_noise
+
+
 class BarlowTwinsEncoderProcgen(nn.Module):
     def __init__(self, input_shape, feature_dim, config):
         super(BarlowTwinsEncoderProcgen, self).__init__()
@@ -627,7 +736,7 @@ class VICRegEncoderProcgen(nn.Module):
 
         la = 1.
         mu = 1.
-        nu = 1./25
+        nu = 1. / 25
 
         return la * inv_loss + mu * var_loss + nu * cov_loss
 
