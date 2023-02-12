@@ -36,18 +36,17 @@ def collect_samples(agent, path, dest, mode):
     collector = SampleCollector('cuda:0')
 
     feature = None
-    diff = None
     dist = None
     if mode == 'rnd':
-        feature, diff, dist = collector.collect_samples(agent.network.rnd_model, states, next_states, False)
+        feature, dist = collector.collect_samples(agent.network.rnd_model, states, next_states, False)
     if mode == 'cnd':
-        feature, diff, dist = collector.collect_samples(agent.network.cnd_model, states, next_states, False)
+        feature, dist = collector.collect_samples(agent.network.cnd_model, states, next_states, False)
     if mode == 'icm':
-        feature, diff, dist = collector.collect_samples(agent.network.features, states, next_states, True)
+        feature, dist = collector.collect_samples(agent.network.features, states, next_states, True)
     if mode == 'fwd':
-        feature, diff, dist = collector.collect_samples(agent.network.features, states, next_states, True)
+        feature, dist = collector.collect_samples(agent.network.features, states, next_states, True)
     if mode == 'fed_ref':
-        feature, diff, dist = collector.collect_samples(agent.network.features, states, next_states, True)
+        feature, dist = collector.collect_samples(agent.network.features, states, next_states, True)
 
     # d = torch.cdist(torch.tensor(feature), torch.tensor(feature), p=2)
     # plt.figure(figsize=(20.48, 20.48))
@@ -93,7 +92,7 @@ class SampleCollector:
 
         dist = torch.norm(torch.stack(diff).squeeze(1), p=2, dim=1, keepdim=True)
 
-        return torch.stack(features).squeeze(1).numpy(), torch.stack(diff).squeeze(1).numpy(), dist.numpy()
+        return torch.stack(features).squeeze(1).numpy(), dist.numpy()
 
     def collect_states(self, agent, env, count):
         states = []
