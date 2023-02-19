@@ -63,6 +63,11 @@ def load_analytic_files(folder):
     print(folder)
     print(glob.glob(str(folder) + '/*.npy'))
 
+    synonyms = {
+        'ext_reward': 're',
+        'int_reward': 'ri',
+    }
+
     data = []
 
     for file in glob.glob(str(folder) + '/*.npy'):
@@ -73,7 +78,14 @@ def load_analytic_files(folder):
                 if isinstance(elem[value_key][key], torch.Tensor):
                     elem[value_key][key] = elem[value_key][key].numpy()
 
-        data.append(elem)
+        new_elem = {}
+        for value_key in elem:
+            if value_key in synonyms:
+                new_elem[synonyms[value_key]] = elem[value_key]
+            else:
+                new_elem[value_key] = elem[value_key]
+
+        data.append(new_elem)
 
     return data
 
@@ -85,23 +97,35 @@ def load_text_files(folder):
     data = []
 
     for file in glob.glob(str(folder) + '/*.log'):
-        with open(file) as f:
-            lines = f.readlines()
+        element = parse_text_file(file)
 
-        if lines:
-            steps, sums = tuple(map(list, zip(*[parse_text_line(line) for line in lines])))
-
-            element = {
-                're': {
-                    'step': np.array(steps) * 128,
-                    'sum': np.array(sums),
-                }
-            }
-
+        if element is not None:
             data.append(element)
 
     return data
 
+
+def parse_text_file(file):
+    element = None
+
+    with open(file) as f:
+        lines = f.readlines()
+
+    if lines:
+        steps, reward, score = tuple(map(list, zip(*[parse_text_line(line) for line in lines])))
+
+        element = {
+            're': {
+                'step': np.array(steps) * 128,
+                'sum': np.array(reward),
+            },
+            'score': {
+                'step': np.array(steps) * 128,
+                'sum': np.array(score),
+            }
+        }
+
+    return element
 
 # steps, raw epizoda, epizoda (tu je to fuk), raw skore, skore, ETA [h], a potom dake loss, interne motivacie, z hlavy uz neviem actor loss, critic loss, rnd target loss, rnd loss, im, im std
 
@@ -109,9 +133,10 @@ def parse_text_line(line):
     line = str.split(line, ' ')
 
     steps = int(line[0])
-    reward = float(line[3])
+    score = float(line[3])
+    reward = float(line[4])
 
-    return steps, reward
+    return steps, reward, score
 
 
 def convert_data(data):

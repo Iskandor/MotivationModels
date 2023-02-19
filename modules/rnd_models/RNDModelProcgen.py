@@ -17,7 +17,7 @@ class RNDModelProcgen(nn.Module):
         self.input_shape = input_shape
         self.action_dim = action_dim
 
-        input_channels = 1
+        input_channels = 3
         input_height = self.input_shape[1]
         input_width = self.input_shape[2]
         self.feature_dim = 512
@@ -68,7 +68,7 @@ class RNDModelProcgen(nn.Module):
 
     def prepare_input(self, state):
         x = state - self.state_average.mean
-        return x[:, 0, :, :].unsqueeze(1)
+        return x[:, 0::self.input_shape[0], :, :]
 
     def forward(self, state):
         x = self.prepare_input(state)
@@ -107,7 +107,7 @@ class CNDModelProcgen(nn.Module):
         self.config = config
         self.action_dim = action_dim
 
-        input_channels = 1
+        input_channels = 3
         # input_channels = input_shape[0]
         input_height = input_shape[1]
         input_width = input_shape[2]
@@ -154,7 +154,7 @@ class CNDModelProcgen(nn.Module):
         if self.config.cnd_preprocess == 2:
             x = ((state - self.state_average.mean) / self.state_average.std).clip(-1., 1.)
 
-        return x[:, 0, :, :].unsqueeze(1)
+        return x[:, 0:self.input_shape[0], :, :]
 
     def forward(self, state, fmaps=False):
         s = self.preprocess(state)
@@ -312,7 +312,7 @@ class CNDVModelProcgen(nn.Module):
     def error(self, state):
         with torch.no_grad():
             prediction, target = self(state)
-            error = ((target - prediction)**2).mean(dim=1, keepdim=True)
+            error = ((target - prediction) ** 2).mean(dim=1, keepdim=True)
 
         return error
 
@@ -371,7 +371,7 @@ class BarlowTwinsModelProcgen(nn.Module):
         self.config = config
         self.action_dim = action_dim
 
-        input_channels = 1
+        input_channels = 3
         # input_channels = input_shape[0]
         input_height = input_shape[1]
         input_width = input_shape[2]
@@ -411,7 +411,7 @@ class BarlowTwinsModelProcgen(nn.Module):
         init_orthogonal(self.model[13], gain)
 
     def preprocess(self, state):
-        return state[:, 0, :, :].unsqueeze(1)
+        return state[:, 0:self.input_shape[0], :, :]
 
     def forward(self, state):
         predicted_code = self.model(self.preprocess(state))
@@ -458,7 +458,7 @@ class VICRegModelProcgen(nn.Module):
         self.config = config
         self.action_dim = action_dim
 
-        input_channels = 1
+        input_channels = 3
         # input_channels = input_shape[0]
         input_height = input_shape[1]
         input_width = input_shape[2]
@@ -498,7 +498,7 @@ class VICRegModelProcgen(nn.Module):
         init_orthogonal(self.model[13], gain)
 
     def preprocess(self, state):
-        return state[:, 0, :, :].unsqueeze(1)
+        return state[:, 0:self.input_shape[0], :, :]
 
     def forward(self, state):
         predicted_code = self.model(self.preprocess(state))
@@ -536,6 +536,42 @@ class VICRegModelProcgen(nn.Module):
 
     def update_state_average(self, state):
         self.state_average.update(state)
+
+
+class VINVModelProcgen(VICRegModelProcgen):
+    def __init__(self, input_shape, action_dim, config):
+        super(VINVModelProcgen, self).__init__(input_shape, action_dim, config)
+
+        self.inv_model = nn.Sequential(
+            nn.Linear(2 * self.feature_dim, self.feature_dim),
+            nn.ReLU(),
+            nn.Linear(self.feature_dim, self.feature_dim // 2),
+            nn.ReLU(),
+            nn.Linear(self.feature_dim // 2, action_dim)
+        )
+
+        gain = sqrt(2)
+        init_orthogonal(self.inv_model[0], gain)
+        init_orthogonal(self.inv_model[2], gain)
+        init_orthogonal(self.inv_model[4], gain)
+
+    def loss_function(self, state, next_state, action):
+        prediction, target = self(state)
+        next_target = self.target_model(self.preprocess(next_state))
+        tnt = torch.cat([target, next_target], dim=1)
+        action_logits = nn.functional.softmax(self.inv_model(tnt))
+        action_target = torch.argmax(action, dim=1)
+        action_prediction = torch.argmax(action_logits, dim=1)
+        accuracy = (action_prediction == action_target).float().mean() * 100
+
+        loss_inv = nn.functional.cross_entropy(action_logits, action_target)
+        loss_prediction = nn.functional.mse_loss(prediction, target.detach(), reduction='mean')
+        loss_target = self.target_model.loss_function(self.preprocess(state), self.preprocess(next_state))
+
+        analytic = ResultCollector()
+        analytic.update(loss_prediction=loss_prediction.unsqueeze(-1).detach(), loss_target=loss_target.unsqueeze(-1).detach(), inv_accuracy=accuracy.unsqueeze(-1).detach())
+
+        return loss_prediction + loss_target + loss_inv
 
 
 class FEDRefModelProcgen(nn.Module):
@@ -628,7 +664,7 @@ class QRNDModelProcgen(nn.Module):
         self.input_shape = input_shape
         self.action_dim = action_dim
 
-        input_channels = 1
+        input_channels = 3
         input_height = self.input_shape[1]
         input_width = self.input_shape[2]
         self.feature_dim = 512
@@ -714,7 +750,7 @@ class QRNDModelProcgen(nn.Module):
     def prepare_input(self, state, action):
         action = action - self.action_average.mean
         state = state - self.state_average.mean
-        return state[:, 0, :, :].unsqueeze(1), action
+        return state[:, 0:self.input_shape[0], :, :].unsqueeze(1), action
 
     def forward(self, state, action):
         s, a = self.prepare_input(state, action)

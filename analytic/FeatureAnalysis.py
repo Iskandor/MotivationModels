@@ -1,10 +1,13 @@
 from math import sqrt
+from pathlib import Path
 
 import numpy as np
 import torch
 from matplotlib import pyplot as plt
 from sklearn.decomposition import PCA
 from tqdm import tqdm
+
+from plots.dataloader import parse_text_file
 
 
 class FeatureAnalysis:
@@ -15,7 +18,12 @@ class FeatureAnalysis:
         self.colors = ['blue', 'red', 'green', 'magenta', 'cyan', 'orange', 'purple', 'gray', 'navy', 'maroon', 'brown', 'apricot', 'olive', 'beige', 'yellow']
         for row in config:
             self.data.append(np.load(row['samples'], allow_pickle=True).item())
-            self.results.append(np.load(row['results'], allow_pickle=True).item())
+            path = Path(row['results'])
+            if path.suffix.__str__() == '.npy':
+                self.results.append(np.load(row['results'], allow_pickle=True).item())
+            elif path.suffix.__str__() == '.log':
+                self.results.append(parse_text_file(row['results']))
+
             self.labels.append(row['label'])
 
     def table(self, axes=None, filename=''):
@@ -55,7 +63,12 @@ class FeatureAnalysis:
         for i in range(len(row_labels)):
             cell_text.append([])
             for j, k in enumerate(data.keys()):
-                cell_text[i].append('{0:.2f}'.format(data[k][i]))
+                if k == 'spd_mean' or k == 'spd_std':
+                    cell_text[i].append('{0:.2f}'.format(data[k][i]))
+                else:
+                    cell_text[i].append('{0:.0f}'.format(data[k][i]))
+            print('& \\multicolumn{{1}}{{l|}}{{{0:s}}} & \\multicolumn{{1}}{{c}}{{{1:s}}} & \\multicolumn{{1}}{{c}}{{{2:s} $\pm$ {3:s}}} & \\multicolumn{{1}}{{c}}{{{4:s}}} & \\multicolumn{{1}}{{c}}{{{5:s}}} & \\multicolumn{{1}}{{c}}{{{6:s}}} & \\multicolumn{{1}}{{c}}{{{7:s}}} \\\\'.format(
+                row_labels[i], cell_text[i][0], cell_text[i][2], cell_text[i][3], cell_text[i][4], cell_text[i][5], cell_text[i][6], cell_text[i][7]))
 
         # plt.show()
         if filename != '':
@@ -71,31 +84,27 @@ class FeatureAnalysis:
     def plot(self, filename):
         data = {'max': [], 'diff_mean': [], 'diff_std': [], 'feature': []}
         for r in self.results:
-            if 're' in r:
-                key = 're'
-            else:
-                key = 'ext_reward'
-
-            data['max'].append(r[key]['sum'].max())
+            data['max'].append(r['re']['sum'].max())
 
         for d in self.data:
             data['diff_mean'].append(d['dist'].mean())
             data['diff_std'].append(d['dist'].std())
             data['feature'].append(d['feature'])
 
-        fig = plt.figure(figsize=(3 * 7.68, 2 * 7.68))
+        # fig = plt.figure(figsize=(3 * 7.68, 2 * 7.68))
+        fig = plt.figure(figsize=(7.68, 7.68))
         # plt.tight_layout()
 
         ax = fig.add_subplot(311)
         self.table(ax)
-        fig.add_subplot(323)
-        self.mean_std(data['diff_mean'], data['diff_std'])
-        fig.add_subplot(324)
+        # fig.add_subplot(323)
+        # self.mean_std(data['diff_mean'], data['diff_std'])
+        # fig.add_subplot(324)
         self.pca(data['feature'])
-        fig.add_subplot(325)
-        self.max_reward(data['max'])
-        fig.add_subplot(326)
-        self.ev_boxplot(data['feature'])
+        # fig.add_subplot(325)
+        # self.max_reward(data['max'])
+        # fig.add_subplot(326)
+        # self.ev_boxplot(data['feature'])
         plt.savefig('{0:s}.png'.format(filename))
 
     def plot_feature_boxplot(self, filename):
@@ -136,9 +145,9 @@ class FeatureAnalysis:
         # plt.legend(ncol=int(sqrt(len(diff_std))))
 
     def pca(self, features):
-        plt.gca().set_title('Eigenvalues')
+        # plt.gca().set_title('Eigenvalues')
         plt.xlabel('eigenvalue index')
-        plt.ylabel('value')
+        plt.ylabel('magnitude')
         plt.yscale('log')
         plt.grid()
 

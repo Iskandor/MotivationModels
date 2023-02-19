@@ -5,7 +5,7 @@ from algorithms.PPO import PPO, MODE
 from algorithms.ReplayBuffer import GenericTrajectoryBuffer, GenericAsyncTrajectoryBuffer
 from modules.PPO_ProcgenModules import PPOProcgenNetwork, PPOProcgenNetworkFEDRef, PPOProcgenNetworkRND, PPOProcgenNetworkFWD, PPOProcgenNetworkICM, PPOProcgenNetworkSRRND, PPOProcgenNetworkCND, \
     PPOProcgenNetworkQRND
-from motivation.CNDMotivation import CNDMotivation
+from motivation.CNDMotivation import CNDMotivation, SINVMotivation
 from motivation.DOPMotivation import DOPMotivation
 from motivation.Encoder import Encoder
 from motivation.FEDRefMotivation import FEDRefMotivation
@@ -150,14 +150,17 @@ class PPOProcgenCNDAgent(PPOAgent):
         super().__init__(input_shape, action_dim, action_type, config)
         self.network = PPOProcgenNetworkCND(input_shape, action_dim, config, head=action_type).to(config.device)
         self.motivation_memory = GenericTrajectoryBuffer(config.trajectory_size, config.batch_size, config.n_env)
-        self.motivation = CNDMotivation(self.network.cnd_model, config.motivation_lr, config.motivation_eta, config.device, config.type != 'vanilla')
+        if config.type == 'vinv':
+            self.motivation = SINVMotivation(self.network.cnd_model, config.motivation_lr, config.motivation_eta, config.device, config.type != 'vanilla')
+        else:
+            self.motivation = CNDMotivation(self.network.cnd_model, config.motivation_lr, config.motivation_eta, config.device, config.type != 'vanilla')
         self.algorithm = PPO(self.network, config.lr, config.actor_loss_weight, config.critic_loss_weight, config.batch_size, config.trajectory_size,
                              config.beta, config.gamma, ext_adv_scale=2, int_adv_scale=1, ppo_epochs=config.ppo_epochs, n_env=config.n_env,
                              device=config.device, motivation=True)
 
     def train(self, state0, value, action0, probs0, state1, reward, mask):
         self.memory.add(state=state0.cpu(), value=value.cpu(), action=action0.cpu(), prob=probs0.cpu(), reward=reward.cpu(), mask=mask.cpu())
-        self.motivation_memory.add(state=state0.cpu(), next_state=state1.cpu())
+        self.motivation_memory.add(state=state0.cpu(), next_state=state1.cpu(), action=action0.cpu())
 
         indices = self.memory.indices()
         motivation_indices = self.motivation_memory.indices()

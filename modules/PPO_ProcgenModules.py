@@ -6,7 +6,7 @@ from modules import init_orthogonal
 from modules.PPO_Modules import DiscreteHead, Actor, Critic2Heads, ActorNHeads, CriticHead, Critic2NHeads
 from modules.encoders.EncoderProcgen import ST_DIMEncoderProcgen
 from modules.forward_models.ForwardModelProcgen import ForwardModelProcgen, FWDModelProcgen, ICMModelProcgen
-from modules.rnd_models.RNDModelProcgen import VICRegModelProcgen, QRNDModelProcgen, RNDModelProcgen, FEDRefModelProcgen, CNDModelProcgen, BarlowTwinsModelProcgen, CNDVModelProcgen
+from modules.rnd_models.RNDModelProcgen import VICRegModelProcgen, QRNDModelProcgen, RNDModelProcgen, FEDRefModelProcgen, CNDModelProcgen, BarlowTwinsModelProcgen, CNDVModelProcgen, VINVModelProcgen
 
 
 class PPOProcgenNetwork(torch.nn.Module):
@@ -167,6 +167,8 @@ class PPOProcgenNetworkCND(PPOProcgenMotivationNetwork):
             self.cnd_model = CNDModelProcgen(input_shape, action_dim, config)
         if config.type == 'vanilla':
             self.cnd_model = CNDVModelProcgen(input_shape, action_dim, config)
+        if config.type == 'vinv':
+            self.cnd_model = VINVModelProcgen(input_shape, action_dim, config)
 
 
 class PPOProcgenNetworkQRND(PPOProcgenMotivationNetwork):

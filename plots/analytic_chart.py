@@ -13,11 +13,6 @@ from tqdm import tqdm
 
 from plots.key_values import key_values
 
-synonyms = {
-    're': 'ext_reward',
-    'ri': 'int_reward',
-}
-
 def moving_average(a, n=3):
     ret = np.cumsum(a, dtype=float)
     ret[n:] = ret[n:] - ret[:-n]
@@ -51,12 +46,8 @@ def prepare_data(data, master_key, key, window):
     iv = None
 
     for d in data:
-        if master_key not in d.keys():
-            steps.append(d[synonyms[master_key]]['step'])
-            values.append(d[synonyms[master_key]][key])
-        else:
-            steps.append(d[master_key]['step'])
-            values.append(d[master_key][key])
+        steps.append(d[master_key]['step'])
+        values.append(d[master_key][key])
 
     result = []
     for x, y in zip(steps, values):
@@ -108,9 +99,6 @@ def plot_chart(num_rows, num_cols, index, key, data, value_key, window, color, l
     stats = {}
     iv = None
 
-    if key not in data:
-        key = synonyms[key]
-
     for k in value_key:
         iv, stats[k] = prepare_data_instance(data[key]['step'].squeeze(), data[key][k].squeeze(), window)
 
@@ -137,7 +125,7 @@ def plot_multiple_models(keys, data, legend, labels, colors, path, window=1):
             # mu = np.clip(mu, 0, 0.1)
             lines.append(plot_curve(ax, {'mean': mu, 'std': sigma}, iv, color=colors[index], start=0.0))
 
-        ax.legend(lines, legend[:len(data)])
+        ax.legend(lines, legend[:len(data)], loc=2)
 
     plt.savefig(path + ".png")
     plt.close()

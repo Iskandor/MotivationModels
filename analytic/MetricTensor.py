@@ -17,6 +17,8 @@ from utils.AtariWrapper import WrapperHardAtari
 
 import os
 
+from utils.ProcgenWrapper import WrapperProcgenExploration
+
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 
@@ -87,6 +89,7 @@ def initialize(env_name, env_id, path, config_id, agent_class):
     config = Config(config[env_name][config_id], "{0}_{1}".format(env_name, config_id))
     config.device = 'cuda:0'
 
+    # env = WrapperProcgenExploration(env_id)
     env = WrapperHardAtari(gym.make(env_id))
     input_shape = env.observation_space.shape
     action_dim = env.action_space.n

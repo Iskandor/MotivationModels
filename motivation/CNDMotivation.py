@@ -64,3 +64,23 @@ class CNDMotivation:
 
     def update_reward_average(self, reward):
         self.reward_stats.update(reward.to(self._device))
+
+
+class SINVMotivation(CNDMotivation):
+    def train(self, memory, indices):
+        if indices:
+            start = time.time()
+            sample, size = memory.sample_batches(indices)
+
+            for i in range(size):
+                states = sample.state[i].to(self._device)
+                next_states = sample.next_state[i].to(self._device)
+                actions = sample.action[i].to(self._device)
+
+                self._optimizer.zero_grad()
+                loss = self._network.loss_function(states, next_states, actions)
+                loss.backward()
+                self._optimizer.step()
+
+            end = time.time()
+            print("SINV motivation training time {0:.2f}s".format(end - start))

@@ -15,10 +15,10 @@ def plot(name, config, keys, labels=None, legend=None, plot_overview=True, plot_
         labels = keys
 
     if legend is None:
-        legend = ['{0:s} {1:s}'.format(key['model'], key['id']) for key in config]
+        legend = [key['legend'] if 'legend' in key else '{0:s} {1:s}'.format(key['model'], key['id']) for key in config]
 
     if plot_overview:
-        path = os.path.join(plot_root, algorithm, env)
+        path = os.path.join(plot_root)
         if not os.path.exists(path):
             os.mkdir(path)
         path = os.path.join(path, name)
@@ -27,7 +27,7 @@ def plot(name, config, keys, labels=None, legend=None, plot_overview=True, plot_
             data,
             legend,
             labels,
-            ['blue', 'red', 'green', 'magenta', 'cyan', 'orange', 'purple', 'gray', 'navy', 'maroon', 'brown', 'apricot', 'olive', 'beige', 'yellow'],
+            ['blue', 'red', 'green', 'magenta', 'lightseagreen', 'orange', 'purple', 'gray', 'navy', 'maroon', 'brown', 'apricot', 'olive', 'beige', 'yellow'],
             path,
             window)
 
