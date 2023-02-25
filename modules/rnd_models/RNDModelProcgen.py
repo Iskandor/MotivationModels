@@ -564,7 +564,8 @@ class VINVModelProcgen(VICRegModelProcgen):
         action_prediction = torch.argmax(action_logits, dim=1)
         accuracy = (action_prediction == action_target).float().mean() * 100
 
-        loss_inv = nn.functional.cross_entropy(action_logits, action_target)
+        iota = 0.5
+        loss_inv = nn.functional.cross_entropy(action_logits, action_target) * iota
         loss_prediction = nn.functional.mse_loss(prediction, target.detach(), reduction='mean')
         loss_target = self.target_model.loss_function(self.preprocess(state), self.preprocess(next_state))
 
