@@ -1,10 +1,18 @@
 import os
 
+import matplotlib
+
 from plots.analytic_chart import plot_multiple_models, plot_detail_cnd, plot_detail_rnd, plot_detail_baseline, plot_detail_icm, plot_detail_fwd
 from plots.dataloader import prepare_data
 from plots.paths import plot_root
 
 def plot(name, config, keys, labels=None, legend=None, plot_overview=True, plot_details=None, window=1000):
+    font = {'family': 'normal',
+            'weight': 'bold',
+            'size': 16}
+
+    matplotlib.rc('font', **font)
+
     if plot_details is None:
         plot_details = []
     data = prepare_data(config)
@@ -25,7 +33,7 @@ def plot(name, config, keys, labels=None, legend=None, plot_overview=True, plot_
         plot_multiple_models(
             keys,
             data,
-            legend,
+            None,
             labels,
             ['blue', 'red', 'green', 'magenta', 'lightseagreen', 'orange', 'purple', 'gray', 'navy', 'maroon', 'brown', 'apricot', 'olive', 'beige', 'yellow'],
             path,

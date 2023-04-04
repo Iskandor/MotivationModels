@@ -115,17 +115,19 @@ def plot_multiple_models(keys, data, legend, labels, colors, path, window=1):
 
     for i, key in enumerate(keys):
         ax = plt.subplot(num_rows, num_cols, i + 1)
-        ax.set_xlabel('steps')
-        ax.set_ylabel(labels[i])
+        # ax.set_xlabel('steps')
+        # ax.set_ylabel(labels[i])
         ax.grid()
 
         lines = []
         for index, d in enumerate(data):
             iv, mu, sigma = prepare_data(d, key, key_values[key], window)
+            iv = [val / 1e6 for val in iv]
             # mu = np.clip(mu, 0, 0.1)
             lines.append(plot_curve(ax, {'mean': mu, 'std': sigma}, iv, color=colors[index], start=0.0))
 
-        ax.legend(lines, legend[:len(data)], loc=2)
+        if legend is not None:
+            ax.legend(lines, legend[:len(data)], loc=0)
 
     plt.savefig(path + ".png")
     plt.close()
@@ -159,12 +161,15 @@ def plot_detail_cnd(data, path, window=1000):
         plot_chart(num_rows, num_cols, 6, 'loss_target', data[i], ['val'], window, color='magenta', legend='loss target', legend_loc=9)
         if 'loss_reg' in data[i]:
             plot_chart(num_rows, num_cols, 7, 'loss_reg', data[i], ['val'], window, color='magenta', legend='loss target reg', legend_loc=9)
+        if 'inv_accuracy' in data[i]:
+            plot_chart(num_rows, num_cols, 7, 'inv_accuracy', data[i], ['val'], window, color='maroon', legend='inv. model accuracy', legend_loc=9)
         if 'loss_target_norm' in data[i]:
             plot_chart(num_rows, num_cols, 8, 'loss_target_norm', data[i], ['val'], window, color='magenta', legend='loss target norm', legend_loc=9)
         if 'state_space' in data[i]:
             plot_chart(num_rows, num_cols, 9, 'state_space', data[i], ['mean', 'max', 'std'], window, color='maroon', legend='state space', legend_loc=9)
         if 'feature_space' in data[i]:
             plot_chart(num_rows, num_cols, 10, 'feature_space', data[i], ['mean', 'max', 'std'], window, color='maroon', legend='feature space', legend_loc=9)
+
         plot_chart(num_rows, num_cols, 11, 'ext_value', data[i], ['mean', 'max', 'std'], window, color='blue', legend='extrinsic value')
         plot_chart(num_rows, num_cols, 12, 'int_value', data[i], ['mean', 'max', 'std'], window, color='red', legend='intrinsic value')
 

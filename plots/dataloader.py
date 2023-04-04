@@ -63,31 +63,34 @@ def load_analytic_files(folder):
     print(folder)
     print(glob.glob(str(folder) + '/*.npy'))
 
+    data = []
+
+    for file in glob.glob(str(folder) + '/*.npy'):
+        data.append(parse_analytic_file(file))
+
+    return data
+
+
+def parse_analytic_file(file):
     synonyms = {
         'ext_reward': 're',
         'int_reward': 'ri',
     }
 
-    data = []
+    elem = np.load(file, allow_pickle=True).item()
+    for value_key in elem:
+        for key in elem[value_key]:
+            if isinstance(elem[value_key][key], torch.Tensor):
+                elem[value_key][key] = elem[value_key][key].numpy()
 
-    for file in glob.glob(str(folder) + '/*.npy'):
-        elem = np.load(file, allow_pickle=True).item()
+    new_elem = {}
+    for value_key in elem:
+        if value_key in synonyms:
+            new_elem[synonyms[value_key]] = elem[value_key]
+        else:
+            new_elem[value_key] = elem[value_key]
 
-        for value_key in elem:
-            for key in elem[value_key]:
-                if isinstance(elem[value_key][key], torch.Tensor):
-                    elem[value_key][key] = elem[value_key][key].numpy()
-
-        new_elem = {}
-        for value_key in elem:
-            if value_key in synonyms:
-                new_elem[synonyms[value_key]] = elem[value_key]
-            else:
-                new_elem[value_key] = elem[value_key]
-
-        data.append(new_elem)
-
-    return data
+    return new_elem
 
 
 def load_text_files(folder):
@@ -126,6 +129,7 @@ def parse_text_file(file):
         }
 
     return element
+
 
 # steps, raw epizoda, epizoda (tu je to fuk), raw skore, skore, ETA [h], a potom dake loss, interne motivacie, z hlavy uz neviem actor loss, critic loss, rnd target loss, rnd loss, im, im std
 

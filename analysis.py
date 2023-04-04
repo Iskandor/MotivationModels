@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 
 from agents.PPOAtariAgent import PPOAtariCNDAgent, PPOAtariRNDAgent, PPOAtariFEDRefAgent, PPOAtariICMAgent, PPOAtariFWDAgent
-from agents.PPOProcgenAgent import PPOProcgenRNDAgent, PPOProcgenCNDAgent
+from agents.PPOProcgenAgent import PPOProcgenRNDAgent, PPOProcgenCNDAgent, PPOProcgenICMAgent, PPOProcgenFWDAgent
 from analytic.FeatureAnalysis import FeatureAnalysis
 from analytic.MetricTensor import initialize
 from analytic.StateCollector import collect_states, collect_samples, save_states
@@ -50,7 +50,9 @@ def generate_ref_states(env_name, env_id, model, agent, config_id, instance_id):
     next_states = []
 
     for i in instance_id:
-        agent, env, _ = initialize(env_name, env_id, os.path.join(models_root, '{0:s}_{1:d}_{2:s}_{3:d}'.format(env_name, config_id, model, i)), str(config_id), agent)
+        path = os.path.join(models_root, '{0:s}_{1:d}_{2:s}_{3:d}'.format(env_name, config_id, model, i))
+        print('Loading {0:s}'.format(path))
+        agent, env, _ = initialize(env_name, env_id, path, str(config_id), agent)
         s0, s1 = collect_states(agent, env, 10000)
         states.append(s0)
         next_states.append(s1)
@@ -227,11 +229,124 @@ class JumperDescriptor(Descriptor):
         self.config_ids = [2, 8, 4, 7]
         self.labels = ['RND', 'SND-V', 'SND-STD', 'SND-VIC']
 
+
+class MontezumaSPDescriptor(Descriptor):
+    def __init__(self):
+        super().__init__()
+        self.env = 'montezuma'
+        self.env_id = 'MontezumaRevengeNoFrameskip-v4'
+        self.models = ['icm', 'fwd']
+        self.agents = [PPOAtariICMAgent, PPOAtariFWDAgent]
+        self.config_ids = [30, 45]
+        self.labels = ['ICM', 'SP']
+
+
+class GravitarSPDescriptor(Descriptor):
+    def __init__(self):
+        super().__init__()
+        self.env = 'gravitar'
+        self.env_id = 'GravitarNoFrameskip-v4'
+        self.models = ['icm', 'fwd']
+        self.agents = [PPOAtariICMAgent, PPOAtariFWDAgent]
+        self.config_ids = [10, 12]
+        self.labels = ['ICM', 'SP']
+
+
+class PrivateEyeSPDescriptor(Descriptor):
+    def __init__(self):
+        super().__init__()
+        self.env = 'private_eye'
+        self.env_id = 'PrivateEyeNoFrameskip-v4'
+        self.models = ['icm', 'fwd']
+        self.agents = [PPOAtariICMAgent, PPOAtariFWDAgent]
+        self.config_ids = [5, 6]
+        self.labels = ['ICM', 'SP']
+
+
+class PitfallSPDescriptor(Descriptor):
+    def __init__(self):
+        super().__init__()
+        self.env = 'pitfall'
+        self.env_id = 'PitfallNoFrameskip-v4'
+        self.models = ['icm', 'fwd']
+        self.agents = [PPOAtariICMAgent, PPOAtariFWDAgent]
+        self.config_ids = [5, 6]
+        self.labels = ['ICM', 'SP']
+
+
+class SolarisSPDescriptor(Descriptor):
+    def __init__(self):
+        super().__init__()
+        self.env = 'solaris'
+        self.env_id = 'SolarisNoFrameskip-v4'
+        self.models = ['icm', 'fwd']
+        self.agents = [PPOAtariICMAgent, PPOAtariFWDAgent]
+        self.config_ids = [5, 6]
+        self.labels = ['ICM', 'SP']
+
+
+class VentureSPDescriptor(Descriptor):
+    def __init__(self):
+        super().__init__()
+        self.env = 'venture'
+        self.env_id = 'VentureNoFrameskip-v4'
+        self.models = ['icm', 'fwd']
+        self.agents = [PPOAtariICMAgent, PPOAtariFWDAgent]
+        self.config_ids = [6, 7]
+        self.labels = ['ICM', 'SP']
+
+
+class CaveflyerSPDescriptor(Descriptor):
+    def __init__(self):
+        super().__init__()
+        self.env = 'caveflyer'
+        self.env_id = 'procgen-caveflyer-v0'
+        self.models = ['icm', 'fwd']
+        self.agents = [PPOProcgenICMAgent, PPOProcgenFWDAgent]
+        self.config_ids = [6, 5]
+        self.labels = ['ICM', 'SP']
+
+
+class ClimberSPDescriptor(Descriptor):
+    def __init__(self):
+        super().__init__()
+        self.env = 'climber'
+        self.env_id = 'procgen-climber-v0'
+        self.models = ['icm', 'fwd']
+        self.agents = [PPOProcgenICMAgent, PPOProcgenFWDAgent]
+        self.config_ids = [6, 5]
+        self.labels = ['ICM', 'SP']
+
+
+class CoinrunSPDescriptor(Descriptor):
+    def __init__(self):
+        super().__init__()
+        self.env = 'coinrun'
+        self.env_id = 'procgen-coinrun-v0'
+        self.models = ['icm', 'fwd']
+        self.agents = [PPOProcgenICMAgent, PPOProcgenFWDAgent]
+        self.config_ids = [6, 5]
+        self.labels = ['ICM', 'SP']
+
+
+class JumperSPDescriptor(Descriptor):
+    def __init__(self):
+        super().__init__()
+        self.env = 'jumper'
+        self.env_id = 'procgen-jumper-v0'
+        self.models = ['icm', 'fwd']
+        self.agents = [PPOProcgenICMAgent, PPOProcgenFWDAgent]
+        self.config_ids = [6, 5]
+        self.labels = ['ICM', 'SP']
+
+
 if __name__ == '__main__':
 
-    # descriptors = [MontezumaDescriptor, GravitarDescriptor, PrivateEyeDescriptor, SolarisDescriptor, VentureDescriptor]
+    descriptors = [MontezumaDescriptor, GravitarDescriptor, PrivateEyeDescriptor, SolarisDescriptor, VentureDescriptor]
     descriptors = [CaveflyerDescriptor, ClimberDescriptor, CoinrunDescriptor, JumperDescriptor]
-    # descriptors = [SolarisDescriptor]
+    # descriptors = [PitfallSPDescriptor]
+    # descriptors = [GravitarSPDescriptor, PrivateEyeSPDescriptor, SolarisSPDescriptor, VentureSPDescriptor]
+    # descriptors = [CaveflyerSPDescriptor, ClimberSPDescriptor, CoinrunSPDescriptor, JumperSPDescriptor]
 
     for desc in descriptors:
         desc_instance = desc()

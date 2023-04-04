@@ -1,13 +1,16 @@
 from math import sqrt
 from pathlib import Path
 
+import matplotlib
 import numpy as np
 import torch
+import umap
+import umap.plot
 from matplotlib import pyplot as plt
 from sklearn.decomposition import PCA
 from tqdm import tqdm
 
-from plots.dataloader import parse_text_file
+from plots.dataloader import parse_text_file, parse_analytic_file
 
 
 class FeatureAnalysis:
@@ -15,12 +18,12 @@ class FeatureAnalysis:
         self.data = []
         self.results = []
         self.labels = []
-        self.colors = ['blue', 'red', 'green', 'magenta', 'cyan', 'orange', 'purple', 'gray', 'navy', 'maroon', 'brown', 'apricot', 'olive', 'beige', 'yellow']
+        self.colors = ['blue', 'red', 'green', 'magenta', 'cyan', 'orange', 'purple', 'gray', 'navy', 'maroon', 'brown', 'olive', 'beige', 'yellow', 'indianred', 'lawngreen', 'skyblue', 'gold']
         for row in config:
             self.data.append(np.load(row['samples'], allow_pickle=True).item())
             path = Path(row['results'])
             if path.suffix.__str__() == '.npy':
-                self.results.append(np.load(row['results'], allow_pickle=True).item())
+                self.results.append(parse_analytic_file(row['results']))
             elif path.suffix.__str__() == '.log':
                 self.results.append(parse_text_file(row['results']))
 
@@ -95,12 +98,13 @@ class FeatureAnalysis:
         fig = plt.figure(figsize=(7.68, 7.68))
         # plt.tight_layout()
 
-        ax = fig.add_subplot(311)
-        self.table(ax)
+        # ax = fig.add_subplot(311)
+        # self.table(ax)
         # fig.add_subplot(323)
         # self.mean_std(data['diff_mean'], data['diff_std'])
         # fig.add_subplot(324)
-        self.pca(data['feature'])
+        # self.pca(data['feature'])
+        self.qr_decomposition(data['feature'])
         # fig.add_subplot(325)
         # self.max_reward(data['max'])
         # fig.add_subplot(326)
@@ -146,8 +150,14 @@ class FeatureAnalysis:
 
     def pca(self, features):
         # plt.gca().set_title('Eigenvalues')
-        plt.xlabel('eigenvalue index')
-        plt.ylabel('magnitude')
+        # plt.xlabel('eigenvalue index')
+        # plt.ylabel('magnitude')
+        font = {'family': 'normal',
+                'weight': 'bold',
+                'size': 16}
+
+        matplotlib.rc('font', **font)
+
         plt.yscale('log')
         plt.grid()
 
@@ -157,7 +167,24 @@ class FeatureAnalysis:
 
             plt.plot(x_axis, (S ** 2).numpy(), color=self.colors[i], label=self.labels[i], markersize=2)
 
-        plt.legend(ncol=int(sqrt(len(features))))
+        # plt.legend(ncol=int(sqrt(len(features))), loc=1)
+
+    def qr_decomposition(self, features):
+        diagonals = []
+        labels = []
+        for i, f1 in enumerate(features):
+            q1, _ = np.linalg.qr(np.transpose(f1), mode='complete')
+            for j, f2 in enumerate(features):
+                q2, _ = np.linalg.qr(np.transpose(f2), mode='complete')
+                q = np.transpose(q2) @ q1
+                d = np.diagonal(q)
+                labels.append((i+1)*(j+1))
+                diagonals.append(d)
+
+        diagonals = np.array(diagonals)
+        labels = np.array(labels)
+        mapper = umap.UMAP().fit(diagonals)
+        umap.plot.points(mapper, labels=labels)
 
     def ev_boxplot(self, features):
         # plt.gca().set_title('Eigenvalues boxplot')
