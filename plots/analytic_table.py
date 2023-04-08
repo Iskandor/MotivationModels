@@ -34,6 +34,8 @@ def compute_table_values(config, keys, end=0):
             percentile95 = np.mean(np.array(percentile95))
             percentile100 = np.mean(np.array(percentile100))
             # print(key, mean, std, percentile95, percentile100)
-            # latex_text += '& {0:.2f} $\pm$ {1:.2f} '.format(mean, std)  # re
-            latex_text += '& {0:.0f} '.format(percentile100)  # score
+            if key == 're':
+                latex_text += '& {0:.2f} $\pm$ {1:.2f} '.format(mean, std)  # re
+            if key == 'score':
+                latex_text += '& {0:.0f} '.format(percentile100)  # score
     print(latex_text)
