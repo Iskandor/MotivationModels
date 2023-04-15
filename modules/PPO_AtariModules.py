@@ -7,7 +7,7 @@ from modules.dop_models.DOPModelAtari import DOPModelAtari, DOPControllerAtari, 
 from modules.PPO_Modules import DiscreteHead, Actor, Critic2Heads, ActorNHeads, CriticHead, Critic2NHeads
 from modules.encoders.EncoderAtari import ST_DIMEncoderAtari
 from modules.forward_models.ForwardModelAtari import ForwardModelAtari, FWDModelAtari, ICMModelAtari
-from modules.rnd_models.RNDModelAtari import QRNDModelAtari, RNDModelAtari, CNDModelAtari, BarlowTwinsModelAtari, FEDRefModelAtari, VICRegModelAtari, CNDVModelAtari
+from modules.rnd_models.RNDModelAtari import QRNDModelAtari, RNDModelAtari, CNDModelAtari, BarlowTwinsModelAtari, FEDRefModelAtari, VICRegModelAtari, CNDVModelAtari, VINVModelAtari
 
 
 class PPOAtariNetwork(torch.nn.Module):
@@ -167,6 +167,8 @@ class PPOAtariNetworkCND(PPOAtariMotivationNetwork):
             self.cnd_model = CNDModelAtari(input_shape, action_dim, config)
         if config.type == 'vanilla':
             self.cnd_model = CNDVModelAtari(input_shape, action_dim, config)
+        if config.type == 'vinv':
+            self.cnd_model = VINVModelAtari(input_shape, action_dim, config)
 
 
 class PPOAtariNetworkQRND(PPOAtariMotivationNetwork):

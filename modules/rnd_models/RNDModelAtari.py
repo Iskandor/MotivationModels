@@ -536,6 +536,43 @@ class VICRegModelAtari(nn.Module):
         self.state_average.update(state)
 
 
+class VINVModelAtari(VICRegModelAtari):
+    def __init__(self, input_shape, action_dim, config):
+        super(VINVModelAtari, self).__init__(input_shape, action_dim, config)
+
+        self.inv_model = nn.Sequential(
+            nn.Linear(2 * self.feature_dim, self.feature_dim),
+            nn.ReLU(),
+            nn.Linear(self.feature_dim, self.feature_dim // 2),
+            nn.ReLU(),
+            nn.Linear(self.feature_dim // 2, action_dim)
+        )
+
+        gain = sqrt(2)
+        init_orthogonal(self.inv_model[0], gain)
+        init_orthogonal(self.inv_model[2], gain)
+        init_orthogonal(self.inv_model[4], gain)
+
+    def loss_function(self, state, next_state, action):
+        prediction, target = self(state)
+        next_target = self.target_model(self.preprocess(next_state))
+        tnt = torch.cat([target, next_target], dim=1)
+        action_logits = nn.functional.softmax(self.inv_model(tnt))
+        action_target = torch.argmax(action, dim=1)
+        action_prediction = torch.argmax(action_logits, dim=1)
+        accuracy = (action_prediction == action_target).float().mean() * 100
+
+        iota = 0.5
+        loss_inv = nn.functional.cross_entropy(action_logits, action_target) * iota
+        loss_prediction = nn.functional.mse_loss(prediction, target.detach(), reduction='mean')
+        loss_target = self.target_model.loss_function(self.preprocess(state), self.preprocess(next_state))
+
+        analytic = ResultCollector()
+        analytic.update(loss_prediction=loss_prediction.unsqueeze(-1).detach(), loss_target=loss_target.unsqueeze(-1).detach(), inv_accuracy=accuracy.unsqueeze(-1).detach())
+
+        return loss_prediction + loss_target + loss_inv
+
+
 class FEDRefModelAtari(nn.Module):
     def __init__(self, input_shape, action_dim, target_model, config):
         super(FEDRefModelAtari, self).__init__()
